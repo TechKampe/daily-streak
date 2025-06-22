@@ -1,0 +1,283 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Desafío Kämpe: Entrevista Inteligente</title>
+  <style>
+    /* Reset y fuentes */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background: #f3f6f9;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #1e88e5;
+    }
+
+    p.intro {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #game {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #card-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      max-width: 250px;
+      cursor: grab;
+      transition: transform 0.2s;
+      user-select: none;
+    }
+
+    .card.dragging {
+      opacity: 0.5;
+      transform: scale(1.05);
+    }
+
+    .drop-zone {
+      border: 2px dashed #999;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      min-height: 120px;
+      padding: 15px;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #666;
+      background-color: #fff;
+      transition: background 0.3s ease;
+    }
+
+    .drop-zone.hovered {
+      background-color: #e3f2fd;
+      border-color: #1e88e5;
+    }
+
+    #zones {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    #results {
+      display: none;
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .result-item {
+      margin-bottom: 10px;
+    }
+
+    .correct {
+      color: #388e3c;
+    }
+
+    .incorrect {
+      color: #d32f2f;
+    }
+
+    button {
+      background: #1e88e5;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #1565c0;
+    }
+
+    @media (max-width: 600px) {
+      #card-container {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .drop-zone {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Desafío Kämpe</h1>
+  <p class="intro">¿Qué preguntas podemos hacer al final de una entrevista? Arrastra cada carta a la zona correspondiente.</p>
+
+  <div id="game">
+    <div id="card-container">
+      <!-- Las cartas se generan dinámicamente -->
+    </div>
+
+    <div id="zones">
+      <div id="me-ayuda" class="drop-zone" data-zone="me-ayuda">👉 Me ayuda</div>
+      <div id="me-perjudica" class="drop-zone" data-zone="me-perjudica">🙈 Me perjudica</div>
+    </div>
+
+    <button id="verificar">Verificar respuestas</button>
+  </div>
+
+  <div id="results">
+    <h2>Resultados</h2>
+    <div id="feedback"></div>
+  </div>
+
+  <script>
+    // Lista de preguntas con si son útiles o no y explicación
+    const preguntas = [
+      {
+        texto: "¿Cómo sería un día típico en este puesto?",
+        esBuena: true,
+        explicacion: "Muestra interés por entender el trabajo y demuestra iniciativa."
+      },
+      {
+        texto: "¿Puedo salir temprano los viernes?",
+        esBuena: false,
+        explicacion: "Puede parecer que no estás comprometido desde el inicio."
+      },
+      {
+        texto: "¿Qué oportunidades de crecimiento existen?",
+        esBuena: true,
+        explicacion: "Demuestra que buscas desarrollarte y tener un futuro en la empresa."
+      },
+      {
+        texto: "¿Cuánto tiempo tengo que esperar para un ascenso?",
+        esBuena: false,
+        explicacion: "Suena impaciente y centrado solo en beneficios personales."
+      },
+      {
+        texto: "¿Cuál es la cultura de trabajo del equipo?",
+        esBuena: true,
+        explicacion: "Refleja interés genuino por encajar y participar activamente en el equipo."
+      },
+      {
+        texto: "¿Puedo cambiar mis tareas si no me gustan?",
+        esBuena: false,
+        explicacion: "Denota falta de compromiso con las responsabilidades asignadas."
+      }
+    ];
+
+    const cardContainer = document.getElementById("card-container");
+    const zonas = document.querySelectorAll(".drop-zone");
+    const verificarBtn = document.getElementById("verificar");
+    const results = document.getElementById("results");
+    const feedback = document.getElementById("feedback");
+
+    // Generar cartas
+    preguntas.forEach((p, i) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.draggable = true;
+      card.innerText = p.texto;
+      card.dataset.index = i;
+      cardContainer.appendChild(card);
+    });
+
+    // Funciones de drag and drop
+    let dragged = null;
+
+    document.addEventListener("dragstart", (e) => {
+      if (e.target.classList.contains("card")) {
+        dragged = e.target;
+        dragged.classList.add("dragging");
+      }
+    });
+
+    document.addEventListener("dragend", () => {
+      if (dragged) {
+        dragged.classList.remove("dragging");
+        dragged = null;
+      }
+    });
+
+    zonas.forEach((zona) => {
+      zona.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        zona.classList.add("hovered");
+      });
+
+      zona.addEventListener("dragleave", () => {
+        zona.classList.remove("hovered");
+      });
+
+      zona.addEventListener("drop", (e) => {
+        e.preventDefault();
+        zona.classList.remove("hovered");
+        if (dragged) {
+          zona.appendChild(dragged);
+          dragged.dataset.dropZone = zona.dataset.zone;
+        }
+      });
+    });
+
+    // Verificar respuestas
+    verificarBtn.addEventListener("click", () => {
+      let respuestasCorrectas = 0;
+      feedback.innerHTML = "";
+
+      preguntas.forEach((p, i) => {
+        const card = document.querySelector(`.card[data-index='${i}']`);
+        const zonaAsignada = card.dataset.dropZone;
+
+        const esCorrecta =
+          (p.esBuena && zonaAsignada === "me-ayuda") ||
+          (!p.esBuena && zonaAsignada === "me-perjudica");
+
+        const resultadoItem = document.createElement("div");
+        resultadoItem.className = "result-item";
+        resultadoItem.innerHTML = `
+          <strong>${p.texto}</strong><br>
+          <span class="${esCorrecta ? "correct" : "incorrect"}">
+            ${esCorrecta ? "✅ Correcto" : "❌ Incorrecto"}
+          </span> — ${p.explicacion}
+        `;
+
+        feedback.appendChild(resultadoItem);
+
+        if (esCorrecta) respuestasCorrectas++;
+      });
+
+      results.style.display = "block";
+      verificarBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>
+```
