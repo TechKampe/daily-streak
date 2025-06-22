@@ -1,0 +1,221 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Desafío Kämpe: Preguntas en Entrevistas</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      background-color: #2a72c7;
+      color: white;
+      text-align: center;
+      padding: 1rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 0;
+    }
+
+    main {
+      flex: 1;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #cards-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      padding: 1rem;
+      width: 250px;
+      text-align: center;
+      cursor: move;
+      user-select: none;
+    }
+
+    .dropzone {
+      border: 3px dashed #bbb;
+      border-radius: 10px;
+      padding: 20px;
+      width: 90%;
+      max-width: 400px;
+      min-height: 100px;
+      margin: 0.5rem;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+
+    .dropzone.hover {
+      background-color: #e6f7ff;
+    }
+
+    #zones {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    button {
+      background-color: #28a745;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    .result {
+      margin-top: 1rem;
+      text-align: left;
+      background: white;
+      border-radius: 10px;
+      padding: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      max-width: 500px;
+    }
+
+    @media (max-width: 600px) {
+      .card {
+        width: 90%;
+      }
+
+      .dropzone {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>¿Qué preguntas hacer en una entrevista?</h1>
+    <p>Arrastra cada carta al área correspondiente: “Me ayuda” o “Me perjudica”</p>
+  </header>
+
+  <main>
+    <div id="cards-container"></div>
+
+    <div id="zones">
+      <div id="helpful" class="dropzone" ondragover="allowDrop(event)" ondrop="drop(event, 'me_ayuda')">
+        <strong>🟢 Me ayuda</strong>
+      </div>
+      <div id="harmful" class="dropzone" ondragover="allowDrop(event)" ondrop="drop(event, 'me_perjudica')">
+        <strong>🔴 Me perjudica</strong>
+      </div>
+    </div>
+
+    <button onclick="checkAnswers()">Revisar respuestas</button>
+
+    <div id="results"></div>
+  </main>
+
+  <script>
+    // Lista de preguntas con sus clasificaciones correctas
+    const questions = [
+      { text: "¿Cuál sería un desafío común en este puesto?", correct: "me_ayuda", explanation: "Muestra interés en el trabajo y preparación."},
+      { text: "¿Puedo tener vacaciones pronto?", correct: "me_perjudica", explanation: "Causa mala impresión si aún no fuiste contratado."},
+      { text: "¿Cómo definen el éxito en este puesto?", correct: "me_ayuda", explanation: "Demuestra que te importa contribuir al éxito." },
+      { text: "¿A qué hora se termina el trabajo?", correct: "me_perjudica", explanation: "Puede verse como desinterés en el rol o la empresa." },
+      { text: "¿Qué oportunidades de crecimiento hay?", correct: "me_ayuda", explanation: "Refleja ambición profesional saludable." },
+      { text: "¿Tienen muchas faltas los empleados?", correct: "me_perjudica", explanation: "Puede dar impresión de poco compromiso o crítica anticipada." },
+      { text: "¿Cómo es el equipo de trabajo?", correct: "me_ayuda", explanation: "Interés genuino en el entorno y adaptación." }
+    ];
+
+    let shuffledQuestions = [];
+
+    // Barajar preguntas al cargar
+    window.onload = () => {
+      shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
+      const container = document.getElementById('cards-container');
+      shuffledQuestions.forEach((q, index) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.draggable = true;
+        card.id = 'card-' + index;
+        card.ondragstart = drag;
+        card.textContent = q.text;
+        container.appendChild(card);
+      });
+    };
+
+    // Permitir soltar
+    function allowDrop(ev) {
+      ev.preventDefault();
+      ev.currentTarget.classList.add('hover');
+    }
+
+    // Cuando comienza el drag
+    function drag(ev) {
+      ev.dataTransfer.setData("text", ev.target.id);
+    }
+
+    // Acción al soltar una carta
+    function drop(ev, zone) {
+      ev.preventDefault();
+      const data = ev.dataTransfer.getData("text");
+      const card = document.getElementById(data);
+      document.getElementById(zone === 'me_ayuda' ? 'helpful' : 'harmful').appendChild(card);
+      ev.currentTarget.classList.remove('hover');
+    }
+
+    // Revisar respuestas
+    function checkAnswers() {
+      const resultDiv = document.getElementById('results');
+      resultDiv.innerHTML = "";
+      let correct = 0;
+
+      shuffledQuestions.forEach((q, index) => {
+        const card = document.getElementById('card-' + index);
+        const parentId = card.parentElement.id;
+        let userAnswer = (parentId === 'helpful') ? 'me_ayuda'
+                        : (parentId === 'harmful') ? 'me_perjudica'
+                        : null;
+
+        const isCorrect = userAnswer === q.correct;
+
+        const p = document.createElement('p');
+        p.innerHTML = `📝 <strong>${q.text}</strong><br>
+                       ✅ Respuesta correcta: <em>${q.correct === 'me_ayuda' ? 'Me ayuda' : 'Me perjudica'}</em><br>
+                       ${isCorrect ? '✔️' : '❌'} ${q.explanation}`;
+        p.style.color = isCorrect ? 'green' : 'red';
+        resultDiv.appendChild(p);
+
+        if (isCorrect) correct++;
+      });
+
+      const summary = document.createElement('h3');
+      summary.innerText = `Tu resultado: ${correct} de ${shuffledQuestions.length} correctas`;
+      resultDiv.prepend(summary);
+    }
+  </script>
+</body>
+</html>
+```
