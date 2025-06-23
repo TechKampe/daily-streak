@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kämpe - Desafío Diario</title>
+    <!-- Fuente Manrope -->
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Estilos -->
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Manrope', sans-serif;
+            background: #2C2F48;
+            color: #fff;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background-color: #1F2235;
+        }
+
+        header img.logo {
+            height: 40px;
+        }
+
+        header img.avatar {
+            height: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 1rem 0;
+            color: #ffffff;
+            font-size: 1.5rem;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .dropzones {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .dropzone {
+            background-color: #3E4160;
+            border: 2px dashed #9CA3AF;
+            padding: 1rem;
+            min-height: 150px;
+            width: 300px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .cards {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background-color: #524F81;
+            padding: 1rem;
+            border-radius: 10px;
+            width: 250px;
+            text-align: center;
+            cursor: grab;
+            font-weight: bold;
+        }
+
+        .card.dragging {
+            opacity: 0.5;
+        }
+
+        button#verificar {
+            background-color: #67E8F9;
+            border: none;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            color: #000;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+
+        .resultado {
+            background-color: #1F2235;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            max-width: 700px;
+            margin-inline: auto;
+            display: none;
+        }
+
+        .feedback-item {
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 1rem;
+        }
+
+        .correct {
+            color: #4ADE80;
+        }
+
+        .incorrect {
+            color: #F87171;
+        }
+
+        @media (max-width: 768px) {
+            .dropzones {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .dropzone, .card {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Encabezado con logo y avatar -->
+    <header>
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Logo" class="logo">
+        <img src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Avatar" class="avatar">
+    </header>
+
+    <!-- Título y contenido -->
+    <div class="container">
+        <h1>¿Qué impulsa o frena tu empleabilidad?</h1>
+
+        <!-- Zonas para soltar -->
+        <div class="dropzones">
+            <div class="dropzone" id="me-ayuda">💪 Me ayuda</div>
+            <div class="dropzone" id="me-perjudica">⛔ Me perjudica</div>
+        </div>
+
+        <!-- Cartas -->
+        <div class="cards" id="cartas-container">
+            <!-- Cartas dinámicas -->
+        </div>
+
+        <!-- Botón -->
+        <button id="verificar">Verificar respuestas</button>
+
+        <!-- Feedback -->
+        <div class="resultado" id="resultado"></div>
+    </div>
+
+    <!-- Script de lógica -->
+    <script>
+        // Datos de frases
+        const frases = [
+            {
+                texto: "Llegar puntual a las entrevistas",
+                categoria: "ayuda",
+                explicacion: "La puntualidad demuestra responsabilidad y compromiso."
+            },
+            {
+                texto: "No preparar mi currículum",
+                categoria: "perjudica",
+                explicacion: "Un currículum desorganizado o incompleto puede generar mala impresión."
+            },
+            {
+                texto: "Aprender nuevas habilidades digitales",
+                categoria: "ayuda",
+                explicacion: "Estar actualizado mejora tu perfil profesional."
+            },
+            {
+                texto: "Faltar a reuniones sin avisar",
+                categoria: "perjudica",
+                explicacion: "Esto muestra falta de responsabilidad y consideración."
+            },
+            {
+                texto: "Pedir retroalimentación en el trabajo",
+                categoria: "ayuda",
+                explicacion: "Muestra interés por mejorar y crecer profesionalmente."
+            },
+            {
+                texto: "Ignorar oportunidades de capacitación",
+                categoria: "perjudica",
+                explicacion: "Limita tu crecimiento y preparación para el mercado laboral."
+            }
+        ];
+
+        const cartasContainer = document.getElementById('cartas-container');
+        const meAyuda = document.getElementById('me-ayuda');
+        const mePerjudica = document.getElementById('me-perjudica');
+        const resultado = document.getElementById('resultado');
+        const verificarBtn = document.getElementById('verificar');
+
+        // Función para crear las cartas
+        frases.forEach((frase, index) => {
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.setAttribute('draggable', 'true');
+            card.setAttribute('data-index', index);
+            card.textContent = frase.texto;
+            cartasContainer.appendChild(card);
+        });
+
+        let draggedElement = null;
+
+        // Drag y Drop
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('card')) {
+                draggedElement = e.target;
+                e.target.classList.add('dragging');
+            }
+        });
+
+        document.addEventListener('dragend', (e) => {
+            if (e.target.classList.contains('card')) {
+                e.target.classList.remove('dragging');
+            }
+        });
+
+        [meAyuda, mePerjudica].forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            zone.addEventListener('drop', (e) => {
+                if (draggedElement) {
+                    zone.appendChild(draggedElement);
+                }
+            });
+        });
+
+        // Verificar respuestas
+        verificarBtn.addEventListener('click', () => {
+            const items = meAyuda.querySelectorAll('.card');
+            const itemsPerjudica = mePerjudica.querySelectorAll('.card');
+            resultado.innerHTML = '';
+            resultado.style.display = 'block';
+
+            const generarFeedback = (card, zona) => {
+                const i = parseInt(card.getAttribute('data-index'));
+                const frase = frases[i];
+                const correcto = (zona === 'me-ayuda' && frase.categoria === 'ayuda') || 
+                                 (zona === 'me-perjudica' && frase.categoria === 'perjudica');
+
+                const p = document.createElement('div');
+                p.classList.add('feedback-item');
+                p.innerHTML = `
+                    <p><strong>${frase.texto}</strong></p>
+                    <p class="${correcto ? 'correct' : 'incorrect'}">
+                    ${correcto ? '✅ Correcto' : '❌ Incorrecto'}
+                    </p>
+                    <p>${frase.explicacion}</p>
+                `;
+                resultado.appendChild(p);
+            };
+
+            items.forEach(c => generarFeedback(c, 'me-ayuda'));
+            itemsPerjudica.forEach(c => generarFeedback(c, 'me-perjudica'));
+        });
+
+        // Prevenir scroll durante drag en móviles
+        document.addEventListener('touchmove', function (e) {
+            if (draggedElement !== null) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
