@@ -1,0 +1,291 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tarea de hoy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Estilos base */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #262d3a 0%, #353f52 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png');
+      background-repeat: no-repeat;
+      background-position: bottom right;
+      background-size: 60%;
+      background-blend-mode: screen;
+    }
+
+    .logo {
+      width: 120px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      margin: 30px 0;
+    }
+
+    .card {
+      background: #3e4a63;
+      border-radius: 12px;
+      padding: 20px;
+      width: 260px;
+      text-align: center;
+      cursor: grab;
+      font-size: 1rem;
+      transition: transform 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .zones {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .zone {
+      flex: 1 1 220px;
+      min-height: 120px;
+      border: 2px dashed #ffffff80;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #fff;
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .hide {
+      display: none;
+    }
+
+    button {
+      background-color: #00d0ff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      margin-top: 15px;
+    }
+
+    button:hover {
+      background-color: #00b8e0;
+    }
+
+    .result {
+      margin-top: 30px;
+    }
+
+    .explanation {
+      background: #2e3748;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .dropzone-hover {
+      background-color: rgba(0, 208, 255, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        cursor: default;
+      }
+      .zones {
+        display: none;
+      }
+      .mobile-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Logo de Kampé -->
+  <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Logo Kämpe" class="logo">
+
+  <!-- Título -->
+  <h1>🛠️ Tarea de hoy</h1>
+
+  <!-- Contenedor de las cartas -->
+  <div class="card-container" id="cardContainer"></div>
+
+  <!-- Zonas de drop solo para escritorio -->
+  <div class="zones" id="zones">
+    <div class="zone" id="positiveZone">✅ Me ayuda</div>
+    <div class="zone" id="negativeZone">🚫 Me perjudica</div>
+  </div>
+
+  <!-- Botón para ver resultados -->
+  <div style="text-align:center;">
+    <button id="submitBtn">Ver resultados</button>
+  </div>
+
+  <!-- Resultados -->
+  <div class="result" id="resultSection"></div>
+
+  <script>
+    // Preguntas y respuestas correctas
+    const cards = [
+      {
+        text: "Llego puntual a mis trabajos",
+        answer: "positive",
+        explanation: "La puntualidad demuestra responsabilidad y compromiso."
+      },
+      {
+        text: "Dejo tareas sin terminar",
+        answer: "negative",
+        explanation: "No completar tareas da una mala impresión y afecta tu reputación."
+      },
+      {
+        text: "Soy respetuoso con mis compañeros",
+        answer: "positive",
+        explanation: "El trabajo en equipo mejora cuando hay respeto mutuo."
+      },
+      {
+        text: "Evito comunicarme cuando hay un problema",
+        answer: "negative",
+        explanation: "La comunicación es clave para resolver conflictos y avanzar."
+      },
+      {
+        text: "Me esfuerzo por aprender algo nuevo cada semana",
+        answer: "positive",
+        explanation: "Aprender constantemente demuestra iniciativa y crecimiento."
+      }
+    ];
+
+    let userAnswers = {};
+
+    const container = document.getElementById('cardContainer');
+    const resultSection = document.getElementById('resultSection');
+    const submitBtn = document.getElementById('submitBtn');
+    const isMobile = window.innerWidth <= 768;
+
+    // Crear cartas
+    function renderCards() {
+      cards.forEach((card, index) => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'card';
+        cardElement.innerText = card.text;
+        cardElement.dataset.index = index;
+
+        if (!isMobile) {
+          // Drag & Drop para escritorio
+          cardElement.setAttribute('draggable', true);
+          cardElement.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', index);
+          });
+        } else {
+          // Botones para móvil
+          const btnContainer = document.createElement('div');
+          btnContainer.className = 'mobile-buttons';
+
+          const positiveBtn = document.createElement('button');
+          positiveBtn.innerText = 'Me ayuda';
+          positiveBtn.addEventListener('click', () => selectAnswer(index, 'positive', cardElement));
+
+          const negativeBtn = document.createElement('button');
+          negativeBtn.innerText = 'Me perjudica';
+          negativeBtn.addEventListener('click', () => selectAnswer(index, 'negative', cardElement));
+
+          btnContainer.appendChild(positiveBtn);
+          btnContainer.appendChild(negativeBtn);
+          cardElement.appendChild(btnContainer);
+        }
+
+        container.appendChild(cardElement);
+      });
+    }
+
+    // Manejar selecciones en móvil
+    function selectAnswer(index, zone, element) {
+      userAnswers[index] = zone;
+      element.style.opacity = 0.5;
+    }
+
+    // Manejar zonas de drop (escritorio)
+    if (!isMobile) {
+      const positive = document.getElementById('positiveZone');
+      const negative = document.getElementById('negativeZone');
+
+      [positive, negative].forEach(zone => {
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          zone.classList.add('dropzone-hover');
+        });
+
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('dropzone-hover');
+        });
+
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('dropzone-hover');
+          const index = e.dataTransfer.getData('text/plain');
+          userAnswers[index] = (zone.id === 'positiveZone') ? 'positive' : 'negative';
+          const draggedCard = container.querySelector(`[data-index='${index}']`);
+          draggedCard.style.opacity = 0.5;
+        });
+      });
+    }
+
+    // Mostrar resultados
+    submitBtn.addEventListener('click', () => {
+      resultSection.innerHTML = '';
+      cards.forEach((card, index) => {
+        const explanationDiv = document.createElement('div');
+        explanationDiv.className = 'explanation';
+
+        const userAnswer = userAnswers[index];
+        const correct = userAnswer === card.answer;
+
+        explanationDiv.innerHTML = `
+          <strong>${card.text}</strong><br>
+          <span style="color: ${correct ? '#00ffae' : '#ff4d4d'};">
+            ${correct ? '✅ Correcto' : '❌ Incorrecto'}
+          </span><br>
+          <small>${card.explanation}</small>
+        `;
+
+        resultSection.appendChild(explanationDiv);
+      });
+
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    });
+
+    renderCards();
+  </script>
+</body>
+</html>
