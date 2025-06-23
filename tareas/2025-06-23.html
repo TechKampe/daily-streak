@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kämpe - Reto Diario</title>
+  <!-- Fuente Manrope desde Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* Estilos base */
+    body {
+      margin: 0;
+      font-family: 'Manrope', sans-serif;
+      background: linear-gradient(135deg, #e6ecf2 0%, #d2dae3 100%);
+      color: #1c1c1c;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    /* Logo */
+    .logo {
+      width: 120px;
+      margin: 20px auto 10px;
+    }
+
+    /* Personaje avatar */
+    .avatar {
+      width: 100px;
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      text-align: center;
+      margin: 0 0 10px 0;
+      font-weight: 800;
+    }
+
+    .subtitulo {
+      font-size: 1rem;
+      text-align: center;
+      color: #444;
+      margin-bottom: 30px;
+      max-width: 400px;
+    }
+
+    .contenedor-cartas {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .carta {
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 20px;
+      width: 100%;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: grab;
+      user-select: none;
+    }
+
+    /* Botones móviles */
+    .botones-movil {
+      display: none;
+      margin-top: 10px;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .boton {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .btn-ayuda {
+      background-color: #00c48c;
+      color: white;
+    }
+
+    .btn-perjudica {
+      background-color: #ff5d5d;
+      color: white;
+    }
+
+    /* Áreas de drop */
+    .zonas-drop {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 40px;
+      width: 100%;
+      max-width: 600px;
+      gap: 10px;
+    }
+
+    .zona {
+      background-color: #f4f7fa;
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      width: 45%;
+      height: 150px;
+      text-align: center;
+      padding: 15px;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #666;
+      transition: background-color 0.3s;
+    }
+
+    .zona.over {
+      background-color: #dff1e8;
+    }
+
+    /* Resultados */
+    .resultado {
+      display: none;
+      margin-top: 40px;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .resultado h2 {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+
+    .item-resultado {
+      background-color: white;
+      border-radius: 10px;
+      padding: 15px 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      margin-bottom: 15px;
+    }
+
+    .item-resultado.correcto {
+      border-left: 5px solid #00c48c;
+    }
+
+    .item-resultado.incorrecto {
+      border-left: 5px solid #ff5d5d;
+    }
+
+    @media (max-width: 768px) {
+      .zonas-drop {
+        display: none;
+      }
+
+      .botones-movil {
+        display: flex;
+      }
+
+      .carta {
+        cursor: default;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Logo -->
+  <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Logo Kämpe" />
+
+  <!-- Encabezado -->
+  <h1>¿Qué te impulsa y qué te detiene?</h1>
+  <div class="subtitulo">
+    Arrastra cada frase a la zona correcta o usa los botones según si crees que <strong>te ayuda</strong> o <strong>te perjudica</strong> en tu desarrollo personal o profesional.
+  </div>
+
+  <div class="contenedor-cartas" id="contenedorCartas"></div>
+
+  <!-- Zonas de drag&drop para escritorio -->
+  <div class="zonas-drop">
+    <div class="zona" id="zonaAyuda">💪 Me ayuda</div>
+    <div class="zona" id="zonaPerjudica">🚫 Me perjudica</div>
+  </div>
+
+  <!-- Resultados -->
+  <div class="resultado" id="seccionResultado">
+    <h2>Resultados</h2>
+    <div id="contenedorResultados"></div>
+  </div>
+
+  <!-- Avatar -->
+  <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png" alt="Personaje Kämpe"/>
+
+  <script>
+    // Frases y datos correctos
+    const frases = [
+      {
+        texto: "Pido retroalimentación para mejorar.",
+        respuesta: "ayuda",
+        explicacion: "Buscar retroalimentación muestra apertura al aprendizaje y mejora continua."
+      },
+      {
+        texto: "Dejo las cosas para el último momento.",
+        respuesta: "perjudica",
+        explicacion: "Procrastinar puede afectar tu productividad y generar estrés innecesario."
+      },
+      {
+        texto: "Acepto nuevas responsabilidades.",
+        respuesta: "ayuda",
+        explicacion: "Aceptar retos desarrolla tus habilidades y aumenta tu empleabilidad."
+      },
+      {
+        texto: "Evito los trabajos en equipo.",
+        respuesta: "perjudica",
+        explicacion: "El trabajo colaborativo es clave en la mayoría de los entornos laborales."
+      },
+      {
+        texto: "Aprendo de mis errores.",
+        respuesta: "ayuda",
+        explicacion: "Reconocer y aprender de los errores te permite crecer y adaptarte mejor."
+      }
+    ];
+
+    let respuestasUsuario = [];
+
+    const contenedorCartas = document.getElementById("contenedorCartas");
+    const contenedorResultados = document.getElementById("contenedorResultados");
+    const resultadoSeccion = document.getElementById("seccionResultado");
+
+    // Crear cartas
+    frases.forEach((frase, idx) => {
+      const carta = document.createElement("div");
+      carta.className = "carta";
+      carta.draggable = true;
+      carta.dataset.index = idx;
+      carta.innerHTML = `
+        ${frase.texto}
+        <div class="botones-movil">
+          <button class="boton btn-ayuda">Me ayuda</button>
+          <button class="boton btn-perjudica">Me perjudica</button>
+        </div>
+      `;
+
+      // Drag&drop para desktop
+      carta.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text/plain", idx);
+      });
+
+      // Botones móviles
+      const botones = carta.querySelectorAll("button");
+      botones[0].addEventListener("click", () => registrarRespuesta(idx, "ayuda"));
+      botones[1].addEventListener("click", () => registrarRespuesta(idx, "perjudica"));
+
+      contenedorCartas.appendChild(carta);
+    });
+
+    // Áreas de drop
+    const zonaAyuda = document.getElementById("zonaAyuda");
+    const zonaPerjudica = document.getElementById("zonaPerjudica");
+
+    [zonaAyuda, zonaPerjudica].forEach(zona => {
+      zona.addEventListener("dragover", e => e.preventDefault());
+
+      zona.addEventListener("dragenter", e => {
+        e.preventDefault();
+        zona.classList.add("over");
+      });
+
+      zona.addEventListener("dragleave", () => {
+        zona.classList.remove("over");
+      });
+
+      zona.addEventListener("drop", e => {
+        e.preventDefault();
+        zona.classList.remove("over");
+        const idx = e.dataTransfer.getData("text/plain");
+        const tipo = zona.id === "zonaAyuda" ? "ayuda" : "perjudica";
+        registrarRespuesta(parseInt(idx), tipo);
+      });
+    });
+
+    // Registrar respuesta
+    function registrarRespuesta(idx, tipo) {
+      if (respuestasUsuario.some(r => r.index === idx)) return;
+
+      respuestasUsuario.push({ index: idx, respuesta: tipo });
+
+      // Ocultar carta correspondiente
+      const carta = document.querySelector(`.carta[data-index='${idx}']`);
+      carta.style.display = "none";
+
+      // Revisar si todas han sido respondidas
+      if (respuestasUsuario.length === frases.length) {
+        mostrarResultados();
+      }
+    }
+
+    // Mostrar resultados
+    function mostrarResultados() {
+      resultadoSeccion.style.display = "block";
+      contenedorCartas.style.display = "none";
+      const resultadosHTML = respuestasUsuario.map(res => {
+        const fraseData = frases[res.index];
+        const esCorrecto = res.respuesta === fraseData.respuesta;
+        return `
+          <div class="item-resultado ${esCorrecto ? "correcto" : "incorrecto"}">
+            <strong>${fraseData.texto}</strong><br/>
+            <em>${fraseData.explicacion}</em>
+          </div>
+        `;
+      }).join("");
+      contenedorResultados.innerHTML = resultadosHTML;
+    }
+  </script>
+</body>
+</html>
