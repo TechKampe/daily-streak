@@ -1,0 +1,293 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kämpe - Reto Diario</title>
+  <!-- Estilos básicos -->
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f3f4f6;
+      color: #333;
+      overflow: hidden;
+    }
+
+    header {
+      background: #4f46e5;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    header img {
+      max-width: 120px;
+      margin-bottom: 0.5rem;
+    }
+
+    main {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      height: calc(100vh - 150px);
+      overflow-y: auto;
+    }
+
+    .zones {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+    .drop-zone {
+      flex: 1;
+      min-width: 150px;
+      padding: 1rem;
+      margin: 0.5rem;
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
+      background: #fff;
+      transition: all 0.3s ease;
+    }
+
+    .drop-zone.hovered {
+      background-color: #e0e7ff;
+      border-color: #4f46e5;
+    }
+
+    .cards-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .card {
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 250px;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .card.dragging {
+      opacity: 0.5;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #resultContainer {
+      display: none;
+      max-width: 500px;
+      text-align: center;
+      margin: auto;
+    }
+
+    .result-item {
+      background: #ffffff;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-left: 5px solid #4f46e5;
+      border-radius: 5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .correct {
+      border-color: #10b981;
+    }
+
+    .incorrect {
+      border-color: #ef4444;
+    }
+
+    #finalize {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      main {
+        height: auto;
+        overflow-y: auto;
+      }
+
+      .card {
+        width: 90%;
+      }
+
+      .zones {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://framerusercontent.com/images/aj7apY8pEIRYiVKnYL2YqcR0Cys.png" alt="Logo Kämpe" />
+    <h1>¿Qué frases te ayudan o perjudican en tu búsqueda de empleo?</h1>
+  </header>
+  <main>
+    <div class="zones">
+      <div class="drop-zone" data-zone="me-ayuda">Me ayuda 👍</div>
+      <div class="drop-zone" data-zone="me-perjudica">Me perjudica 👎</div>
+    </div>
+
+    <div class="cards-container" id="cards">
+      <!-- Cartas interactivas -->
+    </div>
+
+    <button id="finalize">Finalizar</button>
+
+    <div id="resultContainer"></div>
+  </main>
+
+  <!-- Scripts -->
+  <script>
+    // Lista de frases con su clasificación correcta y explicación
+    const frases = [
+      {
+        texto: "Tengo buena actitud para trabajar en equipo.",
+        correcto: "me-ayuda",
+        explicacion: "Trabajar en equipo es una habilidad muy valorada en cualquier entorno laboral."
+      },
+      {
+        texto: "Llego tarde pero aviso.",
+        correcto: "me-perjudica",
+        explicacion: "La puntualidad es clave. Aunque avises, llegar tarde refleja falta de compromiso."
+      },
+      {
+        texto: "Estoy dispuesto a aprender cosas nuevas.",
+        correcto: "me-ayuda",
+        explicacion: "La disposición a aprender demuestra interés y adaptabilidad."
+      },
+      {
+        texto: "No me gusta seguir instrucciones.",
+        correcto: "me-perjudica",
+        explicacion: "Seguir instrucciones muestra respeto al proceso y a las jerarquías existentes."
+      },
+      {
+        texto: "Pido ayuda cuando no sé hacer algo.",
+        correcto: "me-ayuda",
+        explicacion: "Pedir ayuda refleja humildad y voluntad de mejorar."
+      },
+      {
+        texto: "No tengo experiencia, así que no me doy mucha importancia.",
+        correcto: "me-perjudica",
+        explicacion: "Tu actitud debe resaltar tus ganas de aprender y crecer, no subestimarte."
+      }
+    ];
+
+    let draggedCard = null;
+    const cardsContainer = document.getElementById('cards');
+    const resultContainer = document.getElementById('resultContainer');
+    const finalizeBtn = document.getElementById('finalize');
+
+    // Cargar cartas
+    frases.forEach((item, index) => {
+      const card = document.createElement('div');
+      card.classList.add('card');
+      card.setAttribute('draggable', true);
+      card.setAttribute('data-index', index);
+      card.innerText = item.texto;
+      cardsContainer.appendChild(card);
+    });
+
+    // Eventos de drag
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        draggedCard = card;
+        card.classList.add('dragging');
+        document.body.style.overflow = 'hidden'; // bloquear scroll en móvil
+      });
+
+      card.addEventListener('dragend', () => {
+        draggedCard = null;
+        card.classList.remove('dragging');
+        document.body.style.overflow = ''; // restaurar scroll
+      });
+    });
+
+    // Eventos de zona de soltado
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('hovered');
+      });
+
+      zone.addEventListener('dragleave', () => {
+        zone.classList.remove('hovered');
+      });
+
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if(draggedCard) {
+          draggedCard.setAttribute('data-dropped', zone.getAttribute('data-zone'));
+          draggedCard.style.background = '#e0e7ff';
+          zone.classList.remove('hovered');
+        }
+      });
+    });
+
+    // Botón "Finalizar"
+    finalizeBtn.addEventListener('click', () => {
+      const resultados = [];
+      document.querySelectorAll('.card').forEach(card => {
+        const index = card.getAttribute('data-index');
+        const seleccion = card.getAttribute('data-dropped');
+        const correcto = frases[index].correcto;
+        const esCorrecto = seleccion === correcto;
+        resultados.push({
+          texto: frases[index].texto,
+          esCorrecto,
+          explicacion: frases[index].explicacion
+        });
+      });
+
+      if (resultados.length < frases.length || resultados.some(r => r.esCorrecto === undefined)) {
+        alert("Arrastra todas las cartas antes de finalizar.");
+        return;
+      }
+
+      cardsContainer.classList.add('hidden');
+      finalizeBtn.classList.add('hidden');
+      resultContainer.innerHTML = "<h2>Resultados</h2>";
+      resultContainer.style.display = 'block';
+
+      resultados.forEach(r => {
+        const res = document.createElement('div');
+        res.classList.add('result-item');
+        res.classList.add(r.esCorrecto ? 'correct' : 'incorrect');
+        res.innerHTML = `<strong>${r.texto}</strong><br><em>${r.explicacion}</em>`;
+        resultContainer.appendChild(res);
+      });
+    });
+  </script>
+</body>
+</html>
