@@ -1,0 +1,313 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tarea de hoy - Kämpe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background-color: #1f294c;
+      color: #fff;
+      padding: 20px;
+      min-height: 100vh;
+      background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png');
+      background-repeat: no-repeat;
+      background-position: bottom right;
+      background-size: 40%;
+      background-blend-mode: lighten;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+
+    .logo {
+      height: 40px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #ffffff;
+      text-shadow: 2px 2px #000;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background-color: #2e3c68;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      transition: transform 0.2s ease;
+    }
+
+    .card p {
+      font-size: 1.1rem;
+    }
+
+    .decision-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .btn.ayuda {
+      background-color: #00c485;
+      color: #000;
+    }
+
+    .btn.perjudica {
+      background-color: #e94e77;
+      color: #fff;
+    }
+
+    .zones {
+      display: none;
+    }
+
+    .result-section {
+      background-color: #202b45;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 30px;
+    }
+
+    .result-item {
+      margin-bottom: 15px;
+    }
+
+    .result-item.correct {
+      color: #00ffae;
+    }
+
+    .result-item.incorrect {
+      color: #ff6f91;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      /* Drag and drop para escritorio */
+      .zones {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 30px;
+      }
+
+      .zone {
+        width: 45%;
+        min-height: 150px;
+        background-color: #2e3c68;
+        border: 2px dashed #8999e5;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: bold;
+        text-align: center;
+        padding: 10px;
+      }
+
+      .decision-buttons {
+        display: none;
+      }
+
+      .card.draggable {
+        cursor: grab;
+        user-select: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Kämpe logo" class="logo">
+    <h1>Tarea de hoy</h1>
+  </header>
+
+  <div class="container" id="game">
+    <!-- Cartas se cargarán aquí dinámicamente -->
+  </div>
+
+  <div class="zones" id="dropZones">
+    <div class="zone" data-zone="Me ayuda">Me ayuda</div>
+    <div class="zone" data-zone="Me perjudica">Me perjudica</div>
+  </div>
+
+  <div class="result-section hidden" id="result">
+    <h2>Resultados</h2>
+    <div id="resultContent"></div>
+  </div>
+
+  <script>
+    // Lista de frases y respuestas correctas
+    const frases = [
+      {
+        texto: "Llegar puntual al lugar de trabajo",
+        correcta: "Me ayuda",
+        explicacion: "Ser puntual muestra responsabilidad y compromiso con tu empleo."
+      },
+      {
+        texto: "Faltar sin avisar a tus turnos",
+        correcta: "Me perjudica",
+        explicacion: "No presentarte puede afectar la operación del equipo y tu reputación."
+      },
+      {
+        texto: "Aprender a usar nuevas herramientas",
+        correcta: "Me ayuda",
+        explicacion: "Adquirir habilidades nuevas te hace más valioso y versátil en tu trabajo."
+      },
+      {
+        texto: "Pelear con tus compañer@s frente a clientes",
+        correcta: "Me perjudica",
+        explicacion: "Respetar a los demás genera un mejor ambiente laboral y profesionalismo."
+      },
+      {
+        texto: "Usar ropa adecuada y limpia",
+        correcta: "Me ayuda",
+        explicacion: "La presentación personal es importante para transmitir seriedad."
+      }
+    ];
+
+    let respuestas = [];
+
+    const gameContainer = document.getElementById('game');
+    const resultSection = document.getElementById('result');
+    const resultContent = document.getElementById('resultContent');
+    const dropZones = document.querySelectorAll('.zone');
+
+    let currentCardIndex = 0;
+
+    function renderNextCard() {
+      gameContainer.innerHTML = '';
+      if (currentCardIndex >= frases.length) {
+        mostrarResultados();
+        return;
+      }
+
+      const data = frases[currentCardIndex];
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.draggable = true;
+      card.setAttribute('data-index', currentCardIndex);
+
+      const texto = document.createElement('p');
+      texto.textContent = data.texto;
+
+      const buttons = document.createElement('div');
+      buttons.className = 'decision-buttons';
+
+      const btnAyuda = document.createElement('button');
+      btnAyuda.className = 'btn ayuda';
+      btnAyuda.textContent = 'Me ayuda';
+      btnAyuda.onclick = () => registrarRespuesta("Me ayuda");
+
+      const btnPerjudica = document.createElement('button');
+      btnPerjudica.className = 'btn perjudica';
+      btnPerjudica.textContent = 'Me perjudica';
+      btnPerjudica.onclick = () => registrarRespuesta("Me perjudica");
+
+      buttons.appendChild(btnAyuda);
+      buttons.appendChild(btnPerjudica);
+
+      card.appendChild(texto);
+      card.appendChild(buttons);
+
+      if (window.innerWidth >= 768) {
+        // Desktop drag
+        card.classList.add('draggable');
+        card.addEventListener('dragstart', e => {
+          e.dataTransfer.setData("text/plain", currentCardIndex);
+        });
+      }
+
+      gameContainer.appendChild(card);
+    }
+
+    dropZones.forEach(zone => {
+      zone.addEventListener('dragover', e => {
+        e.preventDefault();
+      });
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        const selection = zone.getAttribute('data-zone');
+        registrarRespuesta(selection);
+      });
+    });
+
+    function registrarRespuesta(respuesta) {
+      const data = frases[currentCardIndex];
+      respuestas.push({
+        texto: data.texto,
+        seleccion: respuesta,
+        correcta: data.correcta,
+        explicacion: data.explicacion
+      });
+      currentCardIndex++;
+      renderNextCard();
+    }
+
+    function mostrarResultados() {
+      gameContainer.innerHTML = '';
+      document.getElementById('dropZones').classList.add('hidden');
+      resultSection.classList.remove('hidden');
+      resultContent.innerHTML = '';
+
+      respuestas.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'result-item ' + (r.seleccion === r.correcta ? 'correct' : 'incorrect');
+        item.innerHTML = `
+          <strong>Frase:</strong> ${r.texto}<br>
+          <strong>Tu respuesta:</strong> ${r.seleccion}<br>
+          <strong>Respuesta correcta:</strong> ${r.correcta}<br>
+          <em>${r.explicacion}</em>
+        `;
+        resultContent.appendChild(item);
+      });
+    }
+
+    renderNextCard();
+  </script>
+</body>
+</html>
