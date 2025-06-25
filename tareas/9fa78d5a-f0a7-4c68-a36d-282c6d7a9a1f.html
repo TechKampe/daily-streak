@@ -1,0 +1,258 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tarea de hoy - Kämpe</title>
+  <!-- Manrope Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* Variables de diseño */
+    :root {
+      --azul-fondo: #1e2e5a;
+      --azul-oscuro: #152040;
+      --verde: #48e5c2;
+      --rojo: #ff4a4a;
+      --blanco: #ffffff;
+      --gris-claro: #d4d4d4;
+      --bordes: #5c8aff;
+    }
+
+    /* Estilos base */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background-color: var(--azul-fondo);
+      color: var(--blanco);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png');
+      background-repeat: no-repeat;
+      background-position: bottom right;
+      background-size: contain;
+    }
+
+    #logo {
+      width: 120px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: var(--blanco);
+      margin-bottom: 10px;
+    }
+
+    .game-container {
+      background-color: var(--azul-oscuro);
+      border: 3px solid var(--bordes);
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .card {
+      background-color: #2c3e73;
+      border: 2px solid var(--bordes);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px 0;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .choice-buttons {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 10px;
+    }
+
+    .btn {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.3s;
+    }
+
+    .btn-help {
+      background-color: var(--verde);
+      color: var(--azul-oscuro);
+    }
+
+    .btn-hurt {
+      background-color: var(--rojo);
+      color: var(--blanco);
+    }
+
+    .btn-help:hover {
+      background-color: #36c8a9;
+    }
+
+    .btn-hurt:hover {
+      background-color: #e03636;
+    }
+
+    .result {
+      margin-top: 20px;
+    }
+
+    .result-item {
+      margin-bottom: 15px;
+      background-color: #223366;
+      border-radius: 10px;
+      padding: 12px;
+      border: 2px solid #444a8f;
+    }
+
+    .correct {
+      border-left: 5px solid var(--verde);
+    }
+
+    .incorrect {
+      border-left: 5px solid var(--rojo);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #final-btn {
+      margin-top: 20px;
+      background-color: var(--bordes);
+      color: var(--blanco);
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Logo de Kampe -->
+  <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" id="logo" alt="Logo Kämpe">
+
+  <!-- Título -->
+  <h1>Tarea de hoy</h1>
+
+  <!-- Contenedor principal del juego -->
+  <div class="game-container" id="game">
+
+    <!-- Contenedor de la carta de frase -->
+    <div id="sentenceCard" class="card">
+      <!-- Texto dinámico de la frase -->
+    </div>
+
+    <!-- Botones para elegir opción -->
+    <div class="choice-buttons">
+      <button class="btn btn-help" onclick="answer('help')">Me ayuda</button>
+      <button class="btn btn-hurt" onclick="answer('hurt')">Me perjudica</button>
+    </div>
+
+    <!-- Botón para ver resultados -->
+    <button id="final-btn" class="btn hidden" onclick="showResults()">Ver resultados</button>
+
+    <!-- Resultados -->
+    <div id="results" class="result hidden"></div>
+  </div>
+
+  <script>
+    // Listado de frases y sus respuestas correctas
+    const sentences = [
+      {
+        text: "Llego siempre puntual a mi puesto de trabajo.",
+        correct: "help",
+        explanation: "La puntualidad demuestra responsabilidad y compromiso, cualidades muy valoradas en cualquier oficio."
+      },
+      {
+        text: "Evito usar equipo de protección para terminar más rápido.",
+        correct: "hurt",
+        explanation: "No usar protección pone en riesgo tu salud y la seguridad del equipo de trabajo."
+      },
+      {
+        text: "Me esfuerzo por aprender nuevas herramientas o técnicas.",
+        correct: "help",
+        explanation: "Estar actualizado con nuevas prácticas te hace más competitivo y valioso profesionalmente."
+      },
+      {
+        text: "Discuto con frecuencia con mis compañeros de trabajo.",
+        correct: "hurt",
+        explanation: "El trabajo en equipo es vital. Los conflictos constantes afectan el ambiente y tu empleabilidad."
+      },
+      {
+        text: "Pido ayuda cuando no sé cómo hacer algo.",
+        correct: "help",
+        explanation: "Reconocer que no sabes algo y buscar ayuda demuestra humildad y deseo de aprender."
+      }
+    ];
+
+    let current = 0;
+    let userAnswers = [];
+
+    const sentenceCard = document.getElementById('sentenceCard');
+    const resultsContainer = document.getElementById('results');
+    const finalBtn = document.getElementById('final-btn');
+
+    // Mostrar la primera frase
+    function loadSentence() {
+      if (current < sentences.length) {
+        sentenceCard.textContent = sentences[current].text;
+      } else {
+        sentenceCard.classList.add('hidden');
+        finalBtn.classList.remove('hidden');
+      }
+    }
+
+    // Guardar la respuesta del usuario
+    function answer(choice) {
+      if (current >= sentences.length) return;
+      userAnswers.push({ 
+        choice: choice, 
+        correct: sentences[current].correct, 
+        text: sentences[current].text, 
+        explanation: sentences[current].explanation 
+      });
+      current++;
+      loadSentence();
+    }
+
+    // Mostrar resultados
+    function showResults() {
+      finalBtn.classList.add('hidden');
+      resultsContainer.classList.remove('hidden');
+      resultsContainer.innerHTML = "<h2>Tu resultado:</h2>";
+
+      userAnswers.forEach(ans => {
+        const div = document.createElement('div');
+        div.classList.add('result-item');
+        div.classList.add(ans.choice === ans.correct ? 'correct' : 'incorrect');
+
+        div.innerHTML = `
+          <p><strong>Frase:</strong> ${ans.text}</p>
+          <p><strong>Tu respuesta:</strong> ${ans.choice === 'help' ? 'Me ayuda' : 'Me perjudica'}</p>
+          <p><strong>${ans.choice === ans.correct ? '✅ Correcto' : '❌ Incorrecto'}</strong></p>
+          <p><em>${ans.explanation}</em></p>
+        `;
+        resultsContainer.appendChild(div);
+      });
+    }
+
+    // Inicio
+    loadSentence();
+  </script>
+</body>
+</html>
