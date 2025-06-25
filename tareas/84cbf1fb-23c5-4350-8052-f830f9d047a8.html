@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tarea de hoy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Manrope', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: linear-gradient(to bottom, #1e3c72, #2a5298); /* estilo Fortnite */
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      height: 40px;
+    }
+
+    .titulo {
+      font-size: 28px;
+      font-weight: 800;
+      text-shadow: 2px 2px #000;
+    }
+
+    .avatar {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      max-height: 45%;
+      opacity: 0.7;
+    }
+
+    .contenedor-principal {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      position: relative;
+    }
+
+    .zona-juego {
+      width: 100%;
+      max-width: 600px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 2px solid #fff;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .carta {
+      background-color: #1e90ff;
+      padding: 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 18px;
+      color: #fff;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .botones-carta {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 12px;
+    }
+
+    .zona-botones {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      color: white;
+      background-color: #38bdf8;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .btn:hover {
+      background-color: #0ea5e9;
+    }
+
+    .btn:disabled {
+      background-color: #888;
+      cursor: not-allowed;
+    }
+
+    .resultado {
+      margin-top: 20px;
+      background-color: rgba(0,0,0,0.5);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .respuesta {
+      margin-bottom: 12px;
+    }
+
+    .correcto {
+      color: #4ade80;
+    }
+
+    .incorrecto {
+      color: #f87171;
+    }
+
+    @media (max-width: 600px) {
+      .titulo {
+        font-size: 22px;
+      }
+      .carta {
+        font-size: 16px;
+      }
+      .btn {
+        font-size: 14px;
+        padding: 8px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Cabecera con logo y título -->
+  <header>
+    <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Logo Kämpe" class="logo">
+    <div class="titulo">🛠️ Tarea de hoy</div>
+  </header>
+
+  <!-- Avatar personaje -->
+  <img src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Personaje" class="avatar">
+
+  <!-- Contenedor principal -->
+  <main class="contenedor-principal">
+    <div class="zona-juego" id="zonaJuego">
+      <!-- Se insertarán las cartas dinámicamente aquí -->
+    </div>
+    <div id="zonaResultado" class="resultado" style="display:none;"></div>
+  </main>
+
+  <!-- Script de lógica -->
+  <script>
+    // Lista de frases con respuestas correctas y explicaciones
+    const frases = [
+      {
+        texto: "Llegar puntual al trabajo todos los días.",
+        correcta: "ayuda",
+        explicacion: "La puntualidad es muy valorada en cualquier oficio, muestra compromiso y seriedad."
+      },
+      {
+        texto: "Hablar mal de los compañeros durante el almuerzo.",
+        correcta: "perjudica",
+        explicacion: "Generar un ambiente negativo puede afectar el trabajo en equipo y tu reputación."
+      },
+      {
+        texto: "Usar el equipo de protección personal correctamente.",
+        correcta: "ayuda",
+        explicacion: "La seguridad es esencial en los oficios técnicos. Usar protección demuestra responsabilidad."
+      },
+      {
+        texto: "Ignorar las instrucciones del supervisor.",
+        correcta: "perjudica",
+        explicacion: "No seguir instrucciones puede poner en riesgo el trabajo y tu lugar en el equipo."
+      },
+      {
+        texto: "Ofrecerse para ayudar en tareas adicionales.",
+        correcta: "ayuda",
+        explicacion: "Muestra iniciativa y disposición, cualidades muy valoradas en el entorno laboral."
+      }
+    ];
+
+    let indice = 0;
+    let respuestas = [];
+
+    const zonaJuego = document.getElementById('zonaJuego');
+    const zonaResultado = document.getElementById('zonaResultado');
+
+    // Inicializar juego
+    function mostrarSiguienteCarta() {
+      zonaJuego.innerHTML = "";
+
+      if (indice >= frases.length) {
+        mostrarResultados();
+        return;
+      }
+
+      const frase = frases[indice];
+
+      const carta = document.createElement('div');
+      carta.className = 'carta';
+      carta.innerHTML = `
+        ${frase.texto}
+        <div class="botones-carta">
+          <button class="btn" onclick="responder('ayuda')">👍 Me ayuda</button>
+          <button class="btn" onclick="responder('perjudica')">👎 Me perjudica</button>
+        </div>
+      `;
+
+      zonaJuego.appendChild(carta);
+    }
+
+    // Procesar respuesta del usuario
+    function responder(respuestaUsuario) {
+      respuestas.push({
+        ...frases[indice],
+        usuario: respuestaUsuario
+      });
+
+      indice++;
+      mostrarSiguienteCarta();
+    }
+
+    // Mostrar resultados y retroalimentación
+    function mostrarResultados() {
+      zonaJuego.style.display = 'none';
+      zonaResultado.style.display = 'block';
+      zonaResultado.innerHTML = `<h3>📝 Resultados</h3>`;
+
+      respuestas.forEach((resp, i) => {
+        const esCorrecta = resp.usuario === resp.correcta;
+        const div = document.createElement('div');
+        div.className = 'respuesta';
+        div.innerHTML = `
+          <strong>${i + 1}. ${resp.texto}</strong><br/>
+          <span class="${esCorrecta ? "correcto" : "incorrecto"}">
+            Tu respuesta: ${resp.usuario === "ayuda" ? "Me ayuda" : "Me perjudica"} - ${esCorrecta ? "✅ Correcto" : "❌ Incorrecto"}
+          </span>
+          <p>${resp.explicacion}</p>
+        `;
+        zonaResultado.appendChild(div);
+      });
+
+      const btnReiniciar = document.createElement("button");
+      btnReiniciar.className = "btn";
+      btnReiniciar.textContent = "🔁 Intentar de nuevo";
+      btnReiniciar.onclick = () => window.location.reload();
+      zonaResultado.appendChild(btnReiniciar);
+    }
+
+    // Iniciar actividad
+    mostrarSiguienteCarta();
+  </script>
+</body>
+</html>
