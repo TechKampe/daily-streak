@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tarea de hoy - Kämpe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Estilos generales */
+    body {
+      margin: 0;
+      font-family: 'Manrope', sans-serif;
+      background-color: #1E2A78; /* Azul tipo Fortnite */
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background-color: rgba(0,0,0,0.3);
+    }
+
+    header img.logo {
+      height: 40px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      text-align: center;
+      margin: 1rem 0;
+    }
+
+    main {
+      width: 100%;
+      max-width: 600px;
+      padding: 1rem;
+      z-index: 2;
+    }
+
+    .card-container {
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 2px solid #00FFFF;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .card {
+      font-size: 1.1rem;
+      padding: 1rem;
+      background-color: #2C3D9F;
+      border: 1px solid #00FFFF;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-around;
+      gap: 1rem;
+    }
+
+    .choice-button {
+      flex: 1;
+      font-size: 1rem;
+      padding: 0.6rem;
+      background-color: #00FFFF;
+      color: #1E2A78;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .choice-button:hover {
+      background-color: #00cccc;
+    }
+
+    .results {
+      background-color: rgba(0, 0, 0, 0.4);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-top: 2rem;
+    }
+
+    .result-item {
+      margin-bottom: 1rem;
+      border-left: 4px solid #00FFFF;
+      padding-left: 1rem;
+    }
+
+    .correct {
+      color: #00FF88;
+    }
+
+    .wrong {
+      color: #FF4E4E;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Fondo Avatar */
+    .avatar-bg {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 40%;
+      opacity: 0.3;
+      z-index: 0;
+    }
+
+    @media (max-width: 600px) {
+      .avatar-bg {
+        width: 60%;
+      }
+
+      .card {
+        font-size: 1rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" class="logo" alt="Kämpe Logo">
+  </header>
+
+  <h1>🛠️ Tarea de hoy</h1>
+
+  <main>
+    <div class="card-container" id="card-container">
+      <div class="card" id="card-text">...</div>
+      <div class="buttons">
+        <button class="choice-button" onclick="choose('me_ayuda')">👍 Me ayuda</button>
+        <button class="choice-button" onclick="choose('me_perjudica')">👎 Me perjudica</button>
+      </div>
+    </div>
+
+    <div class="results hidden" id="results">
+      <h2>📊 Resultados</h2>
+      <div id="results-list"></div>
+    </div>
+  </main>
+
+  <!-- Avatar como fondo -->
+  <img src="https://techkampe.github.io/daily-streak/assets/Avatar 3_low.png" class="avatar-bg" alt="Avatar">
+
+  <script>
+    // Frases del reto y sus respuestas correctas
+    const cards = [
+      {
+        text: "Llego temprano al trabajo y siempre estoy preparado.",
+        correct: "me_ayuda",
+        explanation: "Ser puntual y estar preparado demuestra compromiso y responsabilidad, lo cual es muy valorado."
+      },
+      {
+        text: "Me quejo constantemente delante de mis compañeros.",
+        correct: "me_perjudica",
+        explanation: "Quejarse de forma constante crea mal ambiente y puede perjudicar tu imagen profesional."
+      },
+      {
+        text: "Aprendo nuevas herramientas para hacer mejor mi trabajo.",
+        correct: "me_ayuda",
+        explanation: "Formarte de forma continua te hace más valioso en tu oficio y abre nuevas oportunidades."
+      },
+      {
+        text: "Siempre dejo las tareas para el último momento.",
+        correct: "me_perjudica",
+        explanation: "La procrastinación puede causar errores y una mala reputación laboral."
+      },
+      {
+        text: "Colaboro con mis compañeros y doy ideas para mejorar el servicio.",
+        correct: "me_ayuda",
+        explanation: "Demostrar iniciativa y trabajo en equipo te hace destacar positivamente."
+      }
+    ];
+
+    let currentCard = 0;
+    const userChoices = [];
+
+    const cardText = document.getElementById('card-text');
+    const cardContainer = document.getElementById('card-container');
+    const resultsContainer = document.getElementById('results');
+    const resultsList = document.getElementById('results-list');
+
+    function loadCard() {
+      if (currentCard >= cards.length) {
+        showResults();
+        return;
+      }
+      cardText.textContent = cards[currentCard].text;
+    }
+
+    function choose(choice) {
+      userChoices.push({
+        choice: choice,
+        correct: cards[currentCard].correct,
+        text: cards[currentCard].text,
+        explanation: cards[currentCard].explanation
+      });
+      currentCard++;
+      loadCard();
+    }
+
+    function showResults() {
+      cardContainer.classList.add('hidden');
+      resultsContainer.classList.remove('hidden');
+
+      userChoices.forEach((response, index) => {
+        const item = document.createElement('div');
+        item.classList.add('result-item');
+        const isCorrect = response.choice === response.correct;
+        item.classList.add(isCorrect ? 'correct' : 'wrong');
+        item.innerHTML = `
+          <strong>${response.text}</strong><br/>
+          <em>${isCorrect ? "✅ Correcto" : "❌ Incorrecto"}</em><br/>
+          ${response.explanation}
+        `;
+        resultsList.appendChild(item);
+      });
+    }
+
+    // Iniciar
+    loadCard();
+  </script>
+
+</body>
+</html>
