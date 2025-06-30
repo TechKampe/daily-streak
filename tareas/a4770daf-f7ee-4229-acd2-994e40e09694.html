@@ -1,0 +1,283 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Desafío Diario - Kämpe</title>
+  <!-- Fuente Manrope -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset básico */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background: #1f2e60;
+      color: #fff;
+      padding: 20px;
+      background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png');
+      background-repeat: no-repeat;
+      background-position: bottom right;
+      background-size: 200px;
+    }
+
+    /* Logo */
+    .logo {
+      width: 150px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+      color: #ffffff;
+      text-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #2b3f8a;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+    }
+
+    .instructions {
+      margin-bottom: 20px;
+      font-size: 1rem;
+      font-weight: 400;
+      color: #d0d8ff;
+    }
+
+    .cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: #3b51b2;
+      border-radius: 10px;
+      padding: 15px;
+      width: 100%;
+      max-width: 300px;
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+      transform: scale(1.02);
+    }
+
+    .card-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      background: #00c2ff;
+      color: #000;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      background: #00e3ff;
+    }
+
+    .result-section {
+      display: none;
+      background: #121b3e;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 30px;
+    }
+
+    .result-section h2 {
+      font-size: 1.5rem;
+      color: #00ffcc;
+      margin-bottom: 15px;
+    }
+
+    .result-item {
+      margin-bottom: 15px;
+      padding: 10px;
+      background: #223374;
+      border-left: 5px solid #00c2ff;
+      border-radius: 6px;
+    }
+
+    .correct {
+      border-left-color: #00ff98;
+    }
+
+    .incorrect {
+      border-left-color: #ff4c4c;
+    }
+
+    @media (min-width: 600px) {
+      .cards {
+        flex-wrap: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Kämpe Logo" class="logo" />
+
+  <div class="container">
+    <h1>🔥 Tarea de hoy</h1>
+    <p class="instructions">Arrastra cada carta hacia "Me ayuda" o "Me perjudica". En móviles, pulsa el botón correspondiente debajo de cada frase.</p>
+
+    <div class="cards" id="cardContainer">
+      <!-- Las cartas se renderizan con JS -->
+    </div>
+
+    <div class="result-section" id="resultSection">
+      <h2>🔍 Resultados</h2>
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <script>
+    // Datos de las cartas
+    const phrases = [
+      {
+        text: "Llego a tiempo y cumplo con mis horarios",
+        correct: "help",
+        explanation: "La puntualidad demuestra compromiso y profesionalismo."
+      },
+      {
+        text: "Critico a mis compañeros frente a otros",
+        correct: "harm",
+        explanation: "Esto crea un mal ambiente y daña el trabajo en equipo."
+      },
+      {
+        text: "Estoy dispuesto a aprender nuevas herramientas",
+        correct: "help",
+        explanation: "La actitud positiva hacia el aprendizaje es clave para crecer."
+      },
+      {
+        text: "Evito tomar responsabilidades difíciles",
+        correct: "harm",
+        explanation: "Evitar retos puede frenar tu desarrollo profesional."
+      },
+      {
+        text: "Pido ayuda cuando no entiendo algo",
+        correct: "help",
+        explanation: "Buscar apoyo demuestra humildad y deseo de mejorar."
+      }
+    ];
+
+    const cardContainer = document.getElementById("cardContainer");
+    const resultSection = document.getElementById("resultSection");
+    const resultsDiv = document.getElementById("results");
+
+    let responses = [];
+
+    // Renderiza las cartas
+    function renderCards() {
+      phrases.forEach((phrase, index) => {
+        const card = document.createElement("div");
+        card.classList.add("card");
+
+        const phraseText = document.createElement("p");
+        phraseText.textContent = phrase.text;
+
+        const buttons = document.createElement("div");
+        buttons.classList.add("card-buttons");
+
+        const btnHelp = document.createElement("button");
+        btnHelp.classList.add("btn");
+        btnHelp.textContent = "Me ayuda";
+        btnHelp.onclick = () => handleAnswer(index, "help");
+
+        const btnHarm = document.createElement("button");
+        btnHarm.classList.add("btn");
+        btnHarm.textContent = "Me perjudica";
+        btnHarm.onclick = () => handleAnswer(index, "harm");
+
+        buttons.appendChild(btnHelp);
+        buttons.appendChild(btnHarm);
+
+        card.appendChild(phraseText);
+        card.appendChild(buttons);
+        cardContainer.appendChild(card);
+      });
+    }
+
+    // Maneja la elección del usuario
+    function handleAnswer(index, choice) {
+      // Evita múltiples respuestas por carta
+      if (responses[index]) return;
+
+      responses[index] = choice;
+
+      // Deshabilita los botones
+      const card = cardContainer.children[index];
+      const buttons = card.querySelectorAll("button");
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = 0.5;
+        if (
+          (choice === "help" && btn.textContent === "Me ayuda") ||
+          (choice === "harm" && btn.textContent === "Me perjudica")
+        ) {
+          btn.style.border = "2px solid #fff";
+        }
+      });
+
+      // Si ya respondió a todas
+      if (responses.filter(r => r).length === phrases.length) {
+        showResults();
+      }
+    }
+
+    // Muestra los resultados con feedback
+    function showResults() {
+      resultSection.style.display = "block";
+      resultsDiv.innerHTML = "";
+
+      phrases.forEach((phrase, index) => {
+        const resultItem = document.createElement("div");
+        resultItem.classList.add("result-item");
+
+        const isCorrect = phrase.correct === responses[index];
+        if (isCorrect) {
+          resultItem.classList.add("correct");
+        } else {
+          resultItem.classList.add("incorrect");
+        }
+
+        resultItem.innerHTML = `
+          <strong>${phrase.text}</strong><br />
+          <em>${isCorrect ? "✅ Correcto" : "❌ Incorrecto"}:</em> ${phrase.explanation}
+        `;
+
+        resultsDiv.appendChild(resultItem);
+      });
+    }
+
+    renderCards();
+  </script>
+</body>
+</html>
