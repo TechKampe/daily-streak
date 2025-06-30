@@ -1,0 +1,269 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tarea de hoy - Kämpe</title>
+  <!-- Fuente Manrope -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <!-- Estilos -->
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Manrope', sans-serif;
+      background: #183C65; /* Fondo azul tipo Fortnite */
+      color: white;
+      overflow-x: hidden;
+    }
+
+    #app {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      position: relative;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .character-bg {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 50%;
+      opacity: 0.2;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin: 20px 0;
+      z-index: 1;
+      position: relative;
+    }
+
+    .card {
+      background: #2F6FFF;
+      border: 2px solid #70A4FF;
+      border-radius: 15px;
+      padding: 20px;
+      width: 250px;
+      max-width: 90vw;
+      font-size: 1rem;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease;
+    }
+
+    .card-buttons {
+      margin-top: 15px;
+      display: flex;
+      justify-content: space-around;
+      gap: 10px;
+    }
+
+    button {
+      flex: 1;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 600;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .btn-ayuda {
+      background: #00E0A2;
+      color: #002A23;
+    }
+
+    .btn-perjudica {
+      background: #FF5B5B;
+      color: #3A0000;
+    }
+
+    .results {
+      margin-top: 30px;
+    }
+
+    .result-item {
+      background: #102B4C;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 10px 0;
+      border-left: 5px solid;
+    }
+
+    .correct {
+      border-color: #00E0A2;
+    }
+
+    .incorrect {
+      border-color: #FF5B5B;
+    }
+
+    .result-item p {
+      margin: 5px 0;
+    }
+
+    @media (min-width: 768px) {
+      .drag-zones {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+      }
+
+      .drop-zone {
+        width: 45%;
+        min-height: 150px;
+        background: rgba(255,255,255,0.1);
+        border: 2px dashed white;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+        color: #ffffffbb;
+      }
+    }
+
+    .hidden {
+      display: none;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Header con logo -->
+    <header>
+      <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Kämpe Logo"/>
+    </header>
+
+    <!-- Título -->
+    <h1>🔥 Tarea de hoy</h1>
+    <p style="text-align:center;font-weight:600;">¿Qué cosas te ayudan o te perjudican en tu camino profesional?</p>
+    
+    <!-- Contenedor de cartas -->
+    <div class="card-container" id="cardContainer"></div>
+
+    <!-- Resultados -->
+    <div class="results hidden" id="results"></div>
+
+    <!-- Imagen de personaje -->
+    <img class="character-bg" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="Avatar" />
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // Preguntas y respuestas
+    const phrases = [
+      {
+        text: "Llego puntual al trabajo todos los días.",
+        correct: "Me ayuda",
+        explanation: "La puntualidad demuestra responsabilidad y compromiso con tu trabajo."
+      },
+      {
+        text: "Falto sin avisar ni justificar.",
+        correct: "Me perjudica",
+        explanation: "Faltar sin avisar afecta tu imagen profesional y puede traerte sanciones."
+      },
+      {
+        text: "Aprendo nuevas herramientas que pueden mejorar mi rendimiento.",
+        correct: "Me ayuda",
+        explanation: "Aprender cosas nuevas te hace más valioso y competitivo."
+      },
+      {
+        text: "Hablo mal de mis compañeros durante el trabajo.",
+        correct: "Me perjudica",
+        explanation: "El mal ambiente laboral afecta tu relación con el equipo y puede perjudicarte."
+      },
+      {
+        text: "Tomo iniciativa para resolver problemas.",
+        correct: "Me ayuda",
+        explanation: "Demostrar iniciativa es una cualidad muy valorada por los empleadores."
+      }
+    ];
+
+    let currentIndex = 0;
+    const container = document.getElementById('cardContainer');
+    const resultContainer = document.getElementById('results');
+    const userAnswers = [];
+
+    function renderCards() {
+      container.innerHTML = '';
+      if (currentIndex >= phrases.length) {
+        showResults();
+        return;
+      }
+
+      const phrase = phrases[currentIndex];
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div>${phrase.text}</div>
+        <div class="card-buttons">
+          <button class="btn-ayuda">Me ayuda</button>
+          <button class="btn-perjudica">Me perjudica</button>
+        </div>
+      `;
+      const [btnAyuda, btnPerjudica] = card.querySelectorAll('button');
+      btnAyuda.addEventListener('click', () => handleAnswer("Me ayuda"));
+      btnPerjudica.addEventListener('click', () => handleAnswer("Me perjudica"));
+      container.appendChild(card);
+    }
+
+    function handleAnswer(selection) {
+      userAnswers.push({
+        phrase: phrases[currentIndex],
+        userChoice: selection
+      });
+      currentIndex++;
+      renderCards();
+    }
+
+    function showResults() {
+      container.classList.add('hidden');
+      resultContainer.classList.remove('hidden');
+      resultContainer.innerHTML = '<h2>🧠 Resultados:</h2>';
+      userAnswers.forEach(({ phrase, userChoice }) => {
+        const isCorrect = userChoice === phrase.correct;
+        const item = document.createElement('div');
+        item.className = `result-item ${isCorrect ? 'correct' : 'incorrect'}`;
+        item.innerHTML = `
+          <p><strong>Frase:</strong> ${phrase.text}</p>
+          <p><strong>Tu respuesta:</strong> ${userChoice}</p>
+          <p><strong>${isCorrect ? "✅ ¡Correcto!" : "❌ Incorrecto"}:</strong> ${phrase.explanation}</p>
+        `;
+        resultContainer.appendChild(item);
+      });
+    }
+
+    // Inicia la actividad
+    renderCards();
+  </script>
+</body>
+</html>
