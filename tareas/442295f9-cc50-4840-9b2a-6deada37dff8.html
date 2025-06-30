@@ -1,0 +1,335 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tarea de hoy - Kämpe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset básico */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: 'Manrope', sans-serif;
+      background: linear-gradient(#1b2cff, #2730ff);
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body {
+      background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png');
+      background-repeat: no-repeat;
+      background-size: 300px;
+      background-position: bottom right;
+      background-blend-mode: lighten;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background-color: rgba(255,255,255,0.05);
+      border-bottom: 2px solid rgba(255,255,255,0.2);
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: white;
+    }
+
+    main {
+      padding: 1.5rem;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .card-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .card {
+      background-color: #ffffff10;
+      border: 2px solid #ffffff30;
+      backdrop-filter: blur(5px);
+      padding: 1rem;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      cursor: grab;
+      transition: transform 0.2s ease;
+    }
+
+    .card.dragging {
+      opacity: 0.5;
+    }
+
+    .zones {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .zone {
+      flex: 1 1 45%;
+      min-height: 100px;
+      border: 2px dashed #ffffff40;
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      color: #fff;
+      font-weight: 600;
+      background-color: rgba(0,0,0,0.1);
+    }
+
+    .buttons-mobile {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      background-color: #00e0ff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #000220;
+      transition: background 0.3s ease;
+    }
+
+    .btn:hover {
+      background-color: #12f0ff;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .results {
+      margin-top: 2rem;
+    }
+
+    .result-item {
+      background-color: rgba(255,255,255,0.1);
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .correct {
+      border-left: 6px solid #58ff90;
+    }
+
+    .incorrect {
+      border-left: 6px solid #ff6670;
+    }
+
+    @media (max-width: 768px) {
+      .zones {
+        flex-direction: column;
+      }
+
+      .buttons-mobile {
+        justify-content: space-around;
+      }
+
+      .zone {
+        font-size: 1rem;
+      }
+
+      .card {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Encabezado con logo -->
+  <header>
+    <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Kämpe logo">
+    <h1>Tarea de hoy</h1>
+  </header>
+
+  <!-- Contenido principal -->
+  <main>
+    <p><strong>Desliza cada carta a la categoría correcta:</strong> ¿Esto te ayuda o te perjudica como profesional?</p>
+
+    <div class="card-container" id="cardContainer">
+      <!-- Cartas interactivas -->
+    </div>
+
+    <!-- Controles desktop -->
+    <div class="zones" id="zonesDesktop">
+      <div class="zone" data-category="Me ayuda">🟢 Me ayuda</div>
+      <div class="zone" data-category="Me perjudica">🔴 Me perjudica</div>
+    </div>
+
+    <!-- Controles móviles -->
+    <div id="mobileControls" class="buttons-mobile hidden">
+      <button class="btn" onclick="vote('Me ayuda')">🟢 Me ayuda</button>
+      <button class="btn" onclick="vote('Me perjudica')">🔴 Me perjudica</button>
+    </div>
+
+    <!-- Botón finalizar -->
+    <div style="text-align:center; margin-top:2rem;">
+      <button class="btn" onclick="finish()">Finalizar</button>
+    </div>
+
+    <!-- Resultados -->
+    <div class="results hidden" id="results"></div>
+  </main>
+
+  <script>
+    // Definir cartas y respuestas
+    const phrases = [
+      {
+        text: "Llego puntual todos los días al taller.",
+        correct: "Me ayuda",
+        explanation: "Ser puntual demuestra compromiso y responsabilidad."
+      },
+      {
+        text: "Hablo mal de mis compañeros frente a otros.",
+        correct: "Me perjudica",
+        explanation: "Hablar mal de otros afecta el ambiente laboral y tu imagen."
+      },
+      {
+        text: "Estoy dispuesto a aprender nuevas habilidades.",
+        correct: "Me ayuda",
+        explanation: "La disposición para aprender es clave para mejorar."
+      },
+      {
+        text: "Rechazo tareas que no me gustan sin preguntar.",
+        correct: "Me perjudica",
+        explanation: "La falta de flexibilidad puede hacerte perder oportunidades."
+      },
+      {
+        text: "Sigo las normas de seguridad en todo momento.",
+        correct: "Me ayuda",
+        explanation: "Cumplir normas protege tu salud y muestra profesionalismo."
+      }
+    ];
+
+    const cardContainer = document.getElementById('cardContainer');
+    const mobileControls = document.getElementById('mobileControls');
+    const resultsContainer = document.getElementById('results');
+    const zonesDesktop = document.getElementById('zonesDesktop');
+
+    let currentCardIndex = 0;
+    let userAnswers = [];
+
+    const isMobile = window.innerWidth <= 768;
+
+    // Inicializar UI con cartas (una por una en móvil)
+    function initUI() {
+      if (isMobile) {
+        showCardMobile(currentCardIndex);
+        mobileControls.classList.remove('hidden');
+        zonesDesktop.classList.add('hidden');
+      } else {
+        phrases.forEach((item, index) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.draggable = true;
+          card.textContent = item.text;
+          card.dataset.index = index;
+          cardContainer.appendChild(card);
+        });
+        initDragAndDrop();
+      }
+    }
+
+    // Drag & Drop solo para desktop
+    function initDragAndDrop() {
+      const cards = document.querySelectorAll('.card');
+      const zones = document.querySelectorAll('.zone');
+
+      cards.forEach(card => {
+        card.addEventListener('dragstart', e => {
+          card.classList.add('dragging');
+          e.dataTransfer.setData("text/plain", card.dataset.index);
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+        });
+      });
+
+      zones.forEach(zone => {
+        zone.addEventListener('dragover', e => e.preventDefault());
+        zone.addEventListener('drop', e => {
+          e.preventDefault();
+          const index = e.dataTransfer.getData("text/plain");
+          userAnswers[index] = zone.dataset.category;
+          const card = document.querySelector(`.card[data-index='${index}']`);
+          card.style.display = 'none';
+        });
+      });
+    }
+
+    // Mostrar carta en móvil
+    function showCardMobile(index) {
+      cardContainer.innerHTML = '';
+      if (index < phrases.length) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.textContent = phrases[index].text;
+        cardContainer.appendChild(card);
+      }
+    }
+
+    // Guardar voto en móvil
+    function vote(option) {
+      userAnswers[currentCardIndex] = option;
+      currentCardIndex++;
+      if (currentCardIndex < phrases.length) {
+        showCardMobile(currentCardIndex);
+      } else {
+        finish();
+      }
+    }
+
+    // Mostrar resultados
+    function finish() {
+      cardContainer.innerHTML = '';
+      zonesDesktop.classList.add('hidden');
+      mobileControls.classList.add('hidden');
+      resultsContainer.classList.remove('hidden');
+      resultsContainer.innerHTML = "<h2 style='margin-bottom:1rem;'>Resultados:</h2>";
+
+      phrases.forEach((item, index) => {
+        const user = userAnswers[index];
+        const isCorrect = user === item.correct;
+
+        const result = document.createElement('div');
+        result.className = 'result-item ' + (isCorrect ? 'correct' : 'incorrect');
+        result.innerHTML = `
+          <p><strong>Frase:</strong> ${item.text}</p>
+          <p><strong>Tu respuesta:</strong> ${user || 'Sin responder'}</p>
+          <p><strong>Correcto:</strong> ${item.correct}</p>
+          <p><em>${item.explanation}</em></p>
+        `;
+        resultsContainer.appendChild(result);
+      });
+    }
+
+    // Iniciar UI
+    initUI();
+  </script>
+</body>
+</html>
