@@ -1,0 +1,248 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tarea de hoy</title>
+  <!-- Fuente Manrope -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset básico */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background: linear-gradient(to bottom, #1b3160, #2b4a91);
+      color: #fff;
+      min-height: 100vh;
+      padding: 1rem;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      position: relative;
+    }
+
+    /* Fondo con personaje */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: url('https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png') no-repeat right bottom;
+      background-size: contain;
+      opacity: 0.15;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .card-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid #78ccf1;
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 1.1rem;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .card p {
+      margin-bottom: 1rem;
+    }
+
+    .card .actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+    }
+
+    .card button {
+      background-color: #2ccce4;
+      border: none;
+      color: #073642;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    .card button:hover {
+      background-color: #1bb0c8;
+    }
+
+    .result {
+      margin-top: 2rem;
+      background-color: rgba(0, 0, 0, 0.4);
+      border: 2px solid #11d29b;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .result h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #11d29b;
+    }
+
+    .result-item {
+      margin-bottom: 1rem;
+    }
+
+    .result-item.good {
+      color: #00ffcc;
+    }
+
+    .result-item.bad {
+      color: #ff5e7e;
+    }
+
+    @media (min-width: 768px) {
+      .card .actions {
+        justify-content: center;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Tarea de hoy</h1>
+      <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Kämpe logo">
+    </header>
+
+    <div id="cards" class="card-container">
+      <!-- Cartas generadas dinámicamente -->
+    </div>
+
+    <div id="result" class="result" style="display: none;">
+      <h2>Resultados</h2>
+      <div id="result-items"></div>
+    </div>
+  </div>
+
+  <script>
+    // Datos de las frases
+    const frases = [
+      {
+        texto: "Tener una actitud positiva durante el trabajo",
+        respuesta: "me_ayuda",
+        explicacion: "Una buena actitud aumenta tus oportunidades y mejora el ambiente laboral."
+      },
+      {
+        texto: "Llegar tarde con frecuencia a tus turnos",
+        respuesta: "me_perjudica",
+        explicacion: "La puntualidad es esencial para crear confianza y responsabilidad."
+      },
+      {
+        texto: "Aprender a usar nuevas herramientas o maquinaria",
+        respuesta: "me_ayuda",
+        explicacion: "Adquirir habilidades técnicas te hace más empleable y valioso."
+      },
+      {
+        texto: "Criticar a tus compañeros sin aportar soluciones",
+        respuesta: "me_perjudica",
+        explicacion: "La colaboración y respeto mejoran el trabajo en equipo."
+      },
+      {
+        texto: "Pedir apoyo cuando no entiendes algo",
+        respuesta: "me_ayuda",
+        explicacion: "Pedir ayuda demuestra humildad y ganas de aprender."
+      }
+    ];
+
+    let respuestasUsuario = [];
+
+    // Inicializar cartas
+    function crearCartas() {
+      const container = document.getElementById('cards');
+      frases.forEach((frase, index) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.index = index;
+        card.innerHTML = `
+          <p>${frase.texto}</p>
+          <div class="actions">
+            <button onclick="responder(${index}, 'me_ayuda')">Me ayuda</button>
+            <button onclick="responder(${index}, 'me_perjudica')">Me perjudica</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function responder(index, opcion) {
+      if (respuestasUsuario.some(r => r.index === index)) return; // Evita doble respuesta
+
+      respuestasUsuario.push({ index, respuesta: opcion });
+
+      // Deshabilitar botones
+      const card = document.querySelector(`.card[data-index='${index}']`);
+      const buttons = card.querySelectorAll('button');
+      buttons.forEach(btn => btn.disabled = true);
+      card.style.opacity = 0.6;
+
+      // Si se han respondido todas, mostrar resultados
+      if (respuestasUsuario.length === frases.length) {
+        mostrarResultado();
+      }
+    }
+
+    function mostrarResultado() {
+      document.getElementById('result').style.display = 'block';
+      const resultContainer = document.getElementById('result-items');
+      frases.forEach((frase, idx) => {
+        const resp = respuestasUsuario.find(r => r.index === idx);
+        const esCorrecto = resp.respuesta === frase.respuesta;
+        const div = document.createElement('div');
+        div.className = `result-item ${esCorrecto ? 'good' : 'bad'}`;
+        div.innerHTML = `
+          <strong>${frase.texto}</strong><br>
+          ${esCorrecto ? "✅ Correcto" : "❌ Incorrecto"} – ${frase.explicacion}
+        `;
+        resultContainer.appendChild(div);
+      });
+    }
+
+    // Inicializar todo
+    crearCartas();
+  </script>
+</body>
+</html>
