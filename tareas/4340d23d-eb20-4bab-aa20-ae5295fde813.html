@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tarea de Hoy - Kämpe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      position: relative;
+    }
+
+    /* Fondo personaje */
+    body::before {
+      content: "";
+      position: absolute;
+      background: url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png') no-repeat bottom right;
+      background-size: contain;
+      opacity: 0.15;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .logo {
+      height: 40px;
+    }
+
+    .title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .card-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: 1.1rem;
+      box-shadow: 0 0 10px #0ea5e9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .card button {
+      margin-top: 0.5rem;
+      flex: 1 1 48%;
+      margin-right: 2%;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+    }
+
+    .card button:last-child {
+      margin-right: 0;
+    }
+
+    .card button:hover {
+      background-color: #3b82f6;
+    }
+
+    .result-section {
+      display: none;
+      margin-top: 2rem;
+      background-color: #0f172a;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .result-card {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background-color: #1e293b;
+      border-radius: 8px;
+      border-left: 6px solid;
+    }
+
+    .correct {
+      border-color: #22c55e;
+    }
+
+    .incorrect {
+      border-color: #ef4444;
+    }
+
+    .result-card p {
+      margin-bottom: 0.25rem;
+    }
+
+    .result-card strong {
+      display: block;
+    }
+
+    @media (min-width: 600px) {
+      .card {
+        flex-direction: row;
+      }
+
+      .card button {
+        flex: 0 0 auto;
+        margin-top: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="title">Tarea de hoy</h1>
+      <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Kämpe Logo" class="logo" />
+    </div>
+
+    <div class="card-stack" id="cards">
+      <!-- Tarjetas se generan dinámicamente -->
+    </div>
+
+    <div class="result-section" id="results">
+      <h2>Resultados</h2>
+      <div id="result-cards"></div>
+    </div>
+  </div>
+
+  <script>
+    const phrases = [
+      {
+        text: "Lleo mis herramientas siempre organizadas.",
+        correct: "Me ayuda",
+        explanation: "Tener tus herramientas organizadas muestra profesionalismo y te permite trabajar eficientemente."
+      },
+      {
+        text: "Llego tarde a los trabajos porque siempre hay tráfico.",
+        correct: "Me perjudica",
+        explanation: "La puntualidad es clave. Llegar tarde da una mala impresión, sin importar el motivo."
+      },
+      {
+        text: "Me comunico bien con los clientes y explico lo que voy a hacer.",
+        correct: "Me ayuda",
+        explanation: "Una buena comunicación genera confianza y mejora tu reputación profesional."
+      },
+      {
+        text: "Uso mi ropa sucia de otros días para trabajar.",
+        correct: "Me perjudica",
+        explanation: "El aspecto personal también comunica profesionalismo. La higiene es importante."
+      },
+      {
+        text: "Estoy disponible por WhatsApp para dudas o seguimiento.",
+        correct: "Me ayuda",
+        explanation: "Estar disponible muestra compromiso y responsabilidad con tus clientes."
+      }
+    ];
+
+    const cardsContainer = document.getElementById("cards");
+    const resultSection = document.getElementById("results");
+    const resultCardsContainer = document.getElementById("result-cards");
+
+    let currentIndex = 0;
+    let userAnswers = [];
+
+    function createCard(phrase, index) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div style="flex: 1;">${phrase.text}</div>
+        <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; width: 100%;">
+          <button onclick="handleAnswer(${index}, 'Me ayuda')">Me ayuda</button>
+          <button onclick="handleAnswer(${index}, 'Me perjudica')">Me perjudica</button>
+        </div>
+      `;
+      return card;
+    }
+
+    function renderCards() {
+      cardsContainer.innerHTML = '';
+      phrases.forEach((phrase, index) => {
+        if (userAnswers[index] == null) {
+          cardsContainer.appendChild(createCard(phrase, index));
+        }
+      });
+
+      if (userAnswers.length === phrases.length) {
+        showResults();
+      }
+    }
+
+    function handleAnswer(index, answer) {
+      userAnswers[index] = answer;
+      renderCards();
+    }
+
+    function showResults() {
+      cardsContainer.style.display = "none";
+      resultSection.style.display = "block";
+      resultCardsContainer.innerHTML = "";
+
+      phrases.forEach((phrase, index) => {
+        const isCorrect = userAnswers[index] === phrase.correct;
+        const card = document.createElement("div");
+        card.className = "result-card " + (isCorrect ? "correct" : "incorrect");
+        card.innerHTML = `
+          <strong>${phrase.text}</strong>
+          <p>Tu respuesta: ${userAnswers[index]}</p>
+          <p>Respuesta correcta: ${phrase.correct}</p>
+          <p>✅ Explicación: ${phrase.explanation}</p>
+        `;
+        resultCardsContainer.appendChild(card);
+      });
+    }
+
+    // Iniciar
+    renderCards();
+  </script>
+</body>
+</html>
