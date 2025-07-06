@@ -1,0 +1,256 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Tarea de hoy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+    <style>
+        /* General */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: linear-gradient(to bottom right, #0d2b66, #1b398b);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Fondo y personajes */
+        body::before {
+            content: "";
+            background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: right bottom;
+            opacity: 0.15;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 60%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Logo */
+        #logo {
+            width: 120px;
+            margin-bottom: 20px;
+            z-index: 3;
+        }
+
+        /* Título */
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            z-index: 3;
+        }
+
+        /* Contenedor principal */
+        .card-container {
+            width: 100%;
+            max-width: 500px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 2px solid #46e5ff;
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            z-index: 3;
+        }
+
+        .card {
+            background-color: #1345a3;
+            border: 2px solid #46e5ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .decision-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+
+        .btn {
+            background-color: #46e5ff;
+            color: #0c1c3a;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: #70f0ff;
+        }
+
+        .result-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 5px solid;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .correct {
+            border-color: #00ff99;
+        }
+
+        .incorrect {
+            border-color: #ff4b4b;
+        }
+
+        .result-text {
+            font-size: 0.95rem;
+            margin-top: 6px;
+            color: #e0e0e0;
+        }
+
+        #final-results {
+            margin-top: 20px;
+            display: none;
+            z-index: 3;
+        }
+
+        #reward-btn {
+            background-color: #fcef4d;
+            color: #0c1c3a;
+            font-weight: bold;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            margin-top: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            .decision-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <img id="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe logo" />
+    <h1>Tarea de hoy</h1>
+
+    <div class="card-container">
+        <div id="card" class="card"></div>
+        <div class="decision-buttons">
+            <button class="btn" onclick="choose('me_ayuda')">Me ayuda</button>
+            <button class="btn" onclick="choose('me_perjudica')">Me perjudica</button>
+        </div>
+    </div>
+
+    <div id="final-results"></div>
+    <button id="reward-btn" onclick="goToReward()" style="display:none;">Ver mi recompensa</button>
+
+    <script>
+        // Leer initData del parámetro URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const initData = urlParams.get('initData') || '';
+
+        // Datos de las tarjetas
+        const phrases = [
+            {
+                text: "Tener buena actitud y disposición para aprender",
+                correct: "me_ayuda",
+                explanation: "Los empleadores valoran la actitud positiva incluso más que la experiencia a veces."
+            },
+            {
+                text: "Llegar tarde constantemente al trabajo",
+                correct: "me_perjudica",
+                explanation: "La puntualidad es clave para demostrar responsabilidad y compromiso."
+            },
+            {
+                text: "Buscar mejorar mis habilidades con cursos gratuitos en línea",
+                correct: "me_ayuda",
+                explanation: "Aprender de forma autodidacta demuestra iniciativa."
+            },
+            {
+                text: "No seguir instrucciones porque prefiero hacer las cosas a mi manera",
+                correct: "me_perjudica",
+                explanation: "Seguir indicaciones es crucial en entornos laborales colaborativos."
+            },
+            {
+                text: "Pedir ayuda cuando no entiendo una tarea",
+                correct: "me_ayuda",
+                explanation: "Pedir ayuda demuestra interés por hacer las cosas bien y reduce errores."
+            }
+        ];
+
+        let current = 0;
+        let userAnswers = [];
+
+        const cardDiv = document.getElementById("card");
+        const finalResultsDiv = document.getElementById("final-results");
+        const rewardBtn = document.getElementById("reward-btn");
+
+        // Mostrar la siguiente tarjeta
+        function showCard() {
+            if (current < phrases.length) {
+                cardDiv.textContent = phrases[current].text;
+            }
+        }
+
+        // Manejar selección de respuesta
+        function choose(answer) {
+            const phrase = phrases[current];
+            userAnswers.push({
+                ...phrase,
+                userAnswer: answer
+            });
+            current++;
+            if (current < phrases.length) {
+                showCard();
+            } else {
+                showResults();
+            }
+        }
+
+        // Mostrar resultados
+        function showResults() {
+            document.querySelector('.card-container').style.display = 'none';
+            finalResultsDiv.style.display = 'block';
+
+            userAnswers.forEach((resp) => {
+                const div = document.createElement('div');
+                div.classList.add('result-card');
+                div.classList.add(resp.userAnswer === resp.correct ? 'correct' : 'incorrect');
+                div.innerHTML = `<strong>${resp.text}</strong>
+                    <div class="result-text">${resp.explanation}</div>`;
+                finalResultsDiv.appendChild(div);
+            });
+
+            rewardBtn.style.display = 'inline-block';
+        }
+
+        // Enlace hacia la recompensa
+        function goToReward() {
+            window.location.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+        }
+
+        cardDiv.innerText = phrases[0].text;
+    </script>
+</body>
+</html>
