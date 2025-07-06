@@ -1,0 +1,277 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tarea de hoy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset básico y cuerpo */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(160deg, #1a2a6c, #2e91fc, #1a2a6c);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Logo */
+    .logo {
+      width: 120px;
+      margin: 1rem auto;
+    }
+
+    /* Personaje */
+    .avatar-bg {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      z-index: 0;
+      max-height: 90vh;
+      opacity: 0.25;
+    }
+
+    /* Contenedor principal */
+    .container {
+      z-index: 1;
+      width: 100%;
+      max-width: 600px;
+      background: rgba(0,0,0,0.3);
+      border: 3px solid #00ffe1;
+      border-radius: 16px;
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+    }
+
+    .card {
+      background: #0a174e;
+      color: #ffffff;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      border: 2px solid #00ffe1;
+      box-shadow: 0 0 10px #00ffe1;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1rem;
+      gap: 1rem;
+    }
+
+    button.choice {
+      flex: 1;
+      padding: 0.75rem;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: 0.2s;
+      background: #09fbd3;
+      color: #000;
+    }
+
+    button.choice:hover {
+      background: #00ffe1;
+    }
+
+    .feedback {
+      margin-top: 2rem;
+    }
+
+    .feedback-card {
+      background: rgba(0,0,0,0.6);
+      border: 2px solid #00ffe1;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .feedback-card.correct {
+      border-color: #00ff88;
+      background: rgba(0, 255, 136, 0.1);
+    }
+
+    .feedback-card.incorrect {
+      border-color: #ff3b3b;
+      background: rgba(255, 59, 59, 0.1);
+    }
+
+    .feedback-card p {
+      margin: 0.25rem 0;
+    }
+
+    .final-button {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .final-button button {
+      background: #00ffe1;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      color: #000;
+      transition: 0.2s;
+    }
+
+    .final-button button:hover {
+      background: #09fbd3;
+    }
+
+    @media (max-width: 500px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .card {
+        font-size: 0.95rem;
+      }
+
+      button.choice {
+        font-size: 0.9rem;
+      }
+
+      .final-button button {
+        font-size: 1rem;
+        padding: 0.75rem 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Logo -->
+  <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kampe Logo" class="logo" />
+
+  <!-- Avatar fondo -->
+  <img src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Avatar" class="avatar-bg" />
+
+  <div class="container">
+    <h1>Tarea de hoy</h1>
+    <div id="gameArea"></div>
+    <div class="feedback" id="feedbackArea" style="display: none;"></div>
+    <div class="final-button" id="finalButton" style="display: none;">
+      <button id="rewardBtn">Ver mi recompensa</button>
+    </div>
+  </div>
+
+  <script>
+    const frases = [
+      {
+        texto: "Ser puntual a tu turno de trabajo",
+        correcta: "Me ayuda",
+        explicacion: "La puntualidad muestra responsabilidad y compromiso con el trabajo."
+      },
+      {
+        texto: "Ignorar las medidas de seguridad",
+        correcta: "Me perjudica",
+        explicacion: "No seguir las normas puede causarte accidentes y problemas legales."
+      },
+      {
+        texto: "Aprender a usar nuevas herramientas",
+        correcta: "Me ayuda",
+        explicacion: "Aprender habilidades nuevas incrementa tu valor como trabajador."
+      },
+      {
+        texto: "Discutir con tus compañeros constantemente",
+        correcta: "Me perjudica",
+        explicacion: "El mal ambiente de trabajo afecta la productividad y tu imagen profesional."
+      },
+      {
+        texto: "Vestir adecuadamente para el trabajo",
+        correcta: "Me ayuda",
+        explicacion: "La presentación personal refleja profesionalismo y respeto por el oficio."
+      }
+    ];
+
+    // Obtener parámetro initData desde la URL
+    const params = new URLSearchParams(window.location.search);
+    const initData = params.get("initData") || "";
+
+    let current = 0;
+    const resultados = [];
+
+    const gameArea = document.getElementById("gameArea");
+    const feedbackArea = document.getElementById("feedbackArea");
+    const finalButton = document.getElementById("finalButton");
+    const rewardBtn = document.getElementById("rewardBtn");
+
+    function mostrarFrase() {
+      if (current >= frases.length) {
+        mostrarResultados();
+        return;
+      }
+
+      const data = frases[current];
+      gameArea.innerHTML = `
+        <div class="card">${data.texto}</div>
+        <div class="buttons">
+          <button class="choice" onclick="responder('Me ayuda')">Me ayuda</button>
+          <button class="choice" onclick="responder('Me perjudica')">Me perjudica</button>
+        </div>
+      `;
+    }
+
+    function responder(eleccion) {
+      const actual = frases[current];
+      resultados.push({
+        frase: actual.texto,
+        eleccion: eleccion,
+        correcta: actual.correcta,
+        explicacion: actual.explicacion,
+        acierto: eleccion === actual.correcta
+      });
+      current++;
+      mostrarFrase();
+    }
+
+    function mostrarResultados() {
+      gameArea.innerHTML = '';
+      feedbackArea.style.display = 'block';
+      feedbackArea.innerHTML = resultados.map(r => `
+        <div class="feedback-card ${r.acierto ? 'correct' : 'incorrect'}">
+          <p><strong>Frase:</strong> ${r.frase}</p>
+          <p><strong>Tu respuesta:</strong> ${r.eleccion}</p>
+          <p><strong>Correcta:</strong> ${r.correcta}</p>
+          <p><strong>Explicación:</strong> ${r.explicacion}</p>
+        </div>
+      `).join('');
+      finalButton.style.display = 'flex';
+    }
+
+    rewardBtn.addEventListener("click", () => {
+      window.location.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${initData}`;
+    });
+
+    // Comienza el juego
+    mostrarFrase();
+  </script>
+</body>
+</html>
