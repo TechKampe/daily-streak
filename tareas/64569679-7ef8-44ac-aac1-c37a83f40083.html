@@ -1,0 +1,281 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tarea de hoy</title>
+
+  <!-- Fuente Manrope -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos generales -->
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Manrope', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #1e3a8a; /* Azul Fortnite */
+      background-image: url("https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png");
+      background-repeat: no-repeat;
+      background-position: bottom right;
+      background-size: 50%;
+      color: #fff;
+      min-height: 100vh;
+      padding-bottom: 120px;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+    }
+
+    header img {
+      width: 120px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-top: 10px;
+      color: #fff;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: #ffffff;
+      color: #000;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      transition: all 0.3s ease-in-out;
+    }
+
+    .card p {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .card .actions {
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .btn {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 40%;
+      transition: transform 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+      background-color: #2563eb;
+    }
+
+    .results {
+      display: none;
+      background: #ffffff;
+      color: #000;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 30px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .result-item {
+      margin-bottom: 15px;
+    }
+
+    .correct {
+      color: green;
+      font-weight: bold;
+    }
+
+    .incorrect {
+      color: red;
+      font-weight: bold;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 10px;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        background-size: 80%;
+      }
+
+      .btn {
+        width: 45%;
+        font-size: 0.9rem;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .card p {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Encabezado y logo -->
+  <header>
+    <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Logo Kämpe" />
+    <h1>🛠️ Tarea de hoy: ¿Qué te ayuda o perjudica en un oficio?</h1>
+  </header>
+
+  <!-- Contenedor principal -->
+  <div class="container" id="game-container">
+    <!-- Las tarjetas se insertarán aquí dinámicamente -->
+  </div>
+
+  <!-- Resultados -->
+  <div class="container results" id="results-container"></div>
+
+  <!-- Pie de página -->
+  <footer>
+    <small>© 2024 Kämpe - Prepárate para vencer</small>
+  </footer>
+
+  <!-- Lógica del reto -->
+  <script>
+    // Frases con clasificaciones correctas y explicación
+    const frases = [
+      {
+        texto: "Llego siempre con puntualidad a mi trabajo.",
+        respuesta: "Me ayuda",
+        explicacion: "La puntualidad demuestra responsabilidad, algo muy valorado en cualquier oficio."
+      },
+      {
+        texto: "A veces no aviso cuando falto al trabajo.",
+        respuesta: "Me perjudica",
+        explicacion: "No avisar demuestra falta de compromiso y afecta la organización del equipo."
+      },
+      {
+        texto: "Siempre trato bien a los compañeros y clientes.",
+        respuesta: "Me ayuda",
+        explicacion: "Las habilidades interpersonales son esenciales en entornos laborales colaborativos."
+      },
+      {
+        texto: "Evito aprender nuevas herramientas o máquinas.",
+        respuesta: "Me perjudica",
+        explicacion: "La disposición para aprender nuevas habilidades es clave para avanzar en muchos oficios."
+      },
+      {
+        texto: "Sigo normas de seguridad en todo momento.",
+        respuesta: "Me ayuda",
+        explicacion: "Cuidar tu seguridad y la de otros es fundamental para evitar accidentes."
+      }
+    ];
+
+    // Estado del juego
+    let indiceActual = 0;
+    let respuestasUsuario = [];
+
+    const contenedor = document.getElementById('game-container');
+    const contenedorResultados = document.getElementById('results-container');
+
+    // Renderiza la tarjeta actual
+    function mostrarSiguienteCarta() {
+      contenedor.innerHTML = '';
+
+      if (indiceActual >= frases.length) {
+        mostrarResultados();
+        return;
+      }
+
+      const item = frases[indiceActual];
+
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const texto = document.createElement('p');
+      texto.innerText = item.texto;
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      const btnAyuda = document.createElement('button');
+      btnAyuda.className = 'btn';
+      btnAyuda.innerText = 'Me ayuda';
+      btnAyuda.onclick = () => registrarRespuesta("Me ayuda");
+
+      const btnPerjudica = document.createElement('button');
+      btnPerjudica.className = 'btn';
+      btnPerjudica.innerText = 'Me perjudica';
+      btnPerjudica.onclick = () => registrarRespuesta("Me perjudica");
+
+      actions.appendChild(btnAyuda);
+      actions.appendChild(btnPerjudica);
+
+      card.appendChild(texto);
+      card.appendChild(actions);
+
+      contenedor.appendChild(card);
+    }
+
+    // Guarda la respuesta del usuario
+    function registrarRespuesta(respuesta) {
+      respuestasUsuario.push(respuesta);
+      indiceActual++;
+      mostrarSiguienteCarta();
+    }
+
+    // Muestra resultados y explicaciones
+    function mostrarResultados() {
+      contenedor.style.display = 'none';
+      contenedorResultados.style.display = 'block';
+
+      contenedorResultados.innerHTML = '<h2>🧠 Resultados</h2><br>';
+
+      frases.forEach((frase, i) => {
+        const res = document.createElement('div');
+        res.className = 'result-item';
+
+        const correcta = frase.respuesta === respuestasUsuario[i];
+
+        res.innerHTML = `
+          <p><strong>Frase:</strong> ${frase.texto}</p>
+          <p><strong>Tu respuesta:</strong> <span class="${correcta ? 'correct' : 'incorrect'}">${respuestasUsuario[i]}</span></p>
+          <p><strong>Correcto era:</strong> ${frase.respuesta}</p>
+          <p><em>${frase.explicacion}</em></p>
+          <hr/>
+        `;
+
+        contenedorResultados.appendChild(res);
+      });
+    }
+
+    // Inicia la actividad
+    mostrarSiguienteCarta();
+  </script>
+</body>
+</html>
