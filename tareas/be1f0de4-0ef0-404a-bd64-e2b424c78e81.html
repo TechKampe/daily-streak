@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tarea de hoy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Manrope', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(#0c1f3f, #142d59);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png');
+      background-repeat: no-repeat;
+      background-position: bottom right;
+      background-size: 40%;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 90%;
+      max-width: 800px;
+      padding: 20px 0;
+    }
+
+    #logo {
+      height: 40px;
+    }
+
+    h1 {
+      font-size: 2em;
+      margin: 0;
+      color: #00F0FF;
+      text-shadow: 2px 2px #0a112e;
+    }
+
+    main {
+      width: 90%;
+      max-width: 800px;
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 2px solid #00F0FF;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 0 10px #00f0ff88;
+    }
+
+    .card {
+      background-color: #1a2f5b;
+      padding: 15px 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      font-size: 1.1em;
+      position: relative;
+      transition: transform 0.3s;
+    }
+
+    .card-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    .btn {
+      background-color: #00F0FF;
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #0ff;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #143463;
+      border-radius: 10px;
+      border: 1px solid #00F0FF;
+    }
+
+    .result.correct {
+      border-left: 5px solid #00FF99;
+    }
+
+    .result.incorrect {
+      border-left: 5px solid #FF4E4E;
+    }
+
+    #final-section {
+      display: none;
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    #ver-recompensa {
+      margin-top: 20px;
+      background-color: #00FF99;
+      color: #000;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 1.2em;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+
+    @media(max-width: 600px) {
+      body {
+        background-size: 60%;
+      }
+
+      .card-buttons {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img id="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo.png" alt="Kämpe logo">
+    <h1>Tarea de hoy</h1>
+  </header>
+  <main id="game-container">
+    <!-- Las cartas se inyectan con JS -->
+  </main>
+  <section id="final-section">
+    <h2>Resultados</h2>
+    <div id="results-container"></div>
+    <button id="ver-recompensa">Ver mi recompensa</button>
+  </section>
+
+  <script>
+    // Extraemos initData del parámetro de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const initData = urlParams.get('initData');
+
+    // Frases con sus respuestas correctas y explicación
+    const cardsData = [
+      {
+        text: 'Llegar puntual a cada jornada de trabajo.',
+        correct: 'Me ayuda',
+        feedback: 'La puntualidad es una señal de responsabilidad valorada por todos los empleadores.'
+      },
+      {
+        text: 'Gritarle al encargado cuando hay un problema.',
+        correct: 'Me perjudica',
+        feedback: 'Resolver conflictos con respeto es clave para mantener un buen ambiente laboral.'
+      },
+      {
+        text: 'Colaborar con mis compañeros siempre que puedo.',
+        correct: 'Me ayuda',
+        feedback: 'El trabajo en equipo facilita las tareas y demuestra compromiso.'
+      },
+      {
+        text: 'Ignorar las instrucciones de seguridad.',
+        correct: 'Me perjudica',
+        feedback: 'No seguir medidas de seguridad puede provocar accidentes y poner en riesgo tu puesto.'
+      },
+      {
+        text: 'Tomar iniciativa para aprender nuevas herramientas.',
+        correct: 'Me ayuda',
+        feedback: 'La iniciativa es una cualidad valorada que te puede abrir puertas y ascensos.'
+      }
+    ];
+
+    const gameContainer = document.getElementById('game-container');
+    const finalSection = document.getElementById('final-section');
+    const resultsContainer = document.getElementById('results-container');
+    const recompensaBtn = document.getElementById('ver-recompensa');
+
+    let currentCard = 0;
+    let userAnswers = [];
+
+    // Crea y muestra la siguiente carta
+    function showNextCard() {
+      gameContainer.innerHTML = '';
+      if (currentCard >= cardsData.length) {
+        showResults();
+        return;
+      }
+
+      const cardData = cardsData[currentCard];
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerText = cardData.text;
+
+      const btnGroup = document.createElement('div');
+      btnGroup.className = 'card-buttons';
+
+      const btnAyuda = document.createElement('button');
+      btnAyuda.className = 'btn';
+      btnAyuda.textContent = 'Me ayuda';
+      btnAyuda.onclick = () => handleAnswer('Me ayuda');
+
+      const btnPerjudica = document.createElement('button');
+      btnPerjudica.className = 'btn';
+      btnPerjudica.textContent = 'Me perjudica';
+      btnPerjudica.onclick = () => handleAnswer('Me perjudica');
+
+      btnGroup.appendChild(btnAyuda);
+      btnGroup.appendChild(btnPerjudica);
+      card.appendChild(btnGroup);
+
+      gameContainer.appendChild(card);
+    }
+
+    // Maneja la selección del usuario
+    function handleAnswer(answer) {
+      const cardData = cardsData[currentCard];
+      userAnswers.push({
+        ...cardData,
+        userAnswer: answer,
+        isCorrect: answer === cardData.correct
+      });
+      currentCard++;
+      showNextCard();
+    }
+
+    // Muestra los resultados finales con feedback
+    function showResults() {
+      gameContainer.style.display = 'none';
+      finalSection.style.display = 'block';
+      resultsContainer.innerHTML = '';
+
+      userAnswers.forEach((item) => {
+        const res = document.createElement('div');
+        res.className = 'result ' + (item.isCorrect ? 'correct' : 'incorrect');
+        res.innerHTML = `
+          <strong>${item.text}</strong><br>
+          Elegiste: <span style="color: ${item.isCorrect ? '#00FF99' : '#FF7070'}">${item.userAnswer}</span><br>
+          ${item.feedback}
+        `;
+        resultsContainer.appendChild(res);
+      });
+    }
+
+    // Redirecciona a la pagina de reward
+    recompensaBtn.addEventListener('click', () => {
+      window.location.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${initData}`;
+    });
+
+    // Comienza el juego
+    showNextCard();
+  </script>
+</body>
+</html>
