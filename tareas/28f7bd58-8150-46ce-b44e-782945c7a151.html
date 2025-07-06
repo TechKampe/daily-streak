@@ -1,0 +1,350 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tarea de hoy</title>
+  <!-- Fuente -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <!-- Interact.js para drag and drop -->
+  <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+  <style>
+    :root {
+      --color-azul-fortnite: #0e5fd8;
+      --color-fondo: #1d3b8b;
+      --color-card: #ffffff;
+      --color-texto: #000000;
+      --color-ayuda: #28a745;
+      --color-perjudica: #dc3545;
+      --color-ui: #11e0ff;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Manrope', sans-serif;
+      background-color: var(--color-azul-fortnite);
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      position: relative;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      height: 40px;
+    }
+
+    h1 {
+      font-size: 2em;
+      text-align: center;
+      margin-top: 20px;
+      text-shadow: 2px 2px #000;
+    }
+
+    .avatar {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      max-height: 90%;
+      opacity: 0.6;
+      z-index: 0;
+    }
+
+    .card-area {
+      margin-top: 40px;
+      z-index: 1;
+      position: relative;
+    }
+
+    .card {
+      background-color: var(--color-card);
+      color: var(--color-texto);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 10px 0;
+      font-weight: 600;
+      cursor: grab;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .zones {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+
+    .zone {
+      flex: 1 1 45%;
+      background-color: rgba(255,255,255,0.1);
+      border: 2px dashed white;
+      min-height: 120px;
+      border-radius: 10px;
+      margin: 10px;
+      padding: 10px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .zone h3 {
+      margin-top: 0;
+    }
+
+    .results {
+      display: none;
+      margin-top: 30px;
+    }
+
+    .result-item {
+      background-color: #fff;
+      color: #000;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .btn {
+      background: linear-gradient(45deg, var(--color-ui), #22b6ff);
+      border: none;
+      color: #000;
+      font-weight: bold;
+      border-radius: 8px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 1em;
+      margin: 10px 0;
+      flex: 1 1 48%;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    @media (max-width: 600px) {
+      .zones {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .zone {
+        width: 100%;
+      }
+
+      .btn {
+        flex: 1 1 100%;
+      }
+
+      .card {
+        cursor: default;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" class="logo" alt="Kämpe Logo"/>
+  </header>
+  <h1>Tarea de hoy</h1>
+
+  <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="Avatar"/>
+
+  <div id="game" class="card-area"></div>
+
+  <div class="zones" id="zones-desktop">
+    <div class="zone" id="ayuda">
+      <h3>Me ayuda</h3>
+    </div>
+    <div class="zone" id="perjudica">
+      <h3>Me perjudica</h3>
+    </div>
+  </div>
+
+  <div id="mobile-buttons" class="buttons" style="display:none;"></div>
+
+  <div class="results" id="results"></div>
+
+  <div style="text-align:center; margin-top: 30px;">
+    <button id="recompensaBtn" class="btn" style="display:none;">Ver mi recompensa</button>
+  </div>
+</div>
+
+<script>
+  const frases = [
+    {
+      texto: "Llegar puntual todos los días",
+      categoria: "ayuda",
+      explicacion: "Ser puntual demuestra responsabilidad y compromiso con tu trabajo."
+    },
+    {
+      texto: "Dejar herramientas tiradas en el suelo",
+      categoria: "perjudica",
+      explicacion: "Dejar herramientas tiradas puede causar accidentes y muestra desorganización."
+    },
+    {
+      texto: "Colaborar con mis compañeros",
+      categoria: "ayuda",
+      explicacion: "Trabajar en equipo es clave en muchos oficios y mejora la productividad."
+    },
+    {
+      texto: "Hablar mal del jefe frente a otros",
+      categoria: "perjudica",
+      explicacion: "Esto puede crear un mal ambiente laboral y dañar tu reputación."
+    },
+    {
+      texto: "Usar equipo de seguridad correctamente",
+      categoria: "ayuda",
+      explicacion: "Protege tu integridad física y demuestra conciencia profesional."
+    }
+  ];
+
+  let initData = '';
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('initData')) {
+    initData = params.get('initData');
+  }
+
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+  let currentIndex = 0;
+  let respuestas = [];
+
+  const gameContainer = document.getElementById('game');
+  const resultsContainer = document.getElementById('results');
+  const btnsContainer = document.getElementById('mobile-buttons');
+  const recompensaBtn = document.getElementById('recompensaBtn');
+
+  // Función para crear tarjetas
+  function createCard(frase, index) {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.textContent = frase.texto;
+    div.setAttribute('data-index', index);
+    return div;
+  }
+
+  function mostrarResultados() {
+    gameContainer.style.display = 'none';
+    document.getElementById('zones-desktop').style.display = 'none';
+    btnsContainer.style.display = 'none';
+    resultsContainer.style.display = 'block';
+
+    frases.forEach((frase, i) => {
+      const userResp = respuestas[i];
+      const correcto = userResp === frase.categoria;
+      const result = document.createElement('div');
+      result.className = 'result-item';
+      result.style.borderLeft = `6px solid ${correcto ? 'var(--color-ayuda)' : 'var(--color-perjudica)'}`;
+      result.innerHTML = `
+        <strong>${frase.texto}</strong><br/>
+        <em>Tu respuesta: ${userResp === 'ayuda' ? 'Me ayuda' : 'Me perjudica'}</em><br/>
+        <p>${frase.explicacion}</p>
+      `;
+      resultsContainer.appendChild(result);
+    });
+
+    recompensaBtn.style.display = 'inline-block';
+  }
+
+  recompensaBtn.addEventListener('click', () => {
+    window.location.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${initData}`;
+  });
+
+  // Interfaz móvil
+  function renderMobile() {
+    if (currentIndex < frases.length) {
+      gameContainer.innerHTML = '';
+      const card = createCard(frases[currentIndex], currentIndex);
+      card.style.margin = '30px auto';
+      card.style.maxWidth = '500px';
+      gameContainer.appendChild(card);
+
+      btnsContainer.style.display = 'flex';
+      btnsContainer.innerHTML = `
+        <button class="btn" onclick="responder('ayuda')">Me ayuda</button>
+        <button class="btn" onclick="responder('perjudica')">Me perjudica</button>
+      `;
+    } else {
+      mostrarResultados();
+    }
+  }
+
+  function responder(resp) {
+    respuestas.push(resp);
+    currentIndex++;
+    renderMobile();
+  }
+
+  // Interfaz Desktop
+  function renderDesktop() {
+    frases.forEach((frase, index) => {
+      const card = createCard(frase, index);
+      gameContainer.appendChild(card);
+    });
+
+    interact('.card').draggable({
+      inertia: true,
+      modifiers: [
+        interact.modifiers.restrictRect({
+          restriction: 'parent',
+          endOnly: true
+        })
+      ],
+      autoScroll: true,
+      listeners: {
+        move (event) {
+          const target = event.target
+          const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx
+          const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy
+          target.style.transform = `translate(${x}px, ${y}px)`
+          target.setAttribute('data-x', x)
+          target.setAttribute('data-y', y)
+        },
+        end (event) {
+          event.target.style.transform = 'none';
+          event.target.removeAttribute('data-x');
+          event.target.removeAttribute('data-y');
+        }
+      }
+    })
+
+    interact('.zone').dropzone({
+      accept: '.card',
+      ondrop: function (event) {
+        const index = event.relatedTarget.getAttribute('data-index');
+        const zona = event.target.id;
+        respuestas[index] = zona;
+        event.relatedTarget.remove();
+        if (respuestas.filter(r => r !== undefined).length === frases.length) {
+          mostrarResultados();
+        }
+      }
+    });
+  }
+
+  if (isMobile) {
+    renderMobile();
+  } else {
+    renderDesktop();
+  }
+</script>
+</body>
+</html>
