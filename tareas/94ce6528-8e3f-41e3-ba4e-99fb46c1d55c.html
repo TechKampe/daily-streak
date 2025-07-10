@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tarea de hoy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reseteo básico y fuentes */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Manrope', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(to bottom, #1e3bff, #1e3bff 60%, #1524b4);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+      color: white;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Avatar de fondo */
+    .avatar-bg {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 300px;
+      opacity: 0.3;
+      z-index: 0;
+    }
+
+    /* Contenedor principal */
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background-color: #2b2fdd;
+      border: 4px solid #ffffff33;
+      border-radius: 20px;
+      padding: 20px;
+      z-index: 1;
+      box-shadow: 0 0 20px #00000055;
+    }
+
+    .logo {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .logo img {
+      height: 40px;
+    }
+
+    h1 {
+      font-size: 24px;
+      text-align: center;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #3a43ff;
+      border: 2px solid #ffffff44;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px #00000055;
+      text-align: center;
+    }
+
+    .card p {
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+
+    .btn-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .btn-help {
+      background-color: #00e676;
+      color: #000;
+    }
+
+    .btn-hurt {
+      background-color: #ff5252;
+      color: #fff;
+    }
+
+    .btn-help:hover {
+      background-color: #00c853;
+    }
+
+    .btn-hurt:hover {
+      background-color: #e53935;
+    }
+
+    /* Resultado final */
+    .results {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .result-item {
+      background-color: #1a1dff;
+      border: 2px solid #ffffff22;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .result-item.correct {
+      border-left: 8px solid #00e676;
+    }
+
+    .result-item.incorrect {
+      border-left: 8px solid #ff5252;
+    }
+
+    .result-item p {
+      margin-bottom: 5px;
+    }
+
+    .btn-reward {
+      display: block;
+      margin: 30px auto 0;
+      padding: 14px 24px;
+      background-color: #ffe500;
+      color: #000;
+      font-weight: 800;
+      border-radius: 12px;
+      font-size: 18px;
+      text-align: center;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .btn-reward:hover {
+      background-color: #fff000;
+    }
+
+    @media(max-width: 500px) {
+      .avatar-bg {
+        width: 200px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      .card p {
+        font-size: 16px;
+      }
+
+      .btn-reward {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Avatar y logo -->
+  <img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="Avatar" class="avatar-bg" />
+  <div class="container">
+    <div class="logo">
+      <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe Logo" />
+    </div>
+    <h1>Tarea de hoy</h1>
+
+    <!-- Cards dinámicas en JS -->
+    <div id="game-area"></div>
+
+    <!-- Resultados -->
+    <div id="results" class="results"></div>
+
+    <!-- Botón recompensa -->
+    <a href="#" id="rewardBtn" class="btn-reward" style="display:none;">Ver mi recompensa</a>
+  </div>
+
+  <script>
+    // Obtener initData de URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const initData = urlParams.get("initData");
+
+    // Frases con su clasificación correcta y explicación
+    const phrases = [
+      {
+        text: "Llego siempre puntual al trabajo.",
+        correct: "help",
+        explanation: "La puntualidad es valorada por los empleadores en cualquier oficio."
+      },
+      {
+        text: "No me gusta trabajar en equipo.",
+        correct: "hurt",
+        explanation: "El trabajo en equipo es esencial en muchos oficios blue-collar."
+      },
+      {
+        text: "Siempre tengo mis herramientas listas.",
+        correct: "help",
+        explanation: "Prepararte muestra compromiso y profesionalismo."
+      },
+      {
+        text: "Me cuesta seguir instrucciones.",
+        correct: "hurt",
+        explanation: "Seguir instrucciones es clave para evitar errores y accidentes."
+      },
+      {
+        text: "Estoy dispuesto a aprender nuevas habilidades.",
+        correct: "help",
+        explanation: "La disposición a aprender te hace más valioso y adaptable."
+      },
+    ];
+
+    let currentIndex = 0;
+    let userAnswers = [];
+
+    const gameArea = document.getElementById("game-area");
+    const resultsDiv = document.getElementById("results");
+    const rewardBtn = document.getElementById("rewardBtn");
+
+    // Mostrar siguiente carta
+    function showNextCard() {
+      gameArea.innerHTML = "";
+
+      if (currentIndex >= phrases.length) {
+        showResults();
+        return;
+      }
+
+      const phrase = phrases[currentIndex];
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const p = document.createElement("p");
+      p.innerText = phrase.text;
+
+      const btnContainer = document.createElement("div");
+      btnContainer.className = "btn-container";
+
+      const btnHelp = document.createElement("button");
+      btnHelp.className = "btn-help";
+      btnHelp.innerText = "Me ayuda";
+      btnHelp.onclick = () => {
+        userAnswers.push({ index: currentIndex, answer: "help" });
+        currentIndex++;
+        showNextCard();
+      };
+
+      const btnHurt = document.createElement("button");
+      btnHurt.className = "btn-hurt";
+      btnHurt.innerText = "Me perjudica";
+      btnHurt.onclick = () => {
+        userAnswers.push({ index: currentIndex, answer: "hurt" });
+        currentIndex++;
+        showNextCard();
+      };
+
+      btnContainer.appendChild(btnHelp);
+      btnContainer.appendChild(btnHurt);
+
+      card.appendChild(p);
+      card.appendChild(btnContainer);
+      gameArea.appendChild(card);
+    }
+
+    // Mostrar resultados
+    function showResults() {
+      gameArea.style.display = "none";
+      resultsDiv.style.display = "block";
+      resultsDiv.innerHTML = "<h2>Resultados</h2><br/>";
+
+      userAnswers.forEach(entry => {
+        const phrase = phrases[entry.index];
+        const correct = phrase.correct === entry.answer;
+
+        const resultDiv = document.createElement("div");
+        resultDiv.className = "result-item " + (correct ? "correct" : "incorrect");
+
+        const p1 = document.createElement("p");
+        p1.innerHTML = `<strong>Frase:</strong> ${phrase.text}`;
+
+        const p2 = document.createElement("p");
+        p2.innerHTML = `<strong>Tu respuesta:</strong> ${entry.answer === "help" ? "Me ayuda" : "Me perjudica"}`;
+
+        const p3 = document.createElement("p");
+        p3.innerHTML = `<strong>${correct ? "✔️ Correcto" : "❌ Incorrecto"}:</strong> ${phrase.explanation}`;
+
+        resultDiv.appendChild(p1);
+        resultDiv.appendChild(p2);
+        resultDiv.appendChild(p3);
+
+        resultsDiv.appendChild(resultDiv);
+      });
+
+      rewardBtn.style.display = "block";
+      rewardBtn.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${initData}`;
+    }
+
+    // Iniciar juego
+    showNextCard();
+  </script>
+</body>
+</html>
