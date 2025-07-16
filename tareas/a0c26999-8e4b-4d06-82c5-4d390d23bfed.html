@@ -1,0 +1,240 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Tarea de hoy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset y configuración general */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Manrope', sans-serif;
+      user-select: none;
+      touch-action: pan-y;
+    }
+    html, body {
+      overflow: hidden;
+      height: 100vh;
+      background-color: #0D1B3F; /* Azul Fortnite-like */
+      color: white;
+    }
+
+    /* Fondo con personaje */
+    body::before {
+      content: "";
+      position: absolute;
+      background: url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png') no-repeat center bottom;
+      background-size: 60%;
+      opacity: 0.15;
+      inset: 0;
+      z-index: 1;
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      padding-top: 2vh;
+    }
+
+    .logo {
+      width: 120px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 15px;
+      font-weight: 800;
+      text-shadow: 1px 1px 3px #000;
+    }
+
+    .card-container {
+      position: relative;
+      width: 90vw;
+      max-width: 360px;
+      height: 60vh;
+      perspective: 1000px;
+    }
+
+    .card {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom right, #233DFF, #4FC3F7);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      font-size: 1.3rem;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transition: transform 0.3s, opacity 0.3s;
+    }
+
+    .feedback {
+      padding: 20px;
+      max-width: 90vw;
+    }
+
+    .feedback p {
+      background-color: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+
+    .btn-recompensa {
+      margin-top: 20px;
+      background: #00E5FF;
+      color: black;
+      font-weight: bold;
+      border: none;
+      padding: 14px 28px;
+      font-size: 1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: 0.2s ease-in-out;
+    }
+
+    .btn-recompensa:hover {
+      transform: scale(1.05);
+      background: #1DE9B6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" class="logo" alt="Kämpe logo" />
+    <h1>Tarea de hoy</h1>
+    <div class="card-container" id="cardContainer"></div>
+    <div class="feedback" id="feedback" style="display: none;"></div>
+    <button class="btn-recompensa" id="btnRecompensa" style="display:none;">Ver mi recompensa</button>
+  </div>
+
+  <script>
+    // Obtener initData desde la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const initData = urlParams.get('initData') || '';
+
+    // Preguntas
+    const questions = [
+      {
+        text: "¿Una amoladora puede utilizarse para cortar metal?",
+        correct: true,
+        explanation: "Correcto. Una amoladora puede cortar metales si se usa el disco adecuado."
+      },
+      {
+        text: "¿Un multímetro se utiliza para medir dimensiones físicas como largo o ancho?",
+        correct: false,
+        explanation: "No, se utiliza para medir variables eléctricas como voltaje y resistencia."
+      },
+      {
+        text: "¿Es necesario usar casco al trabajar en altura?",
+        correct: true,
+        explanation: "Sí, el casco es una medida de protección importante ante posibles caídas de objetos."
+      }
+    ];
+
+    let currentIndex = 0;
+    let userAnswers = [];
+
+    const cardContainer = document.getElementById('cardContainer');
+    const feedbackDiv = document.getElementById('feedback');
+    const recompensaBtn = document.getElementById('btnRecompensa');
+
+    // Crear carta actual
+    function loadQuestion(index) {
+      if (index >= questions.length) {
+        showFeedback();
+        return;
+      }
+
+      const question = questions[index];
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerText = question.text;
+
+      // Drag logic
+      let offsetX = 0;
+      let startX = 0;
+
+      card.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+      }, { passive: true });
+
+      card.addEventListener('touchmove', (e) => {
+        offsetX = e.touches[0].clientX - startX;
+        card.style.transform = `translateX(${offsetX}px) rotate(${offsetX/15}deg)`;
+      }, { passive: true });
+
+      card.addEventListener('touchend', (e) => {
+        if (offsetX > 100) {
+          registerAnswer(true);
+          card.style.transition = 'all 0.3s';
+          card.style.transform = `translateX(100vw)`;
+          setTimeout(() => {
+            card.remove();
+            loadQuestion(++currentIndex);
+          }, 300);
+        } else if (offsetX < -100) {
+          registerAnswer(false);
+          card.style.transition = 'all 0.3s';
+          card.style.transform = `translateX(-100vw)`;
+          setTimeout(() => {
+            card.remove();
+            loadQuestion(++currentIndex);
+          }, 300);
+        } else {
+          card.style.transition = 'all 0.3s';
+          card.style.transform = `translateX(0px)`;
+        }
+        offsetX = 0;
+      });
+
+      cardContainer.innerHTML = '';
+      cardContainer.appendChild(card);
+    }
+
+    function registerAnswer(answer) {
+      const correct = questions[currentIndex].correct;
+      userAnswers.push({
+        question: questions[currentIndex].text,
+        userAnswer: answer,
+        correct: correct,
+        explanation: questions[currentIndex].explanation
+      });
+    }
+
+    function showFeedback() {
+      feedbackDiv.style.display = 'block';
+      recompensaBtn.style.display = 'inline-block';
+      feedbackDiv.innerHTML = '';
+      userAnswers.forEach((entry, index) => {
+        const p = document.createElement('p');
+        p.innerHTML = `${entry.correct === entry.userAnswer ? '✅' : '❌'} <strong>${entry.question}</strong><br>${entry.explanation}`;
+        feedbackDiv.appendChild(p);
+      });
+    }
+
+    recompensaBtn.addEventListener('click', () => {
+      window.location.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+    });
+
+    // Empieza la primera pregunta
+    loadQuestion(currentIndex);
+  </script>
+</body>
+</html>
