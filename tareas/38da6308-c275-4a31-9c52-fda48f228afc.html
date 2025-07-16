@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+    <title>Tarea de hoy - Vacaciones en el trabajo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Manrope', sans-serif;
+            background: #0D1B49; /* azul tipo Fortnite */
+            overflow: hidden; /* Evita el scroll */
+            height: 100vh;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            position: relative;
+            color: #fff;
+        }
+
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            height: 40px;
+        }
+
+        .avatar {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            height: 50%;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        p.description {
+            font-size: 16px;
+            text-align: center;
+            max-width: 90%;
+            margin-bottom: 20px;
+        }
+
+        #card-stack {
+            position: relative;
+            width: 90vw;
+            max-width: 400px;
+            height: 60vh;
+        }
+
+        .card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1E2A6C, #3C57BF);
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            color: #fff;
+        }
+
+        .card.removed {
+            display: none;
+        }
+
+        .result {
+            font-size: 16px;
+            margin-top: 10px;
+            color: #0FFFCB;
+        }
+
+        .result.wrong {
+            color: #FF708D;
+        }
+
+        #feedback {
+            margin-top: 10px;
+        }
+
+        #end-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        #reward-btn {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(90deg, #0FFFCB, #6AFFE1);
+            border: none;
+            border-radius: 30px;
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .swipe-indicators {
+            display: flex;
+            justify-content: space-between;
+            width: 90vw;
+            max-width: 400px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #fff;
+            opacity: 0.8;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="app">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Logo Kämpe" />
+        <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="Avatar" />
+
+        <h1>Tarea de hoy</h1>
+        <p class="description">¿Puedes identificar cuándo es apropiado pedir vacaciones?</p>
+
+        <div class="swipe-indicators">
+            <span>❌ Incorrecto</span>
+            <span>✅ Correcto</span>
+        </div>
+
+        <div id="card-stack"></div>
+
+        <div id="feedback"></div>
+
+        <div id="end-screen">
+            <h2>¡Resultados!</h2>
+            <div id="result-summary"></div>
+            <button id="reward-btn">Ver mi recompensa</button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const initData = urlParams.get('initData') || '';
+
+        const questions = [
+            {
+                text: "Puedo pedir vacaciones cuando sé que va a comenzar una gran obra en pocos días.",
+                correct: false,
+                explanation: "No es recomendable pedir vacaciones justo antes de un proyecto importante."
+            },
+            {
+                text: "Puedo pedir vacaciones con antelación suficiente para que el equipo se organice.",
+                correct: true,
+                explanation: "Planear tus vacaciones con antelación permite una mejor organización del equipo."
+            },
+            {
+                text: "Pedir vacaciones sin consultar al jefe es una buena forma de reclamar mis derechos.",
+                correct: false,
+                explanation: "Siempre es necesario hablar con tu jefe antes de tomar vacaciones."
+            },
+            {
+                text: "Puedo tomar vacaciones si todo mi equipo también estará fuera al mismo tiempo.",
+                correct: false,
+                explanation: "Siempre debe haber personal suficiente para cubrir las necesidades del trabajo."
+            },
+            {
+                text: "Puedo pedir días libres si tengo días acumulados y no afectan proyectos actuales.",
+                correct: true,
+                explanation: "Si no afecta al trabajo, es válido tomar los días que te pertenecen."
+            },
+            {
+                text: "No necesito justificación para tomar vacaciones en medio de una emergencia.",
+                correct: false,
+                explanation: "Una emergencia laboral requiere responsabilidad y compromiso."
+            },
+            {
+                text: "Puedo negociar mis vacaciones para que coincidan con fechas personales importantes.",
+                correct: true,
+                explanation: "Es válido negociar tus fechas con sentido común y anticipación."
+            },
+            {
+                text: "Puedo tomar vacaciones sin comunicarme si tengo el derecho legal.",
+                correct: false,
+                explanation: "La comunicación con el equipo y responsable es siempre necesaria."
+            },
+            {
+                text: "Es mejor pedir vacaciones cortas de forma frecuente para no afectar la obra.",
+                correct: true,
+                explanation: "Vacaciones cortas pueden ser una buena solución para no interrumpir el trabajo."
+            },
+            {
+                text: "Mi jefe no puede negarme vacaciones si tengo días disponibles.",
+                correct: false,
+                explanation: "Aunque tengas días, la empresa puede organizar cuándo se otorgan para equilibrar cargas."
+            },
+        ];
+
+        let currentIndex = 0;
+        let results = [];
+
+        const cardStack = document.getElementById('card-stack');
+        const feedback = document.getElementById('feedback');
+        const endScreen = document.getElementById('end-screen');
+        const resultSummary = document.getElementById('result-summary');
+        const rewardBtn = document.getElementById('reward-btn');
+
+        function createCard(question, index) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.textContent = question.text;
+            card.dataset.index = index;
+            return card;
+        }
+
+        function showNextCard() {
+            if (currentIndex >= questions.length) {
+                showResults();
+                return;
+            }
+            const question = questions[currentIndex];
+            const card = createCard(question, currentIndex);
+
+            let startX = 0;
+            let currentX = 0;
+            let dragging = false;
+
+            const handleMove = (e) => {
+                if (!dragging) return;
+                currentX = (e.touches ? e.touches[0].clientX : e.clientX) - startX;
+                card.style.transform = `translateX(${currentX}px) rotate(${currentX / 20}deg)`;
+            };
+
+            const handleEnd = () => {
+                dragging = false;
+                card.style.transition = 'transform 0.3s ease';
+
+                if (currentX > 100) {
+                    handleAnswer(true, card);
+                } else if (currentX < -100) {
+                    handleAnswer(false, card);
+                } else {
+                    card.style.transform = 'translateX(0) rotate(0)';
+                }
+
+                window.removeEventListener('mousemove', handleMove);
+                window.removeEventListener('mouseup', handleEnd);
+                window.removeEventListener('touchmove', handleMove);
+                window.removeEventListener('touchend', handleEnd);
+            };
+
+            card.addEventListener('mousedown', (e) => {
+                dragging = true;
+                startX = e.clientX;
+                card.style.transition = '';
+                window.addEventListener('mousemove', handleMove);
+                window.addEventListener('mouseup', handleEnd);
+            });
+
+            card.addEventListener('touchstart', (e) => {
+                dragging = true;
+                startX = e.touches[0].clientX;
+                card.style.transition = '';
+                window.addEventListener('touchmove', handleMove);
+                window.addEventListener('touchend', handleEnd);
+            });
+
+            cardStack.innerHTML = '';
+            cardStack.appendChild(card);
+        }
+
+        function handleAnswer(answer, card) {
+            const question = questions[currentIndex];
+            const isCorrect = answer === question.correct;
+            results.push({ question, isCorrect });
+
+            const resultText = document.createElement('div');
+            resultText.className = 'result';
+            resultText.classList.add(isCorrect ? 'correct' : 'wrong');
+            resultText.textContent = isCorrect ? '✅ ¡Correcto!' : '❌ Incorrecto';
+            feedback.innerHTML = '';
+            feedback.appendChild(resultText);
+
+            setTimeout(() => {
+                feedback.innerHTML = '';
+                currentIndex++;
+                showNextCard();
+            }, 1000);
+        }
+
+        function showResults() {
+            cardStack.style.display = 'none';
+            feedback.style.display = 'none';
+            endScreen.style.display = 'flex';
+
+            results.forEach((res, idx) => {
+                const line = document.createElement('p');
+                line.innerHTML = `<strong>${idx + 1}.</strong> ${res.isCorrect ? '✅' : '❌'} ${res.question.explanation}`;
+                resultSummary.appendChild(line);
+            });
+        }
+
+        rewardBtn.addEventListener('click', () => {
+            window.location.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${initData}`;
+        });
+
+        showNextCard();
+    </script>
+</body>
+</html>
