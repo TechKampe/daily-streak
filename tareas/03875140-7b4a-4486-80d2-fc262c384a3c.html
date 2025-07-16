@@ -1,0 +1,308 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tarea de hoy - Vacaciones en la empresa</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Estilos generales */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', sans-serif;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: linear-gradient(to bottom, #005BEA, #00C6FB); /* Estilo Fortnite vibrante */
+      color: white;
+    }
+
+    #logo {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 100px;
+      z-index: 10;
+    }
+
+    #avatar {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      height: 100%;
+      opacity: 0.3;
+      z-index: 0;
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+      font-weight: 800;
+    }
+
+    .instruction {
+      font-size: 18px;
+      margin-bottom: 20px;
+      max-width: 90%;
+    }
+
+    .card-container {
+      position: relative;
+      width: 90vw;
+      max-width: 400px;
+      height: 300px;
+      perspective: 1000px;
+    }
+
+    .card {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #202b70;
+      border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      text-align: center;
+      padding: 20px;
+      z-index: 1;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+
+    .buttons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      width: 200px;
+    }
+
+    .feedback {
+      max-width: 90%;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 12px;
+      background-color: #00ffc8;
+      color: #00314d;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .result-card {
+      background: rgba(0,0,0,0.6);
+      border: 2px solid #00ffc8;
+      border-radius: 15px;
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+
+    .correct {
+      color: #00ff7f;
+    }
+
+    .incorrect {
+      color: #ff4d4d;
+    }
+  </style>
+</head>
+<body>
+  <img id="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kampe logo">
+  <img id="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Avatar">
+
+  <div class="container" id="game">
+    <h1>Tarea de hoy</h1>
+    <p class="instruction" id="instructions">Desliza la tarjeta hacia la <strong>derecha</strong> si es CORRECTO, o hacia la <strong>izquierda</strong> si es INCORRECTO.</p>
+
+    <div class="card-container" id="cardContainer"></div>
+  </div>
+
+  <div class="container hidden" id="results">
+    <h1>Resumen</h1>
+    <div id="feedbackBox" class="feedback"></div>
+    <button id="rewardBtn">Ver mi recompensa</button>
+  </div>
+
+  <script>
+    // Obtener initData de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const initData = urlParams.get("initData") || "";
+
+    const preguntas = [
+      {
+        texto: "¿Puedo pedir vacaciones si todo el equipo ya está fuera?",
+        respuesta: false,
+        explicacion: "No es recomendable, ya que alguien debe quedarse para cubrir el trabajo."
+      },
+      {
+        texto: "¿Debo pedir vacaciones con antelación?",
+        respuesta: true,
+        explicacion: "Sí, es importante pedirlas con tiempo para que se pueda planificar el trabajo."
+      },
+      {
+        texto: "¿Puedo pedir vacaciones justo cuando empieza una obra muy grande?",
+        respuesta: false,
+        explicacion: "No es lo ideal. Es mejor evitar coincidir con momentos críticos de trabajo."
+      },
+      {
+        texto: "¿Mi jefe puede rechazar mis vacaciones?",
+        respuesta: true,
+        explicacion: "Sí, si la situación de la empresa lo requiere, puede hacerlo."
+      },
+      {
+        texto: "¿Tengo derecho a vacaciones si acabo de empezar a trabajar?",
+        respuesta: false,
+        explicacion: "Debes haber trabajado al menos 1 año para tener vacaciones pagadas."
+      },
+      {
+        texto: "¿Puedo dividir mis vacaciones en varias partes?",
+        respuesta: true,
+        explicacion: "Sí, siempre que lo acuerdes con la empresa."
+      },
+      {
+        texto: "¿El mes de vacaciones lo decide la empresa?",
+        respuesta: true,
+        explicacion: "Se debe acordar entre trabajador y empresa, pero la empresa tiene preferencia."
+      },
+      {
+        texto: "¿Si no uso mis vacaciones, se acumulan para el siguiente año?",
+        respuesta: false,
+        explicacion: "En general no, deben usarse antes de que venza el período."
+      },
+      {
+        texto: "¿Durante las vacaciones, sigo ganando mi salario?",
+        respuesta: true,
+        explicacion: "Sí, las vacaciones son pagadas."
+      },
+      {
+        texto: "¿Puedo irme de vacaciones sin avisar?",
+        respuesta: false,
+        explicacion: "No. Debes pedir permiso formalmente."
+      },
+    ];
+
+    const cardContainer = document.getElementById("cardContainer");
+    const instructions = document.getElementById("instructions");
+    const game = document.getElementById("game");
+    const results = document.getElementById("results");
+    const feedbackBox = document.getElementById("feedbackBox");
+    const rewardBtn = document.getElementById("rewardBtn");
+
+    let current = 0;
+    let answers = [];
+
+    function crearTarjeta(pregunta, index) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.textContent = pregunta.texto;
+      card.dataset.index = index;
+
+      let startX = 0;
+      let currentX = 0;
+
+      const onTouchStart = (e) => {
+        startX = e.touches[0].clientX;
+      };
+
+      const onTouchMove = (e) => {
+        currentX = e.touches[0].clientX - startX;
+        card.style.transform = `translateX(${currentX}px) rotate(${currentX / 20}deg)`;
+      };
+
+      const onTouchEnd = (e) => {
+        if (currentX > 70) {
+          registrarRespuesta(index, true);
+          card.style.transform = `translateX(100vw)`;
+          siguienteTarjeta(card);
+        } else if (currentX < -70) {
+          registrarRespuesta(index, false);
+          card.style.transform = `translateX(-100vw)`;
+          siguienteTarjeta(card);
+        } else {
+          card.style.transform = `translateX(0px) rotate(0deg)`;
+        }
+        currentX = 0;
+      };
+
+      card.addEventListener("touchstart", onTouchStart);
+      card.addEventListener("touchmove", onTouchMove);
+      card.addEventListener("touchend", onTouchEnd);
+      cardContainer.appendChild(card);
+    }
+
+    function iniciarJuego() {
+      document.body.style.overflow = "hidden";
+      preguntas.forEach((pregunta, index) => crearTarjeta(pregunta, index));
+    }
+
+    function registrarRespuesta(index, respuestaUsuario) {
+      const correcta = preguntas[index].respuesta === respuestaUsuario;
+      answers.push({
+        texto: preguntas[index].texto,
+        correcto: correcta,
+        explicacion: preguntas[index].explicacion
+      });
+    }
+
+    function siguienteTarjeta(card) {
+      setTimeout(() => {
+        card.remove();
+        current++;
+        if (current >= preguntas.length) {
+          mostrarResultados();
+        }
+      }, 300);
+    }
+
+    function mostrarResultados() {
+      game.classList.add("hidden");
+      results.classList.remove("hidden");
+      document.body.style.overflow = "auto";
+
+      answers.forEach((r) => {
+        const div = document.createElement("div");
+        div.className = "result-card";
+        div.innerHTML = `
+          <p><strong>${r.correcto ? "✅ Correcto" : "❌ Incorrecto"}</strong></p>
+          <p>${r.explicacion}</p>
+        `;
+        feedbackBox.appendChild(div);
+      });
+    }
+
+    rewardBtn.addEventListener("click", () => {
+      window.location.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${initData}`;
+    });
+
+    iniciarJuego();
+  </script>
+</body>
+</html>
