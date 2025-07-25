@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tarea de hoy - Kämpe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Manrope', sans-serif;
+    }
+
+    html, body {
+      overflow: hidden;
+      height: 100%;
+      background: linear-gradient(180deg, #132d52, #1a3c63);
+      color: #fff;
+      -webkit-user-select: none;
+         -moz-user-select: none;
+          -ms-user-select: none;
+              user-select: none;
+    }
+
+    .container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .logo {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 100px;
+    }
+
+    .avatar {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      max-height: 80%;
+      opacity: 0.3;
+      z-index: 1;
+    }
+
+    .header {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      text-shadow: 2px 2px #000;
+    }
+
+    .instructions {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-align: center;
+      max-width: 90%;
+    }
+
+    .card-container {
+      position: relative;
+      width: 90vw;
+      max-width: 340px;
+      height: 400px;
+      z-index: 2;
+    }
+
+    .card {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #264b77;
+      border-radius: 20px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 600;
+      text-align: center;
+      padding: 1rem;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      will-change: transform;
+    }
+
+    .feedback {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: left;
+      max-width: 90%;
+      z-index: 2;
+      margin-top: 20px;
+    }
+
+    .feedback-item {
+      background: #264b77;
+      border-radius: 14px;
+      padding: 1rem;
+      margin: 0.5rem 0;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+    }
+
+    .button {
+      background: #00ffff;
+      color: #000;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: background 0.3s;
+    }
+
+    .button:hover {
+      background: #00dcdc;
+    }
+
+    .swipe-hint {
+      position: absolute;
+      bottom: 10px;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      z-index: 2;
+    }
+
+    @media (max-height: 600px) {
+      .card-container {
+        height: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="main-container">
+    <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" class="logo" alt="Kampe Logo" />
+    <img src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" class="avatar" alt="Kämpe avatar" />
+    <div class="header">
+      <h1>Tarea de hoy</h1>
+      <div class="instructions">Desliza la tarjeta a <strong>la derecha</strong> si crees que es <strong>correcto</strong>, o a <strong>la izquierda</strong> si crees que es <strong>incorrecto</strong>.</div>
+    </div>
+    <div class="card-container" id="card-container"></div>
+    <div class="swipe-hint">➡️ Correcto | Incorrecto ⬅️</div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <script>
+    // Datos
+    const urlParams = new URLSearchParams(window.location.search);
+    const initData = urlParams.get('initData') || '';
+    const questions = [
+      {
+        text: "¿Debo llegar al trabajo al menos 10 minutos antes de la hora?",
+        correct: true,
+        explanation: "Llegar antes muestra puntualidad y compromiso."
+      },
+      {
+        text: "¿Si tengo dudas sobre qué herramientas llevar, mejor no digo nada?",
+        correct: false,
+        explanation: "Siempre es mejor preguntar si no estás seguro."
+      },
+      {
+        text: "¿Ignorar los problemas menores en una instalación está bien?",
+        correct: false,
+        explanation: "Detectar y reportar problemas muestra profesionalismo."
+      },
+      {
+        text: "¿Es buena idea revisar el pronóstico del clima antes de salir a una obra al aire libre?",
+        correct: true,
+        explanation: "Te ayuda a prepararte con ropa y equipo adecuados."
+      },
+      {
+        text: "¿Debo usar casco aunque crea que no es necesario?",
+        correct: true,
+        explanation: "La seguridad siempre es primero. Usa protección adecuada."
+      },
+      {
+        text: "¿Si un compañero trabaja mal, debo dejarlo para no molestar?",
+        correct: false,
+        explanation: "Hablar o reportar puede evitar errores o accidentes."
+      },
+      {
+        text: "¿Es recomendable organizar mis herramientas al final de cada jornada?",
+        correct: true,
+        explanation: "Ahorras tiempo y reduces riesgos al día siguiente."
+      },
+      {
+        text: "¿Salir corriendo al descanso sin asegurar mi área de trabajo está bien?",
+        correct: false,
+        explanation: "La seguridad es responsabilidad de todos."
+      },
+      {
+        text: "¿Entrar al trabajo sin saludar está bien mientras hagas tus tareas?",
+        correct: false,
+        explanation: "La actitud también cuenta. Saludar es parte del respeto."
+      },
+      {
+        text: "¿Llevar agua y mantenerme hidratado es parte de ser previsivo?",
+        correct: true,
+        explanation: "La hidratación es clave para tu rendimiento físico."
+      }
+    ];
+
+    let currentIndex = 0;
+    let answers = [];
+
+    const cardContainer = document.getElementById('card-container');
+    const feedbackContainer = document.getElementById('feedback');
+    const mainContainer = document.getElementById('main-container');
+
+    // Crea las tarjetas
+    function createCards() {
+      for (let i = questions.length - 1; i >= 0; i--) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.textContent = questions[i].text;
+        card.dataset.index = i;
+        addSwipe(card);
+        cardContainer.appendChild(card);
+      }
+    }
+
+    // Añade manejo de swipe
+    function addSwipe(card) {
+      let offsetX = 0, offsetY = 0, startX = 0, startY = 0;
+
+      const onPointerDown = (e) => {
+        startX = e.touches ? e.touches[0].clientX : e.clientX;
+        startY = e.touches ? e.touches[0].clientY : e.clientY;
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+        document.addEventListener('touchmove', onPointerMove, { passive: false });
+        document.addEventListener('touchend', onPointerUp);
+      }
+
+      const onPointerMove = (e) => {
+        if (e.cancelable) e.preventDefault();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        offsetX = clientX - startX;
+        offsetY = clientY - startY;
+        card.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${offsetX / 20}deg)`;
+      }
+
+      const onPointerUp = () => {
+        if (Math.abs(offsetX) > 100) {
+          const answer = offsetX > 0;
+          const index = parseInt(card.dataset.index);
+          answers.push({
+            question: questions[index].text,
+            correct: questions[index].correct,
+            answer: answer,
+            explanation: questions[index].explanation
+          });
+          card.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+          card.style.transform = `translate(${offsetX > 0 ? 1000 : -1000}px, ${offsetY}px) rotate(${offsetX / 10}deg)`;
+          card.style.opacity = 0;
+          setTimeout(() => {
+            card.remove();
+            currentIndex++;
+            if (currentIndex >= questions.length) {
+              showFeedback();
+            }
+          }, 300);
+        } else {
+          card.style.transition = 'transform 0.3s ease';
+          card.style.transform = 'translate(0, 0)';
+        }
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+        document.removeEventListener('touchmove', onPointerMove);
+        document.removeEventListener('touchend', onPointerUp);
+        offsetX = offsetY = 0;
+      }
+
+      card.addEventListener('pointerdown', onPointerDown);
+      card.addEventListener('touchstart', onPointerDown);
+    }
+
+    // Muestra retroalimentación
+    function showFeedback() {
+      document.body.style.overflow = 'auto';
+      feedbackContainer.style.display = 'flex';
+      feedbackContainer.innerHTML = '<h2>Resultados:</h2>';
+      answers.forEach((ans, i) => {
+        const item = document.createElement('div');
+        item.className = 'feedback-item';
+        const result = ans.answer === ans.correct ? '✅ Correcto' : '❌ Incorrecto';
+        item.innerHTML = `<strong>Pregunta ${i + 1}:</strong> ${ans.question}<br>${result}<br><em>${ans.explanation}</em>`;
+        feedbackContainer.appendChild(item);
+      });
+
+      const btn = document.createElement('button');
+      btn.className = 'button';
+      btn.textContent = 'Ver mi recompensa';
+      btn.onclick = () => {
+        window.location.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${initData}`;
+      };
+      feedbackContainer.appendChild(btn);
+    }
+
+    createCards();
+  </script>
+</body>
+</html>
