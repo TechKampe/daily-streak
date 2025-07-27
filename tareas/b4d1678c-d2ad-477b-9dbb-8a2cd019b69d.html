@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Tarea de hoy - Kämpe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    /* RESET Y FUENTES */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #152CFF;
+      color: #fff;
+    }
+
+    body.show-results {
+      overflow: auto;
+    }
+
+    #app {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 1rem;
+    }
+
+    header {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    header img.logo {
+      height: 40px;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0.5rem 0;
+    }
+
+    .description {
+      font-size: 16px;
+      margin-bottom: 1rem;
+    }
+
+    .instruction {
+      font-size: 14px;
+      background-color: rgba(0,0,0,0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .card-container {
+      position: relative;
+      width: 90vw;
+      max-width: 400px;
+      height: 60vh;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      background-color: #1C1CFF;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      user-select: none;
+      font-size: 20px;
+    }
+
+    .indicator {
+      position: absolute;
+      top: 20px;
+      font-weight: bold;
+      font-size: 18px;
+      padding: 0.3rem 1rem;
+      border-radius: 8px;
+      opacity: 0.9;
+    }
+
+    .indicator.left {
+      left: 10px;
+      background-color: rgba(255, 0, 0, 0.8);
+    }
+
+    .indicator.right {
+      right: 10px;
+      background-color: rgba(0, 255, 0, 0.8);
+    }
+
+    .result-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      max-width: 600px;
+      margin-top: 2rem;
+    }
+
+    .result-container.show {
+      display: flex;
+    }
+
+    .result {
+      background-color: #2121DD;
+      padding: 1rem;
+      border-radius: 12px;
+      margin: 0.5rem 0;
+      width: 100%;
+    }
+
+    .result.correct {
+      border-left: 6px solid #00FFAA;
+    }
+
+    .result.incorrect {
+      border-left: 6px solid #FF4E4E;
+    }
+
+    .btn-reward {
+      margin-top: 2rem;
+      background-color: #00C8FF;
+      color: #000;
+      font-weight: bold;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .avatar {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      max-height: 45vh;
+      opacity: 0.8;
+    }
+
+    /* Media Queries */
+    @media screen and (max-height: 600px) {
+      .card-container {
+        height: 50vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe Logo" class="logo" />
+      <div class="title">Tarea de hoy</div>
+      <div class="description">¿Estás listo para enfrentar imprevistos en el mundo de los oficios?</div>
+      <div class="instruction">Desliza la carta a la derecha si la acción es correcta ✅, o a la izquierda si es incorrecta ❌.</div>
+    </header>
+
+    <div class="card-container" id="cardContainer"></div>
+
+    <div class="result-container" id="resultContainer"></div>
+
+    <a id="rewardButton" class="btn-reward" style="display:none;">Ver mi recompensa</a>
+
+    <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Personaje" />
+  </div>
+
+  <script>
+    // Preguntas del reto
+    const preguntas = [
+      { texto: "Llegar 15 minutos antes del inicio de la jornada.", correcta: true, explicacion: "Llegar antes demuestra puntualidad y compromiso." },
+      { texto: "Ignorar un cable suelto pensando que no es tu responsabilidad.", correcta: false, explicacion: "Identificar problemas aunque no sean tuyos mejora la seguridad y el trabajo en equipo." },
+      { texto: "Consultar con tu supervisor si tienes dudas sobre qué herramientas llevar.", correcta: true, explicacion: "Pedir ayuda demuestra profesionalismo y ganas de aprender." },
+      { texto: "No usar casco porque 'no va a pasar nada'.", correcta: false, explicacion: "Es obligatorio el equipo de protección personal en todo momento." },
+      { texto: "Planificar tu ruta con antelación para no llegar tarde.", correcta: true, explicacion: "La previsión es clave para la puntualidad." },
+      { texto: "Dejar basura en el área de trabajo al final del día.", correcta: false, explicacion: "Mantener la limpieza demuestra respeto por el entorno y tus compañeros." },
+      { texto: "Revisar tus herramientas antes de salir de casa.", correcta: true, explicacion: "Evita imprevistos en el sitio de trabajo." },
+      { texto: "Tomarte descansos fuera del horario permitido.", correcta: false, explicacion: "El descanso debe respetar los tiempos acordados." },
+      { texto: "Anotar las tareas que te asignan para no olvidar nada.", correcta: true, explicacion: "Organizarte mejora tu rendimiento y confianza." },
+      { texto: "No avisar si vas a llegar unos minutos tarde.", correcta: false, explicacion: "La comunicación ante imprevistos es fundamental." }
+    ];
+
+    let currentCardIndex = 0;
+    let initData = '';
+    const respuestas = [];
+
+    // Recoger initData de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('initData')) {
+      initData = urlParams.get('initData');
+    }
+
+    const cardContainer = document.getElementById('cardContainer');
+    const resultContainer = document.getElementById('resultContainer');
+    const rewardButton = document.getElementById('rewardButton');
+
+    // Crear cartas
+    preguntas.reverse().forEach((item, index) => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.textContent = item.texto;
+      div.dataset.index = preguntas.length - 1 - index;
+      cardContainer.appendChild(div);
+    });
+
+    // Swipe
+    let isDragging = false;
+    let startX;
+    let currentCard;
+
+    const threshold = 80;
+
+    function handleMove(x) {
+      const deltaX = x - startX;
+      currentCard.style.transform = `translateX(${deltaX}px) rotate(${deltaX / 20}deg)`;
+    }
+
+    function endMove(x) {
+      const deltaX = x - startX;
+      if (Math.abs(deltaX) > threshold) {
+        const direction = deltaX > 0 ? 'right' : 'left';
+        handleSwipe(direction);
+      } else {
+        currentCard.style.transform = 'translateX(0px) rotate(0deg)';
+      }
+      isDragging = false;
+    }
+
+    function handleSwipe(direction) {
+      const index = parseInt(currentCard.dataset.index);
+      const pregunta = preguntas[index];
+      const respuesta = direction === 'right';
+      const esCorrecta = pregunta.correcta === respuesta;
+
+      respuestas.push({
+        texto: pregunta.texto,
+        seleccion: respuesta,
+        correcta: pregunta.correcta,
+        explicacion: pregunta.explicacion,
+        fueCorrecta: esCorrecta
+      });
+
+      currentCard.style.transition = '0.3s ease all';
+      currentCard.style.transform = `translateX(${direction === 'right' ? '1000px' : '-1000px'}) rotate(${direction === 'right' ? 30 : -30}deg)`;
+      setTimeout(() => {
+        cardContainer.removeChild(currentCard);
+        currentCardIndex++;
+        if (currentCardIndex >= preguntas.length) {
+          mostrarResultados();
+        } else {
+          attachSwipe();
+        }
+      }, 300);
+    }
+
+    function attachSwipe() {
+      currentCard = cardContainer.lastElementChild;
+      if (!currentCard) return;
+      currentCard.addEventListener('touchstart', e => {
+        isDragging = true;
+        startX = e.touches[0].clientX;
+      });
+      currentCard.addEventListener('touchmove', e => {
+        if (!isDragging) return;
+        handleMove(e.touches[0].clientX);
+      });
+      currentCard.addEventListener('touchend', e => {
+        if (!isDragging) return;
+        endMove(e.changedTouches[0].clientX);
+      });
+    }
+
+    function mostrarResultados() {
+      document.body.classList.add('show-results');
+      resultContainer.classList.add('show');
+      respuestas.forEach(resp => {
+        const div = document.createElement('div');
+        div.className = 'result ' + (resp.fueCorrecta ? 'correct' : 'incorrect');
+        div.innerHTML = `<strong>${resp.texto}</strong><br/>${resp.explicacion}`;
+        resultContainer.appendChild(div);
+      });
+      rewardButton.style.display = 'inline-block';
+      rewardButton.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${initData}`;
+    }
+
+    attachSwipe();
+  </script>
+</body>
+</html>
