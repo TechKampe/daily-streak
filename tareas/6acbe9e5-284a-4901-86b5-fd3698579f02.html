@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tarea de hoy | Kämpe</title>
+  <!-- Fuente Manrope -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* =============================
+       Estilos base y reset
+       ============================= */
+    :root{
+      --bg-top:#2f6aff;          /* Azul Fortnite-like */
+      --bg-bottom:#0c3df3;       /* Azul profundo */
+      --card:#0e4dfd;            /* Azul carta */
+      --card-2:#1d63ff;          /* Degradado */
+      --accent:#00f0ff;          /* Cian neón */
+      --accent-2:#8dff3d;        /* Verde neon */
+      --danger:#ff3d57;          /* Rojo neon */
+      --safe:#3dff9f;            /* Verde check */
+      --ink:#031650;             /* Azul oscuro para textos */
+      --white:#ffffff;
+      --shadow: 0 14px 40px rgba(3,22,80,0.35);
+      --radius:18px;
+      --radius-sm:12px;
+    }
+
+    *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%;
+      background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+      font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--white);
+    }
+    body {
+      margin: 0;
+      overflow: hidden; /* Bloqueo de scroll durante el juego */
+    }
+
+    /* Contenedor principal sin scroll durante el juego */
+    .app {
+      height: 100dvh; /* Usa la altura visible dinámica en móviles compatibles */
+      height: 100vh;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden; /* mantén el área de juego sin scroll */
+    }
+
+    /* Fondo con personaje en grande y baja opacidad (estética Fortnite) */
+    .avatar-bg{
+      position: absolute;
+      bottom: -2vh;
+      right: -2vw;
+      width: min(56vw, 420px);
+      opacity: 0.42;
+      pointer-events: none;
+      z-index: 1;
+      filter: drop-shadow(0 10px 30px rgba(0,0,0,0.35));
+      transform: rotate(2deg);
+      user-select: none;
+    }
+
+    /* Capa de UI principal */
+    .stage{
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      max-width: 840px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Header con logo y título */
+    .topbar{
+      width: 100%;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo{
+      height: 38px;
+      padding: 6px 8px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+    .titles{
+      text-align: left;
+      line-height: 1.1;
+    }
+    .titles .sup{
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.85);
+      font-weight: 700;
+    }
+    .titles .main{
+      font-size: clamp(18px, 3.8vw, 24px);
+      font-weight: 800;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.2);
+    }
+    .tag{
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      color: #001a2a;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      box-shadow: 0 8px 20px rgba(0, 240, 255, 0.35);
+      white-space: nowrap;
+    }
+
+    /* Caja de juego estilo tarjeta Discord/Fortnite */
+    .gameboard{
+      position: relative;
+      width: min(100%, 880px);
+      height: clamp(520px, 82dvh, 720px);
+      max-height: 82vh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 2px solid rgba(255,255,255,0.18);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden; /* Sin scroll en juego */
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+      backdrop-filter: blur(6px);
+    }
+
+    .hintbar{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.02));
+    }
+    .progress{
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .bar{
+      width: 120px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.18);
+      overflow: hidden;
+    }
+    .bar > .fill{
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-2), var(--accent));
+      border-radius: inherit;
+      transition: width .25s ease;
+      box-shadow: 0 0 10px rgba(0,240,255,0.6);
+    }
+
+    /* Zona del mazo (cartas) */
+    .deck{
+      position: relative;
+      margin: 0 14px;
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
+      touch-action: none; /* imprescindible para que el swipe no arrastre la ventana */
+    }
+
+    /* Carta principal */
+    .card{
+      position: absolute;
+      width: min(92vw, 720px);
+      height: min(60vh, 440px);
+      background: linear-gradient(160deg, var(--card), var(--card-2));
+      border: 2px solid rgba(255,255,255,0.28);
+      border-radius: 22px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(255,255,255,0.08);
+      padding: 18px;
+      color: var(--white);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+      will-change: transform;
+      user-select: none;
+      transform: translate3d(0,0,0);
+    }
+    .card h3{
+      margin: 4px 0 6px 0;
+      font-size: clamp(18px, 2.8vw, 22px);
+      font-weight: 800;
+      letter-spacing: .2px;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.2);
+    }
+    .card .statement{
+      font-size: clamp(18px, 2.9vw, 22px);
+      font-weight: 700;
+      line-height: 1.3;
+      align-self: center;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.22);
+    }
+    .mini{
+      font-size: 12px;
+      opacity: 0.85;
+    }
+
+    /* Etiquetas dinámicas de swipe (Verdadero/Falso) */
+    .badge{
+      position: absolute;
+      top: 12px;
+      padding: 8px 12px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      font-size: 14px;
+      border-radius: 10px;
+      opacity: 0;
+      transform: scale(0.92);
+      pointer-events: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .badge.right{
+      right: 12px;
+      background: rgba(61,255,159,0.92);
+      color: #022b1a;
+      border: 2px solid rgba(0,0,0,0.12);
+    }
+    .badge.left{
+      left: 12px;
+      background: rgba(255,61,87,0.92);
+      color: #2b0208;
+      border: 2px solid rgba(0,0,0,0.12);
+    }
+
+    /* Pistas laterales persistentes (UX) */
+    .side-hints{
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .side-hints .left, .side-hints .right{
+      position: absolute;
+      top: 40%;
+      transform: translateY(-50%);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .8px;
+      opacity: .65;
+      text-transform: uppercase;
+      background: rgba(0,0,0,0.18);
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.22);
+      backdrop-filter: blur(4px);
+    }
+    .side-hints .left{ left: 10px; }
+    .side-hints .right{ right: 10px; }
+
+    /* Botonera accesible (por si alguien no puede deslizar) */
+    .actions{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+    .btn{
+      appearance: none;
+      border: none;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      color: #00222a;
+      transition: transform .05s ease, filter .2s ease, box-shadow .2s ease;
+    }
+    .btn:active{ transform: translateY(1px) scale(.98); }
+    .btn-yes{
+      background: linear-gradient(180deg, var(--safe), #19d782);
+      box-shadow: 0 8px 24px rgba(61,255,159,0.35);
+      border: 2px solid rgba(0,0,0,0.15);
+    }
+    .btn-no{
+      background: linear-gradient(180deg, #ff6b7f, var(--danger));
+      box-shadow: 0 8px 24px rgba(255,61,87,0.35);
+      border: 2px solid rgba(0,0,0,0.15);
+    }
+
+    /* Toast de feedback breve */
+    .toast{
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+      font-weight: 800;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      opacity: 0;
+      transition: opacity .2s ease, transform .2s ease;
+      pointer-events: none;
+      z-index: 15;
+      backdrop-filter: blur(6px);
+    }
+    .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Intro superpuesta (instrucciones antes de jugar) */
+    .intro{
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(15,51,255,0.85), rgba(2,20,120,0.85));
+      z-index: 10;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+    .intro-card{
+      background: linear-gradient(160deg, rgba(255,255,255,0.25), rgba(255,255,255,0.10));
+      border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 18px;
+      padding: 16px;
+      max-width: 680px;
+      width: 92%;
+      box-shadow: var(--shadow);
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+    .intro-card h2{
+      margin: 8px 0 6px 0;
+      font-size: clamp(20px, 4.8vw, 30px);
+      font-weight: 900;
+      letter-spacing: .3px;
+      text-shadow: 0 2px 0 rgba(0,0,0,.25);
+    }
+    .intro-card p{
+      margin: 6px 0;
+      font-size: clamp(14px, 3.4vw, 16px);
+      opacity: .95;
+    }
+    .swipe-demo{
+      margin: 12px auto 8px;
+      width: 260px;
+      height: 120px;
+      border-radius: 14px;
+      background: linear-gradient(160deg, var(--card), var(--card-2));
+      border: 2px solid rgba(255,255,255,0.25);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+    }
+    .swipe-demo::before,
+    .swipe-demo::after{
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      transform: translateY(-50%);
+      animation: pulse 1.4s infinite;
+    }
+    .swipe-demo::before{
+      left: 12px;
+      background: var(--danger);
+      box-shadow: 0 0 10px rgba(255,61,87,0.6);
+    }
+    .swipe-demo::after{
+      right: 12px;
+      background: var(--safe);
+      box-shadow: 0 0 10px rgba(61,255,159,0.6);
+    }
+    @keyframes pulse{
+      0%,100%{ transform: translateY(-50%) scale(1); opacity: .8; }
+      50%{ transform: translateY(-50%) scale(1.15); opacity: 1; }
+    }
+    .intro .btn-start{
+      margin-top: 10px;
+      font-size: 16px;
+      padding: 12px 18px;
+      border-radius: 16px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      color: #001a2a;
+      font-weight: 900;
+      border: 0;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(0,240,255,0.35);
+    }
+
+    /* Pantalla de resultados (se permite scroll más tarde) */
+    .results{
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(9,30,140,0.85), rgba(0,14,60,0.85));
+      z-index: 20;
+      display: none;
+      overflow: auto; /* Scroll permitido cuando se muestre */
+    }
+    .results.visible{ display: block; }
+    .results .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px 14px 24px;
+    }
+    .results-header{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .results-title{
+      font-size: clamp(20px, 4.6vw, 28px);
+      font-weight: 900;
+    }
+    .score-badge{
+      padding: 8px 12px;
+      background: linear-gradient(90deg, var(--safe), var(--accent));
+      color: #012026;
+      font-weight: 900;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,0.2);
+      box-shadow: 0 10px 26px rgba(0,240,255,0.35);
+    }
+    .list{
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .item{
+      background: linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border: 2px solid rgba(255,255,255,0.22);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+    }
+    .badge-icon{
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: #031b29;
+      border: 2px solid rgba(0,0,0,0.15);
+    }
+    .badge-icon.ok{
+      background: var(--safe);
+    }
+    .badge-icon.ko{
+      background: var(--danger);
+    }
+    .item .q{
+      font-weight: 800;
+      margin-bottom: 4px;
+      line-height: 1.25;
+    }
+    .item .meta{
+      font-size: 12px;
+      opacity: .9;
+      margin-bottom: 6px;
+    }
+    .item .expl{
+      font-size: 14px;
+    }
+    .cta{
+      position: sticky;
+      bottom: 8px;
+      display: flex;
+      justify-content: center;
+      padding-top: 12px;
+    }
+    .btn-reward{
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      color: #001a2a;
+      border: none;
+      padding: 14px 18px;
+      border-radius: 14px;
+      font-weight: 900;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 16px 34px rgba(0,240,255,0.35);
+      border: 2px solid rgba(255,255,255,0.22);
+    }
+
+    /* Adaptaciones responsive para asegurar todo en pantalla durante el juego */
+    @media (max-height: 640px){
+      .card{ height: min(58vh, 400px); }
+      .actions{ padding: 8px; gap: 8px; }
+      .btn{ padding: 10px 12px; }
+      .logo{ height: 32px; }
+    }
+    @media (max-width: 380px){
+      .bar{ width: 92px; }
+      .card{ padding: 14px; border-radius: 18px; }
+      .side-hints .left, .side-hints .right{ display: none; } /* En pantallas muy pequeñas, reducimos ruido visual */
+    }
+  </style>
+</head>
+<body>
+  <!-- App: sin scroll durante el juego -->
+  <div class="app" id="app">
+    <!-- Avatar de fondo (prominente, sin tapar UI) -->
+    <img class="avatar-bg" alt="Personaje Kämpe" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png">
+
+    <!-- UI principal -->
+    <div class="stage" aria-live="polite">
+      <div class="topbar">
+        <!-- Logo corporativo (es blanco y funciona sobre el azul brillante) -->
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="titles">
+          <div class="sup">Tarea de hoy</div>
+          <div class="main" id="challengeTitle">%%titulo%%</div>
+        </div>
+        <div class="tag">Mundo de los oficios</div>
+      </div>
+
+      <!-- Tablero del juego -->
+      <div class="gameboard" id="gameboard" role="region" aria-label="Desafío diario gamificado de Kämpe">
+        <!-- Barra de progreso e instrucciones cortas -->
+        <div class="hintbar">
+          <div class="progress">
+            <span id="progressText">1/10</span>
+            <div class="bar" aria-hidden="true"><div class="fill" id="progressFill"></div></div>
+          </div>
+          <div class="mini">
+            Desliza: Izquierda = Falso • Derecha = Verdadero
+          </div>
+        </div>
+
+        <!-- Mazo de cartas (interacción principal) -->
+        <div class="deck" id="deck">
+          <div class="card" id="card" aria-roledescription="carta deslizante" aria-label="Afirmación">
+            <div>
+              <h3>Anticípate a los imprevistos</h3>
+              <div class="mini">Responde moviendo la carta</div>
+            </div>
+
+            <div class="statement" id="statement">Cargando…</div>
+
+            <div class="mini">Arrastra a la derecha si es Verdadero, a la izquierda si es Falso</div>
+
+            <!-- Badges dinámicos durante el swipe -->
+            <div class="badge left" id="badgeLeft">FALSO</div>
+            <div class="badge right" id="badgeRight">VERDADERO</div>
+          </div>
+
+          <!-- Pistas laterales persistentes -->
+          <div class="side-hints" aria-hidden="true">
+            <div class="left">Falso</div>
+            <div class="right">Verdadero</div>
+          </div>
+        </div>
+
+        <!-- Acciones accesibles (sin scroll) -->
+        <div class="actions">
+          <button class="btn btn-no" id="btnNo" aria-label="Elegir Falso">Falso</button>
+          <button class="btn btn-yes" id="btnYes" aria-label="Elegir Verdadero">Verdadero</button>
+        </div>
+
+        <!-- Toast de feedback -->
+        <div class="toast" id="toast" role="status" aria-live="assertive"></div>
+
+        <!-- Intro con instrucciones (antes de empezar) -->
+        <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+          <div class="intro-card">
+            <div class="sup" style="opacity:.9;font-weight:800;letter-spacing:1.2px;">Warm-up</div>
+            <h2 id="introTitle">¿Verdadero o Falso?</h2>
+            <p>Vas a ver 10 situaciones reales del día a día en oficios técnicos (electricidad, fontanería, obra, etc.).</p>
+            <div class="swipe-demo" aria-hidden="true"></div>
+            <p style="font-weight:700">Desliza la carta a la derecha si es Verdadero. A la izquierda si es Falso.</p>
+            <p class="mini">Consejo pro: responde con sentido común, seguridad y trabajo en equipo.</p>
+            <button class="btn-start" id="btnStart">¡Empezar!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla de resultados (con scroll activado al finalizar) -->
+    <div class="results" id="results" tabindex="-1">
+      <div class="wrap">
+        <div class="results-header">
+          <div class="results-title">Resumen del reto</div>
+          <div class="score-badge" id="scoreBadge">Puntuación: 0/10</div>
+        </div>
+        <div class="list" id="resultsList"></div>
+        <div class="cta">
+          <button class="btn-reward" id="btnReward">Ver mi recompensa</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================
+       Lógica del juego y swipe
+       ============================================ */
+
+    // Datos del desafío: 10 afirmaciones V/F con explicación
+    const QUESTIONS = [
+      {
+        text: "Llegar 10–15 minutos antes a la obra ayuda a preparar herramientas y prever imprevistos.",
+        correct: true,
+        expl: "La puntualidad estratégica mejora la seguridad, la coordinación y evita retrasos al comenzar."
+      },
+      {
+        text: "Si veo un cable pelado en una instalación, puedo seguir trabajando y avisar más tarde.",
+        correct: false,
+        expl: "Un cable pelado es un riesgo inmediato. Detén la tarea, señaliza la zona y avisa al responsable."
+      },
+      {
+        text: "En la primera visita a una obra nueva no hace falta revisar el plan de seguridad si voy con prisa.",
+        correct: false,
+        expl: "Siempre revisa el plan de seguridad y accesos. Es obligatorio y reduce riesgos innecesarios."
+      },
+      {
+        text: "Si no estoy seguro de qué herramientas llevar el primer día, pregunto al encargado para ir preparado.",
+        correct: true,
+        expl: "Consultar antes evita viajes extra, pérdidas de tiempo y demuestra proactividad."
+      },
+      {
+        text: "Los EPI (casco, gafas, guantes) se usan solo si el cliente está presente.",
+        correct: false,
+        expl: "Los EPI son obligatorios por seguridad, independientemente de quién esté mirando."
+      },
+      {
+        text: "Si falta un material específico, es buena idea improvisar con otro que no sea el adecuado.",
+        correct: false,
+        expl: "Improvisar con material inadecuado compromete la seguridad y la calidad. Solicita lo correcto."
+      },
+      {
+        text: "Hacer fotos del antes y después de una intervención ayuda a documentar el trabajo.",
+        correct: true,
+        expl: "Las evidencias visuales facilitan reportes, garantías y comunicación con el cliente."
+      },
+      {
+        text: "Al manipular un cuadro eléctrico, debo cortar suministro y verificar ausencia de tensión.",
+        correct: true,
+        expl: "Bloqueo-etiquetado y verificación son esenciales para evitar accidentes eléctricos."
+      },
+      {
+        text: "Si llueve fuerte, puedo usar un alargador sin protección en exterior para acabar rápido.",
+        correct: false,
+        expl: "Electricidad y agua no se mezclan. Usa protecciones IP adecuadas o reprograma la tarea."
+      },
+      {
+        text: "Si detecto una mejora que ahorra tiempo y cumple normativa, la propongo al equipo.",
+        correct: true,
+        expl: "La mejora continua aporta valor y demuestra iniciativa profesional."
+      }
+    ];
+
+    // Estado del juego
+    const state = {
+      index: 0,
+      results: [], // {text, correctAnswer, userAnswer, isRight, expl}
+      locked: false,
+      initData: null
+    };
+
+    // Elementos del DOM
+    const cardEl = document.getElementById('card');
+    const statementEl = document.getElementById('statement');
+    const badgeLeft = document.getElementById('badgeLeft');
+    const badgeRight = document.getElementById('badgeRight');
+    const progressText = document.getElementById('progressText');
+    const progressFill = document.getElementById('progressFill');
+    const btnNo = document.getElementById('btnNo');
+    const btnYes = document.getElementById('btnYes');
+    const toast = document.getElementById('toast');
+    const intro = document.getElementById('intro');
+    const btnStart = document.getElementById('btnStart');
+    const resultsLayer = document.getElementById('results');
+    const resultsList = document.getElementById('resultsList');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const btnReward = document.getElementById('btnReward');
+    const app = document.getElementById('app');
+    const gameboard = document.getElementById('gameboard');
+
+    // Bloqueo de scroll durante el juego (muy importante para móviles)
+    let scrollLocked = true;
+    const preventScroll = (e) => { if(scrollLocked) { e.preventDefault(); } };
+    function lockScroll(){
+      scrollLocked = true;
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.addEventListener('touchmove', preventScroll, {passive:false});
+      document.addEventListener('wheel', preventScroll, {passive:false});
+    }
+    function unlockScroll(){
+      scrollLocked = false;
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+      document.removeEventListener('touchmove', preventScroll);
+      document.removeEventListener('wheel', preventScroll);
+    }
+    lockScroll(); // Por defecto, bloqueado durante intro + juego
+
+    // Utilidades
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+    function showToast(msg, ok=true){
+      toast.textContent = msg;
+      toast.style.background = ok ? 'rgba(29, 200, 140, .86)' : 'rgba(255, 61, 87, .86)';
+      toast.classList.add('show');
+      setTimeout(()=> toast.classList.remove('show'), 650);
+    }
+
+    // Carga de pregunta
+    function loadQuestion(){
+      const q = QUESTIONS[state.index];
+      statementEl.textContent = q.text;
+      progressText.textContent = `${state.index+1}/${QUESTIONS.length}`;
+      progressFill.style.width = `${((state.index)/QUESTIONS.length)*100}%`;
+    }
+
+    // Responder y avanzar
+    function answer(isTrue){
+      if(state.locked) return;
+      state.locked = true;
+
+      const q = QUESTIONS[state.index];
+      const isRight = (isTrue === q.correct);
+      state.results.push({
+        text: q.text,
+        correctAnswer: q.correct,
+        userAnswer: isTrue,
+        isRight,
+        expl: q.expl
+      });
+      showToast(isRight ? "¡Correcto!" : "¡Uy! No exactamente", isRight);
+
+      // Siguiente
+      setTimeout(()=>{
+        state.index++;
+        if(state.index >= QUESTIONS.length){
+          endGame();
+        }else{
+          resetCardPosition();
+          loadQuestion();
+          progressFill.style.width = `${((state.index)/QUESTIONS.length)*100}%`;
+          state.locked = false;
+        }
+      }, 260);
+    }
+
+    // Finalizar y mostrar resultados (activar scroll)
+    function endGame(){
+      progressFill.style.width = `100%`;
+      const score = state.results.filter(r=>r.isRight).length;
+      scoreBadge.textContent = `Puntuación: ${score}/${QUESTIONS.length}`;
+      resultsList.innerHTML = "";
+      state.results.forEach((r, i)=>{
+        const item = document.createElement('div');
+        item.className = 'item';
+        const icon = document.createElement('div');
+        icon.className = 'badge-icon ' + (r.isRight ? 'ok' : 'ko');
+        icon.textContent = r.isRight ? '✓' : '✕';
+
+        const body = document.createElement('div');
+        const qEl = document.createElement('div');
+        qEl.className = 'q';
+        qEl.textContent = `${i+1}. ${r.text}`;
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = `Tu respuesta: ${r.userAnswer ? 'Verdadero' : 'Falso'} • Correcta: ${r.correctAnswer ? 'Verdadero' : 'Falso'}`;
+
+        const expl = document.createElement('div');
+        expl.className = 'expl';
+        expl.textContent = r.expl;
+
+        body.appendChild(qEl);
+        body.appendChild(meta);
+        body.appendChild(expl);
+
+        item.appendChild(icon);
+        item.appendChild(body);
+        resultsList.appendChild(item);
+      });
+
+      // Mostrar capa de resultados y permitir scroll
+      resultsLayer.classList.add('visible');
+      unlockScroll();
+      resultsLayer.focus();
+    }
+
+    // Mecánica de swipe (arrastre con pointer events)
+    let startX = 0, startY = 0, currentX = 0, currentY = 0, dragging = false;
+
+    function resetCardPosition(){
+      cardEl.style.transition = 'transform .18s ease';
+      cardEl.style.transform = `translate(0px, 0px) rotate(0deg)`;
+      badgeLeft.style.opacity = 0;
+      badgeRight.style.opacity = 0;
+      setTimeout(()=>{ cardEl.style.transition = 'none'; }, 180);
+    }
+
+    function onPointerDown(e){
+      if(state.locked) return;
+      dragging = true;
+      cardEl.setPointerCapture(e.pointerId || 1);
+      startX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+      startY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+      currentX = startX;
+      currentY = startY;
+      cardEl.style.transition = 'none';
+    }
+
+    function onPointerMove(e){
+      if(!dragging) return;
+      currentX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+      currentY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+      const dx = currentX - startX;
+      const dy = currentY - startY;
+      const rot = clamp(dx / 12, -24, 24);
+      cardEl.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+
+      // Mostrar badges dinámicos según dirección
+      const t = 120; // umbral para opacidad
+      const rightOpacity = clamp(dx / t, 0, 1);
+      const leftOpacity = clamp(-dx / t, 0, 1);
+      badgeRight.style.opacity = rightOpacity;
+      badgeRight.style.transform = `scale(${0.92 + rightOpacity*0.08})`;
+      badgeLeft.style.opacity = leftOpacity;
+      badgeLeft.style.transform = `scale(${0.92 + leftOpacity*0.08})`;
+    }
+
+    function onPointerUp(e){
+      if(!dragging) return;
+      dragging = false;
+      const dx = (currentX - startX);
+      const threshold = Math.min(100, window.innerWidth * 0.22);
+      if(Math.abs(dx) > threshold){
+        const toRight = dx > 0;
+        flyOut(toRight ? 1 : -1);
+        answer(toRight);
+      }else{
+        resetCardPosition();
+      }
+    }
+
+    function flyOut(direction){
+      // Animar la carta fuera de pantalla
+      const distance = window.innerWidth * 1.2 * direction;
+      cardEl.style.transition = 'transform .22s ease';
+      cardEl.style.transform = `translate(${distance}px, 0px) rotate(${18*direction}deg)`;
+      // Tras salir, reseteamos para la próxima
+      setTimeout(()=> {
+        cardEl.style.transition = 'none';
+        cardEl.style.transform = `translate(0px, 0px) rotate(0deg)`;
+        badgeLeft.style.opacity = 0;
+        badgeRight.style.opacity = 0;
+      }, 230);
+    }
+
+    // Listeners de swipe
+    // Usamos pointer events para soportar touch y mouse
+    cardEl.addEventListener('pointerdown', onPointerDown);
+    cardEl.addEventListener('pointermove', onPointerMove);
+    cardEl.addEventListener('pointerup', onPointerUp);
+    cardEl.addEventListener('pointercancel', onPointerUp);
+    // Aseguramos que el deck no escrolea
+    document.getElementById('deck').style.touchAction = 'none';
+
+    // Botones accesibles (sin necesidad de deslizar)
+    btnNo.addEventListener('click', ()=> {
+      if(state.locked) return;
+      flyOut(-1);
+      answer(false);
+    });
+    btnYes.addEventListener('click', ()=> {
+      if(state.locked) return;
+      flyOut(1);
+      answer(true);
+    });
+
+    // Intro start
+    btnStart.addEventListener('click', () => {
+      intro.style.display = 'none';
+      // Mantener scroll bloqueado durante el juego
+      loadQuestion();
+    });
+
+    // Inicialización de título
+    // El título se muestra como %%titulo%%, se respeta el valor recibido en hosting si se reemplaza.
+    // Si quieres, puedes modificar dinámicamente aquí.
+
+    // Gestión de initData: recogemos el valor del parámetro y lo reutilizamos en la recompensa
+    function getParam(name){
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+    state.initData = getParam('initData');
+    btnReward.addEventListener('click', () => {
+      const val = state.initData || '';
+      const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(val)}`;
+      window.location.href = target;
+    });
+
+    // Cargar primera pregunta por si el usuario cierra la intro
+    loadQuestion();
+
+    // Aseguramos que el contenido del tablero siempre cabe en pantalla
+    function fitBoard(){
+      const h = window.innerHeight;
+      // Ajustes sutiles para cartas en pantallas más bajas
+      if(h < 640){
+        cardEl.style.height = Math.max(320, h * 0.52) + 'px';
+      }else{
+        cardEl.style.height = 'min(60vh, 440px)';
+      }
+    }
+    window.addEventListener('resize', fitBoard);
+    fitBoard();
+
+    // Accesibilidad: permitir uso de teclado (izquierda = falso, derecha = verdadero)
+    window.addEventListener('keydown', (e)=>{
+      if(resultsLayer.classList.contains('visible')) return;
+      if(e.key === 'ArrowLeft'){ btnNo.click(); }
+      if(e.key === 'ArrowRight'){ btnYes.click(); }
+    });
+
+    // Seguridad: evitar que arrastres imágenes accidentalmente
+    document.querySelectorAll('img').forEach(img => {
+      img.setAttribute('draggable', 'false');
+    });
+  </script>
+</body>
+</html>
