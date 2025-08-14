@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Tarea de hoy — %%titulo%% | Kämpe</title>
+  <!-- Tipografía Manrope -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================================
+       Variables y base
+       ================================ */
+    :root{
+      /* Paleta vibrante inspirada en Fortnite + plan_discord */
+      --blue-900:#0a1b4d;
+      --blue-800:#0e2b7d;
+      --blue-700:#163aa8;
+      --blue-600:#1b6eff;
+      --cyan-500:#46eaff;
+      --purple-600:#6a5cff;
+      --pink-500:#ff3f8e;
+      --green-500:#2ee88a;
+      --red-500:#ff4d6d;
+      --yellow-400:#ffd460;
+
+      --card-bg: rgba(255,255,255,0.96);
+      --text-dark:#0c1429;
+      --text-mid:#2a3557;
+
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+
+      --shadow-strong: 0 12px 30px rgba(0,0,0,0.35);
+      --shadow-soft: 0 6px 16px rgba(0,0,0,0.18);
+      --glass: rgba(255,255,255,0.08);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:#fff;
+      background: radial-gradient(1200px 600px at 80% -20%, rgba(106,92,255,0.35), transparent 60%) ,
+                  radial-gradient(900px 500px at 0% 100%, rgba(27,110,255,0.35), transparent 60%),
+                  linear-gradient(160deg, var(--blue-800), var(--blue-700) 55%, var(--blue-800));
+      overscroll-behavior: none;
+    }
+    /* Durante el juego: sin scroll (re-activado al final) */
+    body.no-scroll{overflow:hidden}
+
+    /* Contenedor principal a pantalla completa para evitar scroll durante el swipe */
+    .viewport{
+      height:100vh;
+      width:100vw;
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* Decoración: personaje */
+    .avatar-wrap{
+      position:absolute;
+      right:-10px;
+      bottom:-4px;
+      width:40vw;
+      max-width:360px;
+      pointer-events:none;
+      opacity:0.3; /* visible pero no tapa UI */
+      filter: drop-shadow(0 12px 30px rgba(0,0,0,0.35));
+      user-select:none;
+    }
+    @media (max-width:420px){
+      .avatar-wrap{ width:55vw; max-width:300px; opacity:0.32; }
+    }
+
+    /* Marco UI */
+    .frame{
+      position:relative;
+      width:min(100vw, 520px);
+      padding:14px 14px 18px;
+    }
+
+    /* Header con logo + progreso + título */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .logo-badge{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:#ffffffee; /* fondo claro para que el logo blanco se vea */
+      border-radius: 999px;
+      padding:6px 10px;
+      box-shadow: var(--shadow-soft);
+    }
+    .logo-badge img{
+      height:26px;
+      display:block;
+    }
+    .streak-chip{
+      color:var(--text-dark);
+      background: #ffffffd4;
+      border-radius:999px;
+      padding:6px 12px;
+      font-weight:700;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .title{
+      margin:6px 0 10px;
+      font-weight:800;
+      font-size: clamp(18px, 4.5vw, 24px);
+      letter-spacing:0.2px;
+      text-shadow: 0 3px 14px rgba(0,0,0,0.35);
+    }
+    .subtitle{
+      margin:0 0 10px;
+      font-weight:600;
+      font-size:clamp(14px, 3.6vw, 16px);
+      color:#e7f3ff;
+      opacity:0.95;
+    }
+
+    /* Panel de instrucciones estilo glass */
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      border:1px solid rgba(255,255,255,0.22);
+      backdrop-filter: blur(6px);
+      border-radius: var(--radius-lg);
+      padding:12px 14px;
+      box-shadow: var(--shadow-soft);
+      margin-bottom:10px;
+    }
+    .panel small{opacity:0.9}
+
+    /* Indicador izquierda/derecha */
+    .legend{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-top:6px;
+    }
+    .legend .tag{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      border-radius: 10px;
+      padding:8px 10px;
+      font-weight:700;
+      color:#0f1b38;
+      box-shadow: var(--shadow-soft);
+      background:#fff;
+    }
+    .legend .tag.left{ border-left:4px solid var(--red-500); }
+    .legend .tag.right{ border-right:4px solid var(--green-500); }
+
+    /* Zona de swipe: sin scroll y ocupa el resto del alto */
+    .swipe-stage{
+      position:relative;
+      width:100%;
+      height: min(64vh, 520px);
+      min-height: 360px;
+      /* evita gestos nativos */
+      touch-action: none;
+      margin-top:6px;
+    }
+
+    /* Carta */
+    .card{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform: translate(-50%, -50%);
+      width: min(92%, 480px);
+      background: var(--card-bg);
+      border-radius: var(--radius-xl);
+      color: var(--text-dark);
+      box-shadow: var(--shadow-strong);
+      border: 2px solid rgba(255,255,255,0.75);
+      padding:18px 18px 20px;
+      user-select:none;
+    }
+    .card::before{
+      /* Borde neón */
+      content:"";
+      position:absolute; inset:-2px;
+      z-index:-1;
+      border-radius: inherit;
+      background: linear-gradient(135deg, var(--purple-600), var(--cyan-500), var(--blue-600));
+      filter: blur(10px);
+      opacity:0.5;
+    }
+    .q-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:800;
+      color:#0e1f44;
+      background: linear-gradient(180deg, #fff, #f0f6ff);
+      padding:8px 12px;
+      border-radius:12px;
+      border:1px solid #dce8ff;
+      box-shadow: 0 6px 16px rgba(16,42,120,0.16) inset, 0 4px 10px rgba(0,0,0,0.06);
+    }
+    .q-badge .dot{
+      width:10px;height:10px;border-radius:50%;
+      background: var(--blue-600);
+      box-shadow: 0 0 10px var(--blue-600);
+    }
+    .question{
+      margin:14px 0 6px;
+      font-weight:800;
+      font-size: clamp(18px, 4.6vw, 22px);
+      line-height:1.25;
+      color:var(--text-dark);
+    }
+    .hint{
+      color: var(--text-mid);
+      opacity:0.9;
+      font-size: 0.95rem;
+    }
+
+    /* Overlays Correcto / Incorrecto */
+    .flag{
+      position:absolute;
+      top:12px;
+      padding:6px 10px;
+      border-radius:10px;
+      font-weight:900;
+      letter-spacing:0.3px;
+      color:#0a1e27;
+      box-shadow: var(--shadow-soft);
+      opacity:0;
+      transform: scale(0.96);
+      transition: 0.15s ease;
+      pointer-events:none;
+    }
+    .flag.left{
+      left:12px;
+      background: linear-gradient(180deg, #fff, #ffe9ef);
+      border:2px solid var(--red-500);
+      color:#6b0020;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .flag.right{
+      right:12px;
+      background: linear-gradient(180deg, #fff, #e7fff5);
+      border:2px solid var(--green-500);
+      color:#064a2e;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    /* Feedback "toast" mini */
+    .toast{
+      position:absolute;
+      left:50%;
+      bottom:8px;
+      transform:translateX(-50%) translateY(20px);
+      background: rgba(10,27,77,0.9);
+      border:1px solid rgba(255,255,255,0.24);
+      padding:8px 12px;
+      border-radius:12px;
+      color:#e7f3ff;
+      font-weight:700;
+      font-size:0.95rem;
+      opacity:0;
+      transition: 0.25s ease;
+    }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* Pie con mapeo de controles */
+    .controls{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:8px;
+      gap:8px;
+    }
+    .control-pill{
+      flex:1;
+      background: rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,0.28);
+      border-radius: 14px;
+      padding:10px;
+      text-align:center;
+      font-weight:800;
+      letter-spacing:0.2px;
+      color:#e7f3ff;
+      box-shadow: var(--shadow-soft);
+    }
+    .control-pill .arrow{ font-size: 18px; vertical-align: -1px; }
+    .control-pill.left{ outline:2px solid rgba(255,77,109,0.45) }
+    .control-pill.right{ outline:2px solid rgba(46,232,138,0.45) }
+
+    /* RESULTADOS */
+    .results{
+      display:none;
+      padding: 24px 16px 72px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .results .head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:12px;
+    }
+    .score{
+      background: linear-gradient(180deg, #ffffff, #eaf3ff);
+      color:#0a1b4d;
+      border:1px solid #d6e6ff;
+      border-radius:16px;
+      padding:10px 14px;
+      font-weight:800;
+      box-shadow: var(--shadow-soft);
+    }
+    .result-item{
+      background: rgba(255,255,255,0.96);
+      color: var(--text-dark);
+      border-radius:16px;
+      padding:14px;
+      border:2px solid rgba(255,255,255,0.8);
+      box-shadow: var(--shadow-soft);
+      margin-bottom:12px;
+      position:relative;
+    }
+    .result-item.correct{ outline:3px solid rgba(46,232,138,0.75); }
+    .result-item.wrong{ outline:3px solid rgba(255,77,109,0.75); }
+    .result-item .ri-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:800;
+    }
+    .ri-title .status{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:26px;height:26px;border-radius:50%;
+      color:#fff;
+      font-size:16px;
+      box-shadow: var(--shadow-soft);
+    }
+    .result-item.correct .status{ background: var(--green-500); }
+    .result-item.wrong .status{ background: var(--red-500); }
+    .ri-expl{
+      margin-top:8px;
+      color: var(--text-mid);
+      font-weight:600;
+    }
+    .ri-user{
+      position:absolute;
+      right:10px; top:10px;
+      background:#0e2b7d;
+      color:#fff;
+      border-radius:999px;
+      padding:4px 8px;
+      font-weight:800;
+      font-size:12px;
+      letter-spacing:0.2px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    /* CTA final */
+    .cta{
+      position:sticky;
+      bottom:10px;
+      display:flex;
+      justify-content:center;
+      margin-top:16px;
+    }
+    .cta .btn{
+      appearance:none; -webkit-appearance:none;
+      border:none; cursor:pointer;
+      padding:14px 18px;
+      border-radius:16px;
+      font-weight:900;
+      letter-spacing:0.3px;
+      color:#08122f;
+      background: linear-gradient(180deg, #fff, #e7f3ff);
+      border:1px solid #d8e7ff;
+      box-shadow: 0 12px 30px rgba(27,110,255,0.35), 0 6px 14px rgba(0,0,0,0.18);
+    }
+    .btn .spark{
+      color: var(--yellow-400);
+      text-shadow: 0 0 12px rgba(255,212,96,0.7);
+    }
+
+    /* Accesibles zonas tap opcionales (para quien no quiera deslizar) */
+    .tap-zones{
+      position:absolute; inset:0; display:flex; z-index:2;
+    }
+    .tap-zone{ flex:1; }
+  </style>
+</head>
+<body class="no-scroll">
+  <!-- Contenido del juego (sin scroll) -->
+  <div class="viewport" id="viewport">
+    <!-- Personaje decorativo -->
+    <img class="avatar-wrap" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Personaje Kämpe">
+
+    <div class="frame">
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="logo-badge">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe">
+          <span style="font-weight:800;color:#0a1b4d;">Kämpe</span>
+        </div>
+        <div class="streak-chip" id="progressChip">1 / 10</div>
+      </div>
+
+      <h1 class="title">Tarea de hoy: %%titulo%%</h1>
+      <p class="subtitle">¿Preparado para anticiparte a los imprevistos en el oficio? Decide si cada acción es una Buena Práctica o una Mala Idea.</p>
+
+      <!-- Instrucciones -->
+      <div class="panel">
+        <small>
+          Mecánica del juego:
+          1) Desliza la carta a la derecha si crees que la acción es Correcta (Buena práctica).
+          2) Desliza a la izquierda si crees que es Incorrecta (Mala práctica).
+          Consejo: Todo cabe en pantalla, no hace falta hacer scroll.
+        </small>
+        <div class="legend">
+          <div class="tag left">← Incorrecto</div>
+          <div class="tag right">Correcto →</div>
+        </div>
+      </div>
+
+      <!-- Zona de swipe -->
+      <div class="swipe-stage" id="stage">
+        <!-- Zonas de toque opcionales (derecha/izquierda) para quien prefiera tap -->
+        <div class="tap-zones">
+          <div class="tap-zone" id="tapLeft"></div>
+          <div class="tap-zone" id="tapRight"></div>
+        </div>
+
+        <!-- Carta dinámica -->
+        <div class="card" id="card">
+          <div class="flag left" id="flagLeft">INCORRECTO</div>
+          <div class="flag right" id="flagRight">CORRECTO</div>
+
+          <div class="q-badge">
+            <span class="dot"></span>
+            <span id="qCounter">Pregunta 1 de 10</span>
+          </div>
+          <div class="question" id="qText">
+            <!-- Texto de la pregunta -->
+          </div>
+          <div class="hint">Desliza para responder. También puedes tocar a un lado de la pantalla.</div>
+
+          <div class="toast" id="toast"></div>
+        </div>
+      </div>
+
+      <!-- Controles informativos -->
+      <div class="controls">
+        <div class="control-pill left"><span class="arrow">⟵</span> Incorrecto</div>
+        <div class="control-pill right">Correcto <span class="arrow">⟶</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTADOS (con scroll activado) -->
+  <div class="results" id="results">
+    <div class="head">
+      <h2 style="margin:0;font-weight:800;">Resultados del reto</h2>
+      <div class="score" id="scoreBox">Puntuación: 0 / 10</div>
+    </div>
+    <p style="margin-top:0;opacity:0.95">Así se anticipa un buen profesional. Revisa qué era lo correcto y por qué:</p>
+
+    <div id="resultsList"></div>
+
+    <div class="cta">
+      <button class="btn" id="rewardBtn">
+        Ver mi recompensa <span class="spark">✦</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // Datos del reto: 10 situaciones reales
+    // true = Correcto (Buena práctica), false = Incorrecto (Mala práctica)
+    // ==========================================
+    const QUESTIONS = [
+      {
+        text: "Llegar 15 minutos antes el primer día de obra para ubicarte y preparar herramientas.",
+        correct: true,
+        expl: "Llegar antes demuestra profesionalidad y te da tiempo para preparar el trabajo sin prisas."
+      },
+      {
+        text: "Ignorar un olor a quemado en un cuadro eléctrico porque “seguro se pasa”.",
+        correct: false,
+        expl: "Nunca ignores señales de riesgo. Debes parar, investigar y reportar para evitar accidentes."
+      },
+      {
+        text: "Si no sé qué herramientas llevar, pregunto al encargado o reviso el parte antes de salir.",
+        correct: true,
+        expl: "Anticipar necesidades evita retrasos y segundas salidas. Comunicación primero."
+      },
+      {
+        text: "No usar EPI (guantes, gafas, casco) si el trabajo es ‘rápido’.",
+        correct: false,
+        expl: "Los EPI no son opcionales. Un segundo basta para un accidente."
+      },
+      {
+        text: "Comprobar planos y medidas antes de cortar materiales o hacer rozas.",
+        correct: true,
+        expl: "Medir dos veces, cortar una. Evita desperdicios y rehacer trabajo."
+      },
+      {
+        text: "Dejar cables sueltos temporalmente sin señalizar porque ‘luego vuelvo’.",
+        correct: false,
+        expl: "Señaliza y deja seguro. Un tropiezo o contacto puede causar daños."
+      },
+      {
+        text: "Registrar en el parte diario avances, incidencias y material consumido.",
+        correct: true,
+        expl: "Documentar ayuda a planificar, facturar y resolver problemas a tiempo."
+      },
+      {
+        text: "Si veo una fuga pequeña, la dejo para mañana y sigo con lo mío.",
+        correct: false,
+        expl: "Las fugas empeoran. Aísla, señala y comunícalo para corregirlo cuanto antes."
+      },
+      {
+        text: "Etiquetar y ordenar herramientas al finalizar la jornada.",
+        correct: true,
+        expl: "Orden hoy = velocidad mañana. Evita pérdidas y mejora la seguridad."
+      },
+      {
+        text: "Trabajar coordinado con el equipo y avisar si cambias algo del plan.",
+        correct: true,
+        expl: "La coordinación evita interferencias y retrabajos. Comunica siempre."
+      }
+    ];
+
+    // ==========================================
+    // Estado del juego
+    // ==========================================
+    let index = 0;
+    const results = []; // { user: boolean, correct: boolean, text, expl }
+
+    // Elementos del DOM
+    const card = document.getElementById('card');
+    const stage = document.getElementById('stage');
+    const toast = document.getElementById('toast');
+    const flagLeft = document.getElementById('flagLeft');
+    const flagRight = document.getElementById('flagRight');
+    const qText = document.getElementById('qText');
+    const qCounter = document.getElementById('qCounter');
+    const progressChip = document.getElementById('progressChip');
+
+    const tapLeft = document.getElementById('tapLeft');
+    const tapRight = document.getElementById('tapRight');
+
+    const viewport = document.getElementById('viewport');
+    const resultsView = document.getElementById('results');
+    const resultsList = document.getElementById('resultsList');
+    const scoreBox = document.getElementById('scoreBox');
+    const rewardBtn = document.getElementById('rewardBtn');
+
+    // InitData (se conserva y reenvía al final)
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+
+    // ==========================================
+    // Funciones utilitarias
+    // ==========================================
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+    function showToast(text){
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(()=> toast.classList.remove('show'), 900);
+    }
+
+    // Cargar pregunta actual
+    function loadQuestion(){
+      const total = QUESTIONS.length;
+      progressChip.textContent = `${index+1} / ${total}`;
+      qCounter.textContent = `Pregunta ${index+1} de ${total}`;
+      qText.textContent = QUESTIONS[index].text;
+
+      // Resetea posición visual
+      card.style.transition = 'transform 0.25s ease';
+      card.style.transform = 'translate(-50%, -50%) rotate(0deg)';
+      setTimeout(()=> card.style.transition = '', 250);
+
+      flagLeft.style.opacity = 0;
+      flagRight.style.opacity = 0;
+      flagLeft.style.transform = 'scale(0.96)';
+      flagRight.style.transform = 'scale(0.96)';
+    }
+
+    // Registrar respuesta y avanzar
+    function answer(userRight){
+      const q = QUESTIONS[index];
+      const user = !!userRight; // true = Correcto, false = Incorrecto
+      results.push({
+        user,
+        correct: q.correct,
+        text: q.text,
+        expl: q.expl
+      });
+
+      // feedback corto
+      if(user === q.correct){
+        showToast('¡Bien! ✔ Buena decisión');
+      }else{
+        showToast('Ups ❌ Revisa la explicación al final');
+      }
+
+      index++;
+      if(index < QUESTIONS.length){
+        loadQuestion();
+      }else{
+        endGame();
+      }
+    }
+
+    // Final del juego: mostrar resultados y reactivar scroll
+    function endGame(){
+      // Oculta la vista de juego
+      viewport.style.display = 'none';
+
+      // Construye resultados
+      const total = QUESTIONS.length;
+      const score = results.filter(r => r.user === r.correct).length;
+      scoreBox.textContent = `Puntuación: ${score} / ${total}`;
+
+      const frag = document.createDocumentFragment();
+      results.forEach((r, i)=>{
+        const item = document.createElement('div');
+        item.className = 'result-item ' + (r.user === r.correct ? 'correct' : 'wrong');
+
+        const t = document.createElement('div');
+        t.className = 'ri-title';
+        const st = document.createElement('div');
+        st.className = 'status';
+        st.textContent = r.user === r.correct ? '✓' : '✕';
+        const label = document.createElement('div');
+        label.textContent = `#${i+1} ${r.text}`;
+
+        t.appendChild(st);
+        t.appendChild(label);
+
+        const userTag = document.createElement('div');
+        userTag.className = 'ri-user';
+        userTag.textContent = 'Tú: ' + (r.user ? 'Correcto' : 'Incorrecto');
+
+        const expl = document.createElement('div');
+        expl.className = 'ri-expl';
+        expl.textContent = r.expl;
+
+        item.appendChild(t);
+        item.appendChild(userTag);
+        item.appendChild(expl);
+
+        frag.appendChild(item);
+      });
+      resultsList.innerHTML = '';
+      resultsList.appendChild(frag);
+
+      // Mostrar resultados
+      resultsView.style.display = 'block';
+
+      // Reactivar scroll ahora que terminó el juego
+      document.body.classList.remove('no-scroll');
+
+      // Preparar botón recompensa con initData intacto
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      rewardBtn.onclick = ()=> location.href = url;
+    }
+
+    // ==========================================
+    // Gestos de swipe (touch + mouse)
+    // ==========================================
+    let startX = 0, startY = 0;
+    let currentX = 0, currentY = 0;
+    let dragging = false;
+
+    function onStart(clientX, clientY){
+      dragging = true;
+      startX = clientX;
+      startY = clientY;
+      currentX = 0; currentY = 0;
+      card.style.transition = ''; // sin transición al arrastrar
+    }
+    function onMove(clientX, clientY){
+      if(!dragging) return;
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+      currentX = dx;
+      currentY = dy;
+
+      // rotación leve según desplazamiento horizontal
+      const rot = clamp(dx * 0.06, -12, 12);
+
+      // aplica transform
+      card.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${rot}deg)`;
+
+      // muestra banderas
+      const maxOpacity = clamp(Math.abs(dx) / 90, 0, 1);
+      if(dx > 0){
+        flagRight.style.opacity = maxOpacity;
+        flagRight.style.transform = `scale(${0.96 + maxOpacity*0.08})`;
+        flagLeft.style.opacity = 0;
+        flagLeft.style.transform = 'scale(0.96)';
+      }else if(dx < 0){
+        flagLeft.style.opacity = maxOpacity;
+        flagLeft.style.transform = `scale(${0.96 + maxOpacity*0.08})`;
+        flagRight.style.opacity = 0;
+        flagRight.style.transform = 'scale(0.96)';
+      }else{
+        flagLeft.style.opacity = 0;
+        flagRight.style.opacity = 0;
+      }
+    }
+    function onEnd(){
+      if(!dragging) return;
+      dragging = false;
+
+      const threshold = Math.min(120, window.innerWidth * 0.28);
+      const dx = currentX;
+      const dy = currentY;
+
+      // Decidir si se acepta el swipe
+      if(Math.abs(dx) > threshold){
+        const toRight = dx > 0;
+        // anima fuera de pantalla
+        const offX = (toRight ? window.innerWidth : -window.innerWidth);
+        card.style.transition = 'transform 0.25s ease-out';
+        card.style.transform = `translate(calc(-50% + ${offX}px), calc(-50% + ${dy}px)) rotate(${toRight ? 20 : -20}deg)`;
+
+        // tras la animación, registrar respuesta
+        setTimeout(()=> {
+          answer(toRight);
+        }, 220);
+      }else{
+        // volver al centro
+        card.style.transition = 'transform 0.2s ease';
+        card.style.transform = 'translate(-50%, -50%) rotate(0deg)';
+        flagLeft.style.opacity = 0;
+        flagRight.style.opacity = 0;
+        setTimeout(()=> card.style.transition = '', 200);
+      }
+    }
+
+    // Eventos de puntero (touch + mouse)
+    stage.addEventListener('touchstart', (e)=>{
+      if(e.touches.length>1) return;
+      e.preventDefault(); // bloquea scroll nativo durante el juego
+      const t = e.touches[0];
+      onStart(t.clientX, t.clientY);
+    }, {passive:false});
+    stage.addEventListener('touchmove', (e)=>{
+      if(e.touches.length>1) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      onMove(t.clientX, t.clientY);
+    }, {passive:false});
+    stage.addEventListener('touchend', (e)=>{
+      e.preventDefault();
+      onEnd();
+    }, {passive:false});
+
+    // Mouse para desktop
+    stage.addEventListener('mousedown', (e)=> onStart(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e)=> onMove(e.clientX, e.clientY));
+    window.addEventListener('mouseup', onEnd);
+
+    // Tap zones (izquierda/derecha) para accesibilidad
+    tapLeft.addEventListener('click', ()=>{
+      // animación breve hacia la izquierda
+      card.style.transition = 'transform 0.18s ease';
+      card.style.transform = 'translate(calc(-50% - 120px), -50%) rotate(-12deg)';
+      setTimeout(()=> answer(false), 160);
+    });
+    tapRight.addEventListener('click', ()=>{
+      card.style.transition = 'transform 0.18s ease';
+      card.style.transform = 'translate(calc(-50% + 120px), -50%) rotate(12deg)';
+      setTimeout(()=> answer(true), 160);
+    });
+
+    // ==========================================
+    // Inicialización
+    // ==========================================
+    function init(){
+      // Ajuste: dividir tap zones (izq/der)
+      const tzWidth = stage.clientWidth;
+      tapLeft.style.maxWidth = (tzWidth/2) + 'px';
+      tapRight.style.maxWidth = (tzWidth/2) + 'px';
+
+      loadQuestion();
+    }
+
+    // Iniciar
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>
