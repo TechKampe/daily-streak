@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Tarea de hoy • Kämpe</title>
+  <!-- Fuente Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* VARIABLES Y RESETEO */
+    :root{
+      --vh: 1vh; /* Se actualiza con JS para móviles */
+      /* Paleta inspirada en Fortnite / plan_discord */
+      --blue-900: #0b3cff;
+      --blue-800: #1748ff;
+      --blue-700: #2563ff;
+      --blue-600: #3aa8ff;
+      --blue-500: #6bd6ff;
+      --cyan-400: #00e5ff;
+      --purple-500: #8b5cff;
+      --pink-500: #ff5cf0;
+      --neon: #00f0ff;
+      --success: #17e3a6;
+      --danger: #ff5565;
+      --warning: #ffd057;
+      --white: #ffffff;
+      --glass: rgba(255,255,255,0.18);
+      --glass-strong: rgba(255,255,255,0.28);
+      --shadow-strong: 0 14px 40px rgba(0,0,0,0.35);
+      --shadow-soft: 0 10px 24px rgba(0,0,0,0.25);
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --card-w: min(92vw, 420px);
+      --card-h: min(72vh, 520px);
+    }
+    *{ box-sizing: border-box; }
+    html, body{
+      height: calc(var(--vh) * 100);
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 1200px at 20% 10%, #2a7cff 0%, #1646ff 40%, #0b2cff 80%) fixed,
+                  linear-gradient(160deg, #0ea5ff 0%, #0040ff 100%) fixed;
+      color: var(--white);
+      overflow: hidden; /* Bloquear scroll durante el juego */
+      -webkit-tap-highlight-color: transparent;
+    }
+    a{ color: inherit; text-decoration: none; }
+
+    /* CONTENEDOR PRINCIPAL */
+    #app{
+      position: relative;
+      width: 100%;
+      height: calc(var(--vh) * 100);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden; /* asegurar que no haya scroll durante el juego */
+      isolation: isolate; /* para blending del avatar */
+    }
+
+    /* AVATAR DE FONDO (prominente pero sin tapar UI) */
+    .avatar-bg{
+      position: absolute;
+      right: -2%;
+      bottom: -4%;
+      width: min(55vw, 460px);
+      max-height: 80%;
+      opacity: 0.26;
+      pointer-events: none;
+      filter: drop-shadow(0 20px 40px rgba(0,0,0,0.25));
+      user-select: none;
+      z-index: 1;
+    }
+
+    /* HEADER */
+    header{
+      width: 100%;
+      max-width: 1100px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 5;
+    }
+    .brand{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-badge{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #ffffff 0%, #f4fbff 100%);
+      border-radius: 999px;
+      padding: 6px 10px;
+      box-shadow: 0 6px 22px rgba(0, 192, 255, 0.35), inset 0 0 0 2px rgba(0, 112, 255, 0.15);
+    }
+    .logo-badge img{
+      height: 28px;
+      display: block;
+    }
+    .titles{
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+    .titles h1{
+      font-size: clamp(18px, 3.4vw, 22px);
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+    }
+    .titles .subtitle{
+      font-size: clamp(12px, 2.5vw, 14px);
+      opacity: 0.92;
+      margin-top: 2px;
+    }
+
+    /* PROGRESO */
+    .progress-wrap{
+      width: min(92vw, 420px);
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 999px;
+      height: 10px;
+      overflow: hidden;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      box-shadow: inset 0 2px 9px rgba(0,0,0,0.25);
+      z-index: 3;
+    }
+    .progress-bar{
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan-400), var(--purple-500), var(--pink-500));
+      background-size: 200% 100%;
+      animation: slideHue 4s linear infinite;
+      border-radius: 999px;
+      box-shadow: 0 0 22px rgba(0, 255, 255, 0.45);
+      transition: width 220ms ease;
+    }
+    @keyframes slideHue{
+      0%{ background-position: 0% 50%; }
+      100%{ background-position: 200% 50%; }
+    }
+
+    /* ARENA DE DESLIZAMIENTO */
+    .arena{
+      position: relative;
+      width: 100%;
+      height: calc(100% - 120px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 0 0;
+      z-index: 2;
+    }
+
+    /* ETIQUETAS LATERALES (Sí/No) */
+    .side-label{
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      opacity: 0.18;
+      pointer-events: none;
+      user-select: none;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 2px solid rgba(255,255,255,0.25);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .side-label.left{
+      left: 12px;
+      background: rgba(255, 95, 110, 0.2);
+    }
+    .side-label.right{
+      right: 12px;
+      background: rgba(44, 255, 165, 0.2);
+    }
+
+    /* TARJETA */
+    .card-wrap{
+      position: relative;
+      width: var(--card-w);
+      height: var(--card-h);
+      perspective: 1000px;
+    }
+    .card{
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      border: 2px solid rgba(255,255,255,0.28);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-strong), inset 0 0 0 2px rgba(0, 200, 255, 0.12);
+      overflow: hidden;
+      transform-origin: center center;
+      touch-action: none; /* importante para swipe en móvil */
+      will-change: transform;
+    }
+    .card::before{
+      /* Borde brillante animado */
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 2px;
+      background: conic-gradient(from 0deg,
+        transparent 0%,
+        rgba(0,255,255,0.25) 10%,
+        rgba(139,92,255,0.25) 35%,
+        rgba(255,92,240,0.25) 60%,
+        transparent 100%);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      animation: spin 8s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes spin{
+      to{ transform: rotate(360deg); }
+    }
+    .card-content{
+      position: relative;
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 18px 16px;
+      gap: 10px;
+      z-index: 1;
+    }
+    .badge{
+      justify-self: start;
+      font-size: 12px;
+      letter-spacing: 0.8px;
+      font-weight: 800;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: #001b2a;
+      background: linear-gradient(180deg, #9df0ff 0%, #ccf8ff 100%);
+      border: 1px solid rgba(0, 175, 255, 0.7);
+      box-shadow: 0 4px 12px rgba(0, 210, 255, 0.35);
+    }
+    .question{
+      align-self: center;
+      text-align: center;
+      font-weight: 800;
+      font-size: clamp(18px, 3.2vw, 22px);
+      line-height: 1.25;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.4);
+      padding: 0 8px;
+    }
+    .hint{
+      align-self: end;
+      text-align: center;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    /* OVERLAYS DE DECISIÓN EN LA TARJETA */
+    .decision{
+      position: absolute;
+      top: 14px;
+      font-size: 14px;
+      font-weight: 900;
+      padding: 8px 12px;
+      border-radius: 10px;
+      transform: rotate(-12deg);
+      border: 2px solid;
+      letter-spacing: 1px;
+      opacity: 0;
+      pointer-events: none;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.35);
+    }
+    .decision.yes{
+      right: 14px;
+      color: #002a17;
+      background: rgba(23, 227, 166, 0.9);
+      border-color: rgba(255,255,255,0.8);
+      transform: rotate(12deg);
+    }
+    .decision.no{
+      left: 14px;
+      color: #2a0000;
+      background: rgba(255, 85, 101, 0.9);
+      border-color: rgba(255,255,255,0.8);
+    }
+
+    /* BOTONES ACCESIBLES (tap) */
+    .actions{
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      z-index: 3;
+    }
+    .btn{
+      border: none;
+      cursor: pointer;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      color: #001b2a;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      transition: transform 0.08s ease, box-shadow 0.2s ease;
+      box-shadow: var(--shadow-soft);
+      user-select: none;
+    }
+    .btn:active{ transform: scale(0.98); }
+    .btn.no{
+      background: linear-gradient(180deg, #ffd5da 0%, #ffc6ce 100%);
+      border: 1px solid rgba(255, 133, 148, 0.8);
+      color: #350006;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .btn.yes{
+      background: linear-gradient(180deg, #bff7e8 0%, #a8f3dc 100%);
+      border: 1px solid rgba(19, 214, 158, 0.9);
+      color: #00231a;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+    }
+
+    /* PANTALLA DE TUTORIAL/INTRO */
+    .tutorial{
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(3, 9, 42, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 10;
+    }
+    .tutorial-card{
+      width: min(92vw, 520px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.10));
+      border: 2px solid rgba(255,255,255,0.28);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-strong);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      text-align: left;
+    }
+    .tutorial-card h2{
+      margin: 0;
+      font-size: clamp(18px, 4.6vw, 24px);
+      font-weight: 900;
+      letter-spacing: 0.3px;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.4);
+    }
+    .tutorial-card p{
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.35;
+      opacity: 0.95;
+    }
+    .howto{
+      display: grid;
+      gap: 8px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: var(--radius-md);
+      padding: 10px;
+    }
+    .howto .row{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .pill{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-weight: 800;
+      font-size: 12px;
+      color: #001b2a;
+    }
+    .pill.yes{
+      background: linear-gradient(180deg, #bff7e8 0%, #a8f3dc 100%);
+      border: 1px solid rgba(19, 214, 158, 0.9);
+    }
+    .pill.no{
+      background: linear-gradient(180deg, #ffd5da 0%, #ffc6ce 100%);
+      border: 1px solid rgba(255, 133, 148, 0.9);
+    }
+    .start-row{
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+    .btn-primary{
+      background: linear-gradient(180deg, #fff 0%, #e8f7ff 100%);
+      color: #001b2a;
+      border: 2px solid rgba(0, 195, 255, 0.65);
+      box-shadow: 0 10px 26px rgba(0, 200, 255, 0.35);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      cursor: pointer;
+    }
+
+    /* RESULTADOS */
+    #results{
+      display: none; /* visible al final */
+      width: 100%;
+      min-height: calc(var(--vh) * 100);
+      padding: 16px;
+      padding-bottom: 28px;
+      background:
+        radial-gradient(1200px 1200px at 90% 90%, rgba(255,255,255,0.12) 0%, transparent 60%) fixed,
+        linear-gradient(160deg, #0ea5ff 0%, #0040ff 100%) fixed;
+    }
+    .results-inner{
+      width: min(980px, 94vw);
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+    .results-head{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .score{
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      background: rgba(255,255,255,0.14);
+      border: 2px solid rgba(255,255,255,0.28);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-weight: 800;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    .list{
+      display: grid;
+      gap: 10px;
+    }
+    .item{
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.10));
+      border: 2px solid rgba(255,255,255,0.28);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      gap: 6px;
+    }
+    .item .q{
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .chips{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .chip{
+      font-size: 12px;
+      font-weight: 800;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.14);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .chip.ok{
+      background: rgba(23, 227, 166, 0.2);
+      border-color: rgba(23, 227, 166, 0.65);
+      color: #e2fff7;
+    }
+    .chip.nope{
+      background: rgba(255, 85, 101, 0.2);
+      border-color: rgba(255, 85, 101, 0.65);
+      color: #ffe7ea;
+    }
+    .explain{
+      font-size: 13px;
+      opacity: 0.95;
+      line-height: 1.35;
+    }
+    .cta{
+      display: flex;
+      justify-content: center;
+      margin: 8px 0 18px;
+    }
+    .btn-reward{
+      background: linear-gradient(180deg, #fff 0%, #e8f7ff 100%);
+      color: #001b2a;
+      border: 2px solid rgba(0, 195, 255, 0.65);
+      box-shadow: 0 14px 30px rgba(0, 200, 255, 0.35), 0 0 0 6px rgba(0, 195, 255, 0.15) inset;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      cursor: pointer;
+      min-width: 240px;
+      text-align: center;
+    }
+
+    /* RESPONSIVE AJUSTES */
+    @media (max-height: 700px){
+      :root{
+        --card-h: min(70vh, 460px);
+      }
+      .actions{ bottom: 6px; }
+    }
+    @media (min-width: 900px){
+      .avatar-bg{ width: 420px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Avatar de fondo con transparencia (estética gaming) -->
+    <img class="avatar-bg" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Avatar Kämpe">
+
+    <!-- Cabecera con logo y título -->
+    <header>
+      <div class="brand">
+        <span class="logo-badge">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe">
+        </span>
+        <div class="titles">
+          <h1>Tarea de hoy</h1>
+          <span class="subtitle">%%titulo%%</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="score" id="miniScore">0/10</div>
+      </div>
+    </header>
+
+    <!-- Barra de progreso -->
+    <div class="progress-wrap" aria-hidden="true">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- Área de juego sin scroll -->
+    <main class="arena" id="arena" aria-live="polite" aria-atomic="true">
+      <!-- Etiquetas laterales contextuales -->
+      <div class="side-label left">Desliza: No ✖</div>
+      <div class="side-label right">Desliza: Sí ✔</div>
+
+      <!-- Contenedor de la tarjeta -->
+      <div class="card-wrap">
+        <div class="card" id="card" role="group" aria-roledescription="tarjeta de pregunta">
+          <div class="card-content">
+            <div class="badge" id="counter">Pregunta 1 de 10</div>
+            <div class="question" id="questionText">...</div>
+            <div class="hint">Desliza para responder o usa los botones</div>
+          </div>
+          <!-- Overlays de decisión -->
+          <div class="decision no">NO</div>
+          <div class="decision yes">SÍ</div>
+        </div>
+        <!-- Botones accesibles -->
+        <div class="actions">
+          <button class="btn no" id="btnNo" aria-label="Responder No">No ✖</button>
+          <button class="btn yes" id="btnYes" aria-label="Responder Sí">Sí ✔</button>
+        </div>
+      </div>
+
+      <!-- Tutorial / Instrucciones previas -->
+      <div class="tutorial" id="tutorial">
+        <div class="tutorial-card">
+          <h2>Cómo podemos adelantarnos a los imprevistos en un oficio</h2>
+          <p>Responde 10 situaciones reales del mundo técnico (electricidad, fontanería, albañilería…). Debes decidir rápidamente si la acción propuesta es una buena idea.</p>
+          <div class="howto">
+            <div class="row">Mecánica del juego:</div>
+            <div class="row">
+              <span class="pill no">Izquierda = No</span>
+              <span class="pill yes">Derecha = Sí</span>
+            </div>
+            <p style="margin:0;">Desliza la tarjeta como en Tinder o usa los botones. No hay scroll durante el juego para que el deslizamiento sea fluido.</p>
+          </div>
+          <p style="opacity:0.95;margin-top:2px;">Al final verás qué respuestas eran correctas y una breve explicación por cada una.</p>
+          <div class="start-row">
+            <button class="btn-primary" id="btnStart">Empezar</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Pantalla de resultados (scroll permitido aquí) -->
+  <section id="results">
+    <div class="results-inner">
+      <div class="results-head">
+        <h2 style="margin:0;font-size:22px;font-weight:900;">Resultados</h2>
+        <div class="score" id="finalScore">0/10</div>
+      </div>
+      <div class="list" id="resultsList"></div>
+      <div class="cta">
+        <a id="rewardBtn" class="btn-reward" href="#" role="button">Ver mi recompensa</a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Utilidad: ajustar --vh para móviles (evita problemas con barras del navegador)
+    function setVhUnit(){
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    setVhUnit();
+    window.addEventListener('resize', setVhUnit);
+
+    // Parsear initData de la URL para preservarlo al final
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || '';
+
+    // Datos del reto: 10 preguntas Sí/No con solución y explicación
+    const questions = [
+      {
+        text: "Llegar 15–20 minutos antes el primer día para presentarte y revisar el plan.",
+        correctYes: true,
+        why: "Te da margen para imprevistos, conoces al equipo y comienzas preparado."
+      },
+      {
+        text: "Ignorar un ligero olor a quemado al probar un circuito porque “se irá solo”.",
+        correctYes: false,
+        why: "Puede indicar mal contacto o sobrecarga; hay que cortar y revisar."
+      },
+      {
+        text: "Llevar un kit básico extra (linterna, alargador, guantes, cinta) por si faltan recursos en la obra.",
+        correctYes: true,
+        why: "Te hace autosuficiente y evita retrasos."
+      },
+      {
+        text: "Asumir que el plano está actualizado y perforar sin verificar instalaciones ocultas.",
+        correctYes: false,
+        why: "Siempre verifica con detector o consulta; evita daños y riesgos."
+      },
+      {
+        text: "Avisar al encargado si detectas una fuga pequeña aunque no sea tu tarea.",
+        correctYes: true,
+        why: "Comunicar fallos evita daños mayores y muestra responsabilidad."
+      },
+      {
+        text: "Trabajar sin EPIs si “solo son cinco minutos”.",
+        correctYes: false,
+        why: "Los accidentes ocurren también en tareas cortas; usa casco, guantes, gafas y calzado."
+      },
+      {
+        text: "Hacer fotos del “antes” y “después” de tu trabajo.",
+        correctYes: true,
+        why: "Sirve de evidencia, mejora tu portafolio y ayuda a explicar decisiones."
+      },
+      {
+        text: "Seguir trabajando con herramientas eléctricas bajo lluvia intensa.",
+        correctYes: false,
+        why: "Riesgo de electrocución; hay que parar o usar alternativas seguras."
+      },
+      {
+        text: "Confirmar por mensaje la dirección, accesos y contacto antes de salir.",
+        correctYes: true,
+        why: "Evita pérdidas de tiempo y llegas preparado."
+      },
+      {
+        text: "Presentarte el primer día sin preguntar qué herramientas específicas necesitas.",
+        correctYes: false,
+        why: "Pregunta antes para llevar lo necesario y no depender de otros."
+      }
+    ];
+
+    // Estado del juego
+    let index = 0;
+    let score = 0;
+    const answers = []; // guarda { i, userYes, correctYes }
+
+    // Referencias DOM
+    const tutorial = document.getElementById('tutorial');
+    const btnStart = document.getElementById('btnStart');
+    const card = document.getElementById('card');
+    const questionText = document.getElementById('questionText');
+    const counter = document.getElementById('counter');
+    const progressBar = document.getElementById('progressBar');
+    const btnNo = document.getElementById('btnNo');
+    const btnYes = document.getElementById('btnYes');
+    const decisionYes = card.querySelector('.decision.yes');
+    const decisionNo = card.querySelector('.decision.no');
+    const miniScore = document.getElementById('miniScore');
+
+    const resultsSection = document.getElementById('results');
+    const resultsList = document.getElementById('resultsList');
+    const finalScore = document.getElementById('finalScore');
+    const rewardBtn = document.getElementById('rewardBtn');
+
+    // Control para bloqueo de scroll durante el juego
+    let gameActive = false;
+    function preventScroll(e){
+      if(gameActive){
+        e.preventDefault();
+      }
+    }
+    // Importante: usar {passive:false} para poder e.preventDefault() en móviles
+    window.addEventListener('touchmove', preventScroll, { passive: false });
+
+    // Inicializar UI
+    function loadQuestion(){
+      const q = questions[index];
+      questionText.textContent = q.text;
+      counter.textContent = `Pregunta ${index + 1} de ${questions.length}`;
+      const pct = ((index) / questions.length) * 100;
+      progressBar.style.width = `${pct}%`;
+      miniScore.textContent = `${score}/${questions.length}`;
+    }
+
+    function finishGame(){
+      gameActive = false;
+      // Permitir scroll para ver explicaciones
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+
+      // Generar lista de resultados
+      resultsList.innerHTML = '';
+      answers.forEach((a, i) => {
+        const q = questions[a.i];
+        const wasRight = (a.userYes === q.correctYes);
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = `
+          <div class="q">${i+1}. ${q.text}</div>
+          <div class="chips">
+            <span class="chip">Tu respuesta: ${a.userYes ? 'Sí' : 'No'}</span>
+            <span class="chip">Correcta: ${q.correctYes ? 'Sí' : 'No'}</span>
+            <span class="chip ${wasRight ? 'ok' : 'nope'}">${wasRight ? '¡Bien!' : 'Ojo'}</span>
+          </div>
+          <div class="explain">${q.why}</div>
+        `;
+        resultsList.appendChild(item);
+      });
+
+      finalScore.textContent = `${score}/${questions.length}`;
+      // Link de recompensa con el mismo initData
+      const base = 'https://kampe-game-phaser.onrender.com/daily_streak';
+      const url = `${base}?initData=${encodeURIComponent(initData)}`;
+      rewardBtn.href = url;
+
+      // Ocultar arena, mostrar resultados
+      document.getElementById('app').style.display = 'none'; // oculto el juego
+      resultsSection.style.display = 'block'; // muestro resultados
+    }
+
+    function commitAnswer(userYes){
+      const q = questions[index];
+      const correct = (userYes === q.correctYes);
+      if(correct) score++;
+      answers.push({ i: index, userYes, correctYes: q.correctYes });
+
+      index++;
+      if(index >= questions.length){
+        progressBar.style.width = `100%`;
+        miniScore.textContent = `${score}/${questions.length}`;
+        // Pequeño timeout para que termine animación de salida
+        setTimeout(finishGame, 260);
+      }else{
+        loadQuestion();
+      }
+    }
+
+    // Lógica de swipe
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let dragging = false;
+
+    const THRESHOLD = () => Math.min(120, window.innerWidth * 0.25);
+    const ROTATION = 14; // grados de rotación máxima
+
+    function onPointerDown(e){
+      if(!gameActive) return;
+      dragging = true;
+      startX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+      startY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+      currentX = startX;
+      currentY = startY;
+      card.style.transition = 'none';
+    }
+    function onPointerMove(e){
+      if(!dragging) return;
+      currentX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+      currentY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+      const dx = currentX - startX;
+      const dy = currentY - startY;
+      const rot = (dx / window.innerWidth) * ROTATION;
+
+      // Transformar tarjeta
+      card.style.transform = `translate(${dx}px, ${dy * 0.12}px) rotate(${rot}deg)`;
+
+      // Mostrar overlays de decisión según desplazamiento
+      const t = Math.min(1, Math.abs(dx) / THRESHOLD());
+      if(dx > 0){
+        decisionYes.style.opacity = t;
+        decisionNo.style.opacity = 0;
+      }else if(dx < 0){
+        decisionNo.style.opacity = t;
+        decisionYes.style.opacity = 0;
+      }else{
+        decisionYes.style.opacity = 0;
+        decisionNo.style.opacity = 0;
+      }
+    }
+    function onPointerUp(){
+      if(!dragging) return;
+      dragging = false;
+
+      const dx = currentX - startX;
+      const absDx = Math.abs(dx);
+      const isCommit = absDx > THRESHOLD();
+
+      // Reset overlays
+      decisionYes.style.opacity = 0;
+      decisionNo.style.opacity = 0;
+
+      if(isCommit){
+        // Animar fuera de la pantalla
+        const dir = dx > 0 ? 1 : -1;
+        card.style.transition = 'transform 220ms ease';
+        card.style.transform = `translate(${dir * (window.innerWidth * 1.1)}px, 0px) rotate(${dir * 20}deg)`;
+
+        // Guardar respuesta y preparar siguiente
+        commitAnswer(dir > 0);
+        // Regresar tarjeta al centro para la siguiente pregunta
+        setTimeout(() => {
+          card.style.transition = 'none';
+          card.style.transform = 'translate(0px, 0px) rotate(0deg)';
+        }, 240);
+      }else{
+        // Volver al centro
+        card.style.transition = 'transform 220ms ease';
+        card.style.transform = 'translate(0px, 0px) rotate(0deg)';
+      }
+    }
+
+    // Botones
+    btnNo.addEventListener('click', () => {
+      if(!gameActive) return;
+      // Animación breve hacia la izquierda
+      card.style.transition = 'transform 200ms ease';
+      card.style.transform = `translate(-${window.innerWidth * 1.1}px, 0) rotate(-18deg)`;
+      setTimeout(() => {
+        card.style.transition = 'none';
+        card.style.transform = 'translate(0px,0px) rotate(0deg)';
+      }, 220);
+      commitAnswer(false);
+    });
+    btnYes.addEventListener('click', () => {
+      if(!gameActive) return;
+      // Animación breve hacia la derecha
+      card.style.transition = 'transform 200ms ease';
+      card.style.transform = `translate(${window.innerWidth * 1.1}px, 0) rotate(18deg)`;
+      setTimeout(() => {
+        card.style.transition = 'none';
+        card.style.transform = 'translate(0px,0px) rotate(0deg)';
+      }, 220);
+      commitAnswer(true);
+    });
+
+    // Eventos de puntero para swipe
+    // Usamos tanto touch como mouse para compatibilidad
+    card.addEventListener('touchstart', onPointerDown, { passive: true });
+    card.addEventListener('touchmove', onPointerMove, { passive: true });
+    card.addEventListener('touchend', onPointerUp);
+    card.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    // Inicio del juego
+    btnStart.addEventListener('click', () => {
+      tutorial.style.display = 'none';
+      gameActive = true;
+      // Bloquear scroll (ya está en CSS, pero reforzamos)
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      index = 0;
+      score = 0;
+      answers.length = 0;
+      loadQuestion();
+    });
+
+    // Precargar ligeros detalles visuales
+    document.addEventListener('DOMContentLoaded', () => {
+      // Mostrar primera pregunta en la tarjeta aunque esté el tutorial (para rendimiento)
+      loadQuestion();
+      // Asignar recompensa desde el inicio por si alguien salta al final
+      rewardBtn.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+    });
+
+    // Accesibilidad con teclado (opcional en desktop)
+    window.addEventListener('keydown', (e) => {
+      if(!gameActive) return;
+      if(e.key === 'ArrowLeft'){ btnNo.click(); }
+      if(e.key === 'ArrowRight'){ btnYes.click(); }
+    });
+  </script>
+</body>
+</html>
