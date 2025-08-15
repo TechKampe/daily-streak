@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <title>Kämpe | Tarea de hoy</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <meta name="theme-color" content="#1f6dff" />
+
+  <style>
+    /* ============ VARIABLES Y RESET ============ */
+    :root{
+      --bg1: #0d4bff;         /* Azul Fortnite */
+      --bg2: #29b5ff;         /* Cian vibrante */
+      --accent: #7dffde;      /* Verde-menta para acentos */
+      --accent-2:#d96cff;     /* Magenta neon */
+      --card:#ffffff;         /* Cartas blancas para contraste con logo */
+      --text:#0d1b2a;         /* Texto oscuro legible */
+      --ok:#00d98b;           /* Correcto */
+      --bad:#ff4d6d;          /* Incorrecto */
+      --muted:#6b7b8f;        /* Texto secundario */
+      --shadow: 0 10px 40px rgba(0,0,0,.25), 0 0 30px rgba(45,168,255,.2);
+      --glow: 0 0 0 2px rgba(125,255,222,.35), 0 0 40px rgba(41,181,255,.45);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html, body{
+      height:100%;
+      margin:0;
+      padding:0;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:white;
+      -webkit-tap-highlight-color: transparent;
+      background: radial-gradient(1200px 800px at 20% 10%, #6ec9ff33, transparent 70%) ,
+                  linear-gradient(135deg, var(--bg1), var(--bg2));
+      /* Scroll desactivado mientras se juega; se reactiva al final vía JS */
+      overflow:hidden;
+    }
+    a{color:inherit;text-decoration:none}
+
+    /* Fondo con personaje: prominente pero no tapa la UI */
+    .avatar-bg{
+      position: fixed;
+      right: max(8px, env(safe-area-inset-right));
+      bottom: max(8px, env(safe-area-inset-bottom));
+      width: min(45vw, 380px);
+      opacity:.22;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,.2));
+      pointer-events:none;
+      user-select:none;
+      z-index:0;
+    }
+
+    /* ============ CONTENEDOR PRINCIPAL ============ */
+    .wrap{
+      position:relative;
+      z-index:1;
+      min-height:100dvh;
+      padding: calc(10px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      /* Bloquear gestos de scroll; permitimos solo gestos dentro del juego */
+      touch-action:none;
+    }
+
+    /* ============ HEADER ============ */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:6px 10px;
+      background: linear-gradient(180deg, #fff, #f7fbff);
+      color:#0a2a43;
+      border-radius:999px;
+      box-shadow: var(--shadow);
+    }
+    .brand img{
+      height:20px;
+    }
+    .brand b{
+      font-weight:800;
+      letter-spacing:.2px;
+      font-size:12px;
+    }
+    .title{
+      margin-left:auto;
+      text-align:right;
+      display:flex;
+      flex-direction:column;
+      line-height:1.05;
+    }
+    .title .sub{
+      font-weight:700;
+      font-size:12px;
+      opacity:.9;
+    }
+    .title .main{
+      font-weight:800;
+      font-size:18px;
+      letter-spacing:.2px;
+      text-shadow:0 2px 10px rgba(0,0,0,.2);
+    }
+
+    /* ============ INSTRUCCIONES + PROGRESO ============ */
+    .info-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .hint{
+      background: linear-gradient(135deg, #ffffff, #e7fbff);
+      color:#0e2d47;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: var(--shadow);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .hint .pill{
+      background: linear-gradient(135deg, #19d9a6, #7dffde);
+      color:#052d29;
+      padding: 2px 8px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:11px;
+      box-shadow: inset 0 0 0 2px #ffffffaa, 0 0 20px #7dffde66;
+      white-space:nowrap;
+    }
+    .progress{
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .bar{
+      height:10px;
+      background:#ffffff22;
+      border-radius:999px;
+      overflow:hidden;
+      flex:1;
+      box-shadow: inset 0 0 0 1px #ffffff33;
+    }
+    .bar > i{
+      display:block;
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--accent), #55ddff);
+      box-shadow: var(--glow);
+      transition: width .25s ease;
+    }
+    .counter{
+      font-weight:800;
+      font-size:12px;
+      letter-spacing:.4px;
+      opacity:.9;
+    }
+
+    /* ============ ZONA DE JUEGO ============ */
+    .game{
+      position:relative;
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height: 60dvh;
+      max-height: 75dvh;
+      margin-top:2px;
+      perspective: 1200px;
+    }
+    /* Pila de cartas */
+    .stack{
+      position:relative;
+      width: min(92vw, 380px);
+      height: min(70vh, 480px);
+    }
+    .card{
+      position:absolute;
+      inset:0;
+      background: var(--card);
+      color: var(--text);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 16px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      user-select:none;
+      touch-action:none;
+      transform-origin: center 85%;
+      will-change: transform;
+      transition: transform .25s ease, opacity .25s ease;
+    }
+    .card h3{
+      font-size: 16px;
+      margin:0;
+      color:#0d2640;
+      text-transform: uppercase;
+      letter-spacing:.8px;
+      font-weight:800;
+    }
+    .question{
+      margin: 8px 0;
+      font-size: clamp(18px, 2.8vh, 22px);
+      font-weight:800;
+      color:#0d1b2a;
+      line-height:1.2;
+      letter-spacing:.2px;
+      text-wrap: balance;
+    }
+    .tip{
+      font-size:12px;
+      color:#4a6075;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .labels{
+      position:absolute;
+      top:12px;
+      left:12px;
+      right:12px;
+      display:flex;
+      justify-content:space-between;
+      pointer-events:none;
+      font-weight:800;
+      letter-spacing:.8px;
+    }
+    .labels span{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:10px;
+      background:#0f2c51;
+      color:white;
+      opacity:.22;
+      box-shadow: 0 0 0 2px #ffffff22;
+      text-transform:uppercase;
+    }
+    .labels .left{ background:#07273f; }
+    .labels .right{ background:#0a3a2f; }
+    /* Overlays que aparecen al arrastrar */
+    .overlay{
+      position:absolute;
+      inset:0;
+      border-radius: inherit;
+      pointer-events:none;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      padding:16px;
+      opacity:0;
+      transition: opacity .15s ease;
+    }
+    .overlay .badge{
+      padding:8px 12px;
+      border-radius:12px;
+      font-weight:900;
+      font-size:14px;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      color:white;
+      box-shadow: 0 6px 24px rgba(0,0,0,.3);
+      backdrop-filter: blur(2px);
+    }
+    .overlay .bad{ background: linear-gradient(135deg, #ff4d6d, #ff8fab); }
+    .overlay .ok{ background: linear-gradient(135deg, #00d98b, #6bffbd); }
+
+    /* Botonera de apoyo (por si alguien no puede deslizar) */
+    .cta-row{
+      margin-top: 8px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+    }
+    .btn{
+      appearance:none;
+      border:none;
+      border-radius:14px;
+      font-weight:900;
+      letter-spacing:.6px;
+      text-transform:uppercase;
+      padding:12px 16px;
+      color:#05203b;
+      background: linear-gradient(180deg, #e6f7ff, #cceeff);
+      box-shadow: var(--shadow);
+      cursor:pointer;
+      transition: transform .06s ease;
+      user-select:none;
+    }
+    .btn:active{ transform: translateY(1px) scale(.99); }
+    .btn.bad{ background: linear-gradient(180deg, #ffe6ec, #ffd6e0); color:#3a0a18; }
+    .btn.ok{ background: linear-gradient(180deg, #e6fff6, #cffff0); color:#06281d; }
+
+    /* Snackbar de feedback */
+    .toast{
+      position: fixed;
+      left:50%;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(120%);
+      background: #061a2b;
+      color:white;
+      padding:10px 14px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:13px;
+      letter-spacing:.4px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35), 0 0 0 2px #ffffff22;
+      z-index:10;
+      transition: transform .25s ease;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .toast.show{ transform: translateX(-50%) translateY(0%); }
+    .dot{
+      width:10px;height:10px;border-radius:50%;
+      box-shadow:0 0 12px currentColor;
+    }
+
+    /* ============ RESULTADOS ============ */
+    .results{
+      display:none;
+      padding: 16px;
+      gap:14px;
+      flex-direction:column;
+      animation: pop .35s ease both;
+    }
+    @keyframes pop { from{ opacity:0; transform: translateY(10px)} to{opacity:1; transform:none} }
+    .results .head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .score{
+      background: linear-gradient(135deg, #ffffff, #e9f6ff);
+      color:#08243f;
+      border-radius:16px;
+      padding:10px 14px;
+      font-weight:900;
+      box-shadow: var(--shadow);
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .score .big{
+      font-size:20px;
+    }
+    .list{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+      margin-top:6px;
+    }
+    .item{
+      background: #061a2bcc;
+      border-radius:14px;
+      padding:12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.25);
+      border: 1px solid #ffffff22;
+      color:#e9f6ff;
+    }
+    .item .q{
+      font-weight:800;
+      font-size:14px;
+      margin-bottom:6px;
+      line-height:1.25;
+    }
+    .item .meta{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:12px;
+      margin-bottom:6px;
+    }
+    .badge{
+      padding:4px 8px;
+      border-radius:999px;
+      font-weight:900;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+      font-size:11px;
+      box-shadow: inset 0 0 0 1px #ffffff33, 0 0 20px #ffffff22;
+    }
+    .b-ok{ background:#0b3b2e; color:#7dffde; }
+    .b-bad{ background:#3b0b18; color:#ff8fab; }
+    .b-right{ background:#0b332b; color:#6bffbd; }
+    .b-left{ background:#2f1631; color:#d96cff; }
+    .exp{
+      font-size:12px;color:#b7d6f7;
+    }
+
+    .rewards{
+      margin-top:8px;
+      display:flex;
+      justify-content:center;
+    }
+    .btn-primary{
+      appearance:none;
+      border:none;
+      background: linear-gradient(135deg, #22e1ff, #1d8eff 40%, #d96cff 115%);
+      color:white;
+      font-weight:900;
+      letter-spacing:.6px;
+      text-transform:uppercase;
+      padding:14px 18px;
+      border-radius:16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.35), 0 0 30px rgba(125,255,222,.35);
+      cursor:pointer;
+      transition: transform .06s ease, filter .2s ease;
+    }
+    .btn-primary:active{ transform: translateY(1px) scale(.99); }
+    .btn-primary:hover{ filter: brightness(1.05); }
+
+    /* Desktop ajustes sutiles */
+    @media (min-width: 720px){
+      .wrap{ max-width: 980px; margin:0 auto; }
+      .stack{ width: min(60vw, 440px); height: min(65vh, 520px);}
+      .avatar-bg{ width:320px; opacity:.25; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Personaje en el fondo (prominente, sin tapar la UI) -->
+  <img class="avatar-bg" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Personaje Kämpe" />
+
+  <div class="wrap" id="gameWrap">
+    <!-- Header con logo sobre fondo claro para que destaque -->
+    <div class="topbar">
+      <div class="brand">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <b>Kämpe</b>
+      </div>
+      <div class="title">
+        <span class="sub">Tarea de hoy</span>
+        <span class="main">Cuestionario: Sé previsor en el trabajo</span>
+      </div>
+    </div>
+
+    <!-- Instrucciones y progreso -->
+    <div class="info-row">
+      <div class="hint">
+        <span class="pill">Desliza</span>
+        <span>Izquierda = Falso • Derecha = Verdadero</span>
+      </div>
+      <div class="progress">
+        <div class="bar"><i id="barFill"></i></div>
+        <div class="counter" id="counter">0/10</div>
+      </div>
+    </div>
+
+    <!-- Zona de juego (sin scroll) -->
+    <div class="game" id="game">
+      <div class="stack" id="stack">
+        <!-- Las cartas se insertan por JS -->
+      </div>
+    </div>
+
+    <!-- Botones de apoyo (opcional) -->
+    <div class="cta-row" aria-hidden="false">
+      <button class="btn bad" id="btnFalse">Falso ◀</button>
+      <button class="btn ok" id="btnTrue">▶ Verdadero</button>
+    </div>
+  </div>
+
+  <!-- Snackbar de feedback -->
+  <div class="toast" id="toast"><span class="dot" id="toastDot"></span><span id="toastText"></span></div>
+
+  <!-- Pantalla de resultados (se muestra al final y reactivará el scroll) -->
+  <section class="results" id="results">
+    <div class="head">
+      <div class="score">
+        <span>Resultado:</span>
+        <span class="big" id="scoreText">0/10</span>
+      </div>
+      <div class="hint" style="background:linear-gradient(135deg,#fff,#f3ffe9);">
+        <span class="pill" style="background:linear-gradient(135deg,#b6ff9b,#7dffde);">Aprendizaje</span>
+        <span>Revisa las explicaciones y afianza tus hábitos.</span>
+      </div>
+    </div>
+
+    <div class="list" id="resultList">
+      <!-- Renglones de resultados por JS -->
+    </div>
+
+    <div class="rewards">
+      <button class="btn-primary" id="rewardBtn">Ver mi recompensa</button>
+    </div>
+  </section>
+
+  <script>
+    /* =========================
+       Datos del cuestionario
+       ========================= */
+    const QUESTIONS = [
+      {
+        text: "Llegar 10–15 minutos antes el primer día de una obra para conocer al equipo y repasar el plan.",
+        correct: true,
+        explanation: "Llegar antes te permite orientarte, coordinarte y detectar riesgos o faltas de material antes de empezar."
+      },
+      {
+        text: "Si noto olor a quemado en un cuadro eléctrico, sigo trabajando y lo comento al final.",
+        correct: false,
+        explanation: "El olor a quemado es señal de sobrecalentamiento. Debes parar, cortar la energía si es seguro y reportarlo de inmediato."
+      },
+      {
+        text: "Antes de salir, revisar el parte de trabajo y preparar las herramientas específicas del encargo.",
+        correct: true,
+        explanation: "Revisar partes y herramientas evita viajes de retorno, retrasos y mejora tu eficiencia."
+      },
+      {
+        text: "Si me faltan EPIs (guantes, gafas, casco), improviso con lo que haya para no retrasar.",
+        correct: false,
+        explanation: "Nunca improvises con la seguridad. Sin EPIs adecuados, no se trabaja: pide y documenta la incidencia."
+      },
+      {
+        text: "Ante una duda técnica, lo mejor es no decir nada para no parecer inexperto.",
+        correct: false,
+        explanation: "Preguntar a tiempo evita errores costosos y muestra responsabilidad y ganas de aprender."
+      },
+      {
+        text: "Tomar fotos del 'antes' de una instalación facilita prever cambios y documentar avances.",
+        correct: true,
+        explanation: "Las fotos sirven como referencia, mejoran la comunicación con clientes y ayudan a planificar."
+      },
+      {
+        text: "Si el pronóstico indica lluvia intensa, inicio tareas exteriores con normalidad.",
+        correct: false,
+        explanation: "Adapta el plan: traslada tareas al interior, protege materiales y prepara drenajes o lonas."
+      },
+      {
+        text: "Confirmar por mensaje la dirección exacta y el acceso antes de un servicio urgente.",
+        correct: true,
+        explanation: "Evita pérdidas de tiempo y malentendidos, y facilita prever aparcamiento o llaves."
+      },
+      {
+        text: "Ignorar pequeños goteos porque probablemente se secan solos.",
+        correct: false,
+        explanation: "Un goteo indica un problema real: documenta, cierra la llave si procede y actúa para evitar daños."
+      },
+      {
+        text: "Etiquetar cables y cerrar tapas de registro al terminar para la siguiente intervención.",
+        correct: true,
+        explanation: "Deja el trabajo preparado para el futuro: ahorra tiempo y reduce errores."
+      }
+    ];
+
+    /* =========================
+       Estado de la actividad
+       ========================= */
+    let current = 0;
+    const userAnswers = [];        // {answer: boolean, correct: boolean, index: number}
+    let initDataParam = "";        // Para reenviar al final
+    let isAnimating = false;       // Evitar gestos múltiples
+    const THRESHOLD = 90;          // Umbral de swipe en px
+
+    // Elementos UI
+    const stackEl = document.getElementById('stack');
+    const barFill = document.getElementById('barFill');
+    const counterEl = document.getElementById('counter');
+    const toast = document.getElementById('toast');
+    const toastText = document.getElementById('toastText');
+    const toastDot = document.getElementById('toastDot');
+    const resultsSection = document.getElementById('results');
+    const rewardBtn = document.getElementById('rewardBtn');
+
+    /* =========================
+       Utilidades de scroll lock
+       ========================= */
+    function setScrollLocked(locked){
+      document.documentElement.style.overflow = locked ? 'hidden' : 'auto';
+      document.body.style.overflow = locked ? 'hidden' : 'auto';
+    }
+
+    /* =========================
+       Construcción de cartas
+       ========================= */
+    function createCard(q, index){
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.setAttribute('data-index', index);
+
+      // Capas de overlays de arrastre
+      const overlay = document.createElement('div');
+      overlay.className = 'overlay';
+      overlay.innerHTML = `
+        <span class="badge bad">FALSO</span>
+        <span class="badge ok">VERDADERO</span>
+      `;
+
+      // Etiquetas superiores
+      const labels = document.createElement('div');
+      labels.className = 'labels';
+      labels.innerHTML = `<span class="left">Falso</span><span class="right">Verdadero</span>`;
+
+      card.innerHTML = `
+        <h3>Pregunta ${index+1} de ${QUESTIONS.length}</h3>
+        <div class="question">${q.text}</div>
+        <div class="tip">Desliza la carta: izquierda = Falso • derecha = Verdadero</div>
+      `;
+      card.appendChild(labels);
+      card.appendChild(overlay);
+
+      // Apilar visualmente (la última se dibuja al final)
+      card.style.zIndex = 100 - index;
+
+      attachDragHandlers(card);
+      return card;
+    }
+
+    function renderStack(){
+      // Limpiar pila
+      stackEl.innerHTML = '';
+      // Insertar desde la actual en adelante (top es la actual)
+      for(let i=current; i<QUESTIONS.length; i++){
+        const card = createCard(QUESTIONS[i], i);
+        // Escala sutil para las siguientes cartas
+        const depth = i - current;
+        card.style.transform = `translate3d(0, ${depth*4}px, 0) scale(${1 - depth*0.02})`;
+        card.style.opacity = 1 - depth*0.05;
+        stackEl.appendChild(card);
+      }
+      updateProgress();
+    }
+
+    /* =========================
+       Gestos tipo Tinder
+       ========================= */
+    function attachDragHandlers(card){
+      let startX = 0, startY = 0;
+      let dx = 0, dy = 0;
+      let dragging = false;
+
+      const onDown = (e)=>{
+        if(isAnimating) return;
+        dragging = true;
+        const point = getPoint(e);
+        startX = point.x;
+        startY = point.y;
+        card.setPointerCapture?.(e.pointerId ?? 0);
+      };
+
+      const onMove = (e)=>{
+        if(!dragging) return;
+        e.preventDefault(); // evitar scroll del sistema
+        const p = getPoint(e);
+        dx = p.x - startX;
+        dy = p.y - startY;
+
+        // Transformar carta
+        const rot = clamp(dx/12, -18, 18);
+        card.style.transition = 'transform 0s';
+        card.style.transform = `translate3d(${dx}px, ${dy*0.25}px, 0) rotate(${rot}deg)`;
+
+        // Mostrar overlays
+        const overlay = card.querySelector('.overlay');
+        const opacity = Math.min(Math.abs(dx) / (THRESHOLD*1.2), 1);
+        overlay.style.opacity = opacity;
+
+        // Acentuar etiqueta izquierda/derecha
+        const left = card.querySelector('.labels .left');
+        const right = card.querySelector('.labels .right');
+        if(dx < 0){
+          left.style.opacity = 0.9;
+          right.style.opacity = 0.22;
+        }else if(dx > 0){
+          right.style.opacity = 0.9;
+          left.style.opacity = 0.22;
+        }else{
+          right.style.opacity = left.style.opacity = 0.22;
+        }
+      };
+
+      const onUp = (e)=>{
+        if(!dragging) return;
+        dragging = false;
+
+        const answerRight = dx > THRESHOLD;
+        const answerLeft  = dx < -THRESHOLD;
+
+        if(answerRight || answerLeft){
+          // Enviar fuera de pantalla
+          isAnimating = true;
+          const toX = (answerRight ? 1 : -1) * window.innerWidth * 1.1;
+          const toRot = (answerRight ? 1 : -1) * 24;
+          card.style.transition = 'transform .25s ease';
+          card.style.transform = `translate3d(${toX}px, ${dy*0.2}px, 0) rotate(${toRot}deg)`;
+          const ans = answerRight; // true = Verdadero, false = Falso
+          setTimeout(()=>{
+            onAnswer(ans);
+          }, 200);
+        }else{
+          // Volver al centro
+          card.style.transition = 'transform .2s ease';
+          card.style.transform = '';
+          const overlay = card.querySelector('.overlay');
+          overlay.style.opacity = 0;
+          const left = card.querySelector('.labels .left');
+          const right = card.querySelector('.labels .right');
+          left.style.opacity = right.style.opacity = 0.22;
+        }
+      };
+
+      // Pointer events unificados
+      card.addEventListener('pointerdown', onDown);
+      window.addEventListener('pointermove', onMove, {passive:false});
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
+    }
+
+    function getPoint(e){
+      if(e.touches && e.touches[0]){
+        return {x: e.touches[0].clientX, y: e.touches[0].clientY};
+      }else{
+        return {x: e.clientX, y: e.clientY};
+      }
+    }
+
+    function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+    /* =========================
+       Responder y feedback
+       ========================= */
+    function onAnswer(answerBool){
+      const idx = current;
+      const q = QUESTIONS[idx];
+      const isCorrect = (answerBool === q.correct);
+      userAnswers.push({ index: idx, answer: answerBool, correct: isCorrect });
+
+      showToast(isCorrect ? "¡Correcto!" : "¡Ups! Incorrecto", isCorrect);
+
+      // Avanzar pila
+      current++;
+      animateNext();
+    }
+
+    function animateNext(){
+      // Quitar carta superior del DOM y re-render del resto
+      const topCard = stackEl.querySelector('.card');
+      if(topCard) {
+        topCard.style.opacity = 0;
+        setTimeout(()=>{
+          renderStack();
+          isAnimating = false;
+          if(current >= QUESTIONS.length){
+            endGame();
+          }
+        }, 50);
+      }else{
+        // Si no hay carta visible (raro), re-render y comprobar fin
+        renderStack();
+        isAnimating = false;
+        if(current >= QUESTIONS.length){
+          endGame();
+        }
+      }
+      updateProgress();
+    }
+
+    function updateProgress(){
+      const total = QUESTIONS.length;
+      const value = Math.min(current, total);
+      const pct = (value/total) * 100;
+      barFill.style.width = pct + '%';
+      counterEl.textContent = `${value}/${total}`;
+    }
+
+    function showToast(text, isOk){
+      toastText.textContent = text;
+      toastDot.style.background = isOk ? 'var(--ok)' : 'var(--bad)';
+      toast.style.background = isOk ? '#072920' : '#2b0b15';
+      toast.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=> toast.classList.remove('show'), 950);
+    }
+
+    /* =========================
+       Finalizar: mostrar resultados y activar scroll
+       ========================= */
+    function endGame(){
+      // Ocultar zona de juego, mostrar resultados
+      document.getElementById('gameWrap').style.display = 'none';
+      buildResults();
+      resultsSection.style.display = 'flex';
+      // Activar scroll para leer explicaciones
+      setScrollLocked(false);
+    }
+
+    function buildResults(){
+      // Puntaje
+      const right = userAnswers.filter(a=>a.correct).length;
+      document.getElementById('scoreText').textContent = `${right}/${QUESTIONS.length}`;
+
+      const list = document.getElementById('resultList');
+      list.innerHTML = '';
+      userAnswers.forEach((ua)=>{
+        const q = QUESTIONS[ua.index];
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = `
+          <div class="q">${q.text}</div>
+          <div class="meta">
+            <span class="badge ${ua.correct?'b-ok':'b-bad'}">${ua.correct?'Correcto':'Incorrecto'}</span>
+            <span class="badge ${ua.answer?'b-right':'b-left'}">Tu respuesta: ${ua.answer?'Verdadero':'Falso'}</span>
+            <span class="badge ${q.correct?'b-right':'b-left'}">Respuesta: ${q.correct?'Verdadero':'Falso'}</span>
+          </div>
+          <div class="exp">${q.explanation}</div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    /* =========================
+       Botones de apoyo
+       ========================= */
+    document.getElementById('btnFalse').addEventListener('click', ()=>{ if(current < QUESTIONS.length) onAnswer(false); });
+    document.getElementById('btnTrue').addEventListener('click',  ()=>{ if(current < QUESTIONS.length) onAnswer(true); });
+
+    /* =========================
+       initData y navegación final
+       ========================= */
+    function readInitData(){
+      const usp = new URLSearchParams(location.search);
+      initDataParam = usp.get('initData') || '';
+    }
+
+    rewardBtn.addEventListener('click', ()=>{
+      const base = 'https://kampe-game-phaser.onrender.com/daily_streak';
+      const url = initDataParam ? `${base}?initData=${encodeURIComponent(initDataParam)}` : base;
+      location.href = url;
+    });
+
+    /* =========================
+       Inicialización
+       ========================= */
+    function init(){
+      readInitData();
+
+      // Bloquear scroll durante el juego (por si algún navegador ignora overflow)
+      const prevent = (e)=>{ e.preventDefault(); };
+      document.addEventListener('touchmove', prevent, {passive:false});
+
+      renderStack();
+      setScrollLocked(true);
+    }
+
+    // Iniciar
+    init();
+
+    // Seguridad: ajustar barra al cambiar orientación
+    window.addEventListener('resize', updateProgress);
+  </script>
+</body>
+</html>
