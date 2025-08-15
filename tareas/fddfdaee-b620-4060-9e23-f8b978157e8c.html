@@ -535,6 +535,45 @@
     </section>
   </div>
 
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  // Simple on-page logger so you can see output inside Telegram webview
+  const logBox = document.createElement('pre');
+  Object.assign(logBox.style, {
+    position: 'fixed', bottom: '8px', left: '8px', right: '8px',
+    maxHeight: '40vh', overflow: 'auto', background: 'rgba(0,0,0,.6)',
+    color: '#0ff', padding: '8px', fontSize: '12px', zIndex: 99999,
+    border: '1px solid rgba(255,255,255,.2)', borderRadius: '8px'
+  });
+  logBox.textContent = '🔎 Debug console\n';
+  document.addEventListener('DOMContentLoaded', () => document.body.appendChild(logBox));
+  const log = (...a) => { logBox.textContent += a.map(x => typeof x==='object'?JSON.stringify(x,null,2):String(x)).join(' ') + '\n'; };
+
+  // Read launch data (Telegram canonical source)
+  const tg = window.Telegram?.WebApp;
+  const initData1 = tg?.initData || '';                 // signed string
+  const initDataUnsafe = tg?.initDataUnsafe || null;   // parsed fields
+
+  // Fallbacks: Telegram sometimes puts tgWebAppData in hash or query
+  const q = new URLSearchParams(location.search);
+  const h = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const tgWebAppData = q.get('tgWebAppData') || h.get('tgWebAppData') || null;
+
+  // Show what we’ve got
+  log('tg present?', !!tg);
+  log('initData length:', initData1?.length || 0);
+  log('initDataUnsafe:', initDataUnsafe);
+  log('tgWebAppData (query/hash):', tgWebAppData ? '[present]' : 'null');
+
+  // Make sure the WebApp is marked ready (improves UI in Telegram)
+  tg?.ready();
+
+  // If you need to forward the payload to your backend for validation:
+  // navigator.sendBeacon('/_log-telegram-launch', new Blob([JSON.stringify({
+  //   href: location.href, initData, initDataUnsafe, tgWebAppData
+  // })], { type: 'application/json' }));
+</script>
+
   <script>
     // =========================
     // Datos del cuestionario
