@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kämpe - Tarea de hoy | Cuestionario: Ser previsor en el trabajo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Variables y base */
+    :root{
+      --blue-1:#1323a3;          /* Azul tipo Fortnite profundo */
+      --blue-2:#0e6dfd;          /* Azul vibrante */
+      --blue-3:#08e0ff;          /* Cian neón */
+      --violet:#7a5cff;          /* Acento violeta */
+      --green:#23d997;           /* Correcto */
+      --red:#ff496c;             /* Incorrecto */
+      --text:#e9f0ff;
+      --muted:#bcd3ff;
+      --card:#0d1e74cc;          /* Carta semitransparente */
+      --card-strong:#0d1e74f0;
+      --glass:#ffffff18;
+      --white:#ffffff;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin:0;
+      background: radial-gradient(1200px 800px at 70% -10%, rgba(8,224,255,.2), transparent 60%) , linear-gradient(160deg, var(--blue-1) 0%, #0b1b7d 40%, #0a2fd4 100%);
+      color: var(--text);
+      overflow: hidden; /* Bloqueado durante el juego */
+      user-select: none;
+    }
+
+    /* Fondo con personaje */
+    .bg-avatar {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        url('https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png') right -5% bottom -10%/60vh no-repeat;
+      opacity:.22;
+      filter: drop-shadow(0 0 12px rgba(8,224,255,.35));
+    }
+
+    /* Efectos decorativos */
+    .scanlines {
+      position: fixed; inset: 0; pointer-events:none;
+      background: repeating-linear-gradient(to bottom, rgba(255,255,255,.03), rgba(255,255,255,.03) 2px, transparent 3px, transparent 6px);
+      mix-blend-mode: overlay; opacity:.25;
+    }
+    .glow-ring {
+      position: fixed; width: 70vmax; height: 70vmax; border-radius: 50%;
+      left: 50%; top: -20vmax; transform: translateX(-50%);
+      background: radial-gradient(circle, rgba(8,224,255,.18), transparent 60%);
+      filter: blur(40px); pointer-events:none;
+    }
+
+    /* Header */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 5;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px;
+      background: linear-gradient(180deg, rgba(14,41,140,.85) 0%, rgba(11,31,109,.55) 100%);
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+    }
+    .brand {
+      display:flex; align-items:center; gap:10px;
+    }
+    .brand-badge {
+      display:flex; align-items:center; justify-content:center;
+      background: #ffffffee; /* Fondo claro para que el logo blanco se vea bien */
+      border-radius: 10px;
+      padding: 6px 10px;
+      box-shadow: 0 6px 16px rgba(255,255,255,.18);
+    }
+    .brand-badge img {
+      height: 22px; display:block;
+    }
+    .title {
+      font-weight:800; letter-spacing:.2px; font-size: 14px; color:#03134a;
+      text-transform: uppercase;
+    }
+    .streak {
+      display:flex; align-items:center; gap:8px;
+      background: linear-gradient(120deg, #15a7ff 0%, #23d997 100%);
+      color:#052246; font-weight:800;
+      padding:8px 12px; border-radius: 12px; font-size:13px;
+      box-shadow: 0 10px 24px rgba(8,224,255,.28);
+    }
+
+    /* Contenedor principal */
+    .wrap {
+      position: fixed; inset: 0; display:flex; flex-direction:column;
+      justify-content: flex-start; align-items:center;
+      padding: 72px 14px 16px; /* deja sitio para header */
+      gap:12px; z-index: 2;
+    }
+
+    .panel {
+      width: 100%;
+      max-width: 420px;
+      height: calc(100dvh - 96px);
+      display:flex; flex-direction:column; align-items:center; justify-content:stretch;
+      gap: 10px;
+    }
+
+    /* Panel de instrucciones */
+    .intro {
+      background: linear-gradient(160deg, rgba(13,30,116,.85), rgba(7,24,92,.85));
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 16px;
+      padding: 16px;
+      display:flex; flex-direction:column; gap:12px;
+      box-shadow: var(--shadow);
+    }
+    .intro h1 {
+      font-size: clamp(18px, 4.8vw, 22px);
+      margin:0; font-weight:800; line-height:1.15;
+      text-shadow: 0 2px 0 rgba(0,0,0,.25);
+    }
+    .subtitle {
+      color: var(--muted); font-size: 13px; margin-top:-2px;
+    }
+    .mechanics {
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      background: linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px; padding:10px;
+    }
+    .chip {
+      display:flex; align-items:center; gap:8px; padding:10px 12px;
+      border-radius:10px; font-weight:800; font-size: 13px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+      text-transform: uppercase;
+    }
+    .chip.ok { background: linear-gradient(120deg, rgba(35,217,151,.22), rgba(8,224,255,.18)); border:1px solid rgba(35,217,151,.6); color:#0cf0b0; }
+    .chip.no { background: linear-gradient(120deg, rgba(255,73,108,.22), rgba(122,92,255,.16)); border:1px solid rgba(255,73,108,.6); color:#ff8aa1; }
+    .go {
+      margin-top: 6px;
+      background: linear-gradient(120deg, #23d997, #15a7ff);
+      border: none; color:#021039; font-weight:900; font-size: 15px;
+      padding: 14px 16px; border-radius: 12px; cursor: pointer; width:100%;
+      box-shadow: 0 12px 28px rgba(8,224,255,.35), inset 0 -3px 0 rgba(0,0,0,.2);
+    }
+
+    /* Zona de juego */
+    .hud {
+      display:flex; justify-content:space-between; align-items:center; gap:8px;
+      padding: 6px 2px;
+    }
+    .progress {
+      flex:1; height:10px; background: #061552; border-radius: 999px;
+      overflow:hidden; border:1px solid rgba(255,255,255,.14);
+    }
+    .bar {
+      height:100%; width:0%;
+      background: linear-gradient(90deg, #23d997, #15a7ff);
+      box-shadow: 0 6px 18px rgba(8,224,255,.35);
+      transition: width .25s ease;
+    }
+    .count { font-size:12px; color: var(--muted); font-weight:700; min-width: 64px; text-align:right; }
+
+    .arena {
+      position: relative;
+      flex: 1;
+      display:flex; align-items:center; justify-content:center;
+      overflow: visible;
+    }
+
+    .swipe-hint {
+      position:absolute; top: 8px; left:50%; transform:translateX(-50%);
+      font-size: 12px; color: var(--muted); background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.14); padding:6px 10px; border-radius: 999px;
+      backdrop-filter: blur(4px);
+    }
+
+    .deck {
+      position: relative; width: 100%; max-width: 420px; height: 66vh;
+      max-height: 520px;
+    }
+    .card {
+      position:absolute; inset:0; margin:auto;
+      background: linear-gradient(165deg, var(--card), var(--card-strong));
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius:16px; padding:16px;
+      box-shadow: 0 18px 44px rgba(0,0,0,.45), 0 0 0 2px rgba(8,224,255,.05) inset;
+      touch-action: none;
+      display:flex; flex-direction:column; justify-content:space-between;
+      will-change: transform;
+    }
+    .card .q-top {
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+    }
+    .q-badge {
+      font-size:12px; font-weight:800; text-transform:uppercase;
+      color:#081237; background: linear-gradient(120deg, #23d997, #08e0ff);
+      padding:8px 10px; border-radius:10px;
+      box-shadow: 0 10px 22px rgba(8,224,255,.35);
+    }
+    .q-index {
+      font-size:12px; color: var(--muted); font-weight:700;
+    }
+    .q-text {
+      margin: 10px 0 0 0; font-size: clamp(18px, 3.8vw, 22px); line-height:1.25; font-weight:800;
+      text-shadow: 0 2px 0 rgba(0,0,0,.25);
+    }
+    .q-foot {
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+    }
+    .helper {
+      font-size:12px; color: var(--muted);
+      background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+      padding:8px 10px; border-radius:10px;
+    }
+
+    /* Overlays Correcto / Incorrecto durante el arrastre */
+    .flag {
+      position:absolute; top: 12px; padding:8px 12px; font-weight:900; font-size: 14px;
+      border-radius: 10px; opacity:0; transform: scale(.9);
+      box-shadow: 0 10px 20px rgba(0,0,0,.2);
+    }
+    .flag.right { right: 12px; background: linear-gradient(120deg, rgba(35,217,151,.9), rgba(8,224,255,.9)); color: #062a1f; }
+    .flag.left { left: 12px; background: linear-gradient(120deg, rgba(255,73,108,.95), rgba(122,92,255,.85)); color: #3b0410; }
+
+    /* Botones de fallback */
+    .controls {
+      display:flex; gap:10px; width: 100%;
+    }
+    .btn {
+      flex:1; padding: 12px; font-weight:900; font-size:14px; border-radius:12px;
+      border:1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: var(--text);
+      box-shadow: var(--shadow); cursor:pointer;
+    }
+    .btn.left { border-color: rgba(255,73,108,.5); }
+    .btn.right { border-color: rgba(35,217,151,.6); }
+    .btn:active { transform: translateY(1px); }
+
+    /* Pantalla de resultados (scroll habilitado) */
+    .results {
+      display:none; flex-direction:column; gap:12px;
+      width:100%; max-width: 720px; margin: 0 auto; padding: 12px 0 80px;
+    }
+    .score {
+      display:flex; align-items: center; justify-content: space-between; gap:10px;
+      background: linear-gradient(130deg, rgba(13,30,116,.85), rgba(7,24,92,.85));
+      border:1px solid rgba(255,255,255,.14); border-radius:16px; padding: 14px;
+    }
+    .score h2 { margin:0; font-size:18px; font-weight:800; }
+    .score .big {
+      font-size: 26px; font-weight: 900; color:#03134a;
+      background: linear-gradient(120deg, #23d997, #15a7ff); -webkit-background-clip:text; -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 0 rgba(0,0,0,.2);
+    }
+    .explain {
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .ex-item {
+      background: linear-gradient(165deg, rgba(13,30,116,.75), rgba(7,24,92,.75));
+      border:1px solid rgba(255,255,255,.12); border-radius:14px; padding: 12px;
+      box-shadow: var(--shadow);
+    }
+    .ex-q { font-weight:800; margin: 0 0 6px 0; font-size: 15px; }
+    .ex-meta { font-size:12px; color: var(--muted); margin-bottom: 6px; display:flex; gap:8px; flex-wrap: wrap; }
+    .tag {
+      padding:5px 8px; border-radius: 999px; font-weight:800; font-size: 11px; text-transform: uppercase;
+    }
+    .tag.ok { background: rgba(35,217,151,.18); border:1px solid rgba(35,217,151,.45); color:#13f0a4; }
+    .tag.no { background: rgba(255,73,108,.2); border:1px solid rgba(255,73,108,.5); color:#ff9ab0; }
+    .ex-txt { font-size: 14px; color:#def; }
+
+    .actions {
+      display:flex; gap:10px; position: sticky; bottom: 10px; margin-top: 6px;
+    }
+    .primary {
+      flex:2;
+      background: linear-gradient(120deg, #23d997, #15a7ff);
+      border:none; color:#03134a; font-weight:900; font-size: 15px;
+      padding: 14px 16px; border-radius: 12px; cursor:pointer;
+      box-shadow: 0 12px 28px rgba(8,224,255,.35), inset 0 -3px 0 rgba(0,0,0,.2);
+    }
+    .ghost {
+      flex:1;
+      background: rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+      color: var(--text); font-weight:900; font-size: 14px;
+      padding: 14px 12px; border-radius: 12px; cursor:pointer;
+    }
+
+    /* Responsivo seguro */
+    @media (max-height: 640px) {
+      .deck { height: 60vh; }
+      .q-text { font-size: 18px; }
+    }
+    @media (max-width: 360px) {
+      .chip { font-size: 12px; padding:8px 10px; }
+      .q-text { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Fondo y efectos -->
+  <div class="bg-avatar"></div>
+  <div class="glow-ring"></div>
+  <div class="scanlines"></div>
+
+  <!-- Barra superior -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-badge">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+      </div>
+      <div class="title">Tarea de hoy</div>
+    </div>
+    <div class="streak">
+      Reto diario
+      <img alt="" src="https://techkampe.github.io/daily-streak/assets/plan_discord.png" style="height:20px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); border-radius:6px;">
+    </div>
+  </header>
+
+  <!-- Contenido principal bloqueado a una pantalla durante el juego -->
+  <main class="wrap">
+    <section class="panel">
+      <!-- Instrucciones -->
+      <div class="intro" id="intro">
+        <h1>Cuestionario: cómo ser previsor en el trabajo</h1>
+        <div class="subtitle">Desliza la carta para responder: a la derecha si crees que es correcto; a la izquierda si es incorrecto.</div>
+        <div class="mechanics">
+          <div class="chip no">← Izquierda = Incorrecto</div>
+          <div class="chip ok">Derecha = Correcto →</div>
+        </div>
+        <button class="go" id="startBtn">¡Empezar!</button>
+      </div>
+
+      <!-- HUD y área de juego -->
+      <div class="hud" id="hud" style="display:none;">
+        <div class="progress"><div class="bar" id="bar"></div></div>
+        <div class="count" id="count">0/10</div>
+      </div>
+
+      <div class="arena" id="arena" style="display:none;">
+        <div class="swipe-hint">Arrastra la carta • Sin scroll durante el juego</div>
+        <div class="deck" id="deck"></div>
+      </div>
+
+      <div class="controls" id="controls" style="display:none;">
+        <button class="btn left" id="btnLeft">Incorrecto</button>
+        <button class="btn right" id="btnRight">Correcto</button>
+      </div>
+    </section>
+
+    <!-- Resultados (aquí ya se podrá hacer scroll en la página) -->
+    <section class="results" id="results">
+      <div class="score">
+        <h2>Resultados del reto</h2>
+        <div class="big" id="scoreText">0/10</div>
+      </div>
+      <div class="explain" id="explain">
+        <!-- Se llena dinámicamente con preguntas y explicaciones -->
+      </div>
+      <div class="actions">
+        <button class="ghost" id="retryBtn">Reintentar</button>
+        <button class="primary" id="rewardBtn">Ver mi recompensa</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // -------------------------------
+    // Datos del cuestionario
+    // -------------------------------
+    const questions = [
+      {
+        text: "Llegar 10–15 minutos antes el primer día de obra es una buena práctica.",
+        correct: true,
+        why: "Llegar con antelación te permite ubicarte, preparar herramientas y empezar sin prisas."
+      },
+      {
+        text: "Si detectas un leve olor a quemado en un cuadro eléctrico, puedes ignorarlo si todo funciona.",
+        correct: false,
+        why: "Un olor a quemado puede indicar sobrecalentamiento o mal contacto. Debe inspeccionarse de inmediato."
+      },
+      {
+        text: "Revisar el parte de materiales la noche anterior y llevar repuestos básicos te ahorra imprevistos.",
+        correct: true,
+        why: "Comprobar materiales con antelación reduce paradas y mejora tu fiabilidad en el equipo."
+      },
+      {
+        text: "Si no tienes el plano actualizado, improvisa sobre el terreno para avanzar más rápido.",
+        correct: false,
+        why: "Trabajar sin plano actualizado aumenta errores y retrabajos. Pide la última versión antes de actuar."
+      },
+      {
+        text: "Hacer fotos del antes y durante el trabajo es una buena forma de documentar y prever cambios.",
+        correct: true,
+        why: "Las fotos sirven como evidencia, facilitan reportes y ayudan a anticipar ajustes."
+      },
+      {
+        text: "Como es una tarea de 5 minutos, puedes trabajar sin EPI.",
+        correct: false,
+        why: "Los EPI se usan siempre. Los accidentes ocurren en tareas breves y rutinarias."
+      },
+      {
+        text: "Antes de taladrar, comprueba instalaciones ocultas (cables, tuberías) con un detector.",
+        correct: true,
+        why: "Previene averías, cortes de luz o fugas, ahorrando tiempo y riesgos."
+      },
+      {
+        text: "Si prevés un retraso, espera al final del día para informar al jefe/cliente.",
+        correct: false,
+        why: "Comunicar a tiempo permite reorganizar equipos y materiales para minimizar el impacto."
+      },
+      {
+        text: "Ves una fuga leve de agua pero no es tu tarea; mejor dejarla al siguiente turno.",
+        correct: false,
+        why: "Reporta y, si puedes, contén la fuga. Ignorarla puede agravar daños y costes."
+      },
+      {
+        text: "Al terminar, deja el área limpia y anota pendientes para el día siguiente.",
+        correct: true,
+        why: "Cierra bien la jornada y planifica la siguiente. La limpieza evita accidentes y pérdidas."
+      }
+    ];
+
+    // -------------------------------
+    // Utilidades: initData passthrough
+    // -------------------------------
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name) || "";
+    }
+    const initData = getQueryParam('initData');
+
+    // -------------------------------
+    // Estado del juego
+    // -------------------------------
+    let current = 0;
+    let answers = []; // {index, userAnswer: boolean, correct: boolean}
+    let dragging = false;
+    let startX = 0;
+    let currentCard = null;
+    let lockScrollHandler = null;
+
+    // -------------------------------
+    // Elementos DOM
+    // -------------------------------
+    const intro = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+    const hud = document.getElementById('hud');
+    const arena = document.getElementById('arena');
+    const deck = document.getElementById('deck');
+    const bar = document.getElementById('bar');
+    const count = document.getElementById('count');
+    const controls = document.getElementById('controls');
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const results = document.getElementById('results');
+    const explain = document.getElementById('explain');
+    const scoreText = document.getElementById('scoreText');
+    const retryBtn = document.getElementById('retryBtn');
+    const rewardBtn = document.getElementById('rewardBtn');
+
+    // -------------------------------
+    // Scroll locking (mobile-friendly)
+    // -------------------------------
+    function lockScroll() {
+      document.body.style.overflow = 'hidden';
+      // Evita que el navegador capture el gesto vertical y horizontal
+      lockScrollHandler = (e) => { e.preventDefault(); };
+      document.addEventListener('touchmove', lockScrollHandler, { passive: false });
+    }
+    function unlockScroll() {
+      document.body.style.overflow = '';
+      if (lockScrollHandler) {
+        document.removeEventListener('touchmove', lockScrollHandler);
+        lockScrollHandler = null;
+      }
+    }
+
+    // -------------------------------
+    // Inicio del juego
+    // -------------------------------
+    startBtn.addEventListener('click', startGame);
+    function startGame() {
+      answers = [];
+      current = 0;
+      intro.style.display = 'none';
+      hud.style.display = '';
+      arena.style.display = '';
+      controls.style.display = 'flex';
+      results.style.display = 'none';
+      updateHUD();
+      deck.innerHTML = '';
+      createCard(questions[current], current);
+      lockScroll();
+    }
+
+    // -------------------------------
+    // Crear carta y eventos de arrastre
+    // -------------------------------
+    function createCard(q, idx) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="q-top">
+          <div class="q-badge">Prevención</div>
+          <div class="q-index">Pregunta ${idx+1} de ${questions.length}</div>
+        </div>
+        <div class="q-text">${q.text}</div>
+        <div class="q-foot">
+          <div class="helper">Desliza: ← Incorrecto · Correcto →</div>
+          <div style="display:flex; gap:6px;">
+            <span class="tag no" style="opacity:.75;">←</span>
+            <span class="tag ok" style="opacity:.75;">→</span>
+          </div>
+        </div>
+        <div class="flag left">Incorrecto</div>
+        <div class="flag right">Correcto</div>
+      `;
+      deck.appendChild(card);
+      currentCard = card;
+
+      // Eventos touch/pointer
+      let dx = 0;
+      const leftFlag = card.querySelector('.flag.left');
+      const rightFlag = card.querySelector('.flag.right');
+
+      function onStart(e) {
+        dragging = true;
+        const touch = e.touches ? e.touches[0] : e;
+        startX = touch.clientX;
+        dx = 0;
+      }
+      function onMove(e) {
+        if (!dragging) return;
+        const touch = e.touches ? e.touches[0] : e;
+        dx = touch.clientX - startX;
+        const rot = Math.max(-12, Math.min(12, dx/10));
+        card.style.transform = `translateX(${dx}px) rotate(${rot}deg)`;
+        // Flags
+        const p = Math.min(1, Math.abs(dx) / 120);
+        if (dx > 0) {
+          rightFlag.style.opacity = p;
+          rightFlag.style.transform = `scale(${0.9 + p*0.1})`;
+          leftFlag.style.opacity = 0;
+        } else if (dx < 0) {
+          leftFlag.style.opacity = p;
+          leftFlag.style.transform = `scale(${0.9 + p*0.1})`;
+          rightFlag.style.opacity = 0;
+        } else {
+          leftFlag.style.opacity = rightFlag.style.opacity = 0;
+        }
+      }
+      function onEnd() {
+        if (!dragging) return;
+        dragging = false;
+        const threshold = 90; // distancia mínima
+        if (Math.abs(dx) > threshold) {
+          const dirRight = dx > 0;
+          submitAnswer(dirRight);
+          // Animación de salida
+          const outX = dirRight ? window.innerWidth : -window.innerWidth;
+          card.style.transition = 'transform .25s ease';
+          requestAnimationFrame(() => {
+            card.style.transform = `translateX(${outX}px) rotate(${dirRight? 18 : -18}deg)`;
+          });
+          setTimeout(() => {
+            card.remove();
+            nextCard();
+          }, 260);
+        } else {
+          // Volver al centro
+          card.style.transition = 'transform .2s ease';
+          card.style.transform = 'translateX(0px) rotate(0deg)';
+          leftFlag.style.opacity = 0; rightFlag.style.opacity = 0;
+          setTimeout(() => { card.style.transition = ''; }, 200);
+        }
+      }
+
+      card.addEventListener('touchstart', onStart, { passive: true });
+      card.addEventListener('touchmove', onMove, { passive: false });
+      card.addEventListener('touchend', onEnd);
+      card.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+    }
+
+    // -------------------------------
+    // Responder y pasar a la siguiente
+    // -------------------------------
+    function submitAnswer(userThinksCorrect) {
+      const q = questions[current];
+      answers.push({
+        index: current,
+        userAnswer: userThinksCorrect,
+        correct: q.correct
+      });
+    }
+
+    function nextCard() {
+      current++;
+      updateHUD();
+      if (current >= questions.length) {
+        showResults();
+        return;
+      }
+      createCard(questions[current], current);
+    }
+
+    function updateHUD() {
+      const total = questions.length;
+      const done = Math.min(current, total);
+      bar.style.width = `${(done/total)*100}%`;
+      count.textContent = `${done}/${total}`;
+    }
+
+    // -------------------------------
+    // Fallback: botones
+    // -------------------------------
+    btnLeft.addEventListener('click', () => {
+      if (!currentCard) return;
+      submitAnswer(false);
+      animateOut(false);
+    });
+    btnRight.addEventListener('click', () => {
+      if (!currentCard) return;
+      submitAnswer(true);
+      animateOut(true);
+    });
+    function animateOut(toRight) {
+      const card = currentCard;
+      if (!card) return;
+      const outX = toRight ? window.innerWidth : -window.innerWidth;
+      card.style.transition = 'transform .25s ease';
+      card.style.transform = `translateX(${outX}px) rotate(${toRight? 18 : -18}deg)`;
+      setTimeout(() => { card.remove(); nextCard(); }, 260);
+    }
+
+    // -------------------------------
+    // Resultados y explicaciones
+    // -------------------------------
+    function showResults() {
+      // Habilitar scroll para leer explicaciones
+      unlockScroll();
+
+      // Mostrar resultados y ocultar interfaz de juego
+      hud.style.display = 'none';
+      arena.style.display = 'none';
+      controls.style.display = 'none';
+      results.style.display = 'flex';
+
+      // Calcular puntuación
+      let score = 0;
+      const details = [];
+      for (let i=0; i<answers.length; i++) {
+        const a = answers[i];
+        const q = questions[a.index];
+        const isRight = (a.userAnswer === q.correct);
+        if (isRight) score++;
+        details.push({
+          q: q.text,
+          user: a.userAnswer,
+          correct: q.correct,
+          why: q.why,
+          ok: isRight
+        });
+      }
+
+      scoreText.textContent = `${score}/${questions.length}`;
+      explain.innerHTML = '';
+      details.forEach((d, i) => {
+        const item = document.createElement('div');
+        item.className = 'ex-item';
+        item.innerHTML = `
+          <p class="ex-q">${i+1}. ${d.q}</p>
+          <div class="ex-meta">
+            <span class="tag ${d.user ? 'ok':'no'}">Tu respuesta: ${d.user ? 'Correcto' : 'Incorrecto'}</span>
+            <span class="tag ${d.correct ? 'ok':'no'}">Solución: ${d.correct ? 'Correcto' : 'Incorrecto'}</span>
+            <span class="tag ${d.ok ? 'ok':'no'}">${d.ok ? '¡Acertaste!' : '¡Ojo!'}</span>
+          </div>
+          <div class="ex-txt">${d.why}</div>
+        `;
+        explain.appendChild(item);
+      });
+
+      // Configurar botón de recompensa con initData
+      rewardBtn.addEventListener('click', () => {
+        const base = 'https://kampe-game-phaser.onrender.com/daily_streak';
+        const url = initData ? `${base}?initData=${encodeURIComponent(initData)}` : base;
+        window.location.href = url;
+      }, { once: true });
+    }
+
+    // -------------------------------
+    // Reintentar
+    // -------------------------------
+    retryBtn.addEventListener('click', () => {
+      // Volver a bloquear scroll y reiniciar
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      results.style.display = 'none';
+      intro.style.display = '';
+      // No empezamos automáticamente para que re-lean mecánica si quieren
+    });
+
+    // Pre-set reward button with passthrough in case results are shown by other means
+    rewardBtn.addEventListener('click', () => {
+      const base = 'https://kampe-game-phaser.onrender.com/daily_streak';
+      const url = initData ? `${base}?initData=${encodeURIComponent(initData)}` : base;
+      window.location.href = url;
+    });
+
+    // Seguridad: evita back swipe provocar scroll
+    window.addEventListener('gesturestart', (e) => e.preventDefault());
+
+    // Ajuste de altura segura en iOS
+    function setVHVar() {
+      document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
+    }
+    setVHVar();
+    window.addEventListener('resize', setVHVar);
+  </script>
+</body>
+</html>
