@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Tarea de hoy – Cuestionario sobre cómo ser previsor en el trabajo</title>
+  <!-- Fuente Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Variables de estilo para fácil ajuste */
+    :root{
+      --fortnite-blue-1:#1e5cff;
+      --fortnite-blue-2:#0a2df7;
+      --fortnite-blue-3:#0a1c86;
+      --accent-neon:#6DFF8B; /* Verde neon acorde al asset */
+      --accent-purple:#7A5CFF;
+      --text:#EAF0FF;
+      --text-dim:#B7C7FF;
+      --error:#FF5F7A;
+      --ok:#6DFF8B;
+      --panel:#0b1b5fbb; /* panel translúcido */
+      --panel-strong:#0d1f6fe6;
+      --glass:#ffffff14;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      padding:0; margin:0;
+      height:100%;
+      background: radial-gradient(1200px 800px at 70% 10%, rgba(255,255,255,.08), transparent 50%),
+                  linear-gradient(160deg, var(--fortnite-blue-1), var(--fortnite-blue-2) 55%, var(--fortnite-blue-3));
+      color:var(--text);
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      overflow:hidden; /* Sin scroll durante el gameplay */
+    }
+
+    /* Contenedor general a pantalla completa durante el juego */
+    .screen{
+      height:100dvh; /* 100% viewport dinámico, mejor en móviles */
+      display:flex;
+      flex-direction:column;
+      padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      position:relative;
+      isolation:isolate;
+    }
+
+    /* Fondo con avatar grande en marca de agua */
+    .avatar-bg{
+      position:absolute; inset:0; pointer-events:none; z-index:0;
+      background:
+        radial-gradient(60% 50% at 80% 20%, rgba(255,255,255,.10), transparent 60%),
+        url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png') no-repeat right -5% top 20%;
+      background-size: clamp(240px, 40vw, 420px);
+      opacity:.28;
+      mix-blend-mode: screen;
+      filter: saturate(1.1) drop-shadow(0 0 14px rgba(255,255,255,.07));
+    }
+
+    /* Header con logo y título */
+    .header{
+      display:flex; align-items:center; justify-content:space-between;
+      z-index:2;
+    }
+    .logo{
+      height: clamp(28px, 4.5vw, 40px);
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,.4));
+    }
+
+    .title-wrap{
+      flex:1; display:flex; flex-direction:column; align-items:flex-end;
+      gap:2px;
+      text-align:right;
+    }
+    .chip{
+      align-self:flex-end;
+      display:inline-flex; align-items:center; gap:8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.35);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius:999px;
+      font-size: clamp(10px, 1.8vw, 12px);
+      text-transform: uppercase;
+      letter-spacing:.8px;
+      backdrop-filter: blur(6px);
+    }
+    .title{
+      margin:0;
+      font-weight:800;
+      font-size: clamp(18px, 3.8vw, 28px);
+      line-height:1.1;
+      background: linear-gradient(92deg, #E9F2FF 10%, #CFE2FF 40%, #8EDBFF 80%);
+      -webkit-background-clip: text;
+      background-clip:text;
+      color:transparent;
+      text-shadow: 0 3px 20px rgba(0,0,0,.25);
+    }
+    .subtitle{
+      margin:0; margin-top:2px;
+      color: var(--text-dim);
+      font-size: clamp(12px, 2.7vw, 14px);
+      font-weight:600;
+    }
+
+    /* Tarjeta central (start + quiz) */
+    .card{
+      margin-top: clamp(10px, 2.5vh, 20px);
+      flex:1;
+      display:flex; flex-direction:column; justify-content:space-between;
+      background: linear-gradient(180deg, var(--panel), rgba(10,16,80,.55));
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+      z-index:2;
+      min-height: 0; /* habilita flexbox scroll interno si fuese necesario */
+    }
+
+    /* Barra superior de progreso */
+    .progress{
+      padding: 10px 12px;
+      display:flex; align-items:center; gap:12px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .steps{
+      display:flex; gap:8px; align-items:center; flex-wrap:nowrap;
+    }
+    .dot{
+      width: clamp(10px, 2.8vw, 14px);
+      height: clamp(10px, 2.8vw, 14px);
+      border-radius:50%;
+      background: #3C5FFF;
+      border:1px solid rgba(255,255,255,.3);
+      opacity:.35;
+    }
+    .dot.active{ opacity:1; background: linear-gradient(180deg, #68A2FF, #1e5cff);}
+    .dot.done{ opacity:1; background: linear-gradient(180deg, var(--accent-neon), #3ade78); box-shadow: 0 0 12px rgba(109,255,139,.6);}
+    .bar{
+      flex:1; height:10px; background: rgba(255,255,255,.14);
+      border-radius: 999px; overflow:hidden; border:1px solid rgba(255,255,255,.22);
+    }
+    .bar > span{
+      display:block; height:100%; width:0%;
+      background: linear-gradient(90deg, var(--accent-neon), #5BFFCC);
+      box-shadow: 0 0 12px rgba(109,255,139,.7), inset 0 0 6px rgba(0,0,0,.15);
+      transition: width .3s ease;
+    }
+
+    /* Contenido del juego */
+    .content{
+      padding: clamp(14px, 2.8vw, 18px);
+      display:flex; flex-direction:column; gap:12px;
+      justify-content: center;
+      flex:1; min-height:0;
+    }
+
+    /* Pantalla de inicio (instrucciones) */
+    .start{
+      display:flex; flex-direction:column; gap:14px;
+      align-items:center; justify-content:center;
+      text-align:center;
+      padding: clamp(14px, 2.5vw, 18px);
+    }
+    .start h2{
+      margin:6px 0 0 0;
+      font-size: clamp(16px, 3.4vw, 20px);
+      font-weight:800;
+    }
+    .start p{
+      margin:0; color:var(--text-dim);
+      font-size: clamp(13px, 2.8vw, 15px);
+    }
+    .bullets{
+      width:100%; max-width:640px;
+      display:grid; gap:10px;
+      text-align:left;
+    }
+    .bullets li{
+      list-style:none;
+      padding:10px 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.2);
+      border-radius:12px;
+      display:flex; gap:10px; align-items:flex-start;
+      font-size: clamp(12px, 2.7vw, 14px);
+    }
+    .bullets li .tick{
+      color: var(--accent-neon);
+      font-weight:800;
+    }
+
+    /* Zona de la pregunta y opciones */
+    .question{
+      font-size: clamp(16px, 3.6vw, 20px);
+      font-weight:800;
+      line-height:1.25;
+      text-shadow: 0 2px 10px rgba(0,0,0,.35);
+    }
+    .options{
+      display:grid; gap:10px;
+      margin-top:6px;
+    }
+    .btn{
+      appearance:none; border:none; outline:none; cursor:pointer;
+      color:#0b1b2e; font-weight:800;
+      padding: 14px 14px;
+      border-radius:14px;
+      background: linear-gradient(180deg, #A5FFBF, var(--accent-neon));
+      box-shadow: 0 8px 22px rgba(109,255,139,.35), inset 0 -4px 10px rgba(0,0,0,.1);
+      transition: transform .04s ease, filter .15s ease;
+      font-size: clamp(14px, 3.2vw, 16px);
+    }
+    .btn:active{ transform: translateY(1px) scale(.99); }
+    .btn.secondary{
+      background: linear-gradient(180deg, #a89dff, var(--accent-purple));
+      color: #100b2e;
+      box-shadow: 0 8px 22px rgba(122,92,255,.35);
+    }
+    .btn.ghost{
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      color: var(--text);
+      border:1px solid rgba(255,255,255,.28);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .answer{
+      text-align:left;
+      color:var(--text);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow: 0 10px 20px rgba(0,0,0,.20);
+      display:flex; gap:10px; align-items:center;
+      padding:14px 12px;
+      border-radius:14px;
+      transition: transform .06s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+      position:relative;
+      overflow:hidden;
+      min-height: 52px;
+    }
+    .answer .index{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:28px; height:28px; border-radius:10px;
+      background: rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.25);
+      color: #DCE8FF; font-weight:800; font-size: 12px;
+      flex: 0 0 28px;
+    }
+    .answer:hover{ filter:brightness(1.04); }
+    .answer:active{ transform: translateY(1px); }
+    .answer.correct{ border-color: rgba(109,255,139,.75); box-shadow: 0 10px 24px rgba(109,255,139,.25);}
+    .answer.wrong{ border-color: rgba(255,95,122,.75); box-shadow: 0 10px 24px rgba(255,95,122,.25);}
+    .answer.locked{ pointer-events:none; opacity:.9; }
+    .hidden{ display:none !important; }
+
+    /* Pie con controles inferiores siempre visibles en pantalla */
+    .footer{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding: 10px 12px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(0deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .left-actions, .right-actions{ display:flex; gap:8px; align-items:center; }
+
+    /* Panel de feedback que aparece tras responder */
+    .feedback{
+      position:absolute; left:0; right:0; bottom:0;
+      background: linear-gradient(180deg, var(--panel-strong), rgba(5,8,40,.94));
+      border-top:1px solid rgba(255,255,255,.18);
+      padding: 14px 14px calc(16px + env(safe-area-inset-bottom));
+      transform: translateY(110%);
+      transition: transform .25s ease;
+      z-index:5;
+    }
+    .feedback.show{ transform: translateY(0%); }
+    .feedback .tag{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:800;
+      margin-bottom: 8px;
+      font-size:12px;
+      text-transform: uppercase;
+      letter-spacing:.6px;
+      border:1px solid rgba(255,255,255,.16);
+    }
+    .feedback .tag.ok{ background: rgba(109,255,139,.12); color: var(--ok); }
+    .feedback .tag.err{ background: rgba(255,95,122,.12); color: var(--error); }
+    .feedback p{
+      margin: 0 0 10px 0;
+      color: var(--text);
+      font-size: clamp(13px, 2.9vw, 15px);
+      line-height:1.35;
+    }
+
+    /* Pantalla de resultados final */
+    .results{
+      height:100dvh;
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      text-align:center;
+      gap:16px;
+      padding: 12px;
+      position:relative;
+    }
+    .results .stars{
+      display:flex; gap:10px;
+      filter: drop-shadow(0 10px 24px rgba(0,0,0,.35));
+    }
+    .star{
+      width: clamp(30px, 8vw, 48px);
+      height: clamp(30px, 8vw, 48px);
+      background: conic-gradient(from 180deg, #fff 0 40%, #FFC94D 40% 100%);
+      -webkit-mask: radial-gradient(circle at 50% 58%, transparent 44%, #000 46%) bottom/100% 82% no-repeat, radial-gradient(circle at 50% 42%, transparent 44%, #000 46%) top/100% 82% no-repeat;
+      mask: radial-gradient(circle at 50% 58%, transparent 44%, #000 46%) bottom/100% 82% no-repeat, radial-gradient(circle at 50% 42%, transparent 44%, #000 46%) top/100% 82% no-repeat;
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+      background: linear-gradient(180deg, #FFE68A, #FFBA1F);
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius:6px;
+    }
+    .star.dim{ opacity:.25; filter: grayscale(1) brightness(.8); }
+    .result-card{
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:16px;
+      padding: 14px;
+      max-width:720px;
+      box-shadow: var(--shadow);
+    }
+    .result-card h3{
+      margin:0 0 6px 0; font-size: clamp(18px, 4vw, 24px);
+    }
+    .result-card p{
+      margin:0; color:var(--text-dim); font-size: clamp(13px, 3vw, 16px);
+    }
+
+    /* Botón recompensa fijo en resultados */
+    .cta{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+      margin-top: 6px;
+    }
+    .btn.cta-primary{
+      padding: 14px 18px;
+      font-size: clamp(14px, 3.2vw, 18px);
+      min-width: 230px;
+    }
+
+    /* Marca de agua con logo central en resultados */
+    .logo-bg{
+      position:absolute; inset:0; pointer-events:none;
+      background: url('https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png') center/min(60vw, 320px) no-repeat;
+      opacity:.06;
+      filter: blur(1px);
+    }
+
+    /* Asegurar que todo quepa en móviles reduciendo tipografías si la altura es muy corta */
+    @media (max-height: 620px){
+      .question{ font-size: clamp(15px, 3.2vw, 18px); }
+      .btn{ padding: 12px; }
+      .answer{ padding: 12px; min-height: 48px; }
+      .footer{ padding: 8px 10px; }
+      .progress{ padding: 8px 10px; }
+    }
+
+    @media (min-width: 900px){
+      .card{ max-width: 900px; margin-inline:auto; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Fondo con avatar -->
+  <div class="avatar-bg"></div>
+
+  <!-- Pantalla principal del juego -->
+  <main class="screen" id="gameScreen" aria-live="polite">
+    <!-- Header con logo y título -->
+    <header class="header">
+      <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe logo">
+      <div class="title-wrap">
+        <span class="chip">Tarea de hoy</span>
+        <h1 class="title">Cuestionario: cómo ser previsor en el trabajo</h1>
+        <p class="subtitle">Anticípate a los imprevistos en 5 preguntas rápidas</p>
+      </div>
+    </header>
+
+    <!-- Tarjeta de juego -->
+    <section class="card" role="region" aria-label="Actividad interactiva">
+      <!-- Barra de progreso superior -->
+      <div class="progress">
+        <div class="steps" id="steps">
+          <!-- Se generan dinámicamente -->
+        </div>
+        <div class="bar" aria-hidden="true">
+          <span id="progressFill"></span>
+        </div>
+      </div>
+
+      <!-- Contenido central -->
+      <div class="content">
+        <!-- Pantalla de inicio con instrucciones -->
+        <div class="start" id="startScreen">
+          <h2>¿Listx para adelantarte a los problemas?</h2>
+          <p>Responde a 5 situaciones típicas en obra o servicio y demuestra tu previsión.</p>
+          <ul class="bullets">
+            <li><span class="tick">✔</span> Marca la opción que mejor se adelante a los imprevistos.</li>
+            <li><span class="tick">✔</span> Al elegir, verás una explicación breve para aprender al instante.</li>
+            <li><span class="tick">✔</span> Si no lo tienes claro, puedes omitir y seguir. ¡Nunca te quedarás atascado!</li>
+          </ul>
+          <button class="btn" id="startBtn" aria-label="Comenzar el reto">Empezar</button>
+        </div>
+
+        <!-- Zona de preguntas -->
+        <div id="quiz" class="hidden" role="group" aria-label="Preguntas del cuestionario">
+          <div class="question" id="questionText">Pregunta aquí</div>
+          <div class="options" id="optionsList">
+            <!-- Opciones generadas por JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie con acciones (siempre visible para avanzar) -->
+      <div class="footer">
+        <div class="left-actions">
+          <button class="btn ghost" id="skipBtn" aria-label="Omitir esta pregunta">Omitir</button>
+        </div>
+        <div class="right-actions">
+          <button class="btn secondary" id="nextBtn" aria-label="Siguiente pregunta">Siguiente</button>
+        </div>
+      </div>
+
+      <!-- Panel de feedback tras responder -->
+      <div class="feedback" id="feedbackPanel" aria-live="polite">
+        <div class="tag" id="feedbackTag">Feedback</div>
+        <p id="feedbackText">Explicación y consejos aparecerán aquí.</p>
+        <button class="btn" id="continueBtn" aria-label="Continuar">Continuar</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Pantalla de resultados -->
+  <section class="results hidden" id="resultsScreen" aria-live="polite">
+    <div class="logo-bg" aria-hidden="true"></div>
+    <div class="stars" id="stars">
+      <div class="star"></div>
+      <div class="star"></div>
+      <div class="star"></div>
+    </div>
+    <div class="result-card">
+      <h3 id="resultTitle">¡Buen trabajo!</h3>
+      <p id="resultDesc">Has demostrado que puedes anticiparte a los imprevistos.</p>
+    </div>
+    <div class="cta">
+      <a class="btn cta-primary" id="rewardBtn" href="#" rel="nofollow">Ver mi recompensa</a>
+      <button class="btn secondary" id="retryBtn">Reintentar</button>
+    </div>
+  </section>
+
+  <script>
+    // ------------------------------
+    // Utilidades generales
+    // ------------------------------
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+
+    // Obtener initData del query string y guardarlo para la recompensa
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || '';
+    const rewardUrlBase = 'https://kampe-game-phaser.onrender.com/daily_streak';
+
+    // Referencias DOM
+    const gameScreen = $('#gameScreen');
+    const startScreen = $('#startScreen');
+    const startBtn = $('#startBtn');
+    const steps = $('#steps');
+    const progressFill = $('#progressFill');
+    const quiz = $('#quiz');
+    const questionText = $('#questionText');
+    const optionsList = $('#optionsList');
+    const skipBtn = $('#skipBtn');
+    const nextBtn = $('#nextBtn');
+    const feedbackPanel = $('#feedbackPanel');
+    const feedbackTag = $('#feedbackTag');
+    const feedbackText = $('#feedbackText');
+    const continueBtn = $('#continueBtn');
+
+    const resultsScreen = $('#resultsScreen');
+    const stars = $('#stars').children;
+    const rewardBtn = $('#rewardBtn');
+    const retryBtn = $('#retryBtn');
+    // Preparar el enlace de recompensa con el initData recibido
+    rewardBtn.href = `${rewardUrlBase}?initData=${encodeURIComponent(initData)}`;
+
+    // ------------------------------
+    // Datos del cuestionario
+    // ------------------------------
+    // 5 preguntas centradas en previsión en oficios técnicos
+    const QUESTIONS = [
+      {
+        q: 'Empiezas una obra nueva a las 8:00. ¿Qué haces para ser previsor?',
+        options: [
+          'Llego a las 8:00 en punto. Ya me organizaré allí.',
+          'Llego 10–15 minutos antes para ubicarme, revisar el plan y preparar herramientas.',
+          'Espero a que me llamen para entrar, por si se retrasa el inicio.'
+        ],
+        correct: 1,
+        tip: 'Llegar con margen te permite ubicarte, organizar herramientas, revisar medidas de seguridad y evitar prisas del inicio.'
+      },
+      {
+        q: 'Te avisan de un servicio de fontanería, pero no tienes claro qué herramientas llevar el primer día.',
+        options: [
+          'Voy sin herramientas y pido prestado al equipo.',
+          'Me llevo la furgoneta con todo, por si acaso, aunque tarde en cargar.',
+          'Llevo un kit básico y confirmo con el cliente/encargado qué necesitaré.'
+        ],
+        correct: 2,
+        tip: 'Confirmar necesidades ahorra tiempo y desplazamientos. Llevar un kit base asegura que puedas empezar sin bloquearte.'
+      },
+      {
+        q: 'Ves un punto de la instalación eléctrica que no cumple normativa, aunque no era tu tarea.',
+        options: [
+          'Lo ignoro. No es mi parte, no me meto.',
+          'Paro toda la obra hasta que alguien lo solucione, sin avisar.',
+          'Aviso al encargado, documento con fotos y propongo alternativas.'
+        ],
+        correct: 2,
+        tip: 'Detectar riesgos y comunicarlos con evidencias reduce problemas futuros. Ser proactivo aporta seguridad y calidad.'
+      },
+      {
+        q: 'El parte meteorológico anuncia lluvia fuerte y trabajas en exterior con mortero.',
+        options: [
+          'Sigo normal; si llueve ya improvisaré.',
+          'Preparo lonas, plan B bajo cubierta y protejo materiales sensibles al agua.',
+          'Cancelo por mi cuenta sin avisar a nadie.'
+        ],
+        correct: 1,
+        tip: 'Proteger materiales y tener un plan alternativo mantiene la productividad y evita desperdicios por el agua.'
+      },
+      {
+        q: 'Te asignan una herramienta que casi no has usado.',
+        options: [
+          'Improviso sobre la marcha para no quedar mal.',
+          'Rechazo usarla y abandono la tarea.',
+          'Pido una guía rápida a alguien con experiencia y practico en un entorno controlado.'
+        ],
+        correct: 2,
+        tip: 'Buscar guía y practicar de forma segura es previsión: reduces errores, tiempos muertos y riesgos.'
+      }
+    ];
+
+    // ------------------------------
+    // Estado del juego
+    // ------------------------------
+    let current = 0;       // índice de pregunta actual
+    let score = 0;         // aciertos
+    let answered = false;  // si la pregunta actual ya fue respondida
+    let selection = null;  // índice de opción seleccionada
+
+    // ------------------------------
+    // Inicialización UI
+    // ------------------------------
+    function renderSteps(){
+      steps.innerHTML = '';
+      for(let i=0; i<QUESTIONS.length; i++){
+        const d = document.createElement('span');
+        d.className = 'dot' + (i === 0 ? ' active' : '');
+        steps.appendChild(d);
+      }
+    }
+    renderSteps();
+
+    function updateProgress(){
+      const percent = (current / QUESTIONS.length) * 100;
+      progressFill.style.width = `${percent}%`;
+      // Actualizar estado de puntos
+      [...steps.children].forEach((el, idx) => {
+        el.classList.remove('active','done');
+        if(idx < current) el.classList.add('done');
+        else if(idx === current) el.classList.add('active');
+      })
+    }
+    updateProgress();
+
+    // ------------------------------
+    // Render de la pregunta actual
+    // ------------------------------
+    function renderQuestion(){
+      const data = QUESTIONS[current];
+      questionText.textContent = data.q;
+      optionsList.innerHTML = '';
+
+      data.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'answer';
+        btn.setAttribute('data-index', idx);
+        btn.innerHTML = `
+          <span class="index">${String.fromCharCode(65+idx)}</span>
+          <span>${opt}</span>
+        `;
+        btn.addEventListener('click', () => onAnswer(idx));
+        optionsList.appendChild(btn);
+      });
+
+      // Reset estados
+      answered = false;
+      selection = null;
+      nextBtn.disabled = true;
+      hideFeedback();
+    }
+
+    // ------------------------------
+    // Manejo de respuesta
+    // ------------------------------
+    function onAnswer(idx){
+      if(answered) return; // evitar doble respuesta
+      answered = true;
+      selection = idx;
+
+      // Bloquear opciones y marcar resultado
+      const optionEls = [...optionsList.children];
+      optionEls.forEach(el => el.classList.add('locked'));
+      const correctIdx = QUESTIONS[current].correct;
+      optionEls[correctIdx].classList.add('correct');
+      if(idx !== correctIdx){
+        optionEls[idx].classList.add('wrong');
+      }else{
+        score++;
+      }
+
+      // Mostrar feedback con tip
+      showFeedback(idx === correctIdx, QUESTIONS[current].tip);
+      nextBtn.disabled = false; // por si el usuario prefiere pulsar "Siguiente" arriba
+    }
+
+    function skipQuestion(){
+      if(answered){
+        goNext();
+        return;
+      }
+      // Simular omisión: sin sumar punto, mostrar tip
+      answered = true;
+      selection = null;
+      const optionEls = [...optionsList.children];
+      optionEls.forEach(el => el.classList.add('locked'));
+      // Señalar únicamente la correcta de forma sutil
+      const correctIdx = QUESTIONS[current].correct;
+      optionEls[correctIdx].classList.add('correct');
+
+      showFeedback(false, 'Omitiste la pregunta. Consejo: ' + QUESTIONS[current].tip);
+      nextBtn.disabled = false;
+    }
+
+    function showFeedback(isCorrect, tip){
+      feedbackTag.textContent = isCorrect ? '¡Correcto!' : 'Atención';
+      feedbackTag.className = 'tag ' + (isCorrect ? 'ok' : 'err');
+      feedbackText.textContent = tip;
+      feedbackPanel.classList.add('show');
+    }
+    function hideFeedback(){
+      feedbackPanel.classList.remove('show');
+    }
+
+    function goNext(){
+      if(current < QUESTIONS.length - 1){
+        current++;
+        updateProgress();
+        renderQuestion();
+        // Asegurar visibilidad de botones en viewport
+        document.activeElement?.blur();
+      }else{
+        endGame();
+      }
+    }
+
+    // ------------------------------
+    // Flujo del juego
+    // ------------------------------
+    function startGame(){
+      // Cambiar a modo juego
+      startScreen.classList.add('hidden');
+      quiz.classList.remove('hidden');
+      current = 0; score = 0; answered = false; selection = null;
+      // Reiniciar puntos y progreso
+      renderSteps();
+      updateProgress();
+      renderQuestion();
+    }
+
+    function endGame(){
+      // Mostrar resultados y permitir scroll para leer
+      gameScreen.classList.add('hidden');
+      resultsScreen.classList.remove('hidden');
+      document.body.style.overflow = 'auto';
+
+      // Puntuar: de 0 a 3 estrellas según score
+      const percent = (score / QUESTIONS.length) * 100;
+      let starCount = 1;
+      if(percent >= 80) starCount = 3;
+      else if(percent >= 50) starCount = 2;
+
+      [...stars].forEach((s, i)=> s.classList.toggle('dim', i >= starCount));
+
+      // Mensajes resultado
+      const titleEl = $('#resultTitle');
+      const descEl = $('#resultDesc');
+      if(starCount === 3){
+        titleEl.textContent = '¡Leyenda de la previsión!';
+        descEl.textContent = `Aciertos: ${score}/5 — Te anticipas como unx pro. Tu equipo te querrá siempre en obra.`;
+      }else if(starCount === 2){
+        titleEl.textContent = '¡Vas por buen camino!';
+        descEl.textContent = `Aciertos: ${score}/5 — Tienes buena base. Con pequeñas mejoras, serás imparable.`;
+      }else{
+        titleEl.textContent = 'Buen intento, ¡a por más!';
+        descEl.textContent = `Aciertos: ${score}/5 — La previsión se entrena: revisa las explicaciones y vuelve a intentarlo.`;
+      }
+
+      // Actualizar link de recompensa (conservar initData)
+      rewardBtn.href = `${rewardUrlBase}?initData=${encodeURIComponent(initData)}`;
+    }
+
+    function retry(){
+      // Volver al juego y bloquear scroll de nuevo
+      resultsScreen.classList.add('hidden');
+      gameScreen.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      startGame();
+    }
+
+    // ------------------------------
+    // Eventos UI
+    // ------------------------------
+    startBtn.addEventListener('click', startGame);
+    skipBtn.addEventListener('click', skipQuestion);
+    nextBtn.addEventListener('click', () => {
+      // Si aún no se respondió, mostrar feedback de omisión rápida
+      if(!answered) {
+        skipQuestion();
+        return;
+      }
+      goNext();
+    });
+    continueBtn.addEventListener('click', goNext);
+    retryBtn.addEventListener('click', retry);
+
+    // Acceso rápido con teclado (solo desktop), sin bloquear móviles
+    window.addEventListener('keydown', (e)=>{
+      if(resultsScreen.classList.contains('hidden')){
+        if(e.key === 'Enter' && !startScreen.classList.contains('hidden')){
+          startGame();
+        }else if(e.key === 'ArrowRight'){
+          // Siguiente
+          if(answered) goNext();
+        }
+      }
+    });
+
+    // Seguridad: si por tamaño extremo algo se saliera, forzamos que el botón "Siguiente" esté visible
+    const ensureFooterVisible = ()=> {
+      const footer = document.querySelector('.footer');
+      if(!footer) return;
+      footer.scrollIntoView({block:'nearest'});
+    };
+    window.addEventListener('resize', ensureFooterVisible);
+  </script>
+</body>
+</html>
