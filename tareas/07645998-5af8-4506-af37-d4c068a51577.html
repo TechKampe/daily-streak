@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | Tarea de hoy – Cuestionario sobre cómo ser previsor en el trabajo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f3bff" />
+  <!-- Tipografía Manrope -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* Variables de tema: estilo Fortnite/Discord vibrante */
+    :root{
+      --bg1:#0d2df7;          /* azul Fortnite intenso */
+      --bg2:#09b8ff;          /* cian brillante */
+      --bg3:#0a1f78;          /* azul más profundo para sombras */
+      --glass:#ffffff14;      /* cristal */
+      --glass-strong:#ffffff22;
+      --txt:#e9f6ff;          /* texto principal */
+      --muted:#bfe3ff;        /* texto secundario */
+      --accent:#62f8ff;       /* cian neón */
+      --accent-2:#15ffb9;     /* verde turquesa neón */
+      --danger:#ff4664;
+      --warn:#ffd166;
+      --ok:#4df38f;
+      --shadow: 0 10px 35px rgba(5,30,110,.35), inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{
+      height:100%;
+      margin:0;
+      padding:0;
+      font-family:'Manrope', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color:var(--txt);
+      background: radial-gradient(1200px 600px at 80% -10%, #33ddff33 0%, transparent 65%) ,
+                  linear-gradient(160deg, var(--bg1) 0%, #0f3bff 35%, #1061ff 60%, var(--bg2) 100%);
+      overflow:hidden; /* Sin scroll durante el gameplay */
+    }
+
+    /* Fondo con personaje (avatar) */
+    .bg-avatar{
+      position: fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:0;
+      background:
+        radial-gradient(800px 800px at 110% 90%, rgba(255,255,255,.12) 0%, rgba(255,255,255,0) 60%),
+        radial-gradient(600px 600px at -10% -10%, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 60%);
+    }
+    .bg-avatar::after{
+      /* Personaje grande con transparencia en el borde derecho inferior */
+      content:"";
+      position:absolute;
+      right: max(10px, env(safe-area-inset-right));
+      bottom: max(0px, env(safe-area-inset-bottom));
+      width:min(45vw,420px);
+      height:min(65vh,720px);
+      background-image:url('https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png');
+      background-size: contain;
+      background-repeat:no-repeat;
+      background-position: right bottom;
+      opacity:.16; /* visible pero no tapa la UI */
+      filter: drop-shadow(0 6px 18px rgba(0,0,0,.45));
+    }
+
+    /* Contenedor principal de la experiencia (HUD y tarjetas) */
+    .app{
+      position:relative;
+      z-index:1;
+      min-height:100dvh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding: clamp(10px, 2.5vw, 20px);
+      gap: clamp(10px, 2vw, 16px);
+    }
+
+    /* Barra superior estilo HUD */
+    .topbar{
+      position: absolute;
+      top: max(10px, env(safe-area-inset-top));
+      left:0; right:0;
+      margin: 0 auto;
+      width: min(100%, 1100px);
+      padding: 8px clamp(12px, 2vw, 20px);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      backdrop-filter: blur(6px);
+      background: linear-gradient(180deg, var(--glass), transparent);
+      padding: 6px 10px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+    }
+    .brand img{
+      width:32px; height:32px; object-fit:contain;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,.4));
+    }
+    .brand .text{
+      display:flex; flex-direction:column; line-height:1.05;
+    }
+    .brand .text b{
+      font-size: clamp(13px, 1.4vw, 16px);
+      letter-spacing:.2px;
+    }
+    .brand .text span{
+      font-size: clamp(11px, 1.1vw, 13px);
+      color:var(--muted);
+    }
+
+    .progress{
+      display:flex; align-items:center; gap:10px;
+      margin-left:auto;
+      background: linear-gradient(180deg, var(--glass), transparent);
+      padding:6px 10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+    }
+    .bar{
+      width: clamp(150px, 28vw, 260px);
+      height: 10px;
+      background: rgba(255,255,255,.12);
+      border-radius: 999px;
+      overflow:hidden;
+      position:relative;
+    }
+    .bar .fill{
+      position:absolute; left:0; top:0; bottom:0;
+      width:0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 14px var(--accent);
+      border-radius: 999px;
+      transition: width .3s ease;
+    }
+    .score-pill{
+      background: linear-gradient(90deg, #001e8a88, #00fff544);
+      border:1px solid rgba(255,255,255,.15);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: clamp(12px, 1.2vw, 14px);
+    }
+
+    /* Tarjeta central */
+    .card{
+      width: min(100%, 1100px);
+      max-width: 1100px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: clamp(14px, 2.8vw, 26px);
+      display:flex;
+      flex-direction:column;
+      gap: clamp(12px, 1.6vw, 18px);
+      position:relative;
+    }
+
+    /* Encabezado del reto */
+    .title{
+      display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;
+    }
+    .pill{
+      background: linear-gradient(90deg, #071aa9, #0aa3ff);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-weight: 800;
+      letter-spacing:.3px;
+      text-transform: uppercase;
+      font-size: clamp(11px, 1.2vw, 12px);
+      box-shadow: 0 6px 18px rgba(0,0,0,.25), inset 0 0 16px rgba(255,255,255,.06);
+    }
+    h1{
+      margin:0;
+      font-size: clamp(18px, 3.2vw, 28px);
+      text-shadow: 0 1px 0 rgba(0,0,0,.2);
+    }
+    .desc{
+      color: var(--muted);
+      font-size: clamp(13px, 1.5vw, 16px);
+      margin-top:-4px;
+    }
+
+    /* Instrucciones */
+    .howto{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:stretch;
+    }
+    .howto .box{
+      flex:1 1 280px;
+      background: linear-gradient(180deg, var(--glass-strong), transparent);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: clamp(13px, 1.5vw, 15px);
+    }
+    .howto ul{
+      margin:8px 0 0; padding-left: 18px;
+    }
+    .howto li{ margin:4px 0; line-height:1.25; }
+
+    /* Botón primario */
+    .btn{
+      appearance:none; border:0; outline:none; cursor:pointer;
+      padding: 12px 18px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #00f2ff, #23ffd7);
+      color:#00233a;
+      font-weight:900;
+      letter-spacing:.2px;
+      font-size: clamp(14px, 1.8vw, 16px);
+      box-shadow: 0 10px 26px rgba(11,236,255,.35), inset 0 -2px 0 rgba(0,0,0,.15);
+      transition: transform .05s ease, filter .2s ease, box-shadow .2s ease;
+    }
+    .btn:hover{ filter: brightness(1.05); }
+    .btn:active{ transform: translateY(1px) scale(.99); }
+
+    .btn.secondary{
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+      color:var(--txt);
+      border:1px solid rgba(255,255,255,.18);
+      box-shadow: 0 6px 16px rgba(6,22,80,.35), inset 0 -2px 0 rgba(0,0,0,.15);
+    }
+    .btn[disabled]{
+      opacity:.55; cursor:not-allowed; filter: grayscale(.2);
+    }
+
+    /* Sección del juego (preguntas) */
+    .game{
+      display:none; /* se muestra al pulsar empezar */
+      gap: 14px;
+    }
+
+    .qhead{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .qnum{
+      font-weight:800; font-size: clamp(13px, 1.6vw, 15px);
+      color:var(--muted);
+    }
+
+    .question{
+      font-size: clamp(16px, 2.4vw, 22px);
+      font-weight: 800;
+      line-height:1.2;
+      text-shadow: 0 1px 0 rgba(0,0,0,.25);
+    }
+
+    .options{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .option{
+      display:flex; align-items:center; gap:12px;
+      padding: 12px 12px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow: var(--shadow);
+      cursor:pointer;
+      position:relative;
+      user-select:none;
+      transition: transform .05s ease, border-color .15s ease, background .15s ease;
+    }
+    .option:hover{ border-color: rgba(255,255,255,.26); }
+    .option:active{ transform: scale(.995); }
+    .option .bullet{
+      width: 18px; height: 18px; border-radius:50%;
+      border:2px solid var(--accent);
+      box-shadow: 0 0 10px rgba(98,248,255,.2);
+      display:inline-flex; align-items:center; justify-content:center;
+      flex:0 0 18px;
+      background: rgba(0,0,0,.22);
+    }
+    .option .bullet::after{
+      content:""; width: 8px; height:8px; border-radius:50%;
+      background: transparent;
+      transition: background .15s ease;
+    }
+    .option.selected{
+      border-color: var(--accent);
+      background: linear-gradient(180deg, rgba(0,255,245,.15), rgba(255,255,255,.05));
+    }
+    .option.selected .bullet::after{ background: var(--accent); }
+    .option.correct{
+      border-color: var(--ok);
+      box-shadow: 0 10px 24px rgba(77,243,143,.28);
+      background: linear-gradient(180deg, rgba(22, 185, 86, .20), rgba(255,255,255,.05));
+    }
+    .option.wrong{
+      border-color: var(--danger);
+      box-shadow: 0 10px 24px rgba(255,70,100,.20);
+      background: linear-gradient(180deg, rgba(255,70,100,.18), rgba(255,255,255,.05));
+    }
+    .option .txt{
+      font-size: clamp(14px, 1.9vw, 16px);
+      line-height:1.35;
+    }
+    .controls{
+      display:flex; gap:10px; justify-content:flex-end; align-items:center;
+      margin-top: 2px;
+    }
+
+    /* Barra de feedback tras confirmar */
+    .feedback{
+      display:none;
+      margin-top: 6px;
+      background: linear-gradient(90deg, rgba(0,255,200,.14), rgba(0,153,255,.10));
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:12px;
+      padding: 10px 12px;
+      font-size: clamp(13px, 1.6vw, 15px);
+      color:#ddfff9;
+    }
+    .feedback.show{ display:block; }
+    .feedback b{ color:#fff; }
+
+    /* Resultados finales */
+    .results{
+      display:none;
+      gap:12px;
+      text-align:center;
+    }
+    .big-score{
+      display:inline-flex; align-items:center; justify-content:center;
+      width: min(70vw, 240px);
+      height: min(70vw, 240px);
+      margin: 6px auto 2px;
+      background: conic-gradient(from -90deg, var(--accent), var(--accent-2));
+      border-radius:50%;
+      position:relative;
+      box-shadow: 0 16px 44px rgba(9, 184, 255, .35);
+    }
+    .big-score::before{
+      content:"";
+      position:absolute; inset:8px;
+      background: radial-gradient(120px 80px at 30% 25%, rgba(255,255,255,.16), transparent),
+                  linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      border-radius:50%;
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow: inset 0 0 24px rgba(0,0,0,.35);
+    }
+    .big-score .num{
+      position:relative;
+      z-index:1;
+      font-size: clamp(36px, 8vw, 56px);
+      font-weight: 900;
+      text-shadow: 0 4px 18px rgba(0,0,0,.45);
+    }
+    .badge{
+      display:inline-block;
+      margin-top: 4px;
+      padding: 6px 12px;
+      border-radius:999px;
+      background: linear-gradient(90deg, #0ee5ff, #23ffd7);
+      color:#00233a;
+      font-weight:900;
+      letter-spacing:.2px;
+      box-shadow: 0 12px 28px rgba(14,229,255,.35);
+    }
+
+    /* Pie con CTA final */
+    .final-cta{
+      display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center;
+      margin-top:6px;
+    }
+
+    /* Responsivo: que todo quepa sin scroll durante el juego */
+    @media (max-width: 720px){
+      .card{
+        padding: 14px;
+      }
+      .brand .text span{ display:none; }
+      .progress .bar{ width: 34vw; min-width: 120px; }
+      .howto{ gap:10px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Fondo con personaje y brillos -->
+  <div class="bg-avatar" aria-hidden="true"></div>
+
+  <main class="app" id="app">
+    <!-- HUD superior con logo, título y progreso -->
+    <div class="topbar">
+      <div class="brand">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="text">
+          <b>Kämpe</b>
+          <span>Rachas diarias</span>
+        </div>
+      </div>
+      <div class="progress" aria-label="Progreso">
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
+          <div class="fill" id="progressFill"></div>
+        </div>
+        <div class="score-pill" id="scorePill">Puntos: 0/10</div>
+      </div>
+    </div>
+
+    <!-- Tarjeta principal -->
+    <section class="card">
+      <div class="title">
+        <span class="pill">Tarea de hoy</span>
+        <h1>Cuestionario sobre cómo ser previsor en el trabajo</h1>
+      </div>
+      <p class="desc">¿Cómo podemos adelantarnos a los imprevistos en un oficio? Responde 5 preguntas tipo situación real: puntualidad, detección de problemas en obra, herramientas, pruebas de instalación, planificación ante el clima.</p>
+
+      <!-- Instrucciones -->
+      <div class="howto" id="intro">
+        <div class="box">
+          <b>Cómo jugar</b>
+          <ul>
+            <li>Marca la opción que te parezca más previsora.</li>
+            <li>Pulsa “Confirmar” para bloquear tu respuesta.</li>
+            <li>Lee la retroalimentación y avanza con “Siguiente”.</li>
+          </ul>
+        </div>
+        <div class="box">
+          <b>Objetivo</b>
+          <ul>
+            <li>Piensa como un/a profesional: anticipa, comunica y prepara.</li>
+            <li>Consigue el máximo de 10 puntos en 5 preguntas.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="controls" id="startControls">
+        <button class="btn" id="btnStart">Empezar</button>
+        <button class="btn secondary" id="btnSkip" style="display:none;">Saltar</button>
+      </div>
+
+      <!-- Juego -->
+      <div class="game" id="game" aria-live="polite">
+        <div class="qhead">
+          <div class="qnum" id="qNum">Pregunta 1/5</div>
+          <div class="pill" id="tipPill">Sé previsor/a</div>
+        </div>
+        <div class="question" id="qText">...</div>
+
+        <div class="options" id="options"></div>
+
+        <div class="feedback" id="feedback"></div>
+
+        <div class="controls">
+          <button class="btn secondary" id="btnConfirm" disabled>Confirmar</button>
+          <button class="btn" id="btnNext" style="display:none;">Siguiente</button>
+        </div>
+      </div>
+
+      <!-- Resultados -->
+      <div class="results" id="results" aria-live="polite">
+        <div class="big-score" aria-hidden="true">
+          <div class="num" id="finalScore">0/10</div>
+        </div>
+        <div class="badge" id="finalBadge">Rango</div>
+        <p class="desc" id="finalMsg">Resumen</p>
+
+        <div class="final-cta">
+          <a class="btn" id="btnReward" href="https://kampe-game-phaser.onrender.com/daily_streak">Ver mi recompensa</a>
+          <button class="btn secondary" id="btnReplay">Reintentar</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ---------------------------------------------
+    // Datos del juego: 5 situaciones de oficios técnicos
+    // Puntuación: mejor opción = 2 pts, intermedia = 1, peor = 0. Máximo total: 10.
+    // ---------------------------------------------
+    const QUESTIONS = [
+      {
+        q: "Tu turno en la obra empieza a las 8:00. ¿Qué haces para empezar con buen pie?",
+        options: [
+          { t: "Llegar 10–15 minutos antes para revisar planos, EPIs y organizar herramientas.", score: 2, fb: "Llegar un poco antes te permite anticipar contratiempos y arrancar sin prisas: muy profesional." },
+          { t: "Llegar justo a las 8:00, me equipo y ya veo qué toca.", score: 1, fb: "Aceptable, pero te faltará margen para imprevistos y coordinación." },
+          { t: "Paso por un café y entro cuando llegue, total todos tardan en empezar.", score: 0, fb: "Riesgoso: la impuntualidad afecta a todo el equipo y a la seguridad." },
+        ]
+      },
+      {
+        q: "Revisando la instalación eléctrica, ves que el plano no coincide con la realidad.",
+        options: [
+          { t: "Informo al encargado y propongo alternativas antes de ejecutar.", score: 2, fb: "Excelente: comunicar y proponer evita retrabajos y paradas." },
+          { t: "Ignoro la discrepancia y sigo el plano tal cual.", score: 0, fb: "Riesgoso: podrías generar fallos, costes y riesgos eléctricos." },
+          { t: "Comento en el grupo, a ver si alguien se da cuenta y decide.", score: 1, fb: "Mejor que nada, pero falta responsabilidad y claridad en la comunicación." },
+        ]
+      },
+      {
+        q: "Es tu primer día en una obra nueva y no sabes la lista exacta de herramientas.",
+        options: [
+          { t: "Llamo/Escribo antes para confirmar lista y requerimientos de EPI.", score: 2, fb: "Proactividad total: ahorras tiempo y llegas perfectamente preparado/a." },
+          { t: "Me llevo de todo por si acaso, aunque pese y sea incómodo.", score: 1, fb: "Algo previsor, pero poco eficiente. Mejor coordinar antes." },
+          { t: "Voy sin herramientas; en obra siempre me dejan algo.", score: 0, fb: "Riesgoso e informal: puedes frenar el trabajo del equipo." },
+        ]
+      },
+      {
+        q: "Probando una línea de fontanería, detectas una fuga leve en una unión.",
+        options: [
+          { t: "Detengo, cierro válvulas, marco el punto y reporto para corregir de inmediato.", score: 2, fb: "Perfecto: detienes daños mayores y garantizas la calidad de la instalación." },
+          { t: "La cubro con cinta de forma temporal y sigo; ya se arreglará.", score: 0, fb: "Riesgo de daños, reclamaciones y mala práctica." },
+          { t: "Lo anoto para mañana; hoy quiero terminar lo planificado.", score: 1, fb: "Mejor anotar que ignorar, pero hay que actuar cuanto antes." },
+        ]
+      },
+      {
+        q: "Mañana toca trabajo exterior y el pronóstico indica lluvia intensa.",
+        options: [
+          { t: "Protejo materiales, replanifico y preparo tareas alternativas bajo techo.", score: 2, fb: "Planificación inteligente: seguridad, materiales y productividad a salvo." },
+          { t: "Vamos igual; si llueve, improvisamos en el momento.", score: 0, fb: "Poco previsor: puede afectar seguridad y plazos." },
+          { t: "Aviso que quizá no voy por la lluvia.", score: 1, fb: "Comunicas un problema, pero falta propuesta de plan o alternativas." },
+        ]
+      }
+    ];
+
+    // Estado del quiz
+    let current = 0;
+    let selectedIndex = null;
+    let totalScore = 0;
+    const maxScore = QUESTIONS.length * 2;
+
+    // Elementos del DOM
+    const app = document.getElementById('app');
+    const progressFill = document.getElementById('progressFill');
+    const scorePill = document.getElementById('scorePill');
+
+    const intro = document.getElementById('intro');
+    const startControls = document.getElementById('startControls');
+    const btnStart = document.getElementById('btnStart');
+
+    const game = document.getElementById('game');
+    const qNum = document.getElementById('qNum');
+    const qText = document.getElementById('qText');
+    const optionsWrap = document.getElementById('options');
+    const feedback = document.getElementById('feedback');
+    const btnConfirm = document.getElementById('btnConfirm');
+    const btnNext = document.getElementById('btnNext');
+
+    const results = document.getElementById('results');
+    const finalScore = document.getElementById('finalScore');
+    const finalBadge = document.getElementById('finalBadge');
+    const finalMsg = document.getElementById('finalMsg');
+    const btnReplay = document.getElementById('btnReplay');
+    const btnReward = document.getElementById('btnReward');
+
+    // Gestión del initData para la recompensa final
+    function getInitDataParam(){
+      const params = new URLSearchParams(window.location.search);
+      return params.get('initData') || '';
+    }
+    function updateRewardLink(){
+      const initData = encodeURIComponent(getInitDataParam());
+      btnReward.href = 'https://kampe-game-phaser.onrender.com/daily_streak?initData=' + initData;
+    }
+    updateRewardLink();
+
+    // Preparar la UI inicial: sin scroll durante el juego
+    document.body.style.overflow = 'hidden';
+
+    // Iniciar el juego
+    btnStart.addEventListener('click', () => {
+      intro.style.display = 'none';
+      startControls.style.display = 'none';
+      game.style.display = 'flex';
+      current = 0;
+      totalScore = 0;
+      updateProgress();
+      renderQuestion();
+    });
+
+    // Render de una pregunta
+    function renderQuestion(){
+      const data = QUESTIONS[current];
+      selectedIndex = null;
+      btnConfirm.disabled = true;
+      btnNext.style.display = 'none';
+      feedback.classList.remove('show');
+      feedback.innerHTML = '';
+
+      qNum.textContent = `Pregunta ${current + 1}/${QUESTIONS.length}`;
+      qText.textContent = data.q;
+
+      // Pintar opciones
+      optionsWrap.innerHTML = '';
+      data.options.forEach((opt, idx) => {
+        const el = document.createElement('div');
+        el.className = 'option';
+        el.setAttribute('role','button');
+        el.setAttribute('tabindex','0');
+        el.dataset.index = idx;
+
+        el.innerHTML = `
+          <span class="bullet" aria-hidden="true"></span>
+          <div class="txt">${opt.t}</div>
+        `;
+
+        // Click/teclado para seleccionar
+        el.addEventListener('click', () => selectOption(idx));
+        el.addEventListener('keydown', (e) => {
+          if(e.key === 'Enter' || e.key === ' '){
+            e.preventDefault();
+            selectOption(idx);
+          }
+        });
+
+        optionsWrap.appendChild(el);
+      });
+    }
+
+    function selectOption(idx){
+      // Limpiar selección previa
+      Array.from(optionsWrap.children).forEach(ch => ch.classList.remove('selected'));
+      // Marcar actual
+      const el = optionsWrap.children[idx];
+      if(el){
+        el.classList.add('selected');
+        selectedIndex = idx;
+        btnConfirm.disabled = false;
+      }
+    }
+
+    btnConfirm.addEventListener('click', () => {
+      if(selectedIndex === null) return;
+
+      // Bloquear confirm para evitar dobles clicks
+      btnConfirm.disabled = true;
+
+      // Evaluar
+      const data = QUESTIONS[current];
+      const bestScore = Math.max(...data.options.map(o => o.score));
+      const selected = data.options[selectedIndex];
+
+      // Sumar puntuación
+      totalScore += selected.score;
+
+      // Marcar visualmente correcto/incorrecto
+      data.options.forEach((opt, idx) => {
+        const el = optionsWrap.children[idx];
+        if(!el) return;
+        el.style.pointerEvents = 'none'; // Bloquear nuevas selecciones
+
+        if(opt.score === bestScore){
+          el.classList.add('correct');
+        }
+        if(idx === selectedIndex && opt.score < bestScore){
+          el.classList.add('wrong');
+        }
+      });
+
+      // Mostrar feedback textual
+      const tag = selected.score === bestScore ? '¡Bien visto!' : (selected.score === 1 ? 'Casi, pero...' : 'Ojo ahí');
+      const color = selected.score === bestScore ? 'var(--ok)' : (selected.score === 1 ? 'var(--warn)' : 'var(--danger)');
+      feedback.innerHTML = `<b style="color:${color}">${tag}</b> ${selected.fb}`;
+      feedback.classList.add('show');
+
+      // Actualizar progreso visual
+      updateProgress();
+
+      // Mostrar botón siguiente (o resultados si es la última)
+      btnNext.textContent = (current === QUESTIONS.length - 1) ? 'Ver resultados' : 'Siguiente';
+      btnNext.style.display = 'inline-block';
+    });
+
+    btnNext.addEventListener('click', () => {
+      current++;
+      if(current >= QUESTIONS.length){
+        endGame();
+      } else {
+        renderQuestion();
+      }
+    });
+
+    function updateProgress(){
+      const ratio = current / QUESTIONS.length;
+      // Si ya confirmó, subimos un escalón visual
+      const visualSteps = (selectedIndex !== null) ? (current + 1) : current;
+      const percent = (visualSteps / QUESTIONS.length) * 100;
+      progressFill.style.width = percent + '%';
+      scorePill.textContent = `Puntos: ${totalScore}/${maxScore}`;
+    }
+
+    function endGame(){
+      // Desactivar gameplay y permitir scroll para la pantalla final
+      game.style.display = 'none';
+      results.style.display = 'flex';
+      document.body.style.overflow = 'auto';
+
+      finalScore.textContent = `${totalScore}/${maxScore}`;
+
+      // Definir rango y mensaje
+      let rango = '';
+      let msg = '';
+      if(totalScore >= 9){
+        rango = 'Maestro/a de la previsión';
+        msg = '¡Brillas como un/a pro! Anticipas, comunicas y aseguras calidad y seguridad.';
+      } else if(totalScore >= 6){
+        rango = 'Buen criterio';
+        msg = 'Vas por gran camino. Pulir detalles te convertirá en referente del equipo.';
+      } else {
+        rango = 'En progreso';
+        msg = 'Aún hay margen. Practica anticipación y comunicación clara para subir de nivel.';
+      }
+      finalBadge.textContent = rango;
+      finalMsg.textContent = msg;
+
+      // Ajuste final del relleno de progreso y puntos
+      progressFill.style.width = '100%';
+      scorePill.textContent = `Puntos: ${totalScore}/${maxScore}`;
+    }
+
+    // Reintentar
+    btnReplay.addEventListener('click', () => {
+      // Reset estado
+      current = 0;
+      totalScore = 0;
+      // UI
+      results.style.display = 'none';
+      intro.style.display = 'none';
+      startControls.style.display = 'none';
+      game.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      // Reset progress
+      progressFill.style.width = '0%';
+      scorePill.textContent = `Puntos: 0/${maxScore}`;
+      // Cargar
+      renderQuestion();
+      updateProgress();
+    });
+
+    // Accesibilidad: tecla Enter para "Confirmar" cuando hay selección
+    document.addEventListener('keydown', (e) => {
+      if(game.style.display !== 'flex') return;
+      if(e.key === 'Enter'){
+        if(btnNext.style.display !== 'none'){
+          btnNext.click();
+        } else if(!btnConfirm.disabled){
+          btnConfirm.click();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
