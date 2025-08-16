@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Tarea de hoy: Cuestionario sobre cómo ser previsor en el trabajo</title>
+  <!-- Fuente Manrope -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* =========================
+       Variables y reset básico
+       ========================= */
+    :root{
+      /* Paleta estilo Fortnite / UI vibrante */
+      --blue-1:#0f44ff;
+      --blue-2:#1b6bff;
+      --blue-3:#0a2df5;
+      --cyan:#1ff4ff;
+      --violet:#6c5cff;
+      --magenta:#ff58d6;
+      --lime:#65ff87;
+      --yellow:#ffe55a;
+      --danger:#ff4d6d;
+      --ok:#21e49b;
+
+      --text:#eaf2ff;
+      --muted:#b9c7ff;
+
+      --card: rgba(255,255,255,0.12);
+      --card-strong: rgba(255,255,255,0.2);
+
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+
+      /* Tamaños fluidos */
+      --fs-xs: clamp(12px, 1.6vw, 14px);
+      --fs-sm: clamp(14px, 1.8vw, 16px);
+      --fs-md: clamp(16px, 2.2vw, 18px);
+      --fs-lg: clamp(18px, 2.6vw, 22px);
+      --fs-xl: clamp(20px, 3.2vw, 28px);
+      --fs-xxl: clamp(24px, 4.6vw, 36px);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%; background:#0a1e6d;}
+    body{
+      margin:0;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 10% -10%, #2a62ff33, transparent 60%),
+        radial-gradient(900px 500px at 110% 10%, #6c5cff33, transparent 60%),
+        linear-gradient(160deg, #0d2fff 0%, #1133ff 10%, #0f2ad6 60%, #0b1c9f 100%);
+      overflow-x:hidden;
+    }
+    body.no-scroll{ overflow:hidden; }
+
+    /* =========================
+       Layout principal
+       ========================= */
+    .app{
+      position:relative;
+      min-height:100dvh;
+      display:flex;
+      flex-direction:column;
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 16px 16px;
+      gap:14px;
+      isolation:isolate; /* nos ayuda con overlapping */
+    }
+
+    /* Decora con personaje de fondo (grande y con transparencia) */
+    .avatar-bg{
+      position:fixed;
+      right:-2%;
+      bottom:-6%;
+      width:min(48dvh, 480px);
+      max-width:60vw;
+      opacity:0.28;
+      pointer-events:none;
+      filter: drop-shadow(0 10px 40px rgba(0,0,0,0.4));
+      z-index:0;
+      transform: rotate(-2deg);
+    }
+    @media (max-width: 480px){
+      .avatar-bg{
+        right:-14px;
+        bottom:-10px;
+        width:55dvh;
+        opacity:0.22;
+      }
+    }
+
+    /* Encabezado */
+    .topbar{
+      position:relative;
+      z-index:2;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .brand-logo{
+      background:linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      border-radius:12px;
+      padding:6px 10px;
+      box-shadow: var(--shadow);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .brand-logo img{
+      height:26px;
+      width:auto;
+      display:block;
+    }
+    .title{
+      display:flex;
+      flex-direction:column;
+      line-height:1.1;
+    }
+    .title small{
+      font-size: var(--fs-xs);
+      color: var(--muted);
+      letter-spacing:0.3px;
+      text-transform: uppercase;
+    }
+    .title h1{
+      font-size: var(--fs-xl);
+      margin:2px 0 0;
+      font-weight:800;
+      text-shadow:0 2px 0 #00000030;
+    }
+
+    /* Contenedor del juego */
+    .game-shell{
+      position:relative;
+      z-index:1;
+      flex:1;
+      display:grid;
+      place-items:center;
+      min-height: 0; /* evita overflow en algunos navegadores */
+    }
+
+    /* Tarjeta principal del juego */
+    .card{
+      width: min(940px, 100%);
+      max-width: 940px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.12));
+      border-radius: var(--radius);
+      border:1px solid rgba(255,255,255,0.14);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(8px);
+    }
+    .card-inner{
+      display:flex;
+      flex-direction:column;
+      padding: clamp(14px, 3.2vw, 24px);
+      gap: clamp(12px, 2vw, 18px);
+    }
+
+    /* Pantallas (intro, quiz, resultado) */
+    .screen{ display:none; }
+    .screen.active{ display:block; }
+
+    /* Instrucciones */
+    .howto{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      color: var(--text);
+    }
+    .howto p{
+      margin:0;
+      font-size: var(--fs-md);
+      color:#eaf2ff;
+    }
+    .tips-row{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:12px;
+    }
+    .tip{
+      background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+      border:1px solid rgba(255,255,255,0.18);
+      border-radius:12px;
+      padding:12px;
+      font-size: var(--fs-sm);
+      color:#f3f6ff;
+    }
+    @media (max-width: 720px){
+      .tips-row{ grid-template-columns: 1fr; }
+    }
+
+    /* Botones estilo gaming */
+    .btn{
+      --bg1: var(--cyan);
+      --bg2: var(--violet);
+      cursor:pointer;
+      user-select:none;
+      border:0;
+      outline:0;
+      color:#08224d;
+      font-weight:800;
+      letter-spacing:0.4px;
+      font-size: var(--fs-md);
+      padding: 12px 18px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, var(--bg1), var(--bg2));
+      box-shadow: 0 6px 0 #00000040, 0 0 16px #60d8ff66 inset;
+      transition: transform .05s ease, filter .2s ease;
+    }
+    .btn:hover{ filter:brightness(1.05); }
+    .btn:active{ transform: translateY(2px); }
+    .btn.secondary{
+      --bg1:#f8fbff;
+      --bg2:#e6efff;
+      color:#0c2a8e;
+      box-shadow: 0 6px 0 #00000040, 0 0 16px #ffffff66 inset;
+    }
+    .btn.full{ width:100%; }
+    .btn.small{ font-size: var(--fs-sm); padding:10px 14px; }
+
+    /* Header del quiz */
+    .quiz-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .progress{
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .progress-label{ font-size: var(--fs-sm); color: var(--muted); }
+    .progress-bar{
+      flex:1;
+      height:10px;
+      background: rgba(255,255,255,0.18);
+      border:1px solid rgba(255,255,255,0.22);
+      border-radius:999px;
+      overflow:hidden;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .progress-fill{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--lime), var(--cyan));
+      box-shadow: 0 0 16px #65ff8799;
+      transition: width .35s ease;
+    }
+
+    /* Cuerpo del quiz */
+    .question{
+      font-size: var(--fs-lg);
+      font-weight:800;
+      line-height:1.25;
+      margin-top:6px;
+      text-shadow:0 2px 0 #00000030;
+    }
+    .options{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+      margin-top:6px;
+    }
+    .opt{
+      position:relative;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border:1px solid rgba(255,255,255,0.18);
+      padding:14px 14px 14px 44px;
+      color:#eef3ff;
+      font-size: var(--fs-md);
+      line-height:1.35;
+      cursor:pointer;
+      transition: transform .05s ease, border-color .25s ease, background .25s ease, box-shadow .25s ease;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+    }
+    .opt:hover{ transform: translateY(-1px); }
+    .opt .bullet{
+      position:absolute;
+      left:10px; top:50%;
+      transform:translateY(-50%);
+      width:24px; height:24px;
+      border-radius:8px;
+      display:grid; place-items:center;
+      color:#071a4a;
+      background: linear-gradient(180deg, #ffffff, #d9e7ff);
+      border:1px solid #ffffffa8;
+      box-shadow: 0 2px 0 #00000033, inset 0 0 10px #ffffffaa;
+      font-weight:900;
+      font-size:12px;
+    }
+    .opt.correct{
+      border-color: rgba(101,255,135,0.9);
+      background: linear-gradient(180deg, rgba(101,255,135,0.22), rgba(255,255,255,0.06));
+      box-shadow: 0 0 18px #65ff8799;
+    }
+    .opt.wrong{
+      border-color: rgba(255,77,109,0.85);
+      background: linear-gradient(180deg, rgba(255,77,109,0.22), rgba(255,255,255,0.06));
+      box-shadow: 0 0 18px #ff4d6e99;
+    }
+    .opt.disabled{ pointer-events:none; opacity:0.96; }
+
+    .feedback{
+      margin-top:8px;
+      padding: 12px;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08));
+      border:1px solid rgba(255,255,255,0.22);
+      display:none;
+    }
+    .feedback.show{ display:block; }
+    .feedback .f-title{
+      font-weight:800;
+      margin:0 0 4px 0;
+      font-size: var(--fs-md);
+    }
+    .feedback.ok .f-title{ color: var(--lime); }
+    .feedback.no .f-title{ color: var(--danger); }
+    .feedback p{
+      margin:0;
+      color:#f0f5ff;
+      font-size: var(--fs-sm);
+    }
+
+    .controls{
+      display:flex;
+      gap:10px;
+      margin-top:8px;
+      justify-content:flex-end;
+    }
+
+    /* Resultado final */
+    .score-box{
+      display:grid;
+      gap:12px;
+      text-align:center;
+      padding: 10px 6px 0;
+    }
+    .score-title{
+      font-size: var(--fs-xxl);
+      font-weight:900;
+      letter-spacing:0.3px;
+    }
+    .score-sub{
+      font-size: var(--fs-md);
+      color: var(--muted);
+    }
+    .score-ring{
+      margin: 6px auto 0;
+      width: 120px; height:120px;
+      border-radius:50%;
+      background:
+        conic-gradient(var(--lime) var(--score, 0%), rgba(255,255,255,0.1) 0);
+      display:grid;
+      place-items:center;
+      box-shadow: 0 0 26px #65ff8755, inset 0 0 14px #00000055;
+      border:2px solid rgba(255,255,255,0.2);
+    }
+    .score-ring span{
+      font-size: 28px;
+      font-weight:900;
+      text-shadow:0 2px 0 #00000030;
+    }
+    .learn-list{
+      margin:14px auto 0;
+      display:grid;
+      gap:10px;
+      text-align:left;
+      max-width:720px;
+    }
+    .learn-item{
+      background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08));
+      border:1px solid rgba(255,255,255,0.22);
+      border-radius:12px;
+      padding:10px 12px;
+      font-size: var(--fs-sm);
+      display:flex; gap:8px; align-items:flex-start;
+    }
+    .learn-item b{ color:#ffffff; }
+
+    .final-cta{
+      margin-top:14px;
+      display:grid;
+      gap:10px;
+    }
+
+    /* Confeti simple */
+    .confetti{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      z-index:5;
+    }
+    .confetti i{
+      position:absolute;
+      width:8px; height:14px;
+      opacity:0;
+      transform: translateY(-20px) rotate(0);
+      border-radius:2px;
+      animation: drop 850ms ease-out forwards;
+    }
+    @keyframes drop{
+      0%{ opacity:0; transform: translateY(-20px) rotate(0deg); }
+      10%{ opacity:1; }
+      100%{ opacity:0; transform: translateY(140%) rotate(360deg); }
+    }
+
+    /* Footer pequeño con marca */
+    .foot{
+      display:flex;
+      justify-content:center;
+      font-size: var(--fs-xs);
+      color: var(--muted);
+      opacity:0.9;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+  </style>
+</head>
+<body class="no-scroll">
+  <!-- Personaje en el fondo (prominente pero sin tapar UI) -->
+  <img class="avatar-bg" alt="Personaje Kämpe" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png">
+
+  <div class="app">
+    <!-- Barra superior con logo y título -->
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-logo" title="Kämpe">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe logo">
+        </div>
+        <div class="title">
+          <small>Tarea de hoy</small>
+          <h1>Cuestionario sobre cómo ser previsor en el trabajo</h1>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor del juego -->
+    <div class="game-shell">
+      <div class="card">
+        <div class="card-inner">
+          <!-- Pantalla 1: Instrucciones -->
+          <section id="screen-intro" class="screen active">
+            <div class="howto">
+              <p><b>Cómo jugar:</b> Responde 5 preguntas sobre cómo adelantarte a los imprevistos en oficios técnicos. Toca la opción que mejor te prepare. Recibirás retroalimentación inmediata. ¡Sumas puntos por cada acierto!</p>
+              <div class="tips-row">
+                <div class="tip">• Evita llegar “a ver qué pasa”. Anticipa materiales, herramientas y riesgos.</div>
+                <div class="tip">• Si detectas un problema, documéntalo y comunícalo con propuesta.</div>
+                <div class="tip">• La puntualidad también se planifica: verifica ruta, tráfico y EPP.</div>
+              </div>
+            </div>
+            <div class="controls" style="justify-content:flex-end;">
+              <button id="btn-start" class="btn">Empezar</button>
+            </div>
+          </section>
+
+          <!-- Pantalla 2: Quiz -->
+          <section id="screen-quiz" class="screen">
+            <div class="quiz-top">
+              <div class="progress">
+                <div class="progress-label" id="progress-label">Pregunta 1/5</div>
+                <div class="progress-bar" aria-hidden="true">
+                  <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+                </div>
+              </div>
+              <div class="score-mini" id="score-mini" aria-label="Puntuación actual" style="font-weight:800; color:#d9e7ff;">0 ✅</div>
+            </div>
+
+            <div class="question" id="question-text">Pregunta aquí…</div>
+
+            <div class="options" id="options">
+              <!-- Opciones generadas por JS -->
+            </div>
+
+            <div id="feedback" class="feedback">
+              <div class="f-title" id="feedback-title">¡Bien!</div>
+              <p id="feedback-text">Explicación…</p>
+            </div>
+
+            <div class="controls">
+              <button id="btn-next" class="btn small" style="display:none;">Siguiente</button>
+            </div>
+
+            <!-- Container de confeti -->
+            <div class="confetti" id="confetti"></div>
+          </section>
+
+          <!-- Pantalla 3: Resultado -->
+          <section id="screen-result" class="screen">
+            <div class="score-box">
+              <div class="score-title" id="score-title">¡Buen trabajo!</div>
+              <div class="score-ring" id="score-ring" style="--score: 0%;">
+                <span id="score-num">0/5</span>
+              </div>
+              <div class="score-sub" id="score-sub">Sigue practicando para anticiparte a cualquier imprevisto.</div>
+            </div>
+
+            <div class="learn-list">
+              <div class="learn-item"><b>1)</b> Prepárate la noche anterior: herramientas, EPP y repuestos básicos te ahorran viajes y retrasos.</div>
+              <div class="learn-item"><b>2)</b> Si detectas anomalías (planos, humedad, riesgos), documenta y comunica con propuesta de acción.</div>
+              <div class="learn-item"><b>3)</b> Planifica la puntualidad: revisa ruta, tráfico y plan de acceso al sitio de trabajo.</div>
+            </div>
+
+            <div class="final-cta">
+              <button id="btn-reward" class="btn full" title="Ir a tu recompensa">Ver mi recompensa</button>
+              <button id="btn-restart" class="btn secondary full">Reintentar</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">Kämpe • Aprende. Mejora. Consigue tu recompensa.</div>
+  </div>
+
+  <script>
+    // =========================
+    // Datos del cuestionario
+    // =========================
+    const QUESTIONS = [
+      {
+        q: "Es tu primer día en una obra y no tienes claro qué herramientas llevar. ¿Qué haces?",
+        options: [
+          "Voy y veo qué hace falta cuando llegue.",
+          "Pido la lista al encargado y preparo un kit la noche anterior.",
+          "Llevo solo un destornillador y pido prestado lo demás."
+        ],
+        correct: 1,
+        tip: "Anticípate: solicita la lista, revisa tu EPP y arma un kit base (consumibles y repuestos). Llegar listo = empezar fuerte."
+      },
+      {
+        q: "En un plano eléctrico ves una discrepancia con la instalación existente. ¿Cuál es la mejor reacción?",
+        options: [
+          "Ignorarla y seguir para terminar antes.",
+          "Reportarla con fotos y proponer una solución segura antes de energizar.",
+          "Modificar por tu cuenta sin avisar para ahorrar tiempo."
+        ],
+        correct: 1,
+        tip: "Documentar + comunicar + proponer evita retrabajos y riesgos. Nunca energices si hay dudas en plano vs. realidad."
+      },
+      {
+        q: "La obra está en una zona con tráfico impredecible y aparcamiento limitado. ¿Qué harías?",
+        options: [
+          "Salir justo a la hora, ya veré el tráfico en el camino.",
+          "Salir antes, confirmar la ruta, y prever alternativas de aparcamiento.",
+          "Avisar que llegaré tarde cuando ya esté retrasado."
+        ],
+        correct: 1,
+        tip: "La puntualidad se planifica: revisa tráfico, considera márgenes y ten plan B de aparcamiento o transporte."
+      },
+      {
+        q: "Notas humedad en el tabique donde irá una instalación. ¿Tu mejor paso siguiente?",
+        options: [
+          "Tapar rápido para que no se note y seguir.",
+          "Documentar con fotos, avisar al responsable y proponer una prueba de estanqueidad.",
+          "Seguir sin más, total ‘ya se secará’. "
+        ],
+        correct: 1,
+        tip: "La humedad puede comprometer fijaciones y seguridad. Reporta, justifica con fotos y sugiere pruebas antes de continuar."
+      },
+      {
+        q: "Empiezas con un cliente nuevo que exige protocolo de seguridad. ¿Qué haces antes de llegar?",
+        options: [
+          "Dejo el EPP en la furgoneta por si acaso no lo piden.",
+          "Reviso EPP, normas del sitio y llevo etiquetas/rep. para bloqueos/avisos.",
+          "Pregunto a alguien del equipo cuando ya esté dentro."
+        ],
+        correct: 1,
+        tip: "Revisa el protocolo y tu EPP con antelación. Lleva etiquetas, bloqueos y repuestos para cumplir normas desde el minuto uno."
+      }
+    ];
+
+    // =========================
+    // Referencias del DOM
+    // =========================
+    const $intro = document.getElementById('screen-intro');
+    const $quiz = document.getElementById('screen-quiz');
+    const $result = document.getElementById('screen-result');
+
+    const $btnStart = document.getElementById('btn-start');
+    const $btnNext = document.getElementById('btn-next');
+    const $btnReward = document.getElementById('btn-reward');
+    const $btnRestart = document.getElementById('btn-restart');
+
+    const $progressLabel = document.getElementById('progress-label');
+    const $progressFill = document.getElementById('progress-fill');
+    const $scoreMini = document.getElementById('score-mini');
+    const $questionText = document.getElementById('question-text');
+    const $options = document.getElementById('options');
+    const $feedback = document.getElementById('feedback');
+    const $feedbackTitle = document.getElementById('feedback-title');
+    const $feedbackText = document.getElementById('feedback-text');
+    const $confetti = document.getElementById('confetti');
+
+    const $scoreTitle = document.getElementById('score-title');
+    const $scoreRing = document.getElementById('score-ring');
+    const $scoreNum = document.getElementById('score-num');
+    const $scoreSub = document.getElementById('score-sub');
+
+    // =========================
+    // Estado del juego
+    // =========================
+    let index = 0;
+    let score = 0;
+    let answered = false;
+    let initDataParam = "";
+
+    // =========================
+    // Utilidades
+    // =========================
+    function qs(param){
+      const url = new URL(window.location.href);
+      return url.searchParams.get(param) || "";
+    }
+
+    function setScreens(intro=false, quiz=false, result=false){
+      $intro.classList.toggle('active', intro);
+      $quiz.classList.toggle('active', quiz);
+      $result.classList.toggle('active', result);
+    }
+
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+    // Genera un confeti simple al acertar
+    function popConfetti(){
+      const colors = [ '#6c5cff', '#1ff4ff', '#65ff87', '#ffe55a', '#ff58d6', '#ffffff' ];
+      const howMany = 22;
+      for(let i=0;i<howMany;i++){
+        const p = document.createElement('i');
+        const left = Math.random()*100;
+        const delay = Math.random()*120;
+        const rot = (Math.random()*360);
+        const col = colors[i % colors.length];
+        p.style.left = left + '%';
+        p.style.top = '-10px';
+        p.style.background = `linear-gradient(180deg, ${col}, ${col}dd)`;
+        p.style.transform = `translateY(-20px) rotate(${rot}deg)`;
+        p.style.animationDelay = (delay)+'ms';
+        $confetti.appendChild(p);
+        // Limpieza
+        setTimeout(()=>{ p.remove(); }, 1200 + delay);
+      }
+    }
+
+    // Construye un badge con letras A, B, C...
+    function letter(i){ return String.fromCharCode(65 + i); }
+
+    // =========================
+    // Render del quiz
+    // =========================
+    function renderQuestion(){
+      const total = QUESTIONS.length;
+      const data = QUESTIONS[index];
+
+      // Progreso y cabecera
+      $progressLabel.textContent = `Pregunta ${index+1}/${total}`;
+      const pct = ((index) / total) * 100;
+      $progressFill.style.width = `${pct}%`;
+      $scoreMini.textContent = `${score} ✅`;
+
+      // Texto de la pregunta
+      $questionText.textContent = data.q;
+
+      // Limpiar opciones anteriores
+      $options.innerHTML = '';
+      answered = false;
+      $feedback.classList.remove('show', 'ok', 'no');
+      $btnNext.style.display = 'none';
+
+      // Crear opciones
+      data.options.forEach((txt, i)=>{
+        const opt = document.createElement('button');
+        opt.className = 'opt';
+        opt.type = 'button';
+        opt.innerHTML = `<span class="bullet">${letter(i)}</span>${txt}`;
+        opt.addEventListener('click', ()=> onSelect(i));
+        $options.appendChild(opt);
+      });
+    }
+
+    function onSelect(i){
+      if(answered) return;
+      answered = true;
+
+      const data = QUESTIONS[index];
+      const opts = [...$options.querySelectorAll('.opt')];
+
+      // Estado visual
+      opts.forEach((el, idx)=>{
+        el.classList.add('disabled');
+        if(idx === data.correct) el.classList.add('correct');
+      });
+
+      const selected = opts[i];
+
+      if(i === data.correct){
+        score++;
+        selected.classList.add('correct');
+        showFeedback(true, data.tip);
+        popConfetti();
+      }else{
+        selected.classList.add('wrong');
+        showFeedback(false, data.tip);
+      }
+
+      // Mostrar botón siguiente
+      $btnNext.textContent = (index === QUESTIONS.length - 1) ? 'Ver resultados' : 'Siguiente';
+      $btnNext.style.display = 'inline-block';
+    }
+
+    function showFeedback(ok, tip){
+      $feedback.classList.add('show');
+      if(ok){
+        $feedback.classList.add('ok');
+        $feedbackTitle.textContent = '¡Bien! ✅';
+      }else{
+        $feedback.classList.add('no');
+        $feedbackTitle.textContent = 'Ojo 👀';
+      }
+      $feedbackText.textContent = tip;
+    }
+
+    function next(){
+      if(index < QUESTIONS.length - 1){
+        index++;
+        renderQuestion();
+      }else{
+        showResult();
+      }
+    }
+
+    function showResult(){
+      // Completar barra de progreso
+      $progressFill.style.width = '100%';
+      setScreens(false, false, true);
+
+      // Habilitar scroll cuando finaliza el juego
+      document.body.classList.remove('no-scroll');
+
+      // Establecer puntuación
+      $scoreNum.textContent = `${score}/${QUESTIONS.length}`;
+      const pct = Math.round((score / QUESTIONS.length) * 100);
+      $scoreRing.style.setProperty('--score', pct + '%');
+
+      // Mensajes según desempeño
+      if(score === 5){
+        $scoreTitle.textContent = '¡Maestro/a de la previsión!';
+        $scoreSub.textContent = 'Tu anticipación es de élite. Eres un/a Kämpe listo/a para cualquier imprevisto.';
+      }else if(score >= 3){
+        $scoreTitle.textContent = '¡Buen trabajo!';
+        $scoreSub.textContent = 'Vas por el camino correcto. Con un poco más de práctica, nada te sorprenderá.';
+      }else{
+        $scoreTitle.textContent = '¡Sigue entrenando!';
+        $scoreSub.textContent = 'La clave está en anticipar. Repite el reto y fortalece tus hábitos de previsión.';
+      }
+    }
+
+    function start(){
+      // Estado inicial
+      index = 0;
+      score = 0;
+      answered = false;
+
+      // Ocultar scroll durante el gameplay
+      document.body.classList.add('no-scroll');
+
+      // Cambiar pantallas
+      setScreens(false, true, false);
+
+      // Pintar primera pregunta
+      renderQuestion();
+    }
+
+    function restart(){
+      setScreens(true, false, false);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    // =========================
+    // initData - preservación del parámetro
+    // =========================
+    function initInitData(){
+      initDataParam = qs('initData'); // captura el valor original de initData
+    }
+
+    function goToReward(){
+      const base = 'https://kampe-game-phaser.onrender.com/daily_streak';
+      const url = `${base}?initData=${encodeURIComponent(initDataParam || '')}`;
+      window.location.href = url;
+    }
+
+    // =========================
+    // Eventos
+    // =========================
+    $btnStart.addEventListener('click', start);
+    $btnNext.addEventListener('click', next);
+    $btnRestart.addEventListener('click', restart);
+    $btnReward.addEventListener('click', goToReward);
+
+    // =========================
+    // Inicio
+    // =========================
+    initInitData();
+  </script>
+</body>
+</html>
