@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Kämpe | Tarea de hoy — Cuestionario sobre como ser previsor en el trabajo</title>
+  <!-- Manrope font -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* ========== RESET Y VARIABLES ========== */
+    :root{
+      --bg-1: #071a4a;          /* Fondo base oscuro */
+      --bg-2: #0c2c7a;          /* Azul profundo Fortnite-like */
+      --grad-1: linear-gradient(135deg,#0b2bd6 0%, #1f5aff 50%, #23c6ff 100%);
+      --panel: rgba(9,27,90,0.72);
+      --panel-strong: rgba(9,27,90,0.92);
+      --white: #f5f9ff;
+      --cyan: #67e8f9;
+      --lime: #9cfb6a;
+      --pink: #ff76d6;
+      --yellow: #ffe38f;
+      --danger: #ff6b6b;
+      --ok: #45ffb3;
+      --muted: #a3b8ff;
+      --shadow: 0 10px 30px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.05);
+      --radius: 16px;
+      --spacing: clamp(10px, 2vw, 18px);
+      --fs-xs: clamp(12px, 1.8vw, 14px);
+      --fs-sm: clamp(13px, 2vw, 16px);
+      --fs-md: clamp(15px, 2.6vw, 18px);
+      --fs-lg: clamp(16px, 3vw, 22px);
+      --fs-xl: clamp(18px, 4vw, 28px);
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+    }
+    *{ box-sizing: border-box; }
+    html,body{
+      height:100%;
+      background: radial-gradient(1200px 600px at 85% -10%, rgba(35,198,255,0.25), transparent 60%), 
+                  radial-gradient(800px 600px at 10% 110%, rgba(31,90,255,0.25), transparent 60%), 
+                  linear-gradient(180deg, var(--bg-2), var(--bg-1) 60%);
+      color: var(--white);
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      overflow: hidden; /* Sin scroll durante el gameplay */
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    a{ color: inherit; text-decoration: none; }
+    button{ font-family: inherit; }
+
+    /* ========== CONTENEDOR GENERAL ========== */
+    .game-wrapper{
+      position: relative;
+      min-height: 100dvh;
+      padding: calc(var(--safe-top) + 10px) var(--spacing) calc(var(--safe-bottom) + 10px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: var(--spacing);
+    }
+
+    /* ========== TOPBAR ========== */
+    .topbar{
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: var(--spacing);
+    }
+    .logo{
+      width: clamp(64px, 12vw, 90px);
+      filter: drop-shadow(0 4px 16px rgba(103,232,249,0.4));
+    }
+    .titles h1{
+      font-size: var(--fs-lg);
+      margin: 2px 0 0;
+      line-height: 1.1;
+      letter-spacing: 0.2px;
+      text-shadow: 0 2px 16px rgba(35,198,255,0.25);
+    }
+    .titles .suptitle{
+      font-size: var(--fs-xs);
+      color: var(--yellow);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.95;
+    }
+    .streak-pill{
+      font-size: var(--fs-xs);
+      font-weight: 800;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(35,198,255,0.25), rgba(31,90,255,0.25));
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(6px);
+      box-shadow: var(--shadow);
+      white-space: nowrap;
+    }
+
+    /* ========== PERSONAJE DE FONDO (PROMINENTE) ========== */
+    .bg-character{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      display: grid;
+      align-items: end;
+      justify-items: end;
+      padding: 0 2% 6% 0;
+      opacity: 0.18; /* visible pero no tapa la UI */
+    }
+    .bg-character img{
+      width: min(38vh, 36vw);
+      max-width: 420px;
+      filter: drop-shadow(0 12px 40px rgba(35,198,255,0.35)) saturate(1.1);
+      transform: translateY(0);
+    }
+
+    /* ========== TARJETA PRINCIPAL DE JUEGO ========== */
+    .card{
+      position: relative;
+      background: linear-gradient(180deg, rgba(8,21,70,0.55), rgba(8,21,70,0.35));
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: clamp(12px, 2.4vw, 18px);
+      display: grid;
+      grid-template-rows: 1fr auto auto;
+      gap: clamp(10px, 2vw, 16px);
+      overflow: hidden;
+      min-height: 62dvh;
+      max-height: 68dvh; /* Para evitar que algo quede fuera en móviles */
+    }
+
+    /* ========== CHAT ========== */
+    .chat{
+      overflow: hidden; /* sin scroll en gameplay */
+      display: grid;
+      grid-auto-rows: max-content;
+      gap: 10px;
+    }
+    .msg{
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: start;
+      animation: pop 260ms ease both;
+    }
+    .msg .avatar{
+      width: clamp(38px, 9vw, 52px);
+      height: clamp(38px, 9vw, 52px);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.15);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(35,198,255,0.25), 0 6px 16px rgba(0,0,0,0.35);
+    }
+    .msg .avatar img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .bubble{
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 6px 18px rgba(0,0,0,0.25);
+    }
+    .bubble .who{
+      font-size: var(--fs-xs);
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: 0.25px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    .bubble .text{
+      font-size: var(--fs-md);
+      line-height: 1.35;
+    }
+    .bubble.good{ border-color: rgba(69,255,179,0.35); box-shadow: 0 0 0 1px rgba(69,255,179,0.25), 0 8px 20px rgba(69,255,179,0.16); }
+    .bubble.bad{ border-color: rgba(255,107,107,0.35); box-shadow: 0 0 0 1px rgba(255,107,107,0.25), 0 8px 20px rgba(255,107,107,0.16); }
+
+    @keyframes pop{ from{ transform: translateY(6px); opacity:0 } to{ transform:none; opacity:1 } }
+
+    /* ========== OPCIONES (BOTONERA) ========== */
+    .choices{
+      display: grid;
+      gap: 10px;
+    }
+    .option{
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: linear-gradient(180deg, rgba(14,32,100,0.85), rgba(10,28,90,0.75));
+      color: var(--white);
+      padding: 12px;
+      border-radius: 12px;
+      font-size: var(--fs-md);
+      font-weight: 700;
+      text-align: left;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform 0.04s ease, border-color 0.2s ease, background 0.2s ease;
+      outline: none;
+    }
+    .option:active{ transform: translateY(1px) scale(0.995); }
+    .option:hover{ border-color: rgba(103,232,249,0.5); }
+    .option.correct{
+      background: linear-gradient(180deg, rgba(32,90,60,0.9), rgba(22,70,52,0.9));
+      border-color: rgba(69,255,179,0.55);
+      box-shadow: 0 0 0 1px rgba(69,255,179,0.35), 0 8px 24px rgba(69,255,179,0.15);
+    }
+    .option.wrong{
+      background: linear-gradient(180deg, rgba(100,32,44,0.9), rgba(70,22,28,0.9));
+      border-color: rgba(255,107,107,0.55);
+      box-shadow: 0 0 0 1px rgba(255,107,107,0.35), 0 8px 24px rgba(255,107,107,0.15);
+    }
+    .option.disabled{ pointer-events: none; opacity: 0.9; }
+
+    /* ========== CTA CONTINUAR ========== */
+    .cta{
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .progress{
+      font-size: var(--fs-xs);
+      color: var(--muted);
+    }
+    .btn{
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: linear-gradient(90deg, rgba(35,198,255,0.24), rgba(31,90,255,0.28));
+      color: var(--white);
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform 0.04s ease, filter 0.2s ease, background 0.25s ease;
+      white-space: nowrap;
+    }
+    .btn:active{ transform: translateY(1px) scale(0.995); }
+    .btn.secondary{
+      background: linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+    }
+
+    /* ========== OVERLAYS: TUTORIAL Y RESULTADOS ========== */
+    .overlay{
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: radial-gradient(60% 60% at 50% 20%, rgba(35,198,255,0.12), transparent 70%), rgba(6,18,64,0.75);
+      backdrop-filter: blur(6px);
+      z-index: 30;
+    }
+    .overlay.active{ display: flex; }
+    .modal{
+      width: min(880px, 100%);
+      max-height: 90dvh;
+      overflow: auto;
+      background: var(--panel-strong);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: clamp(16px, 2.6vw, 24px);
+    }
+    .modal h2{ font-size: var(--fs-xl); margin: 0 0 10px; }
+    .modal p{ font-size: var(--fs-md); color: #d5e5ff; }
+    .steps{
+      display: grid;
+      gap: 8px;
+      margin: 10px 0 14px;
+      font-size: var(--fs-sm);
+    }
+    .steps li{ list-style: '🎮 '; margin-left: 12px; }
+    .modal .actions{
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: end;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    /* ========== FOOTER HINT ========== */
+    .footer-hint{
+      font-size: var(--fs-xs);
+      color: var(--muted);
+      opacity: 0.9;
+      text-align: center;
+    }
+
+    /* ========== TOAST ========== */
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: calc(12px + var(--safe-bottom));
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(8,21,70,0.95);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: var(--fs-sm);
+      opacity: 0;
+      z-index: 25;
+      transition: 250ms ease;
+    }
+    .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.ok{ border-color: rgba(69,255,179,0.6); color: var(--ok); }
+    .toast.bad{ border-color: rgba(255,107,107,0.6); color: var(--danger); }
+
+    /* ========== RESULTADOS LISTA ========== */
+    .result-item{
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 12px;
+      margin: 8px 0;
+    }
+    .result-item .title{
+      font-weight: 800;
+      color: var(--white);
+      font-size: var(--fs-sm);
+      margin-bottom: 6px;
+    }
+    .result-item .line{ font-size: var(--fs-sm); margin: 3px 0; }
+    .pill{
+      display: inline-grid;
+      place-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: var(--fs-xs);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .pill.ok{ color: var(--ok); border-color: rgba(69,255,179,0.6); }
+    .pill.bad{ color: var(--danger); border-color: rgba(255,107,107,0.6); }
+
+    /* ========== RESPONSIVE PUNTOS FINOS ========== */
+    @media (min-width: 960px){
+      .card{ max-width: 920px; margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrapper">
+    <!-- Topbar con logo y títulos -->
+    <header class="topbar">
+      <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe logo">
+      <div class="titles">
+        <div class="suptitle">Tarea de hoy</div>
+        <h1>Cuestionario sobre como ser previsor en el trabajo</h1>
+      </div>
+      <div class="streak-pill">Reto diario</div>
+    </header>
+
+    <!-- Personaje grande en el fondo (Avatar 1 - Mentor) -->
+    <div class="bg-character">
+      <img src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="Mentor - Avatar 1">
+    </div>
+
+    <!-- Tarjeta principal con chat + opciones -->
+    <main class="card" aria-live="polite">
+      <div id="chat" class="chat"></div>
+      <div id="choices" class="choices"></div>
+      <div class="cta">
+        <div id="progress" class="progress">Progreso: 0/5</div>
+        <button id="nextBtn" class="btn" style="display:none">Continuar</button>
+      </div>
+    </main>
+
+    <div class="footer-hint">Consejo: Habla con los personajes y elige tus respuestas. Tus decisiones cambian la historia.</div>
+
+    <!-- Overlay: Tutorial inicial -->
+    <div id="tutorial" class="overlay active">
+      <div class="modal">
+        <h2>Cómo jugar</h2>
+        <p>Habla con los personajes y elige tus respuestas. Tus decisiones cambiarán el curso de la conversación.</p>
+        <ul class="steps">
+          <li>Verás 5 situaciones del mundo de los oficios (electricidad, obra, cliente, entrevista).</li>
+          <li>Toca una opción (2–4 alternativas). Algunas son más recomendadas que otras.</li>
+          <li>Los personajes reaccionarán a tu elección. No hay deslizamientos ni scroll durante el juego.</li>
+          <li>Al final, verás qué respuestas eran correctas y por qué, con un resumen positivo.</li>
+        </ul>
+        <div class="actions">
+          <button id="startBtn" class="btn">¡Empezar!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay: Resultados y explicación -->
+    <div id="results" class="overlay">
+      <div class="modal" id="resultsContent">
+        <!-- El contenido se inyecta por JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de feedback rápido -->
+  <div id="toast" class="toast">Feedback</div>
+
+  <script>
+    // ==========================
+    // Utilidades de UI
+    // ==========================
+    const $ = (sel, ctx=document) => ctx.querySelector(sel);
+    const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+
+    function showToast(text, type='ok'){
+      const t = $('#toast');
+      t.textContent = text;
+      t.className = 'toast ' + type;
+      requestAnimationFrame(()=> t.classList.add('show'));
+      setTimeout(()=> t.classList.remove('show'), 1200);
+    }
+
+    // Preservar initData de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const initData = urlParams.get('initData') || '';
+
+    // ==========================
+    // Data del juego (5 escenas)
+    // Nota: El jugador es "Aprendiz (Tú)" usando Avatar 2.
+    // ==========================
+    const avatars = {
+      1: { url: 'https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png', name: 'Mentor/Profesor' },
+      2: { url: 'https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png', name: 'Aprendiz (Tú)' },
+      3: { url: 'https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png', name: 'Reclutador/Entrevistador' },
+      4: { url: 'https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png', name: 'Cliente/Empresa' }
+    };
+
+    // Estructura de escenas
+    const scenes = [
+      {
+        id: 1,
+        progress: '1/5',
+        scenario: [
+          { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): Mañana es tu primer día en una obra eléctrica. La jornada empieza a las 08:00.' },
+          { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): ¿Qué haces para ser previsor desde el minuto 0?' }
+        ],
+        options: [
+          {
+            text: 'Llego justo a las 08:00 con lo básico. Ya improviso si falta algo.',
+            correct: false,
+            reaction: { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): Llegar justo te deja sin margen para equiparte ni revisar el área. La improvisación sale cara.' }
+          },
+          {
+            text: 'Llego 10–15 min antes para ubicarme, saludar al encargado y repasar tareas/planos.',
+            correct: true,
+            reaction: { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): ¡Así se hace! Ese margen te permite empezar fuerte y prevenir dolores de cabeza.' }
+          },
+          {
+            text: 'Llego 1 hora antes y entro solo al área de trabajo sin avisar.',
+            correct: false,
+            reaction: { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): Demasiado. Y entrar sin avisar es inseguro: siempre coordina accesos.' }
+          }
+        ],
+        explanation: 'Ser previsor incluye gestionar el tiempo: llegar 10–15 minutos antes permite equiparte, entender riesgos y alinear expectativas sin interferir con la seguridad.',
+        recommendedIndex: 1
+      },
+      {
+        id: 2,
+        progress: '2/5',
+        scenario: [
+          { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): No te han confirmado qué herramientas precisas para mañana.' },
+          { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): ¿Cómo te anticipas?' }
+        ],
+        options: [
+          {
+            text: 'Cargo todo el maletín completo, aunque pese mucho. Si sobra, sobra.',
+            correct: false,
+            reaction: { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): Llevar de todo no siempre es eficiente. Puedes cansarte y aun así faltar lo crítico.' }
+          },
+          {
+            text: 'Pregunto hoy al encargado qué tarea exacta haré y preparo una checklist de herramientas específicas.',
+            correct: true,
+            reaction: { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): Eso es anticiparte: aclarar el alcance y armar tu kit con intención.' }
+          },
+          {
+            text: 'Me planto y pido prestado lo que falte al llegar.',
+            correct: false,
+            reaction: { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): Depender de préstamos crea retrasos y mala imagen. Mejor prevenir.' }
+          }
+        ],
+        explanation: 'La previsión es entender el alcance y preparar un kit ajustado. Checklist + confirmación previa evita olvidos y sobrecarga innecesaria.',
+        recommendedIndex: 1
+      },
+      {
+        id: 3,
+        progress: '3/5',
+        scenario: [
+          { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): Revisando el plano ves un circuito en zona húmeda sin tierra clara en el diseño.' },
+          { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): ¿Qué haces?' }
+        ],
+        options: [
+          {
+            text: 'Sigo trabajando tal cual: si está en el plano, estará bien.',
+            correct: false,
+            reaction: { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): Los planos también se equivocan. Tu criterio y seguridad son prioridad.' }
+          },
+          {
+            text: 'Aviso al encargado y sugiero solución: protección diferencial (GFCI), puesta a tierra y verificar norma local.',
+            correct: true,
+            reaction: { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): Excelente. Te adelantas a un riesgo serio con una propuesta concreta.' }
+          },
+          {
+            text: 'Lo corrijo por mi cuenta sin decir nada para ir más rápido.',
+            correct: false,
+            reaction: { speaker: 'Mentor', avatar: 1, text: 'avatar1 (Mentor): Cambiar sin comunicar puede causar incompatibilidades y responsabilidades no controladas.' }
+          }
+        ],
+        explanation: 'Ser proactivo es detectar riesgos y escalarlos con propuesta. Seguridad primero: diferencial, tierra y normativa aplicable.',
+        recommendedIndex: 1
+      },
+      {
+        id: 4,
+        progress: '4/5',
+        scenario: [
+          { speaker: 'Cliente', avatar: 4, text: 'avatar4 (Cliente): Vamos con prisa. ¿Podemos saltarnos las pruebas finales para entregar hoy?' }
+        ],
+        options: [
+          {
+            text: 'Sí, total “si no se ve, no pasa nada”.',
+            correct: false,
+            reaction: { speaker: 'Cliente', avatar: 4, text: 'avatar4 (Cliente): ...esa actitud puede darnos problemas serios después. No me da confianza.' }
+          },
+          {
+            text: 'Explico riesgos de saltar pruebas y propongo una verificación rápida con checklist crítica para asegurar lo esencial hoy.',
+            correct: true,
+            reaction: { speaker: 'Cliente', avatar: 4, text: 'avatar4 (Cliente): Bien, dame esa verificación crítica hoy y cerramos lo demás mañana. Confío en tu criterio.' }
+          },
+          {
+            text: 'Me enfado, llamo al jefe y me voy de la obra.',
+            correct: false,
+            reaction: { speaker: 'Cliente', avatar: 4, text: 'avatar4 (Cliente): No necesitamos conflictos; necesitamos soluciones con cabeza.' }
+          }
+        ],
+        explanation: 'Negociar con seguridad: mantener pruebas mínimas críticas (checklist) evita fallos y mantiene al cliente alineado con una solución realista.',
+        recommendedIndex: 1
+      },
+      {
+        id: 5,
+        progress: '5/5',
+        scenario: [
+          { speaker: 'Reclutador', avatar: 3, text: 'avatar3 (Reclutador): En una frase, ¿cómo te anticipas a imprevistos en obra?' }
+        ],
+        options: [
+          {
+            text: 'Improviso sobre la marcha, soy bueno apagando fuegos.',
+            correct: false,
+            reaction: { speaker: 'Reclutador', avatar: 3, text: 'avatar3 (Reclutador): Buscamos alguien que reduzca fuegos, no que viva en ellos.' }
+          },
+          {
+            text: 'Checklist previa, plan B de materiales, confirmo alcance con equipo/cliente y dejo margen de tiempo para ajustes.',
+            correct: true,
+            reaction: { speaker: 'Reclutador', avatar: 3, text: 'avatar3 (Reclutador): ¡Perfecto! Eso es mentalidad preventiva y de equipo.' }
+          },
+          {
+            text: 'Sigo órdenes y ya está.',
+            correct: false,
+            reaction: { speaker: 'Reclutador', avatar: 3, text: 'avatar3 (Reclutador): La iniciativa marca la diferencia en este oficio.' }
+          }
+        ],
+        explanation: 'El enfoque preventivo combina planificación (checklist), comunicación (alcance), alternativas (plan B) y gestión del tiempo (margen).',
+        recommendedIndex: 1
+      }
+    ];
+
+    // Para almacenar respuestas del jugador
+    const answers = []; // { sceneId, selectedIndex, correct }
+
+    // ==========================
+    // Render helpers
+    // ==========================
+    const chatEl = $('#chat');
+    const choicesEl = $('#choices');
+    const nextBtn = $('#nextBtn');
+    const progressEl = $('#progress');
+
+    function clearUI(){
+      chatEl.innerHTML = '';
+      choicesEl.innerHTML = '';
+      nextBtn.style.display = 'none';
+    }
+
+    function makeMessage({speaker, avatar, text}, modClass=''){
+      const wrap = document.createElement('div');
+      wrap.className = 'msg';
+      const av = document.createElement('div');
+      av.className = 'avatar';
+      const img = document.createElement('img');
+      img.src = avatars[avatar].url;
+      img.alt = `${speaker} - Avatar ${avatar}`;
+      av.appendChild(img);
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble' + (modClass ? ' ' + modClass : '');
+      const who = document.createElement('div');
+      who.className = 'who';
+      const label = `avatar${avatar} (${avatars[avatar].name.includes('Tú') ? 'Tú' : speaker})`;
+      who.textContent = label;
+      const textDiv = document.createElement('div');
+      textDiv.className = 'text';
+      textDiv.textContent = text;
+      bubble.appendChild(who);
+      bubble.appendChild(textDiv);
+      wrap.appendChild(av);
+      wrap.appendChild(bubble);
+      chatEl.appendChild(wrap);
+    }
+
+    function setProgress(i){
+      progressEl.textContent = `Progreso: ${scenes[i].progress}`;
+    }
+
+    // ==========================
+    // Lógica del juego
+    // ==========================
+    let current = 0;
+    let locked = false;
+
+    function renderScene(i){
+      clearUI();
+      setProgress(i);
+      const scene = scenes[i];
+
+      // Mensajes de escenario (NPCs)
+      scene.scenario.forEach(msg => makeMessage(msg));
+
+      // Opciones del jugador
+      scene.options.forEach((opt, idx)=>{
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.type = 'button';
+        btn.textContent = opt.text;
+        btn.addEventListener('click', ()=> handleChoice(i, idx));
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function handleChoice(sceneIndex, optionIndex){
+      if (locked) return;
+      locked = true;
+
+      const scene = scenes[sceneIndex];
+      const opt = scene.options[optionIndex];
+
+      // Desactivar botones y marcar estado
+      const all = $$('.option', choicesEl);
+      all.forEach((b, idx)=>{
+        b.classList.add('disabled');
+        if (idx === optionIndex){
+          b.classList.add(opt.correct ? 'correct' : 'wrong');
+        }
+      });
+
+      // Añadir burbuja del jugador (Avatar 2)
+      makeMessage({ speaker: 'Aprendiz', avatar: 2, text: `avatar2 (Tú): ${opt.text}` });
+
+      // Reacción del NPC
+      const mod = opt.correct ? 'good' : 'bad';
+      makeMessage(opt.reaction, mod);
+
+      // Guardar respuesta
+      answers[sceneIndex] = {
+        sceneId: scene.id,
+        selectedIndex: optionIndex,
+        correct: !!opt.correct
+      };
+
+      // Toast
+      showToast(opt.correct ? '¡Correcto! Mentalidad previsora.' : 'Casi. Piensa cómo evitar el problema antes de que ocurra.', opt.correct ? 'ok' : 'bad');
+
+      // Mostrar botón continuar
+      nextBtn.style.display = 'inline-block';
+      nextBtn.textContent = (sceneIndex === scenes.length - 1) ? 'Ver resultados' : 'Continuar';
+      nextBtn.onclick = () => {
+        locked = false;
+        if (sceneIndex === scenes.length - 1){
+          showResults();
+        } else {
+          current++;
+          renderScene(current);
+        }
+      };
+    }
+
+    // ==========================
+    // Resultados finales
+    // ==========================
+    function showResults(){
+      // Activar scroll solo al final
+      document.documentElement.style.overflow = 'auto';
+      document.body.style.overflow = 'auto';
+
+      const totalCorrect = answers.filter(a => a && a.correct).length;
+      const resultsEl = $('#results');
+      const box = $('#resultsContent');
+
+      // Construir contenido
+      box.innerHTML = '';
+      const title = document.createElement('h2');
+      title.textContent = 'Resultados y claves para ser previsor';
+      box.appendChild(title);
+
+      const summary = document.createElement('p');
+      summary.innerHTML = `Has acertado <strong>${totalCorrect}/${scenes.length}</strong>. ¡Bien jugado!`;
+      box.appendChild(summary);
+
+      // Lista de escenas y explicaciones
+      scenes.forEach((sc, idx)=>{
+        const a = answers[idx];
+        const item = document.createElement('div');
+        item.className = 'result-item';
+
+        const t = document.createElement('div');
+        t.className = 'title';
+        t.textContent = `Situación ${idx+1} (${sc.progress})`;
+        item.appendChild(t);
+
+        const your = document.createElement('div');
+        your.className = 'line';
+        const goodBad = document.createElement('span');
+        goodBad.className = 'pill ' + (a && a.correct ? 'ok' : 'bad');
+        goodBad.textContent = a && a.correct ? 'Correcta' : 'A mejorar';
+        your.innerHTML = `<strong>Tu respuesta:</strong> ${sc.options[a?.selectedIndex || 0].text} `;
+        your.appendChild(goodBad);
+        item.appendChild(your);
+
+        const rec = document.createElement('div');
+        rec.className = 'line';
+        rec.innerHTML = `<strong>Recomendada:</strong> ${sc.options[sc.recommendedIndex].text}`;
+        item.appendChild(rec);
+
+        const why = document.createElement('div');
+        why.className = 'line';
+        why.innerHTML = `<strong>Por qué:</strong> ${sc.explanation}`;
+        item.appendChild(why);
+
+        box.appendChild(item);
+      });
+
+      // Cierre positivo
+      const positive = document.createElement('p');
+      positive.innerHTML = 'Resumen positivo: La previsión se entrena. Si planificas (tiempo, herramientas, seguridad), comunicas a tiempo y mantienes planes alternativos, te vuelves la persona que el equipo y el cliente necesitan. ¡Sigue así!';
+      box.appendChild(positive);
+
+      // Botones finales
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      const retryBtn = document.createElement('button');
+      retryBtn.className = 'btn secondary';
+      retryBtn.textContent = 'Reintentar';
+      retryBtn.onclick = () => {
+        // Volver a iniciar el juego
+        answers.length = 0;
+        current = 0;
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        resultsEl.classList.remove('active');
+        renderScene(current);
+      };
+
+      const rewardBtn = document.createElement('button');
+      rewardBtn.className = 'btn';
+      rewardBtn.textContent = 'Ver mi recompensa';
+      rewardBtn.onclick = () => {
+        const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+        window.location.href = target;
+      };
+
+      actions.appendChild(retryBtn);
+      actions.appendChild(rewardBtn);
+      box.appendChild(actions);
+
+      // Mostrar overlay
+      resultsEl.classList.add('active');
+    }
+
+    // ==========================
+    // Inicio
+    // ==========================
+    $('#startBtn').addEventListener('click', ()=>{
+      $('#tutorial').classList.remove('active');
+      renderScene(current);
+    });
+
+    // Pre-render por si el usuario no cierra el tutorial (accesibilidad)
+    // No iniciamos hasta cerrar tutorial para cumplir "mecánica antes de empezar".
+  </script>
+</body>
+</html>
