@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tarea de hoy — Cuestionario sobre cómo ser previsor en el trabajo | Kämpe</title>
+  <!-- Tipografía Manrope -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* --------------------------
+       RESET & BASE
+    --------------------------- */
+    :root{
+      --blue-900:#0b2a5e;
+      --blue-800:#0f5bff;
+      --blue-700:#2563eb;
+      --blue-600:#3b82f6;
+      --blue-500:#60a5fa;
+      --cyan-400:#22d3ee;
+      --purple-500:#8b5cf6;
+      --card-bg:rgba(12,16,34,0.6);
+      --glass:rgba(255,255,255,0.08);
+      --text:#eef3ff;
+      --muted:#b8c6ff;
+      --success:#22c55e;
+      --danger:#ef4444;
+      --warning:#f59e0b;
+      --shadow:0 10px 30px rgba(0,0,0,0.35);
+      --radius:16px;
+      --radius-sm:12px;
+      --gap:12px;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      height:100%;
+      margin:0;
+      background: radial-gradient(120% 100% at 80% 0%, #1a3aa0 0%, #0c1e49 40%, #06122a 100%);
+      color:var(--text);
+      font-family:Manrope,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;
+      overflow:hidden; /* se habilita al final del juego */
+      -webkit-tap-highlight-color: transparent;
+    }
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;display:block}
+
+    /* --------------------------
+       LAYOUT
+    --------------------------- */
+    .app{
+      position:relative;
+      min-height:100dvh;
+      display:flex;
+      flex-direction:column;
+      isolation:isolate;
+    }
+    /* Fondo con avatar gigante y brillo gaming */
+    .bg-hero{
+      position:absolute; inset:0; z-index:-1;
+      background:
+        radial-gradient(60% 50% at 80% 20%, rgba(14,34,115,0.65) 0%, rgba(6,16,56,0.2) 55%, rgba(0,0,0,0) 70%),
+        linear-gradient(180deg, rgba(51,137,255,0.25) 0%, rgba(5,13,34,0) 40%),
+        linear-gradient(0deg, rgba(16,60,145,0.35), rgba(16,60,145,0.35));
+      overflow:hidden;
+    }
+    .bg-hero .avatar-big{
+      position:absolute;
+      bottom:-2%;
+      right:-6%;
+      width:min(58vh, 54vw);
+      opacity:0.22;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6)) saturate(130%);
+      transform: scaleX(-1);
+      pointer-events:none;
+      user-select:none;
+    }
+    .bg-hero .rings{
+      position:absolute; inset:0; pointer-events:none;
+      background:
+        radial-gradient(40% 40% at 30% 70%, rgba(96,165,250,0.22) 0%, rgba(96,165,250,0.05) 60%, transparent 70%),
+        radial-gradient(30% 30% at 70% 30%, rgba(139,92,246,0.18) 0%, rgba(139,92,246,0.05) 60%, transparent 70%);
+      mix-blend-mode: screen;
+      filter: blur(0.5px);
+    }
+
+    /* Top bar estilo "plan_discord" */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: max(10px, env(safe-area-inset-top)) 16px 10px 16px;
+      gap:12px;
+      background: linear-gradient(180deg, rgba(10,20,53,0.85) 0%, rgba(10,20,53,0.55) 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+      z-index:3;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+    }
+    .brand img{
+      width:36px; height:36px; object-fit:contain;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.35));
+    }
+    .title{
+      display:flex; flex-direction:column; line-height:1.1;
+    }
+    .title .sub{
+      font-weight:800; letter-spacing:0.3px;
+      font-size:clamp(12px, 2.8vw, 14px);
+      color:var(--cyan-400);
+      text-transform:uppercase;
+    }
+    .title .main{
+      font-weight:800; font-size:clamp(14px, 4vw, 20px);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    }
+
+    .progress{
+      margin-left:auto;
+      display:flex; align-items:center; gap:10px;
+      min-width:110px;
+    }
+    .progress .bar{
+      width:120px; height:8px; border-radius:999px;
+      background:rgba(255,255,255,0.12);
+      overflow:hidden;
+      outline:1px solid rgba(255,255,255,0.06);
+    }
+    .progress .fill{
+      height:100%; width:0%;
+      background: linear-gradient(90deg, #22d3ee, #60a5fa, #8b5cf6);
+      box-shadow: 0 0 12px rgba(96,165,250,0.6);
+      transition: width 300ms ease;
+    }
+    .progress .step{
+      font-size:12px; color:var(--muted);
+      font-weight:700; letter-spacing:0.3px;
+      min-width:54px; text-align:right;
+    }
+
+    /* Zona de juego sin scroll durante gameplay */
+    .game{
+      flex:1;
+      display:flex; flex-direction:column;
+      padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+      gap:12px;
+      max-width:980px; width:100%;
+      margin:0 auto;
+    }
+
+    /* Tarjeta estilo chat/visual novel */
+    .card{
+      flex:1; min-height:0;
+      background: linear-gradient(180deg, rgba(15,23,42,0.5), rgba(9,13,31,0.45));
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      display:flex; flex-direction:column;
+      padding: 12px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    /* Cabecera pequeña con roles/leyenda de avatares */
+    .legend{
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+      padding:8px 8px;
+      border-radius:12px;
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.06);
+      color:var(--muted);
+      font-size:12px;
+    }
+    .legend .badge{
+      display:flex; align-items:center; gap:6px; padding:6px 8px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:999px;
+      white-space:nowrap;
+    }
+    .legend .badge img{ width:18px; height:18px; border-radius:50%; }
+
+    /* Área de diálogo y opciones (todo cabe en pantalla) */
+    .stage{
+      flex:1; min-height:0;
+      display:grid;
+      grid-template-rows: 1fr auto;
+      gap:12px;
+      padding:6px;
+    }
+
+    .speaker{
+      display:flex; gap:10px; align-items:flex-start;
+      max-height:100%;
+    }
+    .speaker .avatar{
+      width:52px; height:52px; border-radius:12px;
+      border:1px solid rgba(255,255,255,0.1);
+      background:rgba(255,255,255,0.07);
+      overflow:hidden; flex-shrink:0;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+    }
+    .speaker .bubble{
+      flex:1; min-width:0;
+      background:linear-gradient(180deg, rgba(26,33,72,0.7), rgba(13,19,53,0.7));
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:14px;
+      padding:10px 12px;
+      display:flex; flex-direction:column; gap:6px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 10px 24px rgba(0,0,0,0.25);
+    }
+    .meta{
+      display:flex; align-items:center; justify-content:space-between;
+      font-size:12px; color:var(--muted); font-weight:700; letter-spacing:0.2px;
+    }
+    .meta .who{ color:var(--cyan-400); }
+    .text{
+      font-size: clamp(14px, 2.9vw, 16px);
+      line-height:1.35;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    }
+
+    /* Opciones del jugador */
+    .choices{
+      display:grid; gap:10px;
+      grid-template-columns: 1fr;
+    }
+    .choice{
+      appearance:none; border:none; cursor:pointer;
+      padding:12px;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(22,30,74,0.8), rgba(16,22,58,0.8));
+      color:var(--text); font-weight:800; letter-spacing:0.2px;
+      border:1px solid rgba(255,255,255,0.08);
+      text-align:left;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 -12px 22px rgba(0,0,0,0.15);
+      transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
+      font-size: clamp(13px, 3.1vw, 15px);
+    }
+    .choice:active{ transform:translateY(1px) }
+    .choice:hover{
+      border-color: rgba(96,165,250,0.5);
+      box-shadow: 0 12px 28px rgba(20,120,255,0.2);
+    }
+    .choice.disabled{
+      opacity:0.7; pointer-events:none;
+    }
+    .choice.correct{ outline:2px solid var(--success); }
+    .choice.wrong{ outline:2px solid var(--danger); }
+
+    /* Respuesta del jugador y reacción del NPC (post-elección) */
+    .reaction{
+      display:flex; flex-direction:column; gap:8px; margin-top:6px;
+      animation: pop 180ms ease;
+    }
+    @keyframes pop{ from{transform:scale(0.98); opacity:0} to{transform:scale(1); opacity:1} }
+
+    .mini-line{
+      display:flex; align-items:flex-start; gap:10px;
+    }
+    .mini-line .avatar{ width:40px; height:40px; border-radius:10px; overflow:hidden; flex-shrink:0;
+      border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.06) }
+    .mini-line .mini-bubble{
+      flex:1; background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px; padding:8px 10px;
+      font-size: clamp(12px, 2.8vw, 14px);
+    }
+    .mini-line .tag{
+      display:block; font-size:11px; color:var(--muted); margin-bottom:4px; font-weight:800;
+    }
+    .mini-line.good .mini-bubble{ outline:2px solid rgba(34,197,94,0.7) }
+    .mini-line.bad .mini-bubble{ outline:2px solid rgba(239,68,68,0.6) }
+
+    .next{
+      margin-top:6px;
+      display:flex; justify-content:flex-end;
+    }
+    .btn{
+      appearance:none; border:none; cursor:pointer;
+      padding:12px 16px; border-radius:12px;
+      font-weight:900; letter-spacing:0.3px;
+      background:linear-gradient(90deg, #22d3ee, #60a5fa, #8b5cf6);
+      color:#020617;
+      box-shadow: 0 12px 28px rgba(96,165,250,0.35), inset 0 -10px 22px rgba(255,255,255,0.25);
+      border:1px solid rgba(255,255,255,0.2);
+      transition: transform 120ms ease, filter 160ms ease;
+    }
+    .btn:active{ transform:translateY(1px) }
+    .btn.secondary{
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      color:var(--text);
+      border:1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+    }
+    .btn.full{ width:100% }
+
+    /* Modal tutorial */
+    .modal{
+      position:fixed; inset:0; background:rgba(0,8,24,0.65);
+      display:flex; align-items:center; justify-content:center; padding:20px;
+      z-index:5;
+      backdrop-filter: blur(6px);
+    }
+    .modal .window{
+      width:min(860px, 96vw);
+      background: linear-gradient(180deg, rgba(12,16,34,0.95), rgba(9,13,31,0.92));
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:20px;
+      box-shadow: var(--shadow);
+      padding:18px;
+    }
+    .modal .window .head{
+      display:flex; align-items:center; gap:12px; margin-bottom:8px;
+    }
+    .modal .window .head img{ width:42px; height:42px }
+    .modal .window .title{
+      font-weight:900; font-size:clamp(18px, 4.6vw, 26px)
+    }
+    .modal .content{
+      display:flex; flex-direction:column; gap:10px;
+      color:var(--muted); font-size:clamp(13px, 3.3vw, 15px);
+    }
+    .modal .grid{
+      margin-top:6px;
+      display:grid; gap:8px;
+      grid-template-columns:repeat(2, 1fr);
+    }
+    .modal .legend .badge{ background:rgba(255,255,255,0.06) }
+    .modal .actions{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end }
+
+    /* Resumen final (con scroll) */
+    .results{
+      display:none;
+      padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+      max-width:980px; width:100%; margin:0 auto;
+    }
+    .results h2{
+      margin:0 0 10px 0; font-size:clamp(18px, 4.5vw, 26px)
+    }
+    .summary{
+      display:grid; gap:12px;
+    }
+    .item{
+      background: linear-gradient(180deg, rgba(16,22,58,0.7), rgba(12,18,50,0.7));
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:14px; padding:12px;
+    }
+    .item .q{
+      font-weight:800; margin-bottom:6px; color:var(--cyan-400);
+      font-size:clamp(13px, 3.2vw, 16px)
+    }
+    .item .you, .item .good, .item .why{
+      font-size:clamp(12px, 3vw, 14px); color:var(--text);
+    }
+    .tag-ok{ color:var(--success); font-weight:800 }
+    .tag-bad{ color:var(--danger); font-weight:800 }
+    .results .cta{
+      margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;
+    }
+
+    /* Asegurar que todo cabe: alturas internas controladas */
+    @media (max-height: 700px){
+      .speaker .avatar{ width:46px; height:46px }
+      .topbar .brand img{ width:32px; height:32px }
+    }
+    @media (max-width: 420px){
+      .progress .bar{ width:90px }
+      .legend{ display:none } /* ahorro de espacio en móviles muy pequeños */
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Fondo hero con color Fortnite y avatar translúcido -->
+    <div class="bg-hero">
+      <img class="avatar-big" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="Personaje Kämpe" />
+      <div class="rings"></div>
+    </div>
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="brand">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title">
+          <span class="sub">Tarea de hoy</span>
+          <span class="main">Cuestionario sobre cómo ser previsor en el trabajo</span>
+        </div>
+      </div>
+      <div class="progress">
+        <div class="bar"><div class="fill" id="progressFill"></div></div>
+        <div class="step" id="progressStep">0/5</div>
+      </div>
+    </header>
+
+    <!-- GAMEPLAY -->
+    <main class="game" id="game">
+      <section class="card">
+        <div class="legend" aria-hidden="true">
+          <span style="font-weight:800; color:#cbd5ff; margin-right:6px;">Avatares:</span>
+          <span class="badge"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt=""><span>Avatar 1 → Mentor/Profesor</span></span>
+          <span class="badge"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt=""><span>Avatar 2 → Tú (aprendiz)</span></span>
+          <span class="badge"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt=""><span>Avatar 3 → Reclutador</span></span>
+          <span class="badge"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png" alt=""><span>Avatar 4 → Cliente</span></span>
+        </div>
+
+        <div class="stage" id="stage">
+          <!-- Bloque de diálogo principal -->
+          <div class="speaker">
+            <div class="avatar"><img id="npcAvatar" src="" alt="Avatar NPC" /></div>
+            <div class="bubble">
+              <div class="meta">
+                <span class="who" id="npcWho">avatarX — Rol</span>
+                <span id="progressMini">Pregunta 1/5</span>
+              </div>
+              <div class="text" id="npcText">Texto del NPC…</div>
+
+              <!-- Reacciones tras elegir -->
+              <div class="reaction" id="reaction" style="display:none;">
+                <div class="mini-line" id="youLine">
+                  <div class="avatar"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="Tú" /></div>
+                  <div class="mini-bubble">
+                    <span class="tag">avatar2 (Tú, aprendiz)</span>
+                    <span id="youSaid"></span>
+                  </div>
+                </div>
+                <div class="mini-line" id="npcReplyLine">
+                  <div class="avatar"><img id="npcAvatarSmall" src="" alt="NPC" /></div>
+                  <div class="mini-bubble" id="npcReplyBubble">
+                    <span class="tag" id="npcReplyTag">avatarX (Respuesta)</span>
+                    <span id="npcReply"></span>
+                  </div>
+                </div>
+                <div class="next">
+                  <button class="btn" id="nextBtn" type="button">Continuar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Opciones del jugador -->
+          <div class="choices" id="choices"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- RESULTADOS -->
+    <section class="results" id="results">
+      <h2>Resumen final</h2>
+      <p style="color:var(--muted); margin-top:0;">
+        ¡Buen trabajo! Aquí tienes tus elecciones, las respuestas recomendadas y un breve porqué de cada una.
+      </p>
+      <div class="summary" id="summary"></div>
+      <div class="cta">
+        <a class="btn" id="rewardBtn" href="#" rel="noopener">Ver mi recompensa</a>
+        <button class="btn secondary" id="retryBtn" type="button">Reintentar</button>
+      </div>
+      <p style="margin-top:8px; color:#c8d3ff;">
+        Con previsión, reduces riesgos, ahorras tiempo y destacas como profesional. ¡Sigue así!
+      </p>
+    </section>
+  </div>
+
+  <!-- TUTORIAL MODAL -->
+  <div class="modal" id="tutorial">
+    <div class="window">
+      <div class="head">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title">Cómo jugar: Visual novel de previsión en el trabajo</div>
+      </div>
+      <div class="content">
+        <p><strong>Habla con los personajes y elige tus respuestas.</strong> Tus decisiones cambiarán el curso de la conversación.</p>
+        <p>Mecánica: lee el mensaje (aparece quién habla, por ejemplo <em>avatar1</em>), toca una opción y observa la reacción. Son 5 preguntas rápidas.</p>
+        <div class="grid">
+          <div class="legend" style="margin:0;">
+            <span class="badge"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="">Avatar 1 → Mentor/Profesor</span>
+            <span class="badge"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="">Avatar 2 → Tú (aprendiz)</span>
+            <span class="badge"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="">Avatar 3 → Reclutador</span>
+            <span class="badge"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png" alt="">Avatar 4 → Cliente</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px;">
+            <strong>Consejos:</strong>
+            <ul style="margin:8px 0 0 18px; padding:0;">
+              <li>Respuestas claras y preventivas puntúan mejor.</li>
+              <li>Siempre podrás avanzar; todo cabe en pantalla.</li>
+              <li>Al final verás qué era lo recomendado y por qué.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="startBtn" type="button">¡Empezar!</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------------
+    // Utilidades
+    // -------------------------------
+    const AVATARS = {
+      1: { url: "https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png", role: "Mentor/Profesor", label: "avatar1" },
+      2: { url: "https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png", role: "Tú, aprendiz", label: "avatar2" },
+      3: { url: "https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png", role: "Reclutador/Entrevistador", label: "avatar3" },
+      4: { url: "https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png", role: "Cliente/Empresa", label: "avatar4" },
+    };
+
+    // Obtener initData del querystring y preservarlo para la recompensa
+    const params = new URLSearchParams(location.search);
+    const initData = params.get("initData") || "";
+
+    // Preload de imágenes esenciales
+    (() => {
+      Object.values(AVATARS).forEach(a => { const i = new Image(); i.src = a.url; });
+      const logo = new Image(); logo.src = "https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png";
+    })();
+
+    // -------------------------------
+    // Datos de la aventura (5 preguntas)
+    // -------------------------------
+    const QUESTIONS = [
+      {
+        id: 1,
+        npc: { avatar: 1 }, // Mentor
+        prompt: 'avatar1: ¡Buenos días! Mañana empezamos un montaje a las 8:00 en la obra. ¿Qué harías para demostrar previsión el primer día?',
+        options: [
+          { key: "A", text: "Llegar a las 8:00 en punto. Ya veré dónde guardan las cosas.", correct: false,
+            reactBad: 'avatar1: Llegar justo te deja sin margen. Si pasa algo, empiezas corriendo.' },
+          { key: "B", text: "Llegar 15–20 min antes para ubicarme, revisar EPI, herramientas y el plan del día.", correct: true,
+            reactGood: 'avatar1: ¡Esa es! Nos da tiempo para organizar y detectar imprevistos sin estrés.' },
+          { key: "C", text: "Esperar a que me llamen antes de salir, por si se cancela.", correct: false,
+            reactBad: 'avatar1: Lo normal es presentarse. La previsión es estar listo, no esperar.' },
+        ],
+        why: "Llegar con antelación te permite organizarte, revisar EPI/herramientas y empezar sin prisas. Es un hábito clave de profesionalidad."
+      },
+      {
+        id: 2,
+        npc: { avatar: 4 }, // Cliente
+        prompt: 'avatar4: Durante una revisión detectas olor a quemado en un cuadro eléctrico. ¿Cómo actúas?',
+        options: [
+          { key: "A", text: "Lo ignoro y sigo, así acabo antes.", correct: false,
+            reactBad: 'avatar4: Ignorarlo puede provocar un incidente serio. La seguridad va primero.' },
+          { key: "B", text: "Corto la alimentación si es seguro, bloqueo/etiqueto, documento con fotos e informo al encargado/cliente.", correct: true,
+            reactGood: 'avatar4: Perfecto. Controlas el riesgo, dejas registro y avisas para resolverlo bien.' },
+          { key: "C", text: "Intento apañarlo rápido sin avisar, así nadie se entera.", correct: false,
+            reactBad: 'avatar4: Sin avisar y sin asegurar la zona es una mala práctica y un riesgo innecesario.' },
+        ],
+        why: "Ante riesgo eléctrico: asegurar energías (si procede), bloquear/etiquetar, documentar y escalar. La prevención ante todo."
+      },
+      {
+        id: 3,
+        npc: { avatar: 3 }, // Reclutador
+        prompt: 'avatar3: Empiezas en una obra nueva y no tienes clara la lista de herramientas. ¿Qué haces?',
+        options: [
+          { key: "A", text: "Voy sin nada. Allí me dejarán lo que falte.", correct: false,
+            reactBad: 'avatar3: Depender de otros desde el inicio no transmite autonomía.' },
+          { key: "B", text: "Llevo básico (EPI, metro, destornilladores, cutter) y escribo al encargado para confirmar lista.", correct: true,
+            reactGood: 'avatar3: Excelente: tienes iniciativa y verificas expectativas antes de presentarte.' },
+          { key: "C", text: "Me llevo todo lo que tengo, aunque pese tres maletas.", correct: false,
+            reactBad: 'avatar3: Excesivo y poco práctico. Mejor confirmar y optimizar peso.' },
+        ],
+        why: "Confirmar requisitos con antelación y llevar un kit básico muestra previsión y evita pérdidas de tiempo."
+      },
+      {
+        id: 4,
+        npc: { avatar: 1 }, // Mentor
+        prompt: 'avatar1: Mañana trabajamos en exterior y la previsión marca lluvia. ¿Qué planteas?',
+        options: [
+          { key: "A", text: "Ya veremos si cae algo. Hacemos lo mismo de siempre.", correct: false,
+            reactBad: 'avatar1: Minimizar la previsión meteorológica te puede dejar a medias y mojar material/herramienta.' },
+          { key: "B", text: "Reviso el parte, preparo toldos/plásticos, calzado antideslizante y reorganizo tareas bajo techo si hace falta.", correct: true,
+            reactGood: 'avatar1: Muy bien. Adaptas el plan y proteges al equipo y materiales.' },
+          { key: "C", text: "Suspendo el día por mi cuenta sin avisar.", correct: false,
+            reactBad: 'avatar1: Las decisiones de parar se coordinan. Avisar y proponer alternativas es lo correcto.' },
+        ],
+        why: "Anticiparte al clima permite proteger seguridad y materiales y reordenar tareas para mantener el avance."
+      },
+      {
+        id: 5,
+        npc: { avatar: 4 }, // Cliente
+        prompt: 'avatar4: Debes taladrar en pared con instalaciones ocultas según plano. ¿Qué paso previo haces?',
+        options: [
+          { key: "A", text: "Marco y taladro sin más, así termino antes.", correct: false,
+            reactBad: 'avatar4: Riesgo alto de dañar conducciones y provocar un accidente.' },
+          { key: "B", text: "Confirmo con planos, uso detector, pregunto si hay dudas y marco zona segura con cinta.", correct: true,
+            reactGood: 'avatar4: Perfecto. Verificar evita roturas y retrabajos costosos.' },
+          { key: "C", text: "Le digo a un compañero que lo haga él.", correct: false,
+            reactBad: 'avatar4: Delegar sin validar no es previsión. La responsabilidad es de quien ejecuta.' },
+        ],
+        why: "Verificar con planos y detector, y pedir confirmación si dudas, evita daños y mejora la calidad del trabajo."
+      },
+    ];
+
+    // -------------------------------
+    // Estado
+    // -------------------------------
+    let current = 0;
+    const answers = []; // {id, choiceKey, choiceText, correct, npcAvatar, prompt, why}
+
+    // -------------------------------
+    // Referencias DOM
+    // -------------------------------
+    const npcAvatar = document.getElementById("npcAvatar");
+    const npcText = document.getElementById("npcText");
+    const npcWho = document.getElementById("npcWho");
+    const choicesEl = document.getElementById("choices");
+    const reactionEl = document.getElementById("reaction");
+    const youSaidEl = document.getElementById("youSaid");
+    const npcReplyEl = document.getElementById("npcReply");
+    const npcReplyTag = document.getElementById("npcReplyTag");
+    const npcAvatarSmall = document.getElementById("npcAvatarSmall");
+    const nextBtn = document.getElementById("nextBtn");
+    const progressFill = document.getElementById("progressFill");
+    const progressStep = document.getElementById("progressStep");
+    const progressMini = document.getElementById("progressMini");
+    const tutorial = document.getElementById("tutorial");
+    const startBtn = document.getElementById("startBtn");
+    const results = document.getElementById("results");
+    const game = document.getElementById("game");
+    const summary = document.getElementById("summary");
+    const rewardBtn = document.getElementById("rewardBtn");
+    const retryBtn = document.getElementById("retryBtn");
+
+    // -------------------------------
+    // Render de pregunta
+    // -------------------------------
+    function renderQuestion(index){
+      const q = QUESTIONS[index];
+      const npc = AVATARS[q.npc.avatar];
+
+      // Cabeceras y avatar
+      npcAvatar.src = npc.url;
+      npcWho.textContent = `${npc.label} — ${npc.role}`;
+      npcText.textContent = q.prompt;
+      progressMini.textContent = `Pregunta ${index+1}/5`;
+
+      // Opciones
+      choicesEl.innerHTML = "";
+      q.options.forEach((opt) => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.type = "button";
+        btn.dataset.key = opt.key;
+        btn.textContent = `${opt.key}) ${opt.text}`;
+        btn.addEventListener("click", () => handleChoice(q, opt, btn));
+        choicesEl.appendChild(btn);
+      });
+
+      // Estado de progreso
+      progressFill.style.width = `${(index/QUESTIONS.length)*100}%`;
+      progressStep.textContent = `${index}/${QUESTIONS.length}`;
+
+      // Ocultar reacciones hasta que elijan
+      reactionEl.style.display = "none";
+      document.getElementById("npcReplyLine").classList.remove("good","bad");
+    }
+
+    // -------------------------------
+    // Manejar elección
+    // -------------------------------
+    function handleChoice(q, opt, clickedBtn){
+      // Desactivar opciones
+      const all = [...document.querySelectorAll(".choice")];
+      all.forEach(b => {
+        b.classList.add("disabled");
+        if(b === clickedBtn){
+          b.classList.add(opt.correct ? "correct" : "wrong");
+        }
+      });
+
+      // Mostrar reacción: tu mensaje + respuesta del NPC
+      youSaidEl.textContent = `${opt.key}) ${opt.text}`;
+      const npc = AVATARS[q.npc.avatar];
+
+      npcAvatarSmall.src = npc.url;
+      npcReplyTag.textContent = `${npc.label} (${npc.role})`;
+      if(opt.correct){
+        npcReplyEl.textContent = opt.reactGood || "¡Bien hecho!";
+        document.getElementById("npcReplyLine").classList.add("good");
+      }else{
+        npcReplyEl.textContent = opt.reactBad || "Podemos hacerlo mejor.";
+        document.getElementById("npcReplyLine").classList.add("bad");
+      }
+      reactionEl.style.display = "flex";
+
+      // Guardar respuesta
+      answers[current] = {
+        id: q.id,
+        npcAvatar: q.npc.avatar,
+        prompt: q.prompt,
+        choiceKey: opt.key,
+        choiceText: opt.text,
+        correct: !!opt.correct,
+        why: q.why,
+        recommended: (q.options.find(o=>o.correct) || {}).text
+      };
+    }
+
+    // -------------------------------
+    // Siguiente paso
+    // -------------------------------
+    nextBtn.addEventListener("click", () => {
+      current++;
+      if(current < QUESTIONS.length){
+        renderQuestion(current);
+      }else{
+        finish();
+      }
+    });
+
+    // -------------------------------
+    // Comenzar juego
+    // -------------------------------
+    startBtn.addEventListener("click", () => {
+      tutorial.style.display = "none";
+      renderQuestion(current);
+    });
+
+    // -------------------------------
+    // Finalizar: mostrar resultados
+    // -------------------------------
+    function finish(){
+      // Progreso completo
+      progressFill.style.width = "100%";
+      progressStep.textContent = `${QUESTIONS.length}/${QUESTIONS.length}`;
+
+      // Preparar resumen
+      summary.innerHTML = "";
+      answers.forEach((a, idx) => {
+        const item = document.createElement("div");
+        item.className = "item";
+        const ok = a.correct ? "✅" : "❌";
+        item.innerHTML = `
+          <div class="q">P${idx+1}. ${sanitize(a.prompt)}</div>
+          <div class="you">${ok} Tu respuesta: <strong>${sanitize(a.choiceKey)}) ${sanitize(a.choiceText)}</strong> <span class="${a.correct ? 'tag-ok' : 'tag-bad'}">${a.correct ? 'Correcta' : 'Mejorable'}</span></div>
+          <div class="good">✔ Recomendada: <strong>${sanitize(a.recommended)}</strong></div>
+          <div class="why" style="margin-top:6px;"><span style="color:#93c5fd; font-weight:800;">Por qué:</span> ${sanitize(a.why)}</div>
+        `;
+        summary.appendChild(item);
+      });
+
+      // Mostrar resultados, permitir scroll
+      game.style.display = "none";
+      results.style.display = "block";
+      document.body.style.overflow = "auto";
+
+      // Preparar enlace de recompensa con initData preservado
+      const url = new URL("https://kampe-game-phaser.onrender.com/daily_streak");
+      if(initData) url.searchParams.set("initData", initData);
+      rewardBtn.href = url.toString();
+    }
+
+    // -------------------------------
+    // Retry
+    // -------------------------------
+    retryBtn.addEventListener("click", () => {
+      // Reset estado
+      current = 0;
+      answers.length = 0;
+      results.style.display = "none";
+      game.style.display = "block";
+      document.body.style.overflow = "hidden";
+      renderQuestion(current);
+      // Auto-scroll top
+      window.scrollTo({ top:0, behavior:"smooth" });
+    });
+
+    // -------------------------------
+    // Helpers
+    // -------------------------------
+    function sanitize(str){
+      return String(str)
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+    }
+
+    // Inicial: mostrar progreso 0
+    progressFill.style.width = "0%";
+    progressStep.textContent = `0/${QUESTIONS.length}`;
+  </script>
+</body>
+</html>
