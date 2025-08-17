@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Trato con clientes difíciles</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* ===== Reset y layout base ===== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    body {
+      margin: 0;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #f2f6ff;
+      background: radial-gradient(1200px 700px at 20% -10%, #3aa3ff 0%, #1c66d3 40%, #0f2e6e 100%) fixed;
+      background-color: #0f2e6e;
+    }
+    :root {
+      --blue-900:#0b2b67;
+      --blue-700:#1453b3;
+      --blue-500:#2a7fff;
+      --blue-300:#7bc3ff;
+      --green:#21d07a;
+      --red:#ff4d6d;
+      --glass-bg: rgba(255,255,255,0.09);
+      --glass-bd: rgba(255,255,255,0.22);
+      --shadow: 0 20px 50px rgba(0,20,60,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+      --radius: 16px;
+      --gap: 12px;
+    }
+
+    /* ===== Escena a pantalla completa con safe areas y fallbacks ===== */
+    .scene {
+      position: relative;
+      width: 100%;
+      padding: calc(env(safe-area-inset-top, 0px) + 12px) calc(env(safe-area-inset-right, 0px) + 12px) calc(env(safe-area-inset-bottom, 0px) + 12px) calc(env(safe-area-inset-left, 0px) + 12px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
+      max-width: 560px;
+      margin: 0 auto;
+      isolation: isolate;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    /* ===== Header ===== */
+    .header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo {
+      height: clamp(24px, 4.2vw, 36px);
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+    }
+    .title-box {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .title {
+      font-weight: 800;
+      font-size: clamp(16px, 3.8vw, 22px);
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0.2px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    }
+    .subtitle {
+      font-size: clamp(11px, 2.8vw, 13px);
+      opacity: 0.9;
+    }
+    .progress {
+      display: grid;
+      gap: 6px;
+      justify-items: end;
+      min-width: 110px;
+    }
+    .progress-label {
+      font-size: clamp(11px, 2.8vw, 13px);
+      opacity: 0.9;
+    }
+    .bar {
+      width: 110px;
+      height: 8px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
+    }
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--green), #4df0aa);
+      transition: width 240ms ease;
+    }
+
+    /* ===== Zona central: tarjeta ===== */
+    .play-area {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      align-content: center;
+      justify-items: center;
+      gap: 8px;
+      padding: 4px 2px;
+      touch-action: none; /* Anti-derrapes */
+    }
+    .legend {
+      font-size: clamp(11px, 2.9vw, 13px);
+      opacity: 0.95;
+      display: flex;
+      gap: 10px;
+      user-select: none;
+    }
+    .legend .chip {
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.22);
+      backdrop-filter: blur(8px);
+    }
+    .card-wrap {
+      position: relative;
+      width: min(92vw, 520px);
+      max-width: 520px;
+      height: clamp(300px, 52vh, 420px);
+      display: grid;
+      place-items: center;
+      overflow: visible;
+    }
+    .card {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+      padding: 18px 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 1px solid var(--glass-bd);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px) saturate(120%);
+      will-change: transform;
+      user-select: none;
+      touch-action: none;
+    }
+    .card h3 {
+      margin: 0;
+      font-size: clamp(13px, 3.5vw, 16px);
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      opacity: 0.95;
+    }
+    .scenario {
+      display: grid;
+      place-content: center;
+      text-align: center;
+      padding: 10px;
+      font-size: clamp(16px, 4.6vw, 22px);
+      font-weight: 800;
+      line-height: 1.15;
+      text-shadow: 0 3px 14px rgba(0,0,0,0.35);
+    }
+    .badge {
+      position: absolute;
+      top: 12px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: clamp(11px, 2.8vw, 13px);
+      opacity: 0;
+      transform: scale(0.95);
+      transition: opacity 120ms ease, transform 120ms ease;
+      pointer-events: none;
+      border: 1px solid rgba(255,255,255,0.35);
+      backdrop-filter: blur(6px);
+    }
+    .badge.left {
+      left: 12px;
+      background: rgba(255, 77, 109, 0.25);
+    }
+    .badge.right {
+      right: 12px;
+      background: rgba(33, 208, 122, 0.25);
+    }
+    .avatar {
+      position: absolute;
+      right: -12px;
+      bottom: -26px;
+      width: min(48vw, 240px);
+      max-width: 240px;
+      opacity: 0.28;
+      pointer-events: none;
+      filter: drop-shadow(0 10px 40px rgba(0,0,0,0.4));
+      transform: rotate(-2deg);
+    }
+
+    /* ===== Botones acciones ===== */
+    .actions {
+      position: fixed; /* siempre visible y fuera del alcance del teclado */
+      left: 0;
+      right: 0;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+      display: grid;
+      grid-auto-flow: column;
+      gap: 12px;
+      justify-content: center;
+      padding: 0 18px;
+      pointer-events: none; /* contenedor no captura */
+      z-index: 20;
+    }
+    .btn {
+      pointer-events: auto;
+      min-width: 130px;
+      min-height: 48px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      color: #fff;
+      font-weight: 800;
+      font-size: clamp(13px, 3.8vw, 15px);
+      letter-spacing: 0.2px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform 80ms ease, filter 80ms ease, background 200ms ease;
+      outline: none;
+    }
+    .btn:active { transform: translateY(1px) scale(0.98); filter: brightness(0.95); }
+    .btn:focus-visible { box-shadow: 0 0 0 3px rgba(255,255,255,0.3), 0 0 0 6px rgba(42,127,255,0.45); }
+    .btn.left { background: linear-gradient(180deg, rgba(255,77,109,0.35), rgba(255,77,109,0.2)); }
+    .btn.right { background: linear-gradient(180deg, rgba(33,208,122,0.35), rgba(33,208,122,0.2)); }
+
+    .tiny {
+      font-size: 0.95em;
+      opacity: 0.9;
+    }
+
+    /* ===== Tutorial overlay ===== */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: linear-gradient(180deg, rgba(9,25,70,0.55), rgba(9,25,70,0.75));
+      backdrop-filter: blur(6px);
+      z-index: 30;
+    }
+    .overlay.active { display: grid; }
+    .modal {
+      width: min(92vw, 520px);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0.06));
+      padding: 16px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      display: grid;
+      gap: 10px;
+    }
+    .modal h4 {
+      margin: 0;
+      font-size: clamp(16px, 4.6vw, 22px);
+      font-weight: 800;
+    }
+    .modal p {
+      margin: 0;
+      font-size: clamp(12px, 3.4vw, 14px);
+      opacity: 0.95;
+    }
+    .modal .actions-inline {
+      display: flex;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    /* ===== Resultados ===== */
+    .results {
+      display: none;
+      position: relative;
+      padding: 14px 14px calc(env(safe-area-inset-bottom, 0px) + 80px);
+      max-width: 720px;
+      margin: 0 auto;
+      gap: 10px;
+    }
+    .results.active { display: block; }
+    .results h2 {
+      margin: 6px 0 2px;
+      font-size: clamp(18px, 5.2vw, 28px);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    }
+    .score {
+      font-size: clamp(13px, 3.6vw, 16px);
+      opacity: 0.95;
+      margin-bottom: 8px;
+    }
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+    .item {
+      background: linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.05));
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+    .q {
+      font-weight: 800;
+      font-size: clamp(14px, 4vw, 18px);
+      margin-bottom: 6px;
+    }
+    .choices {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.10);
+      font-weight: 700;
+      font-size: clamp(11px, 3.2vw, 13px);
+    }
+    .pill.ok { background: rgba(33, 208, 122, 0.25); border-color: rgba(33,208,122,0.6); }
+    .pill.no { background: rgba(255, 77, 109, 0.25); border-color: rgba(255,77,109,0.6); }
+    .explain {
+      font-size: clamp(12px, 3.4vw, 14px);
+      opacity: 0.95;
+    }
+    .cta-wrap {
+      position: sticky;
+      bottom: 10px;
+      display: grid;
+      gap: 6px;
+      margin-top: 12px;
+      background: linear-gradient(0deg, rgba(9,25,70,0.0), rgba(9,25,70,0.45) 50%, rgba(9,25,70,0.7));
+      padding-top: 8px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+    }
+    .warning {
+      font-size: clamp(11px, 3vw, 13px);
+      color: #ffd166;
+    }
+
+    /* ===== Utilidades ===== */
+    .hidden { display: none !important; }
+    .center { text-align: center; }
+
+    /* ===== Accesibilidad: focus visibles para chips ===== */
+    .chip:focus-visible, .pill:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Escena principal (gameplay sin scroll) -->
+  <main class="scene" aria-label="Desafío diario - Trato con clientes difíciles">
+    <!-- Header con logo, título y progreso -->
+    <header class="header">
+      <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+      <div class="title-box">
+        <div class="title">Trato con clientes difíciles</div>
+        <div class="subtitle">Desliza: ¿Profesional o poco profesional?</div>
+      </div>
+      <div class="progress" aria-live="polite">
+        <div class="progress-label" id="progressLabel">Pregunta 1 de 6</div>
+        <div class="bar" aria-hidden="true"><span id="barFill" style="width: 0%;"></span></div>
+      </div>
+    </header>
+
+    <!-- Área de juego -->
+    <section class="play-area" aria-label="Área interactiva de tarjetas">
+      <div class="legend" aria-hidden="true">
+        <span class="chip">⬅️ Poco profesional</span>
+        <span class="chip">Profesional ➡️</span>
+      </div>
+      <div class="card-wrap" id="cardWrap">
+        <!-- Tarjeta dinámica -->
+        <article class="card" id="card" role="group" aria-roledescription="tarjeta" aria-label="Situación" tabindex="0">
+          <span class="badge left" id="badgeLeft">Poco profesional</span>
+          <span class="badge right" id="badgeRight">Profesional</span>
+          <h3>¿Es una respuesta profesional?</h3>
+          <div class="scenario" id="scenario">Cargando…</div>
+          <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" aria-hidden="true" />
+        </article>
+      </div>
+    </section>
+
+    <!-- Controles (siempre visibles) -->
+    <nav class="actions" aria-label="Controles de respuesta">
+      <button class="btn left" id="btnLeft" aria-label="Marcar como Poco profesional">
+        ⬅️ Poco profesional
+      </button>
+      <button class="btn right" id="btnRight" aria-label="Marcar como Profesional">
+        Profesional ➡️
+      </button>
+    </nav>
+
+    <!-- Tutorial -->
+    <div class="overlay active" id="overlay" aria-modal="true" role="dialog" aria-labelledby="tutTitle" aria-describedby="tutDesc">
+      <div class="modal">
+        <h4 id="tutTitle">Cómo jugar</h4>
+        <p id="tutDesc">Desliza a izquierda o derecha para responder. Izquierda = Poco profesional. Derecha = Profesional.</p>
+        <div class="actions-inline">
+          <button class="btn right" id="btnStart" aria-label="Empezar">¡Empezar!</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Pantalla de resultados (scroll activado al finalizar) -->
+  <section class="results" id="results" aria-label="Resultados del desafío">
+    <h2>Resultados</h2>
+    <div class="score" id="scoreText">Has acertado 0 de 0</div>
+    <div class="list" id="resultList" role="list"></div>
+    <p class="center tiny" id="finalMsg">Sigue practicando: la educación, la claridad y los límites marcan la diferencia con clientes exigentes.</p>
+    <div class="cta-wrap center">
+      <a class="btn right" id="rewardBtn" href="#" role="button" aria-label="Ver mi recompensa">Ver mi recompensa</a>
+      <span class="warning hidden" id="warnInit">Aviso: initData no detectado. Podrías necesitar iniciar sesión.</span>
+    </div>
+  </section>
+
+  <script>
+    // ===== Estado y datos del juego (sin backend, en memoria) =====
+    const deck = [
+      {
+        text: "Empiezas la reparación sin presupuesto por “urgencia” del cliente.",
+        correct: "left",
+        explain: "Acordar alcance y precio antes evita malentendidos y protege a ambas partes."
+      },
+      {
+        text: "El cliente duda del diagnóstico; explicas con calma y muestras evidencias.",
+        correct: "right",
+        explain: "Transparencia y tono respetuoso generan confianza."
+      },
+      {
+        text: "Aceptas un ‘favor’ fuera del encargo por el mismo precio para quedar bien.",
+        correct: "left",
+        explain: "Poner límites y re-cotizar mantiene una relación sana y profesional."
+      },
+      {
+        text: "Prevés retraso; avisas en cuanto lo sabes y propones nueva hora.",
+        correct: "right",
+        explain: "Gestionar expectativas reduce frustración y muestra respeto por el tiempo."
+      },
+      {
+        text: "El cliente grita; respondes alzando la voz también.",
+        correct: "left",
+        explain: "Mantén la calma, establece límites y redirige la conversación."
+      },
+      {
+        text: "Entregas con garantía por escrito y forma de contacto.",
+        correct: "right",
+        explain: "Ofrece trazabilidad y refuerza la confianza post-servicio."
+      }
+    ];
+
+    const state = {
+      i: 0,
+      answers: [] // {text, chosen, correctSide, isCorrect, explain}
+    };
+
+    // ===== initData desde URL y preservación =====
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+    const rewardBtn = document.getElementById('rewardBtn');
+    const warnInit = document.getElementById('warnInit');
+    const rewardBase = 'https://kampe-game-phaser.onrender.com/daily_streak';
+    rewardBtn.href = rewardBase + '?initData=' + encodeURIComponent(initData);
+    if (!initData) warnInit.classList.remove('hidden');
+
+    // ===== Referencias de UI =====
+    const overlay = document.getElementById('overlay');
+    const btnStart = document.getElementById('btnStart');
+    const scenarioEl = document.getElementById('scenario');
+    const card = document.getElementById('card');
+    const cardWrap = document.getElementById('cardWrap');
+    const badgeL = document.getElementById('badgeLeft');
+    const badgeR = document.getElementById('badgeRight');
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const progressLabel = document.getElementById('progressLabel');
+    const barFill = document.getElementById('barFill');
+    const results = document.getElementById('results');
+    const resultList = document.getElementById('resultList');
+    const scoreText = document.getElementById('scoreText');
+    const finalMsg = document.getElementById('finalMsg');
+
+    // ===== Control de scroll: gameplay sin scroll, resultados con scroll =====
+    const blockScroll = () => { document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden'; };
+    const enableResultsScroll = () => { document.documentElement.style.overflowY = 'auto'; document.body.style.overflowY = 'auto'; };
+    blockScroll();
+
+    // ===== Utilidades =====
+    function updateProgress() {
+      const total = deck.length;
+      const current = Math.min(state.i + 1, total);
+      progressLabel.textContent = `Pregunta ${current} de ${total}`;
+      const percent = (state.i / total) * 100;
+      barFill.style.width = `${percent}%`;
+    }
+    function setScenario() {
+      scenarioEl.textContent = deck[state.i]?.text || '';
+      card.setAttribute('aria-label', deck[state.i]?.text || 'Tarjeta');
+    }
+
+    // ===== Tutorial =====
+    btnStart.addEventListener('click', () => {
+      overlay.classList.remove('active');
+      card.focus({preventScroll: true});
+    });
+
+    // ===== Lógica de swipe estilo Tinder =====
+    let startX = 0;
+    let currentX = 0;
+    let dragging = false;
+    let animating = false;
+
+    function setBadgeOpacity(dx) {
+      const t = Math.min(1, Math.abs(dx) / 110);
+      if (dx < 0) {
+        badgeL.style.opacity = t;
+        badgeL.style.transform = `scale(${0.95 + t*0.1})`;
+        badgeR.style.opacity = 0;
+        badgeR.style.transform = 'scale(0.95)';
+      } else if (dx > 0) {
+        badgeR.style.opacity = t;
+        badgeR.style.transform = `scale(${0.95 + t*0.1})`;
+        badgeL.style.opacity = 0;
+        badgeL.style.transform = 'scale(0.95)';
+      } else {
+        badgeL.style.opacity = 0;
+        badgeR.style.opacity = 0;
+        badgeL.style.transform = 'scale(0.95)';
+        badgeR.style.transform = 'scale(0.95)';
+      }
+    }
+
+    function onPointerDown(e) {
+      if (animating || overlay.classList.contains('active')) return;
+      dragging = true;
+      startX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+      currentX = startX;
+      card.setPointerCapture?.(e.pointerId || 0);
+    }
+    function onPointerMove(e) {
+      if (!dragging) return;
+      const x = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+      currentX = x;
+      const dx = currentX - startX;
+      const rot = Math.max(-12, Math.min(12, dx / 12));
+      card.style.transform = `translateX(${dx}px) rotate(${rot}deg)`;
+      setBadgeOpacity(dx);
+    }
+    function animateOut(side) {
+      animating = true;
+      const direction = side === 'left' ? -1 : 1;
+      const offX = direction * (window.innerWidth * 0.9);
+      card.style.transition = 'transform 260ms ease';
+      card.style.transform = `translateX(${offX}px) rotate(${direction * 16}deg)`;
+      setTimeout(() => {
+        card.style.transition = '';
+        card.style.transform = '';
+        badgeL.style.opacity = 0;
+        badgeR.style.opacity = 0;
+        animating = false;
+      }, 280);
+    }
+    function resetCard() {
+      card.style.transition = 'transform 180ms ease';
+      card.style.transform = 'translateX(0) rotate(0deg)';
+      setTimeout(() => { card.style.transition = ''; }, 200);
+      setBadgeOpacity(0);
+    }
+
+    function onPointerUp() {
+      if (!dragging) return;
+      dragging = false;
+      const dx = currentX - startX;
+      const threshold = 80;
+      if (Math.abs(dx) >= threshold) {
+        const side = dx > 0 ? 'right' : 'left';
+        answer(side);
+      } else {
+        resetCard();
+      }
+    }
+
+    // ===== Registro de respuesta y avance =====
+    function answer(side) {
+      if (animating) return;
+      animateOut(side);
+      const q = deck[state.i];
+      const isCorrect = side === q.correct;
+      state.answers.push({
+        text: q.text,
+        chosen: side === 'right' ? 'Profesional' : 'Poco profesional',
+        correctSide: q.correct === 'right' ? 'Profesional' : 'Poco profesional',
+        isCorrect,
+        explain: q.explain
+      });
+      // pequeño retraso para animación antes de avanzar
+      setTimeout(() => {
+        state.i++;
+        if (state.i >= deck.length) {
+          endGame();
+        } else {
+          updateProgress();
+          setScenario();
+        }
+      }, 260);
+    }
+
+    // ===== Finalizar y mostrar resultados =====
+    function endGame() {
+      // Progreso al 100%
+      barFill.style.width = '100%';
+      progressLabel.textContent = `Pregunta ${deck.length} de ${deck.length}`;
+      // Construir resultados
+      const correctCount = state.answers.filter(a => a.isCorrect).length;
+      scoreText.textContent = `Has acertado ${correctCount} de ${deck.length}`;
+      finalMsg.textContent = correctCount >= Math.ceil(deck.length * 0.66)
+        ? "¡Genial! Dominas el trato profesional: educación, claridad y límites bien marcados."
+        : "Sigue practicando: la educación, la claridad y los límites marcan la diferencia con clientes exigentes.";
+
+      resultList.innerHTML = '';
+      state.answers.forEach((a, idx) => {
+        const li = document.createElement('div');
+        li.className = 'item';
+        li.setAttribute('role', 'listitem');
+        li.innerHTML = `
+          <div class="q">${idx + 1}. ${a.text}</div>
+          <div class="choices">
+            <span class="pill ${a.isCorrect ? 'ok' : 'no'}">
+              ${a.isCorrect ? '✅' : '❌'} Tu respuesta: ${a.chosen}
+            </span>
+            <span class="pill">
+              ✔ Correcta: ${a.correctSide}
+            </span>
+          </div>
+          <div class="explain">${a.explain}</div>
+        `;
+        resultList.appendChild(li);
+      });
+
+      // Mostrar resultados y permitir scroll
+      document.querySelector('.scene').classList.add('hidden');
+      results.classList.add('active');
+      enableResultsScroll();
+    }
+
+    // ===== Controles por botones y teclado =====
+    btnLeft.addEventListener('click', () => answer('left'));
+    btnRight.addEventListener('click', () => answer('right'));
+    document.addEventListener('keydown', (e) => {
+      if (overlay.classList.contains('active')) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); answer('left'); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); answer('right'); }
+    });
+
+    // ===== Eventos de puntero para swipe =====
+    card.addEventListener('pointerdown', onPointerDown);
+    card.addEventListener('pointermove', onPointerMove);
+    card.addEventListener('pointerup', onPointerUp);
+    card.addEventListener('pointercancel', onPointerUp);
+    // Touch fallback for older browsers
+    card.addEventListener('touchstart', (e) => onPointerDown(e.touches[0]));
+    card.addEventListener('touchmove', (e) => onPointerMove(e.touches[0]));
+    card.addEventListener('touchend', onPointerUp);
+
+    // ===== Inicialización =====
+    function init() {
+      updateProgress();
+      setScenario();
+      // Asegurar que no hay scroll en gameplay
+      blockScroll();
+    }
+    init();
+
+    // ===== Accesibilidad menor: click en overlay para empezar =====
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.classList.remove('active');
+        card.focus({preventScroll: true});
+      }
+    });
+
+    // ===== Performance: marcar imágenes no críticas como lazy =====
+    // Avatar ya es decorativa y ligera; logo principal se carga sin lazy por ser crítico.
+    // No se requiere acción adicional aquí.
+  </script>
+</body>
+</html>
