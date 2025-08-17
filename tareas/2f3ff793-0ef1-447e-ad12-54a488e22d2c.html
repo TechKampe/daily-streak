@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Conexiones seguras: electricidad básica para aprendices</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset básico y tipografía */
+    :root{
+      --bg-1: #0b2c73; /* Fortnite-ish deep blue */
+      --bg-2: #1c57ff;
+      --accent: #64f4ff;
+      --accent-2:#9b6bff;
+      --good:#21d07a;
+      --bad:#ff4d6d;
+      --text:#eef3ff;
+      --muted:#b9c3ff;
+      --glass: rgba(255,255,255,0.08);
+      --glass-strong: rgba(255,255,255,0.12);
+      --border: rgba(255,255,255,0.18);
+      --shadow: 0 10px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+      --ring: 0 0 0 3px rgba(100,244,255,0.45);
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Bloqueo de scroll en gameplay */
+      overscroll-behavior: none;
+      background: radial-gradient(100% 120% at 20% 0%, #2a6fff 0%, var(--bg-1) 50%) fixed;
+      background-color: var(--bg-1);
+      color: var(--text);
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Contenedor de escena a 100svh con fallbacks */
+    .scene {
+      position: relative;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      gap: 10px;
+      touch-action: none; /* Anti-derrapes */
+      background:
+        radial-gradient(60% 80% at 90% 10%, rgba(155,107,255,0.25) 0%, rgba(155,107,255,0) 60%),
+        radial-gradient(60% 80% at 10% 90%, rgba(100,244,255,0.2) 0%, rgba(100,244,255,0) 60%);
+      isolation: isolate;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    /* Fondo avatar */
+    .bg-avatar {
+      position: absolute;
+      right: 4%;
+      bottom: 8%;
+      width: min(42vw, 220px);
+      max-height: 60%;
+      object-fit: contain;
+      opacity: 0.20;
+      mix-blend-mode: screen;
+      filter: drop-shadow(0 12px 30px rgba(0,0,0,0.4));
+      pointer-events: none;
+      z-index: 0;
+      transform: translateZ(0);
+    }
+
+    /* Header superior */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 2;
+    }
+    .logo-wrap {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .logo {
+      height: 24px;
+      width: auto;
+      display: block;
+    }
+    .title {
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: clamp(16px, 2.8vw + 8px, 20px);
+      margin: 0;
+      line-height: 1.1;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    }
+
+    /* Progreso */
+    .progress {
+      min-width: 110px;
+      display: grid;
+      grid-template-columns: 1fr;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      text-align: right;
+    }
+    .progress small { color: var(--muted); font-weight: 600; }
+    .progress-count { font-weight: 800; }
+    .bar {
+      height: 8px; width: 100%;
+      background: rgba(255,255,255,0.15);
+      border-radius: 999px; overflow: hidden;
+    }
+    .bar > span {
+      display: block; height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      border-radius: inherit;
+      box-shadow: 0 0 12px rgba(100,244,255,0.7);
+      transition: width 220ms ease;
+    }
+
+    /* Contenido */
+    .content {
+      z-index: 2;
+      display: flex; flex-direction: column;
+      gap: 12px;
+      padding: 14px 14px;
+      background: linear-gradient(180deg, var(--glass), rgba(255,255,255,0.05));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      min-height: 0;
+    }
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: clamp(12px, 1.8vw + 6px, 13px);
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .question {
+      margin: 0;
+      font-size: clamp(18px, 3.6vw + 8px, 22px);
+      line-height: 1.2;
+      font-weight: 800;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+    .tutorial {
+      margin: 0;
+      font-size: clamp(14px, 3vw + 6px, 18px);
+      color: var(--text);
+      opacity: 0.95;
+    }
+
+    /* Zona de botones (siempre visible) */
+    .actions {
+      z-index: 3;
+      display: grid;
+      gap: 10px;
+      margin-top: auto; /* empuja hacia el borde inferior */
+      padding: 10px;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.10) 35%, rgba(0,0,0,0.18) 100%);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      color: var(--text);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: clamp(14px, 3.2vw + 4px, 18px);
+      border-radius: 14px;
+      padding: 14px 14px;
+      min-height: 52px; /* >= 44px */
+      width: 100%;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms ease;
+    }
+    .btn:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 14px 30px rgba(0,0,0,0.45); }
+    .btn:active { transform: translateY(1px) scale(0.98); }
+    .btn:focus-visible { outline: none; box-shadow: var(--ring), var(--shadow); }
+    .btn.primary {
+      background: linear-gradient(90deg, var(--accent-2), var(--accent));
+      border-color: transparent;
+      color: #071127;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .btn.ghost {
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+    }
+
+    /* Animaciones de cambio */
+    .card-anim { will-change: transform, opacity; }
+    .slide-out-left { animation: slideOutLeft 200ms ease forwards; }
+    .slide-in-right { animation: slideInRight 220ms ease forwards; }
+    @keyframes slideOutLeft {
+      to { transform: translateX(-20px); opacity: 0; }
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Resultados */
+    .results {
+      display: none; /* se muestra al finalizar */
+      box-sizing: border-box;
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    .results h2 {
+      margin: 8px 0 6px 0;
+      font-size: clamp(20px, 4vw + 8px, 28px);
+      line-height: 1.2;
+      font-weight: 800;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+    }
+    .score-pill {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(33,208,122,0.2), rgba(100,244,255,0.25));
+      border: 1px solid rgba(100,244,255,0.35);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      color: var(--text);
+    }
+    .list {
+      display: grid;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .item {
+      background: linear-gradient(180deg, var(--glass), rgba(255,255,255,0.05));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .q {
+      margin: 0 0 6px 0;
+      font-weight: 800;
+      font-size: clamp(14px, 2.8vw + 6px, 18px);
+    }
+    .ans {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 6px;
+    }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: clamp(12px, 2.6vw + 4px, 14px);
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+    }
+    .pill.good { border-color: rgba(33,208,122,0.6); background: linear-gradient(180deg, rgba(33,208,122,0.25), rgba(33,208,122,0.10)); }
+    .pill.bad { border-color: rgba(255,77,109,0.55); background: linear-gradient(180deg, rgba(255,77,109,0.22), rgba(255,77,109,0.10)); }
+    .explain {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(12px, 2.4vw + 4px, 14px);
+    }
+    .tip {
+      margin-top: 14px;
+      background: linear-gradient(180deg, rgba(155,107,255,0.18), rgba(100,244,255,0.18));
+      border: 1px solid rgba(100,244,255,0.38);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 700;
+      color: #06142f;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .cta-row {
+      margin-top: 16px;
+      display: grid;
+      gap: 8px;
+    }
+    .warn {
+      color: #fff7cc;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    /* Utilidades */
+    .hidden { display: none !important; }
+    .center { display: flex; align-items: center; justify-content: center; }
+    .muted { color: var(--muted); }
+
+    /* Responsivo (mobile first) */
+    @media (min-width: 768px) {
+      .actions { max-width: 540px; margin-inline: auto; }
+      .content { max-width: 720px; margin-inline: auto; }
+      .topbar { max-width: 920px; margin-inline: auto; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Escena de gameplay (sin scroll) -->
+  <section class="scene" id="scene" aria-live="polite">
+    <img class="bg-avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy" decoding="async" draggable="false" />
+    <div class="topbar">
+      <div class="logo-wrap">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <h1 class="title">Conexiones seguras</h1>
+      </div>
+      <div class="progress" aria-label="Progreso del reto">
+        <div class="center" style="justify-content: space-between;">
+          <small>Progreso</small>
+          <strong class="progress-count" id="progressText">0/5</strong>
+        </div>
+        <div class="bar" aria-hidden="true"><span id="progressBar"></span></div>
+      </div>
+    </div>
+
+    <div class="content card-anim" id="card">
+      <p class="subtitle" id="subtitle">Reto diario</p>
+      <p class="question" id="question">
+        Conexiones seguras: electricidad básica para aprendices
+      </p>
+      <p class="tutorial" id="tutorial">
+        Toca la respuesta correcta. Avanza automáticamente. 5 preguntas rápidas para reforzar seguridad y buenas prácticas.
+      </p>
+    </div>
+
+    <div class="actions" id="actions">
+      <button class="btn primary" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+    </div>
+  </section>
+
+  <!-- Resultados (con scroll activado al finalizar) -->
+  <section class="results" id="results" aria-labelledby="resTitle">
+    <div class="topbar" style="margin-bottom:8px;">
+      <div class="logo-wrap">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <h2 id="resTitle" style="margin:0;">Resultados</h2>
+      </div>
+    </div>
+    <div id="scoreRow" style="margin:6px 0 10px 0;">
+      <span class="score-pill" id="scorePill">Aciertos: 0/5</span>
+    </div>
+    <div class="list" id="resultsList"></div>
+    <div class="tip" id="generalTip">Consejo: Trabaja desenergizado y verifica ausencia de tensión; etiqueta/bloquea y usa protección adecuada.</div>
+    <div class="cta-row">
+      <button class="btn primary" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+      <span class="warn hidden" id="warnInit">Aviso: initData ausente; podrás continuar, pero tus datos no se asociarán.</span>
+    </div>
+  </section>
+
+  <script>
+    // Estado y datos del quiz (5 preguntas, 3 opciones c/u)
+    const quiz = [
+      {
+        q: "Antes de intervenir un circuito, ¿qué haces primero?",
+        options: [
+          "Cortar el neutro",
+          "Desenergizar en tablero y verificar ausencia de tensión",
+          "Apagar el equipo desde su interruptor"
+        ],
+        correct: 1,
+        explain: "Bloquea/etiqueta la fuente y confirma con detector o multímetro que no hay tensión."
+      },
+      {
+        q: "Color del conductor de protección (PE) más común:",
+        options: [
+          "Verde/amarillo",
+          "Azul claro",
+          "Marrón"
+        ],
+        correct: 0,
+        explain: "Por norma, el PE suele identificarse en verde/amarillo para evitar confusiones."
+      },
+      {
+        q: "Para medir continuidad de un cable usas el multímetro en modo:",
+        options: [
+          "Voltímetro AC",
+          "Ohmios/continuidad con zumbador",
+          "Amperímetro"
+        ],
+        correct: 1,
+        explain: "La prueba de continuidad se hace en ohmios con pitido para confirmar que el circuito está cerrado."
+      },
+      {
+        q: "Herramienta adecuada para pelar sin dañar conductores:",
+        options: [
+          "Alicate universal",
+          "Cúter",
+          "Pelacables ajustable"
+        ],
+        correct: 2,
+        explain: "El pelacables ajustable regula el corte y evita mellar hilos o reducir la sección útil."
+      },
+      {
+        q: "Conexión en caja de registro: mejor práctica",
+        options: [
+          "Retorcer y dejar al aire",
+          "Usar bornera/conector y alojar dentro de la caja",
+          "Soldar y cubrir solo con cinta"
+        ],
+        correct: 1,
+        explain: "Conecta con regleta o conector homologado y deja todo dentro de la caja para aislar y proteger."
+      }
+    ];
+
+    // Mapa letras para accesibilidad
+    const ABC = ["A", "B", "C", "D"];
+
+    // initData desde la URL
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+
+    // Referencias DOM
+    const scene = document.getElementById('scene');
+    const card = document.getElementById('card');
+    const subtitle = document.getElementById('subtitle');
+    const question = document.getElementById('question');
+    const tutorial = document.getElementById('tutorial');
+    const actions = document.getElementById('actions');
+    const startBtn = document.getElementById('startBtn');
+    const progressText = document.getElementById('progressText');
+    const progressBar = document.getElementById('progressBar');
+
+    const resultsView = document.getElementById('results');
+    const resultsList = document.getElementById('resultsList');
+    const scorePill = document.getElementById('scorePill');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const warnInit = document.getElementById('warnInit');
+
+    // Variables de estado
+    let current = 0;
+    const total = quiz.length;
+    const answers = []; // { choice: index }
+
+    // Bloqueo de scroll en gameplay (seguro)
+    (function initScrollLock(){
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    })();
+
+    // Render inicial (pantalla tutorial)
+    function renderStart() {
+      subtitle.textContent = "Reto diario";
+      question.textContent = "Conexiones seguras: electricidad básica para aprendices";
+      tutorial.textContent = "Toca la respuesta correcta. Avanza automáticamente. 5 preguntas rápidas para reforzar seguridad y buenas prácticas.";
+      actions.innerHTML = "";
+      const btn = document.createElement('button');
+      btn.className = 'btn primary';
+      btn.id = 'startBtn';
+      btn.textContent = 'Empezar';
+      btn.setAttribute('aria-label', 'Empezar el reto');
+      btn.addEventListener('click', startGame);
+      actions.appendChild(btn);
+      setProgress(0);
+    }
+
+    function setProgress(i) {
+      const count = Math.min(i, total);
+      progressText.textContent = `${count}/${total}`;
+      const pct = (count / total) * 100;
+      progressBar.style.width = `${pct}%`;
+    }
+
+    function startGame() {
+      current = 0;
+      answers.length = 0;
+      tutorial.textContent = "";
+      nextTurn(true);
+    }
+
+    function nextTurn(initial = false) {
+      if (current >= total) { showResults(); return; }
+      const data = quiz[current];
+      // Animación de entrada si no es el primer render
+      if (!initial) {
+        card.classList.remove('slide-in-right');
+        void card.offsetWidth; // reflow
+        card.classList.add('slide-in-right');
+      }
+      subtitle.textContent = `Pregunta ${current + 1}`;
+      question.textContent = data.q;
+      tutorial.textContent = "";
+      // Render opciones (máximo 3 por pantalla)
+      actions.innerHTML = "";
+      data.options.slice(0,3).forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn ghost';
+        btn.type = 'button';
+        btn.textContent = `${ABC[idx]}. ${opt}`;
+        btn.setAttribute('aria-label', `Opción ${ABC[idx]}: ${opt}`);
+        btn.addEventListener('click', () => selectAnswer(idx));
+        actions.appendChild(btn);
+      });
+      // Actualizar progreso (muestra preguntas ya completadas)
+      setProgress(current);
+      // Foco accesible en la primera opción
+      requestAnimationFrame(() => {
+        const firstBtn = actions.querySelector('button');
+        if (firstBtn) firstBtn.focus({preventScroll:true});
+      });
+    }
+
+    function selectAnswer(idx) {
+      // Guardar respuesta
+      answers.push({ choice: idx });
+      // Pequeña animación al salir
+      card.classList.remove('slide-in-right');
+      card.classList.add('slide-out-left');
+      // Desactivar botones momentáneamente
+      const btns = [...actions.querySelectorAll('button')];
+      btns.forEach(b => b.disabled = true);
+      // Pasar a la siguiente pregunta
+      setTimeout(() => {
+        card.classList.remove('slide-out-left');
+        current++;
+        if (current < total) {
+          nextTurn();
+        } else {
+          // terminar
+          setProgress(total);
+          showResults();
+        }
+      }, 210);
+    }
+
+    function showResults() {
+      // Construir lista de resultados
+      let corrects = 0;
+      resultsList.innerHTML = "";
+      quiz.forEach((item, i) => {
+        const user = answers[i]?.choice;
+        const isRight = user === item.correct;
+        if (isRight) corrects++;
+        const div = document.createElement('div');
+        div.className = 'item';
+        const q = document.createElement('p');
+        q.className = 'q';
+        q.textContent = `${i+1}. ${item.q}`;
+        const ansWrap = document.createElement('div');
+        ansWrap.className = 'ans';
+
+        const yourPill = document.createElement('span');
+        yourPill.className = 'pill ' + (isRight ? 'good' : 'bad');
+        yourPill.textContent = `Tu respuesta: ${ABC[user] ?? "-"} ${item.options[user] ?? "—"}`;
+
+        const correctPill = document.createElement('span');
+        correctPill.className = 'pill good';
+        correctPill.textContent = `Correcta: ${ABC[item.correct]} ${item.options[item.correct]}`;
+
+        const ex = document.createElement('p');
+        ex.className = 'explain';
+        ex.textContent = item.explain;
+
+        ansWrap.appendChild(yourPill);
+        ansWrap.appendChild(correctPill);
+        div.appendChild(q);
+        div.appendChild(ansWrap);
+        div.appendChild(ex);
+        resultsList.appendChild(div);
+      });
+      scorePill.textContent = `Aciertos: ${corrects}/${total}`;
+
+      // Consejo general (ya está definido; podemos ajustar según desempeño si queremos)
+      const tip = document.getElementById('generalTip');
+      if (corrects <= 2) {
+        tip.textContent = "Consejo: Repasa colores de conductores y pasos de verificación; prioriza bloqueo/etiquetado antes de tocar cables.";
+      } else if (corrects === total) {
+        tip.textContent = "Consejo: Gran trabajo. Mantén hábitos: verificar ausencia de tensión y usar conectores homologados siempre.";
+      } else {
+        tip.textContent = "Consejo: Consolida práctica segura: desenergiza, verifica con multímetro y usa conectores/regletas adecuados.";
+      }
+
+      // Mostrar advertencia si falta initData
+      if (!initData) {
+        warnInit.classList.remove('hidden');
+      }
+
+      // Cambiar vistas y desbloquear scroll solo en resultados
+      scene.style.display = 'none';
+      resultsView.style.display = 'block';
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+
+      // Enlazar CTA final
+      rewardBtn.addEventListener('click', () => {
+        const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+        window.location.href = url;
+      });
+    }
+
+    // Listeners
+    if (startBtn) startBtn.addEventListener('click', startGame);
+
+    // Carga inicial
+    document.addEventListener('DOMContentLoaded', () => {
+      renderStart();
+      // Simulación mental de 320x640: aseguramos que no haya scroll en gameplay
+      // (Diseño ya usa 3 opciones, botones >= 52px, progresos compactos y tipografía con clamp)
+    });
+  </script>
+</body>
+</html>
