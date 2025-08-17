@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Montaje eléctrico: ordena los pasos</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset básico */
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    /* Bloquea scroll durante gameplay */
+    html, body { overflow: hidden; overscroll-behavior: none; background: #0e1b43; }
+    :root{
+      --blue-900:#0e1b43;
+      --blue-700:#153a87;
+      --blue-500:#2a66ff;
+      --blue-400:#4fa3ff;
+      --glass: rgba(255,255,255,0.11);
+      --glass-strong: rgba(255,255,255,0.18);
+      --white:#ffffff;
+      --accent:#7ef6ff;
+      --ok:#5CFF8A;
+      --bad:#FF6B6B;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+      --radius:16px;
+    }
+    body { font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #E9F0FF; }
+    /* Escena a pantalla completa con svh + fallbacks */
+    .scene{ width: 100%; position: relative; display: flex; flex-direction: column; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); background: radial-gradient(120% 140% at 80% 0%, #2c69ff 0%, #153a87 45%, #0e1b43 100%); }
+    @supports (height: 100svh) { .scene{ height: 100svh; } }
+    @supports not (height: 100svh) { .scene{ height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene{ height: 100vh; } }
+
+    /* Fondo estilizado con avatar */
+    .bg-avatar{
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(60% 60% at 90% 10%, rgba(79,163,255,0.25) 0%, rgba(79,163,255,0.0) 60%),
+        radial-gradient(30% 24% at 15% 20%, rgba(126,246,255,0.15) 0%, rgba(126,246,255,0.0) 70%);
+      filter: saturate(1.1);
+    }
+    .bg-avatar img{
+      position: absolute; right: 6%; top: 4%; width: min(38vh, 40%); opacity: 0.25; transform: translateZ(0);
+      filter: drop-shadow(0 24px 40px rgba(0,0,0,0.35));
+      user-select: none;
+    }
+
+    /* HUD superior */
+    .hud{ position: relative; z-index: 2; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .brand img{ width:28px; height:28px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); }
+    .title{
+      display:flex; flex-direction:column; line-height:1.05;
+    }
+    .title h1{
+      margin:0; font-weight:800; letter-spacing:0.2px; color:#fff;
+      font-size: clamp(16px, 3.6vw, 20px);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.45);
+    }
+    .subtitle{ margin:0; font-weight:600; color:#cfe4ff; opacity:0.9; font-size: clamp(11px, 2.6vw, 13px); }
+
+    .progress{
+      display:flex; flex-direction:column; align-items:flex-end; gap:6px; min-width:96px;
+    }
+    .progress small{ font-weight:700; color:#cfe4ff; font-size: clamp(11px, 2.6vw, 13px); }
+    .bar{ width:100%; height:8px; background: rgba(255,255,255,0.12); border-radius:999px; overflow:hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.25); }
+    .bar > span{ display:block; height:100%; width:0%; background: linear-gradient(90deg, var(--accent), #8bffcb); transition: width 250ms ease; }
+
+    /* Contenido principal */
+    .board{
+      z-index:2; position: relative; margin-top:10px; flex:1; display:flex; flex-direction:column; gap:8px;
+      backdrop-filter: blur(6px); border-radius: var(--radius);
+      padding: 10px;
+      background: linear-gradient( to bottom right, rgba(255,255,255,0.08), rgba(255,255,255,0.04) );
+      box-shadow: var(--shadow);
+      outline: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .case-line{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .case{ font-weight:700; color:#f2f6ff; font-size: clamp(13px, 3.6vw, 15px); }
+    .mode-hint{ font-size: clamp(11px, 2.6vw, 12px); color:#d6e7ff; opacity:0.85; }
+
+    .cards{ flex:1; display:flex; flex-direction:column; gap:8px; touch-action: none; /* Anti-derrapes */ }
+
+    .card{
+      display:grid; grid-template-columns: 1fr auto;
+      align-items:center; gap:8px;
+      padding: 10px 10px 10px 12px; border-radius:12px; background: var(--glass);
+      outline: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.05);
+      transition: transform 140ms ease, background 140ms ease, outline-color 140ms ease;
+      position: relative; min-height: 52px;
+    }
+    .card:focus-within{ outline-color: rgba(126,246,255,0.65); }
+    .card .text{ font-weight:700; color:#ffffff; font-size: clamp(13px, 3.8vw, 15px); text-shadow: 0 1px 3px rgba(0,0,0,0.35); }
+    .controls{ display:flex; align-items:center; gap:6px; }
+    .btn{
+      border:0; border-radius:10px; background: rgba(255,255,255,0.16); color:#fff; height:44px; min-width:44px;
+      display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; line-height:1;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+      transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active{ transform: scale(0.96); }
+    .btn:focus{ outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn.ghost{ background: rgba(255,255,255,0.08); }
+    .btn.primary{
+      background: linear-gradient(180deg, #63f4ff, #26a2ff);
+      color:#00244a; text-shadow:none; box-shadow: 0 10px 24px rgba(79,163,255,0.45);
+    }
+
+    .btn[disabled]{ opacity: 0.6; pointer-events: none; }
+    .icon{ font-size:18px; }
+
+    /* Popover de chips numéricos */
+    .picker{
+      position: absolute; right: 8px; top: -4px; transform: translateY(-100%);
+      background: var(--glass-strong); backdrop-filter: blur(8px);
+      padding: 6px; border-radius: 12px; display:flex; gap:6px; z-index:3;
+      outline: 1px solid rgba(255,255,255,0.12); box-shadow: var(--shadow);
+      animation: pop 130ms ease-out forwards;
+    }
+    .chip{
+      width:44px; height:44px; border-radius:10px; background: rgba(255,255,255,0.14); color:#fff; font-weight:800;
+      display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 6px 12px rgba(0,0,0,0.25);
+      transition: transform 120ms ease, background 120ms ease;
+    }
+    .chip:active{ transform: scale(0.95); }
+    .chip:focus{ outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* CTA inferior */
+    .cta-bar{
+      position: absolute; left: 10px; right: 10px; bottom: 8px; padding-bottom: calc(env(safe-area-inset-bottom) + 2px);
+      display:flex; justify-content:space-between; gap:8px; z-index:2;
+    }
+    .cta-bar .btn{ flex:1; height: 48px; font-size: clamp(14px, 3.8vw, 16px); }
+    .reset-btn{ width:48px; flex:0 0 48px; }
+
+    /* Tutorial overlay */
+    .overlay{
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index: 99;
+      background: radial-gradient(120% 140% at 80% 0%, rgba(44,105,255,0.72) 0%, rgba(21,58,135,0.9) 45%, rgba(14,27,67,0.95) 100%);
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      backdrop-filter: blur(4px);
+    }
+    .tutorial{
+      width: min(520px, 94%); padding: 16px; border-radius: 16px;
+      background: linear-gradient( to bottom right, rgba(255,255,255,0.12), rgba(255,255,255,0.08) );
+      outline: 1px solid rgba(255,255,255,0.12); box-shadow: var(--shadow); text-align:center;
+    }
+    .tutorial h2{ margin: 4px 0 8px; font-size: clamp(18px, 5vw, 22px); }
+    .tutorial p{ margin: 0 0 12px; font-size: clamp(13px, 3.8vw, 15px); color:#e9f3ff; }
+    .tutorial .mini{
+      font-size: clamp(12px, 3.2vw, 13px); opacity:0.9; color:#d9ecff; margin-bottom: 14px;
+    }
+
+    /* Resultados finales */
+    .results{
+      display:none; position:absolute; inset:0; z-index: 100; overflow-y:auto;
+      background: linear-gradient(180deg, rgba(21,58,135,0.95), rgba(14,27,67,1));
+      padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 18px) max(12px, env(safe-area-inset-left));
+    }
+    .results h2{ margin: 8px 0 4px; font-size: clamp(18px, 5vw, 22px); }
+    .rez-card{
+      background: rgba(255,255,255,0.08); border-radius: 16px; padding: 12px; box-shadow: var(--shadow);
+      outline: 1px solid rgba(255,255,255,0.1); margin: 10px 0;
+    }
+    .rez-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .rez-head h3{ margin:0; font-size: clamp(14px, 4.2vw, 16px); }
+    .tag{ padding: 6px 10px; border-radius: 999px; font-weight:800; font-size: 12px; letter-spacing: 0.3px; color:#00244a; }
+    .ok { background: linear-gradient(180deg, #8effc3, #28d67a); }
+    .bad { background: linear-gradient(180deg, #ffd2d2, #ff6b6b); color:#3b0d0d; }
+    .orders{ display:grid; grid-template-columns: 1fr; gap:6px; margin-top:8px; }
+    .orders .col{ background: rgba(255,255,255,0.07); border-radius: 12px; padding: 8px; }
+    .orders .col h4{ margin: 0 0 6px; font-size: 12px; color:#cfe4ff; }
+    .orders ol{ margin:0; padding-left: 18px; }
+    .orders li{ margin: 2px 0; font-size: 13px; }
+    .explain{ margin-top:8px; font-size: 13px; color:#e7f3ff; }
+    .tip{ margin-top:8px; font-size: 12px; color:#cdeaff; opacity:0.95; }
+
+    .rez-cta{ position: sticky; bottom:0; background: linear-gradient(180deg, rgba(14,27,67,0.0), rgba(14,27,67,0.85) 45%); padding-top: 12px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+    .rez-cta .btn.primary{ width:100%; height: 52px; font-size: clamp(15px, 4.2vw, 17px); }
+    .warn{ margin-top:8px; text-align:center; font-size: 12px; color:#ffed8a; }
+
+    /* Animaciones y microinteracciones */
+    @keyframes pop{ from{ transform: translateY(-100%) scale(0.96); opacity:0; } to{ transform: translateY(-100%) scale(1); opacity:1; } }
+    .bump{ animation: bump 180ms ease; }
+    @keyframes bump{ 0%{ transform: scale(1); } 50%{ transform: scale(1.02); } 100%{ transform: scale(1); } }
+    .shake{
+      animation: shake 180ms ease-in-out;
+    }
+    @keyframes shake{
+      0%{ transform: translateX(0); }
+      25%{ transform: translateX(2px); }
+      50%{ transform: translateX(-2px); }
+      75%{ transform: translateX(1px); }
+      100%{ transform: translateX(0); }
+    }
+    .pulse{ animation: pulse 320ms ease-in-out; }
+    @keyframes pulse{
+      0%{ transform: scale(1); }
+      50%{ transform: scale(1.03); }
+      100%{ transform: scale(1); }
+    }
+
+    /* Accesibilidad: foco visible */
+    :focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 12px; }
+
+    /* Responsive mínimos */
+    @media (min-width: 480px){
+      .orders{ grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene">
+    <!-- Fondo y avatar -->
+    <div class="bg-avatar" aria-hidden="true">
+      <img src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="eager">
+    </div>
+
+    <!-- HUD -->
+    <div class="hud">
+      <div class="brand">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title">
+          <h1>Montaje eléctrico: pon los pasos en orden</h1>
+          <span class="subtitle">Planifica como un pro: seguridad y eficiencia</span>
+        </div>
+      </div>
+      <div class="progress" aria-live="polite">
+        <small id="progressLabel">Reto 1/3</small>
+        <div class="bar" aria-hidden="true"><span id="barFill" style="width: 33%;"></span></div>
+      </div>
+    </div>
+
+    <!-- Tablero -->
+    <div class="board" role="region" aria-label="Área de ordenación">
+      <div class="case-line">
+        <div class="case" id="caseTitle">Caso: Interruptor simple</div>
+        <div class="mode-hint">Usa ↑ ↓ o 123</div>
+      </div>
+      <div class="cards" id="cards"></div>
+    </div>
+
+    <!-- CTA inferior -->
+    <div class="cta-bar">
+      <button class="btn ghost reset-btn" id="resetBtn" aria-label="Reiniciar orden" title="Reiniciar orden">↺</button>
+      <button class="btn primary" id="confirmBtn" aria-label="Confirmar orden">Confirmar orden</button>
+    </div>
+
+    <!-- Overlay Tutorial -->
+    <div class="overlay" id="overlay">
+      <div class="tutorial" role="dialog" aria-labelledby="tutTitle" aria-describedby="tutDesc">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" width="40" height="40" />
+        <h2 id="tutTitle">Ordena los pasos clave</h2>
+        <p id="tutDesc">Coloca las tarjetas en el orden correcto de trabajo. Prioriza la seguridad: corta y verifica, luego actúa y comprueba.</p>
+        <p class="mini">Sugerencia: puedes mover con ↑ ↓ o asignar posición con 123.</p>
+        <button class="btn primary" id="startBtn" aria-label="Empezar reto">Empezar</button>
+      </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="results" id="results" aria-live="polite">
+      <div class="brand" style="margin-bottom:8px;">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title">
+          <h1>Resultados del reto</h1>
+          <span class="subtitle">Aprendizaje por procedimientos</span>
+        </div>
+      </div>
+
+      <div id="resultsBody"></div>
+
+      <div class="rez-cta">
+        <button class="btn primary" id="finalBtn">Ver mi recompensa</button>
+        <div class="warn" id="warnInit" style="display:none;">Aviso: falta initData en la URL. Aún puedes continuar.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Estado global y datos
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || '';
+    // Datos de los 3 retos (4 pasos cada uno, para caber sin scroll)
+    const challenges = [
+      {
+        case: 'Interruptor simple',
+        steps: [
+          'Cortar la corriente en el cuadro',
+          'Verificar ausencia de tensión',
+          'Conectar conductores en el interruptor',
+          'Restablecer y probar'
+        ],
+        explain: 'Primero se elimina el riesgo eléctrico (cortar y verificar). Luego se realizan las conexiones con el circuito desenergizado. Al final se energiza y se verifica el funcionamiento.',
+        tip: 'Nunca confíes solo en el interruptor: verifica ausencia de tensión con instrumento adecuado antes de tocar conductores.'
+      },
+      {
+        case: 'Toma de corriente',
+        steps: [
+          'Identificar circuito y cortar suministro',
+          'Confirmar ausencia de tensión en la caja',
+          'Cablear toma: fase, neutro y tierra',
+          'Energizar y probar con comprobador'
+        ],
+        explain: 'Identificar y cortar evita intervenir el circuito equivocado. La verificación garantiza cero tensión. Solo entonces se cablea. Al final, prueba funcional y de polaridad.',
+        tip: 'Respeta el color de conductores y apriete de bornes: una mala conexión calienta y puede provocar incendio.'
+      },
+      {
+        case: 'Luminaria',
+        steps: [
+          'Cortar y señalizar el circuito',
+          'Verificar ausencia de tensión en el punto',
+          'Conectar fase, neutro y tierra a la luminaria',
+          'Energizar y comprobar encendido'
+        ],
+        explain: 'Señalizar evita reenergización accidental. La verificación se realiza en el propio punto de trabajo. Después se conecta siguiendo el esquema y se prueba.',
+        tip: 'Si hay duda, usa bloqueos/etiquetado (LOTO) y comprueba con el instrumento en una referencia viva antes y después de medir.'
+      }
+    ];
+
+    let current = 0; // reto actual
+    let order = []; // orden actual (índices)
+    let originalShuffle = []; // para reset
+    const results = []; // {playerOrder: [], correct: [], isCorrect: boolean}
+
+    // Elementos
+    const cardsEl = document.getElementById('cards');
+    const caseTitle = document.getElementById('caseTitle');
+    const progressLabel = document.getElementById('progressLabel');
+    const barFill = document.getElementById('barFill');
+    const resetBtn = document.getElementById('resetBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const overlay = document.getElementById('overlay');
+    const startBtn = document.getElementById('startBtn');
+    const resultsView = document.getElementById('results');
+    const resultsBody = document.getElementById('resultsBody');
+    const finalBtn = document.getElementById('finalBtn');
+    const warnInit = document.getElementById('warnInit');
+
+    // Inicializa juego
+    function initGame(){
+      document.documentElement.style.overflow = 'hidden';
+      document.documentElement.style.overscrollBehavior = 'none';
+      current = 0;
+      results.length = 0;
+      loadChallenge(current);
+      updateProgress();
+      if(!initData){ warnInit.style.display = 'block'; }
+    }
+
+    // Carga un reto
+    function loadChallenge(idx){
+      const ch = challenges[idx];
+      caseTitle.textContent = 'Caso: ' + ch.case;
+      // Genera orden aleatorio
+      order = [...ch.steps.keys()];
+      shuffleInPlace(order);
+      originalShuffle = [...order];
+      renderCards();
+    }
+
+    // Renderiza tarjetas según 'order'
+    function renderCards(){
+      cardsEl.innerHTML = '';
+      const ch = challenges[current];
+      order.forEach((stepIdx, position) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.tabIndex = 0;
+        card.setAttribute('data-step-idx', stepIdx);
+
+        const text = document.createElement('div');
+        text.className = 'text';
+        text.textContent = ch.steps[stepIdx];
+
+        const controls = document.createElement('div');
+        controls.className = 'controls';
+
+        const upBtn = document.createElement('button');
+        upBtn.className = 'btn ghost';
+        upBtn.setAttribute('aria-label', `Mover arriba: ${ch.steps[stepIdx]}`);
+        upBtn.innerHTML = '<span class="icon">↑</span>';
+        upBtn.addEventListener('click', (e) => { e.stopPropagation(); move(stepIdx, -1); });
+
+        const downBtn = document.createElement('button');
+        downBtn.className = 'btn ghost';
+        downBtn.setAttribute('aria-label', `Mover abajo: ${ch.steps[stepIdx]}`);
+        downBtn.innerHTML = '<span class="icon">↓</span>';
+        downBtn.addEventListener('click', (e) => { e.stopPropagation(); move(stepIdx, +1); });
+
+        const pickBtn = document.createElement('button');
+        pickBtn.className = 'btn ghost';
+        pickBtn.setAttribute('aria-label', `Asignar orden a "${ch.steps[stepIdx]}"`);
+        pickBtn.innerHTML = '<span class="icon">123</span>';
+        pickBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          togglePicker(card, stepIdx);
+        });
+
+        // Deshabilita si tope
+        if(position === 0) upBtn.disabled = true;
+        if(position === order.length - 1) downBtn.disabled = true;
+
+        controls.appendChild(upBtn);
+        controls.appendChild(downBtn);
+        controls.appendChild(pickBtn);
+
+        card.appendChild(text);
+        card.appendChild(controls);
+        cardsEl.appendChild(card);
+      });
+    }
+
+    // Mover elemento
+    function move(stepIdx, dir){
+      const i = order.indexOf(stepIdx);
+      const j = i + dir;
+      if(j < 0 || j >= order.length) return;
+      // swap
+      const temp = order[j];
+      order[j] = order[i];
+      order[i] = temp;
+      // microanimación
+      navigator.vibrate && navigator.vibrate(8);
+      renderCards();
+      // resalta la tarjeta movida
+      const movedEl = [...cardsEl.querySelectorAll('.card')].find(el => Number(el.getAttribute('data-step-idx')) === stepIdx);
+      if(movedEl){
+        movedEl.classList.remove('bump'); void movedEl.offsetWidth; movedEl.classList.add('bump');
+      }
+    }
+
+    // Picker numérico
+    let openPicker = null;
+    function togglePicker(anchorEl, stepIdx){
+      closePicker();
+      const picker = document.createElement('div');
+      picker.className = 'picker';
+      for(let n=1; n<=order.length; n++){
+        const chip = document.createElement('button');
+        chip.className = 'chip';
+        chip.textContent = n;
+        chip.setAttribute('aria-label', `Colocar en posición ${n}`);
+        chip.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          placeAt(stepIdx, n-1);
+          closePicker();
+        });
+        picker.appendChild(chip);
+      }
+      anchorEl.appendChild(picker);
+      openPicker = picker;
+      document.addEventListener('click', handleOutsidePicker, { once: true });
+    }
+    function handleOutsidePicker(){ closePicker(); }
+    function closePicker(){
+      if(openPicker && openPicker.parentNode){
+        openPicker.parentNode.removeChild(openPicker);
+      }
+      openPicker = null;
+    }
+    function placeAt(stepIdx, toIndex){
+      const from = order.indexOf(stepIdx);
+      if(from === -1 || toIndex < 0 || toIndex >= order.length) return;
+      order.splice(from,1);
+      order.splice(toIndex,0,stepIdx);
+      navigator.vibrate && navigator.vibrate(8);
+      renderCards();
+      const movedEl = [...cardsEl.querySelectorAll('.card')].find(el => Number(el.getAttribute('data-step-idx')) === stepIdx);
+      if(movedEl){
+        movedEl.classList.remove('bump'); void movedEl.offsetWidth; movedEl.classList.add('bump');
+      }
+    }
+
+    // Confirmar reto
+    confirmBtn.addEventListener('click', ()=>{
+      // vibración y micro-shake suave
+      confirmBtn.classList.remove('pulse'); void confirmBtn.offsetWidth; confirmBtn.classList.add('pulse');
+      navigator.vibrate && navigator.vibrate(15);
+
+      const correctOrder = [...challenges[current].steps.keys()]; // 0..n-1
+      const isCorrect = arraysEqual(order, correctOrder);
+      results.push({
+        playerOrder: [...order],
+        correct: correctOrder,
+        isCorrect
+      });
+
+      // siguiente o resultados
+      if(current < challenges.length - 1){
+        current++;
+        updateProgress();
+        // pequeña transición visual
+        cardsEl.classList.add('shake');
+        setTimeout(()=>{
+          cardsEl.classList.remove('shake');
+          loadChallenge(current);
+        }, 160);
+      } else {
+        // Finalizar
+        showResults();
+      }
+    });
+
+    // Reset
+    resetBtn.addEventListener('click', ()=>{
+      order = [...originalShuffle];
+      renderCards();
+      resetBtn.classList.remove('pulse'); void resetBtn.offsetWidth; resetBtn.classList.add('pulse');
+      navigator.vibrate && navigator.vibrate(6);
+    });
+
+    // Tutorial
+    startBtn.addEventListener('click', ()=>{
+      overlay.style.display = 'none';
+    });
+
+    // Progreso
+    function updateProgress(){
+      progressLabel.textContent = `Reto ${current+1}/${challenges.length}`;
+      const pct = Math.round(((current+1)/challenges.length)*100);
+      barFill.style.width = `${pct}%`;
+    }
+
+    // Resultados finales
+    function showResults(){
+      buildResults();
+      resultsView.style.display = 'block';
+      // Habilita scroll en resultados
+      document.documentElement.style.overflowY = 'auto';
+      document.documentElement.style.overscrollBehavior = 'auto';
+    }
+
+    function buildResults(){
+      resultsBody.innerHTML = '';
+      let totalCorrect = 0;
+      results.forEach((r, idx) => {
+        const ch = challenges[idx];
+        if(r.isCorrect) totalCorrect++;
+        const card = document.createElement('div');
+        card.className = 'rez-card';
+        const head = document.createElement('div');
+        head.className = 'rez-head';
+        const h3 = document.createElement('h3');
+        h3.textContent = `Reto ${idx+1}: ${ch.case}`;
+        const tag = document.createElement('span');
+        tag.className = 'tag ' + (r.isCorrect? 'ok':'bad');
+        tag.textContent = r.isCorrect ? 'Perfecto' : 'Revisa el orden';
+        head.appendChild(h3); head.appendChild(tag);
+
+        const orders = document.createElement('div');
+        orders.className = 'orders';
+        const col1 = document.createElement('div'); col1.className = 'col';
+        const col2 = document.createElement('div'); col2.className = 'col';
+
+        const h4a = document.createElement('h4'); h4a.textContent = 'Tu orden';
+        const h4b = document.createElement('h4'); h4b.textContent = 'Correcto';
+        const olA = document.createElement('ol');
+        const olB = document.createElement('ol');
+
+        r.playerOrder.forEach(i => {
+          const li = document.createElement('li'); li.textContent = ch.steps[i]; olA.appendChild(li);
+        });
+        r.correct.forEach(i => {
+          const li = document.createElement('li'); li.textContent = ch.steps[i]; olB.appendChild(li);
+        });
+
+        col1.appendChild(h4a); col1.appendChild(olA);
+        col2.appendChild(h4b); col2.appendChild(olB);
+        orders.appendChild(col1); orders.appendChild(col2);
+
+        const explain = document.createElement('div');
+        explain.className = 'explain';
+        explain.textContent = ch.explain;
+
+        const tip = document.createElement('div');
+        tip.className = 'tip';
+        tip.textContent = 'Consejo: ' + ch.tip;
+
+        card.appendChild(head);
+        card.appendChild(orders);
+        card.appendChild(explain);
+        card.appendChild(tip);
+        resultsBody.appendChild(card);
+      });
+
+      // Título resumen arriba (opcional con total)
+      const header = document.createElement('h2');
+      header.textContent = `Has completado los ${challenges.length} retos (${totalCorrect}/${challenges.length} en orden perfecto).`;
+      resultsBody.prepend(header);
+    }
+
+    // CTA final
+    finalBtn.addEventListener('click', ()=>{
+      const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      window.location.href = target;
+    });
+
+    // Utilidades
+    function shuffleInPlace(arr){
+      for(let i = arr.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+    function arraysEqual(a,b){
+      if(a.length !== b.length) return false;
+      for(let i=0;i<a.length;i++){ if(a[i] !== b[i]) return false; }
+      return true;
+    }
+
+    // Iniciar
+    window.addEventListener('load', initGame);
+
+    // Seguridad: cerrar picker si se redimensiona o rota
+    window.addEventListener('resize', closePicker);
+    window.addEventListener('orientationchange', closePicker);
+  </script>
+</body>
+</html>
