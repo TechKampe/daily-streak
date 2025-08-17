@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Encuentra el fallo en la obra — Kämpe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* =========================
+       Reset + base
+       ========================= */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    body {
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #EAF2FF;
+      background: radial-gradient(1200px 700px at 50% -10%, #3266ff 0%, #1b2b78 50%, #0d1440 100%);
+      background-attachment: fixed;
+    }
+
+    :root {
+      --blue-900: #0d1440;
+      --blue-700: #1b2b78;
+      --blue-500: #3266ff;
+      --glass: rgba(255, 255, 255, 0.08);
+      --glass-strong: rgba(255, 255, 255, 0.12);
+      --accent: #30E3FF;
+      --ok: #2de37d;
+      --bad: #ff5a7a;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --card-blur: saturate(140%) blur(10px);
+    }
+
+    /* Safe areas for iOS notch */
+    .safe {
+      padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    }
+
+    a, button { -webkit-tap-highlight-color: transparent; }
+
+    /* =========================
+       Layout containers
+       ========================= */
+    .root {
+      position: relative;
+      min-height: 100%;
+      width: 100%;
+      display: grid;
+      place-items: center;
+    }
+
+    /* Scene height: 100svh with fallbacks */
+    .scene {
+      width: 100%;
+      display: grid;
+      place-items: center;
+      position: relative;
+      touch-action: none; /* Anti-derrape */
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    .card {
+      width: min(92vw, 480px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: var(--card-blur);
+      -webkit-backdrop-filter: var(--card-blur);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Header with logo + progress */
+    .hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 12px 14px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.08));
+      border-bottom: 1px solid rgba(255,255,255,0.14);
+    }
+    .logo {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .logo img {
+      height: 24px; width: auto;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    }
+    .progress {
+      font-weight: 800;
+      font-size: clamp(12px, 2.3vw, 14px);
+      color: #CFE6FF;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(48,227,255,0.15);
+      border: 1px solid rgba(48,227,255,0.5);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    /* Content areas */
+    .content {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .title {
+      font-weight: 800;
+      font-size: clamp(18px, 5vw, 22px);
+      line-height: 1.2;
+      margin: 4px 0 2px;
+      color: white;
+      text-shadow: 0 2px 12px rgba(50,102,255,0.6);
+    }
+
+    .desc {
+      font-size: clamp(13px, 3.8vw, 14px);
+      color: #D8E5FF;
+      opacity: 0.95;
+      line-height: 1.3;
+      margin: 0;
+    }
+
+    .options {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      appearance: none; border: 0; cursor: pointer;
+      font-weight: 700;
+      font-size: clamp(14px, 4.2vw, 16px);
+      color: #0b1236;
+      padding: clamp(12px, 3.5vh, 14px);
+      min-height: 48px; /* ≥44px */
+      border-radius: 14px;
+      background: linear-gradient(180deg, #d7f5ff, #8ee9ff);
+      box-shadow: 0 6px 16px rgba(8, 62, 120, 0.35), inset 0 1px 0 rgba(255,255,255,0.8);
+      text-align: left;
+      position: relative;
+      transition: transform .06s ease, box-shadow .2s ease, background .25s ease, border-color .2s;
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:focus-visible {
+      outline: 3px solid var(--accent);
+      box-shadow: 0 0 0 4px rgba(48,227,255,0.35), 0 6px 16px rgba(8,62,120,0.45);
+    }
+
+    .btn.selected { border: 2px solid rgba(255,255,255,0.8); }
+    .btn.correct { box-shadow: 0 0 0 3px rgba(45,227,125,0.45), 0 10px 20px rgba(45,227,125,0.35); }
+    .btn.wrong   { box-shadow: 0 0 0 3px rgba(255,90,122,0.45), 0 10px 20px rgba(255,90,122,0.35); }
+
+    .foot-sticky {
+      position: sticky;
+      bottom: 0;
+      padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,0.25));
+      display: grid;
+      gap: 8px;
+    }
+
+    .cta {
+      justify-self: center;
+      appearance: none; border: 0; cursor: pointer;
+      font-weight: 800;
+      font-size: clamp(15px, 4.5vw, 18px);
+      color: #051131;
+      padding: 12px 18px;
+      min-height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #fdf257, #ffb801);
+      box-shadow: 0 8px 20px rgba(255,184,1,0.45);
+      transition: transform .06s ease, box-shadow .2s ease;
+    }
+    .cta:hover { transform: translateY(-1px); }
+    .cta:focus-visible { outline: 3px solid #fff; box-shadow: 0 0 0 4px rgba(255,184,1,0.4); }
+
+    .mini-tip {
+      font-size: 12px;
+      color: #CFE6FF;
+      text-align: center;
+      opacity: 0.85;
+    }
+
+    /* Intro specific */
+    .intro-body { padding: 16px; display: grid; gap: 12px; }
+    .subtitle { font-size: clamp(13px, 3.6vw, 15px); color: #D5E4FF; margin: 0; }
+    .tutorial {
+      font-size: clamp(13px, 3.6vw, 14px);
+      color: #EAF2FF; opacity: 0.95;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    /* Avatar and particles */
+    .avatar {
+      position: absolute;
+      right: -10px;
+      bottom: -10px;
+      width: 170px;
+      opacity: 0.18;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,.5));
+      pointer-events: none;
+      transform: scale(1.05) rotate(2deg);
+    }
+
+    /* Animations */
+    .enter { animation: fadeInUp .25s ease-out both; }
+    .exit-left { animation: fadeOutLeft .2s ease-in both; }
+    .enter-right { animation: fadeInRight .25s ease-out both; }
+    .pulse {
+      animation: pulse .7s ease-out both;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeOutLeft {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(-20px); }
+    }
+    @keyframes fadeInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.98); }
+      100% { transform: scale(1); }
+    }
+
+    /* Results view */
+    .results-wrap {
+      width: min(92vw, 560px);
+      margin: 16px auto calc(24px + env(safe-area-inset-bottom));
+      display: grid; gap: 12px;
+    }
+    .results-head {
+      display: grid; gap: 8px;
+      background: var(--glass);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 16px;
+      padding: 14px;
+      backdrop-filter: var(--card-blur);
+      -webkit-backdrop-filter: var(--card-blur);
+      box-shadow: var(--shadow);
+    }
+    .score {
+      font-weight: 800;
+      font-size: clamp(18px, 5vw, 22px);
+      color: white;
+    }
+    .recap {
+      display: grid; gap: 10px;
+    }
+    .recap-item {
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .recap-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #EAF2FF;
+      margin-bottom: 6px;
+    }
+    .pill {
+      display: inline-block;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      letter-spacing: .3px;
+      border: 1px solid rgba(255,255,255,0.2);
+      margin-right: 6px;
+    }
+    .pill.bad { background: rgba(255,90,122,0.18); border-color: rgba(255,90,122,0.5); color: #ffdbe3; }
+    .pill.ok { background: rgba(45,227,125,0.18); border-color: rgba(45,227,125,0.5); color: #d8ffe8; }
+    .explain {
+      font-size: 13px; color: #D5E4FF; opacity: 0.95; margin-top: 6px;
+    }
+
+    .final-cta {
+      position: sticky;
+      bottom: 0;
+      display: grid;
+      gap: 8px;
+      padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,0.25));
+    }
+    .warn {
+      font-size: 12px;
+      color: #ffd2d2;
+      text-align: center;
+      opacity: 0.9;
+    }
+
+    /* Focus visibility helper on small devices */
+    @media (hover: none) and (pointer: coarse) {
+      .btn:hover, .cta:hover { transform: none; }
+    }
+
+    /* Prevent accidental long-press selection */
+    .no-select { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+
+  </style>
+</head>
+<body>
+  <div class="root">
+    <!-- Intro Scene -->
+    <section id="intro" class="scene safe" aria-labelledby="title-intro">
+      <div class="card enter" style="width:min(92vw,520px)">
+        <div class="hud">
+          <div class="logo" aria-label="Kämpe">
+            <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+            <span style="font-weight:800;font-size:13px;letter-spacing:.3px;color:#EAF2FF;">Kämpe</span>
+          </div>
+          <div class="progress" aria-live="polite">Diario</div>
+        </div>
+        <div class="intro-body no-select">
+          <h1 id="title-intro" class="title">Encuentra el fallo en la obra</h1>
+          <p class="subtitle">El jugador se enfrenta a micro-escenas reales de obra o instalación. En cada turno hay <strong>solo un fallo</strong>.</p>
+          <div class="tutorial">
+            Toca el elemento incorrecto en cada escena (material, acción o norma). Avanzarás automáticamente. 5 escenas.
+          </div>
+          <div class="foot-sticky">
+            <button id="btnStart" class="cta" aria-label="Comenzar el reto">¡Comenzar!</button>
+          </div>
+        </div>
+        <img class="avatar" alt="Avatar héroe" loading="eager" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png">
+      </div>
+    </section>
+
+    <!-- Game Scene -->
+    <section id="game" class="scene safe" aria-live="polite" aria-labelledby="sceneTitle" hidden>
+      <div class="card enter" id="gameCard">
+        <div class="hud">
+          <div class="logo" aria-label="Kämpe">
+            <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+            <span style="font-weight:800;font-size:13px;letter-spacing:.3px;color:#EAF2FF;">Kämpe</span>
+          </div>
+          <div id="progress" class="progress" aria-label="Progreso">1/5</div>
+        </div>
+
+        <div class="content no-select">
+          <h2 id="sceneTitle" class="title">Escena</h2>
+          <p id="sceneDesc" class="desc">Descripción breve</p>
+
+          <div class="options" id="options">
+            <!-- Buttons injected -->
+          </div>
+
+          <div class="foot-sticky">
+            <p class="mini-tip">Elige el <strong>ítem incorrecto</strong>.</p>
+          </div>
+        </div>
+
+        <img class="avatar" alt="Avatar héroe" loading="lazy" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png">
+      </div>
+    </section>
+
+    <!-- Results View (scrollable) -->
+    <section id="results" class="safe" hidden aria-labelledby="resultsTitle">
+      <div class="results-wrap">
+        <div class="results-head">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div class="logo" aria-label="Kämpe">
+              <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+              <span style="font-weight:800;font-size:13px;letter-spacing:.3px;color:#EAF2FF;">Kämpe</span>
+            </div>
+            <span id="finalScorePill" class="progress">5/5</span>
+          </div>
+          <h2 id="resultsTitle" class="score">¡Bien jugado!</h2>
+          <p class="desc" id="resultsSub">Aciertos: 0/5</p>
+        </div>
+
+        <div id="recap" class="recap">
+          <!-- Recap items injected -->
+        </div>
+
+        <div class="results-head">
+          <h3 class="title" style="font-size:clamp(16px,4.6vw,20px);">Consejo práctico</h3>
+          <p class="desc">
+            Mantén la atención al detalle, aplica siempre los pasos de seguridad y comunica cualquier duda con tu equipo. Detectar un fallo a tiempo evita riesgos, retrabajos y costes.
+          </p>
+        </div>
+
+        <div class="final-cta">
+          <button id="btnReward" class="cta" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+          <div id="initDataWarn" class="warn" hidden>Advertencia: no se detectó initData en la URL. Puedes continuar, pero tu recompensa podría no registrarse.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // =========================
+    // InitData handling (preserve exact value from URL)
+    // =========================
+    const rawQuery = window.location.search || '';
+    const initMatch = rawQuery.match(/[?&]initData=([^&]*)/);
+    const initDataRaw = initMatch ? initMatch[1] : "";
+
+    // =========================
+    // Scenes data
+    // Each scene has exactly one incorrect option (isError: true)
+    // =========================
+    const scenes = [
+      {
+        trade: "Electricidad",
+        scene: "Antes de empalmar un cable en una caja de derivación.",
+        options: [
+          { text: "Verifica ausencia de tensión con un comprobador.", isError: false },
+          { text: "Usa regleta/WAGO del calibre correcto.", isError: false },
+          { text: "Trenza cables y cubre solo con cinta aislante.", isError: true, why: "El trenzado con cinta puede aflojarse, generar falsos contactos y calor. Usa conectores o regletas certificadas." }
+        ]
+      },
+      {
+        trade: "Fontanería",
+        scene: "Instalando el desagüe de un lavabo con sifón.",
+        options: [
+          { text: "Monta sifón en U y verifica pendiente ~2%.", isError: false },
+          { text: "Usa cinta PTFE en roscas metálicas.", isError: false },
+          { text: "Sella PVC con silicona en vez de adhesivo específico.", isError: true, why: "La silicona no fusiona el PVC y compromete la estanqueidad. Usa adhesivo para PVC con su imprimación si aplica." }
+        ]
+      },
+      {
+        trade: "Albañilería",
+        scene: "Replanteando un tabique de ladrillo hueco.",
+        options: [
+          { text: "Usa plomada o láser para mantener verticalidad.", isError: false },
+          { text: "Humedece ladrillos en días muy calurosos.", isError: false },
+          { text: "Asienta sin junta de dilatación junto a un pilar.", isError: true, why: "Sin junta puede fisurar por movimientos diferenciales. Deja junta o material elástico contra elementos estructurales." }
+        ]
+      },
+      {
+        trade: "Climatización",
+        scene: "Mantenimiento de un split de A/A antes de temporada.",
+        options: [
+          { text: "Desconecta la alimentación antes de abrir la tapa.", isError: false },
+          { text: "Limpia filtros con agua y jabón neutro.", isError: false },
+          { text: "Ventea el gas al ambiente sin recuperarlo.", isError: true, why: "Liberar refrigerante está prohibido y contamina. Usa equipo de recuperación y gestiona según normativa." }
+        ]
+      },
+      {
+        trade: "Seguridad en obra",
+        scene: "Trabajo en altura sobre andamio móvil.",
+        options: [
+          { text: "Bloquea ruedas y monta barandillas perimetrales.", isError: false },
+          { text: "Usa arnés a punto certificado cuando proceda.", isError: false },
+          { text: "Sube por la estructura exterior del andamio.", isError: true, why: "Nunca escales por fuera: usa escalerilla integrada o acceso previsto para evitar caídas." }
+        ]
+      }
+    ];
+
+    // =========================
+    // State
+    // =========================
+    let currentIndex = 0;
+    const answers = []; // { chosenIndex, isCorrect, errorIndex }
+
+    // =========================
+    // Elements
+    // =========================
+    const introEl = document.getElementById('intro');
+    const gameEl = document.getElementById('game');
+    const gameCard = document.getElementById('gameCard');
+    const progressEl = document.getElementById('progress');
+    const sceneTitleEl = document.getElementById('sceneTitle');
+    const sceneDescEl = document.getElementById('sceneDesc');
+    const optionsEl = document.getElementById('options');
+
+    const resultsEl = document.getElementById('results');
+    const resultsTitle = document.getElementById('resultsTitle');
+    const resultsSub = document.getElementById('resultsSub');
+    const recapEl = document.getElementById('recap');
+    const finalScorePill = document.getElementById('finalScorePill');
+
+    const btnStart = document.getElementById('btnStart');
+    const btnReward = document.getElementById('btnReward');
+    const initDataWarn = document.getElementById('initDataWarn');
+
+    // =========================
+    // Helpers
+    // =========================
+    function lockScrollGameplay() {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overscrollBehavior = 'none';
+      document.body.style.overscrollBehavior = 'none';
+    }
+    function enableScrollResults() {
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+      document.documentElement.style.overscrollBehavior = 'auto';
+      document.body.style.overscrollBehavior = 'auto';
+    }
+
+    function nextScene() {
+      if (currentIndex < scenes.length - 1) {
+        currentIndex++;
+        renderScene();
+      } else {
+        showResults();
+      }
+    }
+
+    function renderScene() {
+      // Update HUD
+      progressEl.textContent = `${currentIndex + 1}/${scenes.length}`;
+
+      // Render content
+      const data = scenes[currentIndex];
+      sceneTitleEl.textContent = `${data.trade}`;
+      sceneDescEl.textContent = data.scene;
+
+      // Clear options
+      optionsEl.innerHTML = '';
+      const errorIndex = data.options.findIndex(o => o.isError);
+
+      data.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', `Opción ${idx + 1}: ${opt.text}`);
+        btn.textContent = opt.text;
+
+        btn.addEventListener('click', () => {
+          handleChoice(idx, errorIndex, btn);
+        });
+
+        optionsEl.appendChild(btn);
+      });
+
+      // Anim
+      gameCard.classList.remove('enter-right');
+      void gameCard.offsetWidth;
+      gameCard.classList.add('enter-right');
+    }
+
+    let inputLocked = false;
+    function handleChoice(chosenIndex, errorIndex, buttonEl) {
+      if (inputLocked) return;
+      inputLocked = true;
+
+      const isCorrect = chosenIndex === errorIndex;
+
+      // Highlight selected
+      buttonEl.classList.add('selected', isCorrect ? 'correct' : 'wrong', 'pulse');
+
+      // Store answer
+      answers[currentIndex] = { chosenIndex, isCorrect, errorIndex };
+
+      // Auto advance with transition
+      setTimeout(() => {
+        gameCard.classList.add('exit-left');
+        setTimeout(() => {
+          gameCard.classList.remove('exit-left');
+          inputLocked = false;
+          nextScene();
+        }, 180);
+      }, 680);
+    }
+
+    function startGame() {
+      introEl.hidden = true;
+      gameEl.hidden = false;
+      currentIndex = 0;
+      answers.length = 0;
+      lockScrollGameplay();
+      renderScene();
+      // Focus first option for accessibility
+      setTimeout(() => {
+        const firstBtn = optionsEl.querySelector('.btn');
+        if (firstBtn) firstBtn.focus({ preventScroll: true });
+      }, 50);
+    }
+
+    function showResults() {
+      gameEl.hidden = true;
+      resultsEl.hidden = false;
+
+      // Compute score
+      const correct = answers.filter(a => a && a.isCorrect).length;
+      resultsTitle.textContent = correct === scenes.length ? "¡Perfecto, ojo clínico!" :
+                                 correct >= 3 ? "¡Bien jugado!" : "Buen intento, sigue afilando la mirada";
+      resultsSub.textContent = `Aciertos: ${correct}/${scenes.length}`;
+      finalScorePill.textContent = `${correct}/${scenes.length}`;
+
+      // Build recap
+      recapEl.innerHTML = '';
+      scenes.forEach((scene, i) => {
+        const ans = answers[i];
+        const chosen = scene.options[ans.chosenIndex];
+        const real = scene.options[ans.errorIndex];
+
+        const item = document.createElement('div');
+        item.className = 'recap-item';
+
+        const title = document.createElement('div');
+        title.className = 'recap-title';
+        title.textContent = `${scene.trade} — Escena ${i + 1}`;
+        item.appendChild(title);
+
+        const line1 = document.createElement('div');
+        line1.innerHTML = `<span class="pill ${ans.isCorrect ? 'ok' : 'bad'}">${ans.isCorrect ? 'Acierto' : 'Error'}</span>
+                           <strong>Tu elección:</strong> ${chosen.text}`;
+        item.appendChild(line1);
+
+        const line2 = document.createElement('div');
+        line2.style.marginTop = '6px';
+        line2.innerHTML = `<span class="pill bad">Fallo real</span><strong>Ítem incorrecto:</strong> ${real.text}`;
+        item.appendChild(line2);
+
+        const explain = document.createElement('div');
+        explain.className = 'explain';
+        // Explanation is stored in the error option (real)
+        const why = real.why || "No recomendado por normativa/técnica del oficio.";
+        explain.textContent = why;
+        item.appendChild(explain);
+
+        recapEl.appendChild(item);
+      });
+
+      // Manage initData warning
+      if (!initDataRaw) {
+        initDataWarn.hidden = false;
+      } else {
+        initDataWarn.hidden = true;
+      }
+
+      // Enable scroll only now (results can be long)
+      enableScrollResults();
+
+      // Focus reward button
+      setTimeout(() => btnReward.focus({ preventScroll: true }), 80);
+    }
+
+    // =========================
+    // Events
+    // =========================
+    btnStart.addEventListener('click', startGame);
+
+    btnReward.addEventListener('click', () => {
+      // Preserve exact initData; if empty, still redirect with empty value
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${initDataRaw}`;
+      window.location.href = url;
+    });
+
+    // On load: ensure gameplay scroll is locked (intro counts as gameplay)
+    lockScrollGameplay();
+
+    // =========================
+    // Mental test for small viewport:
+    // Designed for 320x640: HUD + 2 short lines prompt + 3 buttons (48–56px) fit within 100svh.
+    // =========================
+  </script>
+</body>
+</html>
