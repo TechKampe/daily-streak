@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | Memoria de herramientas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f55f2" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Base reset */
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #fff;
+      background: radial-gradient(1200px 600px at 20% -10%, #49a4ff 0%, #1463ff 35%, #0b3fb3 100%) fixed;
+      overflow: hidden; /* Locked during gameplay */
+      overscroll-behavior: none;
+    }
+
+    /* Scene height: 100svh with fallbacks as required */
+    .scene {
+      width: 100%;
+      height: 100vh; /* fallback of fallback */
+      display: flex;
+      flex-direction: column;
+      justify-content: stretch;
+      align-items: stretch;
+      position: relative;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      isolation: isolate;
+    }
+    @supports (height: 100dvh) {
+      .scene { height: 100dvh; }
+    }
+    @supports (height: 100svh) {
+      .scene { height: 100svh; }
+    }
+
+    /* Shared visual language */
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 8px 28px rgba(10, 30, 100, 0.45), inset 0 1px 1px rgba(255,255,255,0.18);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 16px;
+    }
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: none;
+      color: #fff;
+      background: linear-gradient(135deg, #42f5ff 0%, #1dd1ff 40%, #1768ff 100%);
+      box-shadow: 0 10px 20px rgba(23,104,255,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      font-size: clamp(14px, 3.4vw, 18px);
+    }
+    .cta:active { transform: translateY(1px) scale(0.995); filter: brightness(0.96); }
+    .cta.secondary {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: none;
+      font-weight: 700;
+    }
+    .cta[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+    .logo-wrap {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .logo {
+      height: 28px;
+      width: auto;
+      display: block;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      gap: 8px;
+      min-height: 56px;
+    }
+    .chip {
+      min-height: 36px;
+      padding: 8px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-weight: 700;
+      font-size: clamp(12px, 3vw, 14px);
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .chip .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #42f5ff; box-shadow: 0 0 8px #42f5ff;
+    }
+    .stats {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .restart-btn {
+      min-width: 44px; min-height: 44px;
+      display: grid; place-items: center;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+      padding: 10px 12px;
+    }
+
+    /* Screens */
+    .screen {
+      display: none;
+      flex: 1;
+      position: relative;
+      padding: 12px 14px 14px;
+    }
+    .screen.active { display: flex; flex-direction: column; }
+
+    .title {
+      font-weight: 800;
+      line-height: 1.1;
+      margin: 6px 0 8px;
+      font-size: clamp(18px, 4.8vw, 28px);
+      text-shadow: 0 3px 8px rgba(0,0,0,0.35);
+    }
+    .subtitle {
+      font-size: clamp(13px, 3.4vw, 16px);
+      opacity: 0.92;
+      margin: 0 0 12px;
+    }
+
+    .start-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px;
+    }
+    .start-actions {
+      margin-top: auto;
+      display: grid;
+      gap: 8px;
+      position: sticky;
+      bottom: 0;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Avatar as decorative layer */
+    .avatar {
+      position: absolute;
+      right: 0; bottom: 0;
+      width: min(48svw, 220px);
+      opacity: 0.28;
+      transform: translate(8%, 12%);
+      filter: drop-shadow(0 10px 24px rgba(0,0,0,0.35));
+      pointer-events: none;
+      user-select: none;
+      z-index: -1;
+    }
+
+    /* GAME BOARD */
+    .board {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      min-height: 0; /* grid can size inside */
+    }
+    .grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: 1fr; /* balanced */
+      gap: 8px;
+      touch-action: none; /* anti-derrapes */
+      align-content: center;
+    }
+    .card {
+      position: relative;
+      perspective: 800px;
+      border-radius: 12px;
+      outline: none;
+    }
+    .cardBtn {
+      all: unset;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 74px; /* keeps it ≥44px in smallest viewports */
+      border-radius: 12px;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%; height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 420ms cubic-bezier(.2,.8,.2,1);
+      border-radius: 12px;
+    }
+    .card.flipped .card-inner { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute; inset: 0;
+      backface-visibility: hidden;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 8px;
+      font-weight: 800;
+      font-size: clamp(12px, 2.9vw, 16px);
+      line-height: 1.15;
+      user-select: none;
+    }
+    .face-front {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06)),
+        linear-gradient(135deg, #1e7aff, #0e56d8);
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    .face-back {
+      transform: rotateY(180deg);
+      background: linear-gradient(135deg, #42f5ff33, #1768ff33);
+      border: 1px solid rgba(255,255,255,0.25);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.25), 0 8px 20px rgba(20,100,255,0.35);
+      color: #fff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      padding: 10px;
+    }
+    .card.matched .face-back {
+      background: linear-gradient(135deg, #1affb6, #19e6ff);
+      box-shadow: 0 0 0 2px rgba(66,245,255,0.9) inset, 0 10px 24px rgba(0, 255, 200, 0.35);
+      color: #002226;
+    }
+    .card.matched .ring {
+      position: absolute;
+      inset: -2px;
+      border-radius: 14px;
+      box-shadow: 0 0 0 0 rgba(66,245,255,0.9);
+      animation: ring 1s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes ring {
+      0% { box-shadow: 0 0 0 0 rgba(66,245,255,0.9); }
+      100% { box-shadow: 0 0 0 14px rgba(66,245,255,0); }
+    }
+
+    /* Footer bar inside game for info */
+    .game-footer {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .hint {
+      font-size: clamp(12px, 2.9vw, 14px);
+      opacity: 0.9;
+      text-align: center;
+    }
+
+    /* RESULTS */
+    .results-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+    }
+    .result-head {
+      display: grid;
+      gap: 8px;
+    }
+    .stat-line {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      font-weight: 700;
+      font-size: clamp(13px, 3.3vw, 16px);
+    }
+    .pairs-list {
+      display: grid;
+      gap: 10px;
+    }
+    .pair-item {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.22);
+    }
+    .pair-title {
+      display: flex; align-items: center; gap: 8px; font-weight: 800;
+      font-size: clamp(13px, 3.3vw, 16px);
+    }
+    .badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 26px; height: 22px; padding: 0 8px; border-radius: 999px;
+      font-size: 12px; font-weight: 800; letter-spacing: 0.3px;
+    }
+    .ok { background: #10e8c7; color: #00322e; box-shadow: 0 0 0 1px rgba(0,0,0,0.08) inset; }
+    .no { background: #ff6961; color: #190000; }
+    .pair-desc {
+      opacity: 0.95;
+      font-size: clamp(12px, 2.9vw, 14px);
+      line-height: 1.25;
+    }
+    .study-tip {
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px dashed rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.08);
+      font-size: clamp(12px, 2.9vw, 14px);
+    }
+    .results-actions {
+      position: sticky;
+      bottom: 0;
+      display: grid;
+      gap: 8px;
+      padding-bottom: env(safe-area-inset-bottom);
+      background: linear-gradient(180deg, rgba(2,12,48,0), rgba(2,12,48,0.18) 40%, rgba(2,12,48,0.28));
+      padding-top: 6px;
+    }
+
+    /* Visually hidden for accessibility announcements */
+    .sr-only {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden;
+      clip: rect(1px,1px,1px,1px);
+      white-space: nowrap;
+    }
+
+    /* Focus styles */
+    :focus-visible {
+      outline: 2px solid #42f5ff;
+      outline-offset: 2px;
+      border-radius: 12px;
+    }
+
+    /* Reduce motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      .card-inner { transition: none; }
+      .card.matched .ring { animation: none; }
+      .cta { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene">
+    <div class="topbar">
+      <div class="logo-wrap" aria-label="Logo Kämpe">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="chip" aria-hidden="true"><span class="dot"></span> Reto diario</div>
+      </div>
+      <button id="restartTop" class="restart-btn" aria-label="Reiniciar reto" title="Reiniciar">↻</button>
+    </div>
+
+    <!-- START SCREEN -->
+    <section class="screen active" id="screen-start" aria-labelledby="start-title">
+      <div class="start-card glass" role="group" aria-label="Introducción al reto">
+        <h1 class="title" id="start-title">Memoria de herramientas: ¿qué va con qué?</h1>
+        <p class="subtitle">
+          Te enfrentas a un reto de memoria para emparejar conceptos básicos de los oficios técnicos: herramienta ↔ función, norma ↔ ejemplo, o soft skill ↔ situación.
+        </p>
+        <div class="glass" style="padding:12px; border-radius:12px;">
+          <strong>Cómo jugar</strong><br />
+          Toca para destapar 2 cartas por turno. Si coinciden, se bloquean; si no, se tapan al segundo. Tienes 12 intentos.
+        </div>
+        <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy" />
+        <div class="start-actions">
+          <button id="btnStart" class="cta" aria-label="Comenzar el reto">¡Comenzar!</button>
+          <div class="hint" aria-hidden="true">Objetivo: encuentra todas las parejas con precisión y rapidez.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME SCREEN -->
+    <section class="screen" id="screen-game" aria-live="polite" aria-labelledby="game-title">
+      <div class="board">
+        <div class="stats" style="justify-content: space-between;">
+          <div class="chip" id="chip-intentos" aria-live="polite" aria-atomic="true">Intentos: <span id="tries">12</span></div>
+          <div class="chip" id="chip-pairs" aria-live="polite" aria-atomic="true">Parejas: <span id="pairsFound">0</span>/4</div>
+        </div>
+        <h2 id="game-title" class="sr-only">Tablero de memoria</h2>
+        <div id="grid" class="grid" role="grid" aria-label="Tablero de cartas de memoria"></div>
+        <div class="game-footer">
+          <div class="glass hint">Consejo: memoriza por categorías (seguridad, medición, ajuste, nivelación).</div>
+          <button id="btnGiveUp" class="cta secondary" aria-label="Terminar y ver resultados">Terminar</button>
+        </div>
+      </div>
+      <div id="live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+    </section>
+
+    <!-- RESULTS SCREEN -->
+    <section class="screen" id="screen-results" aria-labelledby="results-title">
+      <div class="results-panel glass">
+        <h2 class="title" id="results-title">Resultados y claves de memorización</h2>
+        <div class="result-head">
+          <div class="stat-line"><span class="badge ok" id="badge-pairs">0/4</span> Parejas encontradas</div>
+          <div class="stat-line"><span class="badge" style="background:#1dd1ff;color:#003041;" id="badge-tries">0</span> Intentos restantes</div>
+        </div>
+
+        <div class="pairs-list" id="pairsList" aria-label="Explicaciones de las parejas"></div>
+
+        <div class="study-tip">
+          Consejo de estudio: usa tarjetas mentales “A ↔ B”. Di en voz alta “herramienta → función → ejemplo rápido”. Repite en bloques de 2 minutos para fortalecer la memoria a largo plazo.
+        </div>
+
+        <div class="results-actions">
+          <button id="btnReward" class="cta" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+          <button id="btnReplay" class="cta secondary" aria-label="Jugar de nuevo">Jugar de nuevo</button>
+          <small id="initDataWarn" style="opacity:0.8;"></small>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ------------------------------
+    // Game Data (pairs and explanations)
+    // ------------------------------
+    const PAIRS = [
+      {
+        id: 'epi',
+        a: 'EPI',
+        b: 'Equipo de Protección Individual',
+        explain: 'El EPI reduce el riesgo de lesiones. Casco, guantes y gafas son básicos para trabajos eléctricos o de obra.'
+      },
+      {
+        id: 'multimetro',
+        a: 'Multímetro',
+        b: 'Medir tensión',
+        explain: 'El multímetro permite medir tensión, corriente y continuidad. Verificar antes de tocar evita accidentes.'
+      },
+      {
+        id: 'llave',
+        a: 'Llave inglesa',
+        b: 'Ajustar tuercas',
+        explain: 'La llave inglesa se ajusta a distintos tamaños. Úsala alineada a la tuerca para no barrer los cantos.'
+      },
+      {
+        id: 'nivel',
+        a: 'Nivel de burbuja',
+        b: 'Asegurar horizontalidad',
+        explain: 'El nivel garantiza piezas rectas y bien alineadas. Mejora el acabado y reduce retrabajos en obra.'
+      }
+    ];
+
+    // ------------------------------
+    // State
+    // ------------------------------
+    const state = {
+      triedPairs: 0,       // number of pair attempts used
+      maxTries: 12,
+      matches: new Set(),  // ids matched
+      openCards: [],       // currently flipped cards (max 2)
+      lock: false,         // to prevent rapid taps during check
+      deck: [],            // cards on board
+      initData: '',        // preserved initData
+    };
+
+    // ------------------------------
+    // Helpers
+    // ------------------------------
+    const qs  = (sel, ctx=document) => ctx.querySelector(sel);
+    const qsa = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function setLive(text) {
+      const el = qs('#live');
+      el.textContent = text;
+    }
+
+    function updateUI() {
+      qs('#tries').textContent = (state.maxTries - state.triedPairs);
+      qs('#pairsFound').textContent = state.matches.size;
+    }
+
+    function makeDeck() {
+      const deck = [];
+      // For each pair, create two card objects (A and B).
+      PAIRS.forEach(p => {
+        deck.push({ id: `${p.id}-a`, pairId: p.id, label: p.a, side: 'a' });
+        deck.push({ id: `${p.id}-b`, pairId: p.id, label: p.b, side: 'b' });
+      });
+      return shuffle(deck);
+    }
+
+    function renderBoard() {
+      const grid = qs('#grid');
+      grid.innerHTML = '';
+      state.deck.forEach(card => {
+        const cell = document.createElement('div');
+        cell.className = 'card';
+        cell.role = 'gridcell';
+        // button inside for focusability
+        const btn = document.createElement('button');
+        btn.className = 'cardBtn';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', `Carta oculta: ${card.label}`);
+        btn.dataset.cardId = card.id;
+        btn.dataset.pairId = card.pairId;
+        btn.dataset.label = card.label;
+
+        const inner = document.createElement('div');
+        inner.className = 'card-inner';
+
+        const front = document.createElement('div');
+        front.className = 'card-face face-front';
+        front.textContent = '？';
+
+        const back = document.createElement('div');
+        back.className = 'card-face face-back';
+        back.textContent = card.label;
+
+        inner.appendChild(front);
+        inner.appendChild(back);
+        btn.appendChild(inner);
+        cell.appendChild(btn);
+        grid.appendChild(cell);
+      });
+    }
+
+    function getCardElementById(id) {
+      return qs(`.cardBtn[data-card-id="${id}"]`);
+    }
+
+    function flipCard(btnEl) {
+      const card = btnEl.closest('.card');
+      if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+      card.classList.add('flipped');
+      state.openCards.push(btnEl);
+    }
+
+    function unflipOpenCards() {
+      state.openCards.forEach(btn => {
+        const c = btn.closest('.card');
+        c.classList.remove('flipped');
+      });
+      state.openCards = [];
+    }
+
+    function markAsMatched(pairId) {
+      state.matches.add(pairId);
+      state.openCards.forEach(btn => {
+        const c = btn.closest('.card');
+        c.classList.add('matched');
+        // subtle ring effect
+        const ring = document.createElement('span');
+        ring.className = 'ring';
+        c.appendChild(ring);
+        // aria
+        btn.setAttribute('aria-label', `Carta emparejada: ${btn.dataset.label}`);
+      });
+      state.openCards = [];
+    }
+
+    function checkEnd() {
+      if (state.matches.size === PAIRS.length) {
+        endGame();
+      } else if (state.triedPairs >= state.maxTries) {
+        endGame();
+      }
+    }
+
+    function endGame() {
+      // Show results
+      buildResults();
+      // Toggle screens
+      showScreen('results');
+      // Allow scroll now (final details might overflow)
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overscrollBehavior = 'auto';
+    }
+
+    function buildResults() {
+      // Stats
+      qs('#badge-pairs').textContent = `${state.matches.size}/${PAIRS.length}`;
+      qs('#badge-tries').textContent = `${Math.max(0, state.maxTries - state.triedPairs)} restantes`;
+      // List
+      const list = qs('#pairsList');
+      list.innerHTML = '';
+      PAIRS.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'pair-item';
+        const matched = state.matches.has(p.id);
+        const head = document.createElement('div');
+        head.className = 'pair-title';
+        const badge = document.createElement('span');
+        badge.className = 'badge ' + (matched ? 'ok' : 'no');
+        badge.textContent = matched ? 'OK' : 'FALTA';
+        const titleTxt = document.createElement('span');
+        titleTxt.textContent = `${p.a} ↔ ${p.b}`;
+        head.appendChild(badge);
+        head.appendChild(titleTxt);
+
+        const desc = document.createElement('div');
+        desc.className = 'pair-desc';
+        desc.textContent = p.explain;
+
+        item.appendChild(head);
+        item.appendChild(desc);
+        list.appendChild(item);
+      });
+
+      // initData warning
+      const warn = qs('#initDataWarn');
+      if (!state.initData) {
+        warn.textContent = 'Aviso: initData no detectado en la URL.';
+      } else {
+        warn.textContent = '';
+      }
+    }
+
+    function showScreen(which) {
+      const ids = ['start', 'game', 'results'];
+      ids.forEach(id => {
+        const el = qs(`#screen-${id}`);
+        el.classList.toggle('active', id === which);
+      });
+      // Accessibility: focus a logical element
+      if (which === 'game') {
+        const firstCard = qs('.cardBtn');
+        if (firstCard) firstCard.focus({ preventScroll: true });
+      } else if (which === 'results') {
+        qs('#btnReward').focus({ preventScroll: true });
+      } else if (which === 'start') {
+        qs('#btnStart').focus({ preventScroll: true });
+      }
+    }
+
+    function resetGame() {
+      state.triedPairs = 0;
+      state.matches = new Set();
+      state.openCards = [];
+      state.lock = false;
+      state.deck = makeDeck();
+      setLive('Nuevo juego. Encuentra todas las parejas.');
+      renderBoard();
+      updateUI();
+    }
+
+    // ------------------------------
+    // Events
+    // ------------------------------
+    function onGridClick(e) {
+      const btn = e.target.closest('.cardBtn');
+      if (!btn) return;
+      if (state.lock) return;
+      const cardEl = btn.closest('.card');
+      // Can't flip already matched or flipped cards
+      if (cardEl.classList.contains('matched') || cardEl.classList.contains('flipped')) return;
+
+      flipCard(btn);
+
+      if (state.openCards.length === 2) {
+        // One pair attempt consumed
+        state.triedPairs++;
+        updateUI();
+        state.lock = true;
+        const [c1, c2] = state.openCards;
+        const isMatch = c1.dataset.pairId === c2.dataset.pairId && c1.dataset.cardId !== c2.dataset.cardId;
+
+        if (isMatch) {
+          setLive('¡Pareja correcta!');
+          // Slight delay to show both flipped before locking
+          setTimeout(() => {
+            markAsMatched(c1.dataset.pairId);
+            state.lock = false;
+            updateUI();
+            checkEnd();
+          }, 280);
+        } else {
+          setLive('No coinciden.');
+          setTimeout(() => {
+            unflipOpenCards();
+            state.lock = false;
+            checkEnd();
+          }, 800);
+        }
+      }
+    }
+
+    function attachEvents() {
+      // Start
+      qs('#btnStart').addEventListener('click', () => {
+        showScreen('game');
+        // Still no scroll in gameplay
+        document.documentElement.style.overflow = 'hidden';
+      });
+      // Grid
+      qs('#grid').addEventListener('click', onGridClick);
+      // Keyboard support for cards (Enter/Space)
+      qs('#grid').addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('cardBtn')) {
+          e.preventDefault();
+          e.target.click();
+        }
+      });
+      // Give Up / Terminar
+      qs('#btnGiveUp').addEventListener('click', endGame);
+      // Top restart
+      qs('#restartTop').addEventListener('click', () => {
+        showScreen('start');
+      });
+      // Replay from results
+      qs('#btnReplay').addEventListener('click', () => {
+        // Lock scroll again for gameplay
+        document.documentElement.style.overflow = 'hidden';
+        document.documentElement.style.overflowY = 'hidden';
+        document.body.style.overscrollBehavior = 'none';
+        resetGame();
+        showScreen('game');
+      });
+      // Reward
+      qs('#btnReward').addEventListener('click', () => {
+        const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(state.initData || '')}`;
+        window.location.href = url;
+      });
+    }
+
+    // ------------------------------
+    // Init
+    // ------------------------------
+    (function init() {
+      // Preserve initData
+      const params = new URLSearchParams(window.location.search);
+      state.initData = params.get('initData') || '';
+      // Start with scroll locked (already in CSS)
+      document.documentElement.style.overflow = 'hidden';
+      document.documentElement.style.overflowY = 'hidden';
+      // Prepare game state
+      state.deck = makeDeck();
+      renderBoard();
+      updateUI();
+      attachEvents();
+      // Start screen initially visible
+      showScreen('start');
+    })();
+  </script>
+</body>
+</html>
