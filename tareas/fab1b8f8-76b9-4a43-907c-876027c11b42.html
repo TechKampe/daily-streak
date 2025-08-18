@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Cuadro eléctrico sin fallos ⚡</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset básico y tipografía */
+    :root{
+      --blue-1:#0d2df0;
+      --blue-2:#2a68ff;
+      --blue-3:#002fa7;
+      --glass-bg:rgba(255,255,255,0.08);
+      --glass-brd:rgba(255,255,255,0.22);
+      --txt:#F4F7FF;
+      --sub:#BFD4FF;
+      --accent:#44ffb2;
+      --warn:#ffd166;
+      --err:#ff5d7a;
+      --ok:#46e18a;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html, body{
+      margin:0; padding:0;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color:var(--txt);
+      background: radial-gradient(1200px 800px at 70% -10%, #3e78ff 0%, #1145ff 30%, #001b6a 85%) fixed;
+      overscroll-behavior: none;
+      overflow: hidden; /* Bloqueo de scroll durante gameplay */
+      height: 100%;
+    }
+    /* Contenedor de escena a altura de viewport con safe-area y touch-action bloqueado */
+    .scene{
+      width:100%;
+      padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      display:flex; flex-direction:column; gap:10px;
+      touch-action: none;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    /* Fondo con avatar y brillo */
+    .bg-avatar{
+      position:fixed; inset:0; pointer-events:none; z-index:0;
+      background:
+        radial-gradient(800px 600px at 20% 100%, rgba(68,255,178,0.12), transparent 60%),
+        radial-gradient(600px 600px at 100% 0%, rgba(255,255,255,0.06), transparent 60%);
+      mix-blend-mode: screen;
+    }
+    .bg-avatar img{
+      position:absolute; right:2%; bottom:0;
+      width:min(52vw, 300px); height:auto; opacity:0.35; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.5));
+      user-select:none;
+    }
+
+    /* Header */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      padding:8px 12px; border-radius:14px; border:1px solid var(--glass-brd);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .brand img{
+      height:24px; width:auto; display:block;
+    }
+    .title{
+      font-weight:800; letter-spacing:0.2px;
+      font-size: clamp(16px, 4.6vw, 22px);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    }
+    .progress{
+      min-width:92px;
+      background: var(--glass-bg); border:1px solid var(--glass-brd);
+      border-radius:14px; padding:8px 10px;
+      display:flex; flex-direction:column; gap:6px; align-items:stretch;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .progress-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .progress-num{ font-weight:800; font-size: clamp(12px, 3.4vw, 14px); color:#DDE7FF; }
+    .bar{ position:relative; height:6px; background:rgba(255,255,255,0.15); border-radius:6px; overflow:hidden}
+    .bar-fill{ position:absolute; left:0; top:0; bottom:0; width:0%; background: linear-gradient(90deg, #44ffb2, #00d4ff); transition: width 300ms ease; }
+
+    /* Card principal (glassmorphism) */
+    .card{
+      position:relative; z-index:1;
+      flex:1;
+      display:flex; flex-direction:column; gap:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border:1px solid var(--glass-brd);
+      border-radius: var(--radius);
+      padding:14px;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    /* Pantallas (intro, juego, resultado) */
+    .view{
+      position:absolute; inset:0; padding:14px; display:flex; flex-direction:column; gap:14px;
+      opacity:0; pointer-events:none; transform: translateY(10px); transition: opacity 220ms ease, transform 220ms ease;
+    }
+    .view.active{ opacity:1; pointer-events:auto; transform: translateY(0); }
+    .intro p{
+      margin:0;
+      color:var(--sub);
+      font-size: clamp(13px, 3.7vw, 15px);
+    }
+
+    /* Pregunta + opciones */
+    .question{
+      font-size: clamp(17px, 4.5vw, 20px);
+      font-weight:800; line-height:1.2;
+      text-wrap: balance;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      margin-top:6px;
+    }
+    .options{
+      margin-top:auto; /* empuja opciones hacia abajo */
+      display:grid; grid-template-columns:1fr; gap:10px;
+      position:sticky; bottom:0;
+    }
+    .btn{
+      appearance:none; border:none; cursor:pointer;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      color:var(--txt); font-weight:800;
+      border-radius:14px; border:1px solid rgba(255,255,255,0.28);
+      padding:14px 14px; min-height:52px; /* >=44px accesible */
+      font-size: clamp(14px, 4vw, 16px);
+      letter-spacing:0.2px;
+      box-shadow: 0 10px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+      transition: transform 80ms ease, box-shadow 150ms ease, background 150ms ease;
+      outline: none;
+    }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 12px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.25); }
+    .btn:active{ transform: translateY(0); background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0.10)); }
+    .btn:focus-visible{
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.7), 0 10px 16px rgba(0,0,0,0.25);
+    }
+    .btn.primary{
+      background: linear-gradient(180deg, #42f6b5, #16b5ff);
+      color:#002642; border: none;
+    }
+    .btn.primary:hover{ filter: brightness(1.05); }
+    .btn.primary:active{ filter: brightness(0.95); }
+
+    .choice.selected{
+      outline:2px solid #00e0ff;
+      background: linear-gradient(180deg, rgba(0,224,255,0.22), rgba(0,224,255,0.12));
+    }
+
+    /* Animaciones de cambio de pregunta */
+    .slide-in{ animation: slideIn 240ms ease both; }
+    .slide-out{ animation: slideOut 200ms ease both; }
+    @keyframes slideIn{ from { opacity:0; transform: translateY(10px);} to { opacity:1; transform: translateY(0);} }
+    @keyframes slideOut{ from { opacity:1; transform: translateY(0);} to { opacity:0; transform: translateY(-10px);} }
+
+    /* Resultados (scroll permitida en esta vista) */
+    .results{
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .score{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border:1px solid var(--glass-brd);
+      border-radius:14px; padding:12px 14px;
+    }
+    .score h2{
+      font-size: clamp(16px, 4.2vw, 20px); margin:0; font-weight:800;
+    }
+    .score .pill{
+      padding:6px 10px; border-radius:999px; font-size: clamp(12px, 3.6vw, 14px);
+      background: rgba(68,255,178,0.2); color:#dfffe6; border:1px solid rgba(68,255,178,0.5);
+      font-weight:800;
+    }
+    .list{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .item{
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+      border:1px solid var(--glass-brd);
+      border-radius:14px; padding:12px;
+      display:grid; grid-template-columns: 1fr; gap:8px;
+    }
+    .q{
+      font-weight:800; font-size: clamp(14px, 3.8vw, 16px);
+    }
+    .ans{ font-size: clamp(12px, 3.6vw, 14px); color:#e6f0ff; }
+    .ans .tag{ font-weight:800; margin-right:6px; opacity:0.9; }
+    .ans.bad{ color:#ffd9e1; }
+    .ans.good{ color:#d5ffe9; }
+    .explain{ font-size: clamp(12px, 3.5vw, 14px); color:var(--sub); }
+    .tip{
+      background: linear-gradient(180deg, rgba(255, 209, 102, 0.25), rgba(255, 209, 102, 0.12));
+      border:1px solid rgba(255,209,102,0.6);
+      color:#fff7de;
+      padding:10px 12px; border-radius:12px;
+      font-size: clamp(12px, 3.6vw, 14px);
+    }
+    .final-cta{
+      position:sticky; bottom:0; display:flex; flex-direction:column; gap:8px;
+      padding-top:6px; background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.25));
+    }
+    .warn{
+      color: var(--warn); font-size: clamp(11px, 3.4vw, 13px); text-align:center;
+    }
+
+    /* Ocultación util */
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body>
+  <!-- Fondo y avatar (decorativo) -->
+  <div class="bg-avatar" aria-hidden="true">
+    <img src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy">
+  </div>
+
+  <div class="scene" id="app" role="application" aria-label="Desafío Kämpe: Cuadro eléctrico sin fallos">
+    <!-- Barra superior -->
+    <div class="topbar">
+      <div class="brand">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title">Cuadro eléctrico sin fallos ⚡</div>
+      </div>
+      <div class="progress" aria-live="polite">
+        <div class="progress-row">
+          <div style="font-weight:700; font-size:12px; color:#e8f1ff;">Progreso</div>
+          <div class="progress-num" id="progressText">0/5</div>
+        </div>
+        <div class="bar" aria-hidden="true"><span class="bar-fill" id="barFill"></span></div>
+      </div>
+    </div>
+
+    <!-- Card principal con vistas -->
+    <div class="card" id="card">
+      <!-- Intro -->
+      <section class="view intro active" id="view-intro" aria-label="Introducción">
+        <h1 style="margin:0; font-size: clamp(18px, 5vw, 22px); letter-spacing:0.2px;">¡Listo para el reto!</h1>
+        <p>Escenario: reforma en un piso antiguo; el diferencial dispara. Responde 5 preguntas rápidas: toca una opción y avanzas.</p>
+        <div class="options">
+          <button class="btn primary" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+        </div>
+      </section>
+
+      <!-- Juego -->
+      <section class="view" id="view-game" aria-label="Juego">
+        <div id="qWrap" class="slide-in">
+          <div class="question" id="questionText">Pregunta aquí</div>
+        </div>
+        <div class="options" id="optionsWrap">
+          <!-- Botones generados por JS -->
+        </div>
+      </section>
+
+      <!-- Resultados -->
+      <section class="view results" id="view-results" aria-label="Resultados">
+        <div class="score">
+          <h2 id="scoreTitle">Tu resultado</h2>
+          <div class="pill" id="scorePill">0/5</div>
+        </div>
+        <div class="list" id="resultList" style="max-height:none;">
+          <!-- Ítems generados -->
+        </div>
+        <div class="tip" id="generalTip">
+          Consejo: Antes de energizar, mide aislamiento con megóhmetro y seca/ventila circuitos con humedad.
+        </div>
+        <div class="final-cta">
+          <button class="btn primary" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+          <div class="warn hidden" id="warnInit">Aviso: no se detectó initData. Continúa e inicia sesión para reclamar tu recompensa.</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------
+    // Datos del cuestionario
+    // -------------------------
+    const QUESTIONS = [
+      {
+        q: "Antes de tocar el cuadro, ¿orden seguro?",
+        options: ["Identificar → cortar → LOTO → verificar", "Cortar y probar rápido", "Avisar y empezar"],
+        correctIndex: 0,
+        explanation: "Sigue LOTO: identifica el circuito, corta, bloquea/etiqueta y verifica ausencia de tensión."
+      },
+      {
+        q: "El diferencial dispara tras lluvia. ¿Primer paso?",
+        options: ["Buscar humedad y medir aislamiento", "Cambiar a 300 mA", "Puente temporal al diferencial"],
+        correctIndex: 0,
+        explanation: "La humedad provoca fugas. Localiza cajas/derivaciones afectadas y mide IR con megóhmetro."
+      },
+      {
+        q: "Tomas 2,5 mm² y 3,3 kW pico. ¿Magneto?",
+        options: ["C16", "C20", "C10"],
+        correctIndex: 0,
+        explanation: "Para 2,5 mm² en vivienda, 16 A es lo habitual; 3,3 kW ≈ 14 A, C16 protege sin sobredimensionar."
+      },
+      {
+        q: "Cuadro en lavadero húmedo. ¿IP mínimo?",
+        options: ["IP54", "IP20", "IP30"],
+        correctIndex: 0,
+        explanation: "Ambientes con humedad/salpicaduras requieren al menos IP54 (polvo y agua)."
+      },
+      {
+        q: "Cliente quiere luz hoy. ¿Mensaje clave?",
+        options: ["Riesgo/causa + medida segura temporal + plan", "Que enchufe menos cosas", "Tranquilo, lo apañamos"],
+        correctIndex: 0,
+        explanation: "Sé claro: qué ocurre, qué harás ahora de forma segura y el plan definitivo."
+      }
+    ];
+
+    // -------------------------
+    // Estado
+    // -------------------------
+    let current = 0;
+    let answers = []; // { choice, correctIndex }
+    const total = QUESTIONS.length;
+
+    // -------------------------
+    // DOM refs
+    // -------------------------
+    const progressText = document.getElementById('progressText');
+    const barFill = document.getElementById('barFill');
+    const viewIntro = document.getElementById('view-intro');
+    const viewGame = document.getElementById('view-game');
+    const viewResults = document.getElementById('view-results');
+    const questionText = document.getElementById('questionText');
+    const optionsWrap = document.getElementById('optionsWrap');
+    const qWrap = document.getElementById('qWrap');
+    const scoreTitle = document.getElementById('scoreTitle');
+    const scorePill = document.getElementById('scorePill');
+    const resultList = document.getElementById('resultList');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const warnInit = document.getElementById('warnInit');
+    const startBtn = document.getElementById('startBtn');
+    const card = document.getElementById('card');
+
+    // -------------------------
+    // initData handling
+    // -------------------------
+    const initData = new URLSearchParams(location.search).get('initData') || "";
+    if(!initData){
+      // Mostrar aviso leve solo al final
+      warnInit.classList.add('hidden');
+    }
+
+    // Al finalizar, el botón redirige conservando initData
+    rewardBtn.addEventListener('click', () => {
+      const target = 'https://kampe-game-phaser.onrender.com/daily_streak?initData=' + encodeURIComponent(initData);
+      window.location.href = target;
+    });
+
+    // -------------------------
+    // Accesibilidad: bloqueo/activación de scroll
+    // -------------------------
+    function disableScrollGameplay() {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      // Bloquea gestos
+      card.style.touchAction = 'none';
+    }
+    function enableScrollResults() {
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+      // Permite gestos en resultados
+      card.style.touchAction = 'auto';
+    }
+
+    // -------------------------
+    // UI Helpers
+    // -------------------------
+    function setProgress(idx) {
+      const shown = Math.min(idx + 1, total);
+      progressText.textContent = `${shown}/${total}`;
+      const pct = (idx / total) * 100;
+      barFill.style.width = `${pct}%`;
+    }
+
+    function renderQuestion() {
+      const data = QUESTIONS[current];
+      questionText.textContent = data.q;
+
+      // Limpiar y crear botones
+      optionsWrap.innerHTML = '';
+      data.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn choice';
+        btn.type = 'button';
+        btn.textContent = opt;
+        btn.setAttribute('aria-label', `Opción ${i+1}: ${opt}`);
+        btn.style.opacity = '0';
+        // micro delay para fade-in escalonado
+        setTimeout(()=>{ btn.style.transition='opacity 220ms ease'; btn.style.opacity='1'; }, 10);
+
+        btn.addEventListener('click', () => {
+          // Registrar respuesta y avanzar
+          btn.classList.add('selected');
+          answers.push({ choice: i, correctIndex: data.correctIndex });
+          // Pequeña animación de salida y siguiente
+          qWrap.classList.remove('slide-in'); qWrap.classList.add('slide-out');
+          setTimeout(() => {
+            current++;
+            if(current >= total){
+              showResults();
+            } else {
+              setProgress(current);
+              qWrap.classList.remove('slide-out');
+              qWrap.classList.add('slide-in');
+              renderQuestion();
+            }
+          }, 280);
+        }, { passive:true });
+
+        optionsWrap.appendChild(btn);
+      });
+
+      setProgress(current);
+    }
+
+    function showView(el){
+      [viewIntro, viewGame, viewResults].forEach(v=>v.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function startGame(){
+      disableScrollGameplay();
+      showView(viewGame);
+      renderQuestion();
+    }
+
+    function showResults(){
+      // Progreso completo
+      progressText.textContent = `${total}/${total}`;
+      barFill.style.width = '100%';
+
+      // Construir lista de resultados
+      resultList.innerHTML = '';
+      let correctCount = 0;
+
+      QUESTIONS.forEach((q, idx) => {
+        const user = answers[idx]?.choice;
+        const isCorrect = user === q.correctIndex;
+        if(isCorrect) correctCount++;
+
+        const item = document.createElement('div');
+        item.className = 'item';
+
+        const qEl = document.createElement('div');
+        qEl.className = 'q';
+        qEl.textContent = `${idx+1}. ${q.q}`;
+
+        const yourAns = document.createElement('div');
+        yourAns.className = 'ans ' + (isCorrect ? 'good' : 'bad');
+        const yourLabel = document.createElement('span');
+        yourLabel.className = 'tag';
+        yourLabel.textContent = 'Tu respuesta:';
+        yourAns.appendChild(yourLabel);
+        yourAns.appendChild(document.createTextNode(' ' + (q.options[user] ?? '—')));
+
+        const rightAns = document.createElement('div');
+        rightAns.className = 'ans good';
+        const rightLabel = document.createElement('span');
+        rightLabel.className = 'tag';
+        rightLabel.textContent = 'Correcta:';
+        rightAns.appendChild(rightLabel);
+        rightAns.appendChild(document.createTextNode(' ' + q.options[q.correctIndex]));
+
+        const explain = document.createElement('div');
+        explain.className = 'explain';
+        explain.textContent = q.explanation;
+
+        item.appendChild(qEl);
+        item.appendChild(yourAns);
+        item.appendChild(rightAns);
+        item.appendChild(explain);
+        resultList.appendChild(item);
+      });
+
+      scoreTitle.textContent = correctCount >= 4 ? "¡Buen diagnóstico!" : "Sigue puliendo el ojo técnico";
+      scorePill.textContent = `${correctCount}/${total}`;
+
+      // Mostrar aviso leve de initData si falta
+      if(!initData){
+        warnInit.classList.remove('hidden');
+      }
+
+      // Activar scroll SOLO ahora
+      enableScrollResults();
+      showView(viewResults);
+    }
+
+    // -------------------------
+    // Eventos
+    // -------------------------
+    startBtn.addEventListener('click', startGame, { passive:true });
+
+    // Preparar intro
+    setProgress(0);
+
+    // Prueba mental 320×640: limitar texto y botones (3 máx); sticky asegura CTAs visibles.
+    // Nota: no hay inputs de texto, por lo que el teclado no ocultará CTAs.
+  </script>
+</body>
+</html>
