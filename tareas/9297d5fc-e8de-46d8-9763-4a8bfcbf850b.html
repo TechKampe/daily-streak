@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Corte Seguro: Modo Electricista ⚡ | Kämpe</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ===== Global reset + scroll lock during gameplay ===== */
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;              /* Scroll bloqueado en gameplay */
+      overscroll-behavior: none;     /* Evita rebotes nativos */
+      background: #0d1c46;
+      color: #e9f0ff;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    /* ===== Scene sizing: 100svh with fallbacks ===== */
+    .scene {
+      width: 100%;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      padding-top: calc(12px + env(safe-area-inset-top));
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      padding-left: calc(12px + env(safe-area-inset-left));
+      padding-right: calc(12px + env(safe-area-inset-right));
+      touch-action: none; /* Anti-derrapes táctiles */
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(59,130,246,0.55), transparent 60%),
+        radial-gradient(900px 500px at 0% 110%, rgba(168,85,247,0.45), transparent 60%),
+        linear-gradient(180deg, #0f1e59 0%, #0a1a40 100%);
+      overflow: hidden;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { @supports (height: 100dvh) { .scene { height: 100dvh; } } }
+    @supports not (height: 100svh) { @supports not (height: 100dvh) { .scene { height: 100vh; } } }
+
+    /* ===== Visual assets ===== */
+    .avatar {
+      position: absolute;
+      right: -6%;
+      bottom: -8%;
+      width: min(52vw, 320px);
+      opacity: 0.22;
+      filter: drop-shadow(0 12px 40px rgba(0,0,0,0.35));
+      pointer-events: none;
+      user-select: none;
+    }
+    .kampe-logo {
+      height: 28px;
+      width: auto;
+      display: block;
+    }
+
+    /* ===== Top bar ===== */
+    .topbar {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 8px;
+    }
+    .progress {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      min-width: 88px;
+    }
+    .progress-count {
+      font-weight: 800;
+      font-size: clamp(12px, 1.6vw + 10px, 16px);
+      letter-spacing: 0.4px;
+      color: #b7cffd;
+    }
+    .progress-bar {
+      width: 116px;
+      height: 6px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.09);
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #22d3ee, #60a5fa, #a78bfa);
+      border-radius: inherit;
+      transition: width 260ms ease;
+    }
+
+    /* ===== Panel (glassmorphism) ===== */
+    .panel {
+      width: min(92%, 720px);
+      max-width: 720px;
+      margin-top: 8px;
+      padding: 16px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 16px;
+      box-shadow:
+        0 8px 24px rgba(0,0,0,0.30),
+        inset 0 0 0 1px rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .title {
+      font-size: clamp(18px, 3.2vw + 12px, 24px);
+      line-height: 1.18;
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 2px 12px rgba(59,130,246,0.35);
+      margin: 0;
+    }
+    .subtitle {
+      margin: 0;
+      font-size: clamp(12px, 1.6vw + 10px, 15px);
+      color: #d8e6ff;
+      opacity: 0.9;
+    }
+    .tutorial {
+      margin: 6px 0 0 0;
+      font-size: clamp(12px, 1.4vw + 10px, 14px);
+      color: #cfe1ff;
+    }
+
+    /* ===== Options (big buttons) ===== */
+    .options {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 6px;
+      /* Keep everything visible on 320x640 */
+    }
+    .option {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 56px; /* >=44px accessibility */
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      box-shadow:
+        0 6px 18px rgba(0,0,0,0.25),
+        inset 0 0 0 1px rgba(255,255,255,0.06);
+      color: #fff;
+      font-weight: 700;
+      font-size: clamp(14px, 1.6vw + 12px, 18px);
+      cursor: pointer;
+      user-select: none;
+      transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease, border-color 140ms ease;
+      outline: none;
+    }
+    .option:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.35);
+    }
+    .option:active {
+      transform: translateY(0) scale(0.98);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+    }
+    .option:focus-visible {
+      outline: 3px solid #22d3ee;
+      outline-offset: 2px;
+    }
+    .option .ripple {
+      position: absolute;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255,255,255,0.35);
+      animation: ripple 500ms ease-out;
+      pointer-events: none;
+    }
+    @keyframes ripple {
+      from { width: 0; height: 0; opacity: 0.6; }
+      to { width: 240px; height: 240px; opacity: 0; }
+    }
+
+    /* ===== Navigation/CTA ===== */
+    .cta {
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 16px;
+      min-height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #22d3ee, #60a5fa, #a78bfa);
+      color: #0b1130;
+      font-weight: 800;
+      font-size: clamp(14px, 1.6vw + 12px, 18px);
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(59,130,246,0.45);
+      transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+    }
+    .cta:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(59,130,246,0.55); }
+    .cta:active { transform: translateY(0) scale(0.98); }
+    .cta:focus-visible { outline: 3px solid #22d3ee; outline-offset: 2px; }
+
+    /* ===== Question + animations ===== */
+    .question {
+      margin: 4px 0 0;
+      font-weight: 800;
+      font-size: clamp(16px, 2.4vw + 12px, 20px);
+      color: #ffffff;
+    }
+    .fade-enter { opacity: 0; transform: translateX(24px); }
+    .fade-enter-active { opacity: 1; transform: translateX(0); transition: all 220ms ease; }
+    .fade-exit { opacity: 1; transform: translateX(0); }
+    .fade-exit-active { opacity: 0; transform: translateX(-24px); transition: all 180ms ease; }
+
+    /* ===== Results view ===== */
+    .results {
+      display: none;
+      width: min(92%, 820px);
+      max-width: 820px;
+      margin-top: 8px;
+      padding: 16px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 16px;
+      box-shadow:
+        0 8px 24px rgba(0,0,0,0.30),
+        inset 0 0 0 1px rgba(255,255,255,0.06);
+      color: #eaf2ff;
+    }
+    .score {
+      font-size: clamp(16px, 2.2vw + 12px, 22px);
+      font-weight: 800;
+      margin: 0 0 8px 0;
+    }
+    .qa-list {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0 12px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .qa-item {
+      background: rgba(10, 18, 60, 0.45);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    .qa-q {
+      font-weight: 800;
+      margin: 0 0 6px 0;
+      font-size: clamp(13px, 1.4vw + 10px, 16px);
+      color: #ffffff;
+    }
+    .qa-a, .qa-c, .qa-ex {
+      margin: 2px 0;
+      font-size: clamp(12px, 1.2vw + 9px, 14px);
+      line-height: 1.35;
+    }
+    .ok { color: #72f5a4; font-weight: 700; }
+    .bad { color: #ffb4b4; font-weight: 700; }
+    .tip {
+      margin: 12px 0 8px 0;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(34, 211, 238, 0.15);
+      border: 1px solid rgba(34, 211, 238, 0.35);
+      color: #d7fbff;
+      font-size: clamp(12px, 1.4vw + 10px, 14px);
+    }
+    .final-cta-wrap {
+      position: sticky;
+      bottom: 0;
+      padding-top: 8px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(3,8,30,0.45));
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: stretch;
+    }
+    .warn {
+      color: #ffd29b;
+      font-size: 12px;
+      text-align: center;
+      opacity: 0.9;
+    }
+
+    /* ===== Start view separators ===== */
+    .muted {
+      opacity: 0.9;
+      color: #cfe1ff;
+    }
+    .hidden { display: none; }
+
+    /* ===== Reduced motion ===== */
+    @media (prefers-reduced-motion: reduce) {
+      .fade-enter, .fade-enter-active, .fade-exit, .fade-exit-active {
+        transition: none !important;
+        transform: none !important;
+      }
+      .option, .cta { transition: none !important; }
+    }
+
+    /* ===== Mobile-first sizing cares ===== */
+    /* This spacing keeps everything inside 320x640 without scroll during gameplay */
+    .panel.compact {
+      padding: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <!-- Decorative Avatar -->
+    <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+    <!-- Topbar -->
+    <div class="topbar" aria-hidden="false">
+      <img class="kampe-logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+      <div class="progress" aria-live="polite" aria-atomic="true">
+        <div class="progress-count" id="progressCount">0/5</div>
+        <div class="progress-bar" aria-hidden="true">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Start Panel -->
+    <section class="panel compact" id="startPanel" role="region" aria-labelledby="startTitle">
+      <h1 class="title" id="startTitle">Corte Seguro: Modo Electricista ⚡</h1>
+      <p class="subtitle">
+        Piso antiguo. Cambias un interruptor y revisas un circuito que tira el magneto. Poco tiempo, máxima seguridad.
+      </p>
+      <p class="tutorial">Cómo jugar: toca una opción y pasas directo. Son 5 preguntas; mira el progreso arriba.</p>
+      <button id="startBtn" class="cta" aria-label="Empezar el reto">Empezar</button>
+    </section>
+
+    <!-- Quiz Panel -->
+    <section class="panel compact hidden" id="quizPanel" role="region" aria-labelledby="qText">
+      <h2 class="question" id="qText">Pregunta</h2>
+      <div class="options" id="options">
+        <!-- Options injected -->
+      </div>
+    </section>
+
+    <!-- Results Panel -->
+    <section class="results" id="resultsPanel" role="region" aria-labelledby="resultsTitle">
+      <h2 class="score" id="resultsTitle">¡Resultados!</h2>
+      <ul class="qa-list" id="qaList"></ul>
+      <div class="tip" id="finalTip">
+        Mini-checklist pre-intervención: 1) Avisar y acordar el corte; 2) Identificar el circuito; 3) Abrir, bloquear y etiquetar; 4) Verificar ausencia de tensión (Probar–Verificar–Probar); 5) EPI puestos.
+      </div>
+      <div class="final-cta-wrap">
+        <button id="rewardBtn" class="cta" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        <small id="initWarn" class="warn hidden">No se detectó initData. Podrás reclamar igualmente.</small>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ====== Core data (5 questions, 2–3 opciones máx.) ======
+    const QUESTIONS = [
+      {
+        q: "Antes de tocar el interruptor…",
+        options: [
+          "Aviso a la clienta y corto el general.",
+          "Pruebo si chispea.",
+          "Bajo el magneto sin avisar."
+        ],
+        correct: 0,
+        expl: "Primero comunicas y acuerdas el corte. Evitas sustos y reconexiones inesperadas."
+      },
+      {
+        q: "Ausencia de tensión: orden correcto",
+        options: [
+          "Abrir corte > Bloquear/etiquetar > Probar–Verificar–Probar.",
+          "Probar > Abrir corte > Bloquear.",
+          "Bloquear > Probar > Abrir."
+        ],
+        correct: 0,
+        expl: "Sigue LOTO y método PVP: prueba el comprobador en vivo, verifica el circuito y vuelve a probar en vivo."
+      },
+      {
+        q: "EPI mínimo para la maniobra",
+        options: [
+          "Guantes dieléctricos, gafas y calzado S3.",
+          "Solo gorra.",
+          "Ninguno si es “pequeño”."
+        ],
+        correct: 0,
+        expl: "Protección frente a proyecciones, arco y contacto accidental. La prisa no sustituye al EPI."
+      },
+      {
+        q: "REBT (vivienda): alumbrado",
+        options: [
+          "1,5 mm² con magneto 10 A.",
+          "1,0 mm².",
+          "2,5 mm² con 25 A."
+        ],
+        correct: 0,
+        expl: "Habitualmente 1,5 mm² protegido por 10 A (REBT ITC-BT-25)."
+      },
+      {
+        q: "El diferencial cae al rearmar",
+        options: [
+          "Desconectas cargas, rearmas y acotas el fallo por tramos/aislamiento.",
+          "Puenteas el diferencial.",
+          "Lo cambias sin mirar."
+        ],
+        correct: 0,
+        expl: "Aísla por equipos/tramos y mide aislamiento para localizar la derivación. Nunca puentear."
+      }
+    ];
+
+    // ====== State ======
+    let current = 0;
+    const total = QUESTIONS.length;
+    const answers = new Array(total).fill(null);
+
+    // ====== DOM refs ======
+    const startPanel = document.getElementById('startPanel');
+    const startBtn = document.getElementById('startBtn');
+    const quizPanel = document.getElementById('quizPanel');
+    const qText = document.getElementById('qText');
+    const optionsWrap = document.getElementById('options');
+    const progressCount = document.getElementById('progressCount');
+    const progressFill = document.getElementById('progressFill');
+    const resultsPanel = document.getElementById('resultsPanel');
+    const qaList = document.getElementById('qaList');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+
+    // ====== initData handling ======
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+    function openReward() {
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      location.href = url;
+    }
+    rewardBtn.addEventListener('click', openReward);
+    if (!initData) initWarn.classList.remove('hidden');
+
+    // ====== Utility: create option button with ripple ======
+    function createOptionBtn(label, idx) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'option';
+      btn.textContent = label;
+      btn.setAttribute('aria-label', `Respuesta ${idx + 1}: ${label}`);
+      btn.addEventListener('click', (ev) => {
+        // Ripple
+        const rect = btn.getBoundingClientRect();
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple';
+        const x = ev.clientX - rect.left;
+        const y = ev.clientY - rect.top;
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+        btn.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 500);
+
+        handleAnswer(idx);
+      });
+      return btn;
+    }
+
+    // ====== Quiz rendering ======
+    function updateProgress() {
+      progressCount.textContent = `${Math.min(current + 1, total)}/${total}`;
+      const pct = Math.min((current) / total, 1) * 100;
+      progressFill.style.width = `${pct}%`;
+    }
+
+    function renderQuestion() {
+      const data = QUESTIONS[current];
+      qText.textContent = data.q;
+
+      // Clean old
+      optionsWrap.innerHTML = '';
+      // Inject new options (max 3)
+      data.options.forEach((opt, i) => {
+        const b = createOptionBtn(opt, i);
+        optionsWrap.appendChild(b);
+      });
+
+      // Animate in
+      quizPanel.classList.remove('fade-exit', 'fade-exit-active');
+      quizPanel.classList.add('fade-enter');
+      requestAnimationFrame(() => {
+        quizPanel.classList.add('fade-enter-active');
+      });
+      setTimeout(() => {
+        quizPanel.classList.remove('fade-enter', 'fade-enter-active');
+        // Set focus on first option for a11y
+        const firstBtn = optionsWrap.querySelector('button.option');
+        if (firstBtn) firstBtn.focus();
+      }, 230);
+
+      updateProgress();
+    }
+
+    function handleAnswer(idx) {
+      // Avoid double taps
+      const all = optionsWrap.querySelectorAll('button.option');
+      all.forEach(b => b.disabled = true);
+      answers[current] = idx;
+
+      // Quick transition to next
+      quizPanel.classList.remove('fade-enter', 'fade-enter-active');
+      quizPanel.classList.add('fade-exit');
+      requestAnimationFrame(() => {
+        quizPanel.classList.add('fade-exit-active');
+      });
+
+      setTimeout(() => {
+        if (current < total - 1) {
+          current++;
+          renderQuestion();
+        } else {
+          showResults();
+        }
+      }, 190);
+    }
+
+    // ====== Start -> Quiz ======
+    startBtn.addEventListener('click', () => {
+      startPanel.classList.add('hidden');
+      quizPanel.classList.remove('hidden');
+      current = 0;
+      renderQuestion();
+    });
+
+    // ====== Results ======
+    function showResults() {
+      // Fill remaining progress as 100%
+      progressCount.textContent = `${total}/${total}`;
+      progressFill.style.width = `100%`;
+
+      // Build list
+      qaList.innerHTML = '';
+      let score = 0;
+      QUESTIONS.forEach((q, i) => {
+        const li = document.createElement('li');
+        li.className = 'qa-item';
+        const ok = answers[i] === q.correct;
+        if (ok) score++;
+
+        const qEl = document.createElement('p');
+        qEl.className = 'qa-q';
+        qEl.textContent = `Q${i+1}. ${q.q}`;
+        const aEl = document.createElement('p');
+        aEl.className = 'qa-a';
+        aEl.innerHTML = `Tu respuesta: <span class="${ok ? 'ok' : 'bad'}">${q.options[answers[i]] ?? '—'}</span>`;
+        const cEl = document.createElement('p');
+        cEl.className = 'qa-c';
+        cEl.innerHTML = `Correcta: <strong>${q.options[q.correct]}</strong>`;
+        const exEl = document.createElement('p');
+        exEl.className = 'qa-ex';
+        exEl.textContent = q.expl;
+
+        li.appendChild(qEl);
+        li.appendChild(aEl);
+        li.appendChild(cEl);
+        li.appendChild(exEl);
+        qaList.appendChild(li);
+      });
+
+      document.getElementById('resultsTitle').textContent = `¡Resultados! ${score}/${total} correctas`;
+
+      // Swap views
+      quizPanel.classList.add('hidden');
+      resultsPanel.style.display = 'block';
+
+      // Enable scroll only on results
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+    }
+
+    // ====== Initial UI state ======
+    (function init() {
+      // Ensure scroll locked initially (gameplay)
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      updateProgress(); // show 0/5 at top initially
+    })();
+  </script>
+</body>
+</html>
