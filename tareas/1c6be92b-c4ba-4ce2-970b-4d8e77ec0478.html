@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Memorama PRL Eléctrica ⚡ — Kämpe</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ========== Global Reset & Base ========== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      color-scheme: dark;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 70% -20%, #3aa0ff22, transparent 60%),
+                  radial-gradient(1200px 800px at -10% 120%, #56ffa422, transparent 60%),
+                  linear-gradient(180deg, #0b2aa3 0%, #0e3bff 70%, #0a1e7a 100%);
+      color: #f5f9ff;
+      overflow: hidden;               /* Block scroll during gameplay */
+      overscroll-behavior: none;      /* Anti-derrapes */
+      -webkit-tap-highlight-color: transparent;
+    }
+    :root{
+      --glass: rgba(255,255,255,0.08);
+      --glass-strong: rgba(255,255,255,0.14);
+      --accent: #68e1fd;
+      --accent2:#7cffb2;
+      --warning:#ffd166;
+      --danger:#ff6b6b;
+      --ok:#7cffb2;
+      --hud-h: 72px; /* HUD height */
+      --shadow: 0 6px 30px rgba(0,0,0,0.35);
+      --text-strong: #ffffff;
+      --text-soft: #dfe8ff;
+    }
+
+    /* ========== Scene Height: 100svh with fallbacks ========== */
+    .scene {
+      position: relative;
+      width: 100%;
+      max-width: 540px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      padding: calc(10px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom));
+      gap: 8px;
+      isolation: isolate;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    /* Background avatar for flavor (Fortnite-ish) */
+    .avatar-bg {
+      position: absolute;
+      right: -10px;
+      bottom: calc(var(--hud-h) + 12px + env(safe-area-inset-bottom));
+      width: min(42%, 210px);
+      max-width: 230px;
+      opacity: 0.16;
+      filter: saturate(1.2) drop-shadow(0 10px 30px rgba(0,0,0,.35));
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+    }
+
+    /* ========== Header ========== */
+    .topbar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 2;
+    }
+    .logo {
+      height: 26px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+      user-select: none;
+    }
+    .titlebox {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: var(--shadow);
+      border-radius: 14px;
+      padding: 8px 12px;
+      backdrop-filter: blur(6px);
+    }
+    .title {
+      margin: 0;
+      line-height: 1.15;
+      font-weight: 800;
+      color: var(--text-strong);
+      text-shadow: 0 1px 0 rgba(0,0,0,0.2);
+      font-size: clamp(16px, 4.3vw, 22px);
+    }
+    .help-btn {
+      margin-left: auto;
+      background: linear-gradient(180deg, #ffffff1a, #ffffff0d);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: clamp(13px, 3.6vw, 15px);
+      min-height: 44px;
+      min-width: 44px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+    .help-btn:focus-visible, .cta:focus-visible, .hud-btn:focus-visible, .card:focus-visible {
+      outline: 3px solid #b3f4ff;
+      outline-offset: 2px;
+    }
+
+    /* Stats bar (top under title) */
+    .stats {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: clamp(12px, 3.2vw, 14px);
+      color: var(--text-soft);
+      z-index: 2;
+      margin-top: -2px;
+    }
+    .chip {
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.18);
+      padding: 6px 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.25);
+    }
+    .chip .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+    }
+    .chip.warn .dot { background: var(--warning); box-shadow: 0 0 10px var(--warning); }
+    .chip.ok .dot { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+
+    /* ========== Board ========== */
+    .game {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding-bottom: calc(var(--hud-h) + 8px + env(safe-area-inset-bottom)); /* room for HUD */
+    }
+    .board {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-auto-rows: 1fr;
+      gap: 10px;
+      width: 100%;
+      height: 100%;
+      touch-action: none; /* Anti-derrapes: disable native scroll/pinch in interactive area */
+    }
+    /* Each grid cell uses a card with fixed aspect to ensure all fit on small screens */
+    .card {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3; /* Wider than tall so 4 rows fit on 320x640 */
+      perspective: 900px;
+      border-radius: 14px;
+      user-select: none;
+      cursor: pointer;
+      -webkit-user-select: none;
+      outline: none;
+    }
+    .card .inner {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      transform-style: preserve-3d;
+      transition: transform 420ms cubic-bezier(.2,.7,.2,1), box-shadow 200ms ease;
+      box-shadow: var(--shadow);
+    }
+    .card .face {
+      position: absolute; inset: 0;
+      display: flex;
+      align-items: center; justify-content: center;
+      border-radius: 14px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+    .card .front {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+      color: #fff;
+      font-weight: 800;
+      font-size: clamp(22px, 8vw, 30px);
+      letter-spacing: 1px;
+      text-shadow: 0 3px 12px rgba(0,0,0,0.45);
+    }
+    .front .bolt {
+      filter: drop-shadow(0 3px 8px rgba(0,0,0,.35));
+    }
+    .card .back {
+      transform: rotateY(180deg);
+      background:
+        linear-gradient(180deg, rgba(10, 29, 92, 0.45), rgba(12, 20, 76, 0.55)),
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+      color: #fff;
+      padding: 10px;
+      text-align: center;
+    }
+    .label {
+      font-weight: 800;
+      line-height: 1.1;
+      font-size: clamp(12px, 3.8vw, 16px);
+      text-wrap: balance;
+      text-shadow: 0 1px 0 rgba(0,0,0,.25);
+    }
+    .sub {
+      margin-top: 2px;
+      opacity: .85;
+      font-size: clamp(10px, 3.1vw, 12px);
+    }
+    .card.flipped .inner { transform: rotateY(180deg); }
+    .card.matched .inner {
+      box-shadow: 0 0 0 2px #7cffb2aa, 0 0 22px #7cffb277, var(--shadow);
+      animation: glow 650ms ease-out 1;
+    }
+    .card.missed .inner {
+      animation: shake 450ms ease-in-out 1;
+    }
+    @keyframes glow {
+      0% { box-shadow: 0 0 0 0 #7cffb200, var(--shadow); }
+      90% { box-shadow: 0 0 0 4px #7cffb2, 0 0 30px #9dffcb, var(--shadow);}
+      100% { box-shadow: 0 0 0 2px #7cffb2aa, 0 0 22px #7cffb277, var(--shadow); }
+    }
+    @keyframes shake {
+      10%, 90% { transform: translateX(-2px); }
+      20%, 80% { transform: translateX(3px); }
+      30%, 70% { transform: translateX(-4px); }
+      40%, 60% { transform: translateX(4px); }
+      50% { transform: translateX(0); }
+    }
+
+    /* ========== HUD (bottom fixed) ========== */
+    .hud {
+      position: fixed;
+      left: 0; right: 0;
+      bottom: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(10,15,55,0.1), rgba(8,12,48,0.55));
+      backdrop-filter: blur(8px);
+      border-top: 1px solid rgba(255,255,255,0.16);
+      height: var(--hud-h);
+    }
+    .bar {
+      flex: 1;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    .bar > i {
+      position: absolute;
+      top: 0; left: 0;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #9df8ff);
+      box-shadow: 0 0 16px #74eaff;
+      transition: width 280ms ease;
+    }
+    .hud-btn {
+      background: linear-gradient(180deg, #ffffff1a, #ffffff0d);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 8px 12px;
+      min-height: 44px;
+      min-width: 44px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: clamp(12px, 3.2vw, 14px);
+      box-shadow: var(--shadow);
+    }
+    .hud .info {
+      min-width: 90px;
+      text-align: right;
+      font-weight: 800;
+      font-size: clamp(12px, 3.2vw, 14px);
+      color: var(--text-soft);
+    }
+
+    /* ========== Overlays ========== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(800px 400px at 50% -20%, rgba(255,255,255,0.08), transparent 60%),
+                  rgba(1, 8, 25, 0.6);
+      padding: 16px;
+    }
+    .overlay.show { display: flex; }
+    .modal {
+      width: 100%;
+      max-width: 560px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 18px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+      padding: 18px;
+      backdrop-filter: blur(8px);
+    }
+    .modal h2 {
+      margin: 0 0 6px 0;
+      font-size: clamp(16px, 4.4vw, 22px);
+      line-height: 1.1;
+    }
+    .modal p {
+      margin: 6px 0;
+      font-size: clamp(12px, 3.6vw, 14px);
+      color: var(--text-soft);
+    }
+    .row {
+      display: flex; gap: 10px; align-items: center; justify-content: stretch; flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .cta {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(180deg, #5ce1ff, #3bc2ff);
+      color: #022a3a;
+      border: none;
+      border-radius: 14px;
+      min-height: 48px;
+      padding: 10px 14px;
+      font-weight: 900;
+      font-size: clamp(14px, 4vw, 16px);
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(80,200,255,0.35), 0 2px 0 rgba(0,0,0,0.15) inset;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+    }
+    .cta.secondary {
+      background: linear-gradient(180deg, #ffffff22, #ffffff16);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.24);
+      text-shadow: none;
+      box-shadow: var(--shadow);
+    }
+
+    /* Results content scrollable */
+    .results-content {
+      max-height: min(100svh, 100dvh, 100vh);
+      overflow-y: auto;
+      padding-bottom: 8px;
+    }
+    .pair {
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      padding: 10px;
+      margin: 8px 0;
+    }
+    .pair strong {
+      display: block;
+      font-size: clamp(12px, 3.8vw, 15px);
+      color: #fff;
+    }
+    .pair small {
+      display: block;
+      color: var(--text-soft);
+      font-size: clamp(11px, 3.4vw, 13px);
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+    .warn {
+      color: #ffef9a;
+      font-weight: 700;
+    }
+    .tiny-note {
+      font-size: 12px;
+      color: #ffef9a;
+      margin-top: 6px;
+    }
+
+    /* Accessibility helpers */
+    .sr-only {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap; border: 0; padding: 0; margin: -1px;
+    }
+
+    /* Prevent long words breaking layout */
+    .label, .pair { word-wrap: break-word; overflow-wrap: anywhere; }
+
+    /* Small screens tweaks */
+    @media (max-width: 340px) {
+      .title { font-size: 16px; }
+      .stats { gap: 6px; }
+      .chip { padding: 6px 8px; }
+      .hud .info { min-width: 80px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" role="application" aria-label="Memorama PRL Eléctrica">
+    <img class="avatar-bg" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" aria-hidden="true" loading="lazy">
+    <header class="topbar" aria-label="Barra superior">
+      <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" draggable="false">
+      <div class="titlebox">
+        <h1 class="title">Memorama PRL Eléctrica ⚡</h1>
+        <button class="help-btn" id="openIntro" type="button" aria-label="Ver instrucciones rápidas">¿Cómo jugar?</button>
+      </div>
+    </header>
+
+    <div class="stats" aria-live="polite">
+      <div class="chip" id="chipTries"><span class="dot"></span><span>Intentos: <b id="tries">0</b>/<b id="maxTries">12</b></span></div>
+      <div class="chip ok"><span class="dot"></span><span>Parejas: <b id="pairs">0</b>/4</span></div>
+    </div>
+
+    <main class="game">
+      <div class="board" id="board" aria-label="Tablero de cartas"></div>
+    </main>
+
+    <footer class="hud" aria-label="Indicadores y acciones">
+      <button class="hud-btn" id="restartBtn" type="button" aria-label="Reiniciar partida">Reiniciar</button>
+      <div class="bar" aria-hidden="true"><i id="progress"></i></div>
+      <div class="info" id="infoText">Precisión</div>
+    </footer>
+  </div>
+
+  <!-- Intro / Tutorial overlay -->
+  <div class="overlay show" id="intro">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+      <h2 id="introTitle">Escenario</h2>
+      <p>Estás en un taller revisando un pequeño cuadro eléctrico de una zona de trabajo. Antes de intervenir, prepara EPI y verifica ausencia de tensión.</p>
+      <p><b>Dinámica:</b> memorama textual. Destapa dos cartas por turno. Si coinciden, quedan fijas; si no, se ocultan tras 1 s. Límite: 12 intentos.</p>
+      <div class="row">
+        <button class="cta" id="startBtn" type="button" aria-label="Empezar a jugar">Empezar</button>
+        <button class="cta secondary" id="closeIntro" type="button" aria-label="Cerrar instrucciones">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results overlay -->
+  <div class="overlay" id="results">
+    <div class="modal results-content" role="dialog" aria-modal="true" aria-labelledby="resTitle">
+      <h2 id="resTitle">Resumen del reto</h2>
+      <p id="resStats">Intentos: –, Parejas encontradas: –.</p>
+      <div id="resPairs"></div>
+      <div class="pair">
+        <strong>Consejo de memorización</strong>
+        <small>Visualiza el flujo seguro: Cortar → Bloquear/etiquetar → Verificar ausencia de tensión → Protegerte → Medir. Repite en voz alta cada vez que encuentres una pareja.</small>
+      </div>
+      <div class="row">
+        <a id="rewardLink" class="cta" href="#" role="button" aria-label="Ver mi recompensa">Ver mi recompensa</a>
+        <button class="cta secondary" id="playAgain" type="button" aria-label="Jugar de nuevo">Jugar de nuevo</button>
+      </div>
+      <p id="initWarn" class="tiny-note" style="display:none">Aviso: initData ausente. Puedes continuar y verás contenido genérico.</p>
+    </div>
+  </div>
+
+  <span class="sr-only" aria-live="polite" id="live"></span>
+
+  <script>
+    // ======== initData: preserve EXACT original substring from URL ========
+    function getRawInitData() {
+      const qs = window.location.search || '';
+      const key = 'initData=';
+      const idx = qs.indexOf(key);
+      if (idx === -1) return '';
+      let start = idx + key.length;
+      let end = qs.indexOf('&', start);
+      if (end === -1) end = qs.length;
+      return qs.substring(start, end); // raw, un-decoded
+    }
+    const RAW_INIT_DATA = getRawInitData();
+
+    // ======== Game Data (Pairs) ========
+    const PAIRS = [
+      {
+        id: 'detector',
+        a: 'Detector de tensión',
+        b: 'Comprobar que no hay corriente',
+        explain: 'Antes de tocar conductores, verifica ausencia de tensión con un detector homologado en todos los polos. Error típico: confiar solo en “bajar” el interruptor sin comprobar.'
+      },
+      {
+        id: 'loto',
+        a: 'LOTO (bloqueo y etiquetado)',
+        b: 'Aislar y señalizar la fuente',
+        explain: 'Aplica candado y etiqueta a la fuente de energía para evitar reenergización. Error típico: dejar el magnetotérmico solo bajado o sin identificar al responsable.'
+      },
+      {
+        id: 'guantes',
+        a: 'Guantes dieléctricos',
+        b: 'EPI contra contactos',
+        explain: 'Usa guantes dieléctricos de clase adecuada y comprueba que no tienen fugas/daños. Error típico: emplearlos sin sobreguante de cuero o con defectos visibles.'
+      },
+      {
+        id: 'multimetro',
+        a: 'Multímetro (V)',
+        b: 'Medir tensión',
+        explain: 'Selecciona V CA/CC según proceda y prueba el multímetro antes y después en un punto vivo. Error típico: puntas en bornes erróneos o escala incorrecta.'
+      }
+    ];
+    const MAX_TRIES = 12;
+
+    // ======== DOM references ========
+    const board = document.getElementById('board');
+    const triesEl = document.getElementById('tries');
+    const maxTriesEl = document.getElementById('maxTries');
+    const pairsEl = document.getElementById('pairs');
+    const progressBar = document.getElementById('progress');
+    const infoText = document.getElementById('infoText');
+    const chipTries = document.getElementById('chipTries');
+
+    const intro = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+    const closeIntro = document.getElementById('closeIntro');
+    const openIntro = document.getElementById('openIntro');
+
+    const results = document.getElementById('results');
+    const resPairs = document.getElementById('resPairs');
+    const resStats = document.getElementById('resStats');
+    const playAgain = document.getElementById('playAgain');
+    const rewardLink = document.getElementById('rewardLink');
+    const initWarn = document.getElementById('initWarn');
+
+    const restartBtn = document.getElementById('restartBtn');
+    const live = document.getElementById('live');
+
+    maxTriesEl.textContent = MAX_TRIES;
+
+    // ======== Game State ========
+    let deck = []; // array of {id, text, uid}
+    let flipped = []; // indices of flipped this turn
+    let locked = false;
+    let tries = 0;
+    let foundPairs = 0;
+
+    // ======== Utilities ========
+    const shuffle = (arr) => {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+    const uid = () => Math.random().toString(36).slice(2,9);
+
+    // ======== Build Deck ========
+    function buildDeck() {
+      const cards = [];
+      PAIRS.forEach(p => {
+        cards.push({ id: p.id, text: p.a, uid: uid() });
+        cards.push({ id: p.id, text: p.b, uid: uid() });
+      });
+      return shuffle(cards);
+    }
+
+    // ======== Render Board ========
+    function renderBoard() {
+      board.innerHTML = '';
+      deck.forEach((card, index) => {
+        const cardEl = document.createElement('button');
+        cardEl.className = 'card';
+        cardEl.type = 'button';
+        cardEl.setAttribute('aria-label', 'Carta oculta');
+        cardEl.setAttribute('tabindex', '0');
+        cardEl.dataset.index = index;
+        cardEl.dataset.id = card.id;
+        cardEl.dataset.uid = card.uid;
+
+        cardEl.innerHTML = `
+          <div class="inner">
+            <div class="face front">
+              <span class="bolt" aria-hidden="true">⚡</span>
+            </div>
+            <div class="face back">
+              <div class="label">${card.text}</div>
+            </div>
+          </div>
+        `;
+
+        // Click / Keyboard handlers
+        cardEl.addEventListener('click', () => flipCard(index));
+        cardEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            flipCard(index);
+          }
+        });
+
+        board.appendChild(cardEl);
+      });
+    }
+
+    // ======== HUD Updates ========
+    function updateHUD() {
+      triesEl.textContent = tries;
+      pairsEl.textContent = foundPairs;
+      const usedPct = Math.min(100, Math.floor((tries / MAX_TRIES) * 100));
+      progressBar.style.width = `${usedPct}%`;
+
+      // Precision hint: pairs found per try
+      const precision = tries > 0 ? (foundPairs / tries) : 0;
+      let rating = 'Precisión';
+      if (foundPairs === PAIRS.length) {
+        rating = '¡Completado!';
+      } else if (tries === 0) {
+        rating = 'Memoriza';
+      } else if (precision >= 0.5) {
+        rating = '¡Vas fino!';
+      } else if (precision >= 0.33) {
+        rating = 'Bien';
+      } else {
+        rating = 'Observa más';
+      }
+      infoText.textContent = rating;
+
+      // Warn color when attempts close to limit
+      if (tries >= MAX_TRIES - 3 && foundPairs < PAIRS.length) {
+        chipTries.classList.add('warn');
+      } else {
+        chipTries.classList.remove('warn');
+      }
+    }
+
+    // ======== Flip Logic ========
+    function flipCard(index) {
+      if (locked) return;
+      const cardBtn = board.children[index];
+      if (!cardBtn || cardBtn.classList.contains('flipped') || cardBtn.classList.contains('matched')) return;
+
+      cardBtn.classList.add('flipped');
+      cardBtn.setAttribute('aria-pressed', 'true');
+      cardBtn.setAttribute('aria-label', 'Carta: ' + deck[index].text);
+      flipped.push(index);
+
+      if (flipped.length === 2) {
+        locked = true;
+        tries++;
+        updateHUD();
+
+        const [i1, i2] = flipped;
+        const same = deck[i1].id === deck[i2].id;
+
+        setTimeout(() => {
+          if (same) {
+            // Match
+            board.children[i1].classList.add('matched');
+            board.children[i2].classList.add('matched');
+            foundPairs++;
+            live.textContent = '¡Pareja encontrada!';
+          } else {
+            // Miss
+            board.children[i1].classList.add('missed');
+            board.children[i2].classList.add('missed');
+            setTimeout(() => {
+              board.children[i1].classList.remove('flipped','missed');
+              board.children[i2].classList.remove('flipped','missed');
+              board.children[i1].setAttribute('aria-label','Carta oculta');
+              board.children[i2].setAttribute('aria-label','Carta oculta');
+            }, 450);
+            live.textContent = 'No coincide';
+          }
+
+          flipped = [];
+          locked = false;
+          updateHUD();
+
+          // End conditions
+          if (foundPairs === PAIRS.length) {
+            setTimeout(() => showResults(true), 350);
+          } else if (tries >= MAX_TRIES) {
+            setTimeout(() => showResults(false), 250);
+          }
+        }, 650);
+      }
+    }
+
+    // ======== Start / Reset ========
+    function resetGame() {
+      flipped = [];
+      locked = false;
+      tries = 0;
+      foundPairs = 0;
+      deck = buildDeck();
+      renderBoard();
+      updateHUD();
+      // Ensure no scroll during gameplay
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+
+    // ======== Results ========
+    function showResults(completed) {
+      // Build explanation list
+      resPairs.innerHTML = '';
+      const title = completed ? '¡Bien jugado!' : 'Intentos agotados';
+      document.getElementById('resTitle').textContent = title;
+      const errores = Math.max(0, tries - foundPairs);
+      resStats.textContent = `Intentos usados: ${tries} • Parejas encontradas: ${foundPairs}/4 • Errores: ${errores}`;
+
+      PAIRS.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'pair';
+        el.innerHTML = `
+          <strong>${p.a} ↔ ${p.b}</strong>
+          <small>${p.explain}</small>
+        `;
+        resPairs.appendChild(el);
+      });
+
+      // Prepare reward link (preserve raw initData)
+      const base = 'https://kampe-game-phaser.onrender.com/daily_streak?initData=';
+      const href = base + (RAW_INIT_DATA || '');
+      rewardLink.setAttribute('href', href);
+      initWarn.style.display = RAW_INIT_DATA ? 'none' : 'block';
+
+      // Enable scroll only for results view
+      document.documentElement.style.overflowY = 'auto';
+
+      results.classList.add('show');
+      results.focus();
+    }
+
+    // ======== Events ========
+    startBtn.addEventListener('click', () => {
+      intro.classList.remove('show');
+      resetGame();
+    });
+    closeIntro.addEventListener('click', () => {
+      intro.classList.remove('show');
+      // Keep game playable even if user closes intro before start
+      if (board.children.length === 0) resetGame();
+    });
+    openIntro.addEventListener('click', () => {
+      intro.classList.add('show');
+    });
+
+    restartBtn.addEventListener('click', () => {
+      intro.classList.remove('show');
+      results.classList.remove('show');
+      resetGame();
+    });
+
+    playAgain.addEventListener('click', () => {
+      results.classList.remove('show');
+      resetGame();
+    });
+
+    // ======== Initial State ========
+    // Keep scroll disabled until results appear
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    // Build initial deck so screen is not empty behind intro
+    deck = buildDeck();
+    renderBoard();
+    updateHUD();
+
+    // ======== Mental check for small screens (no runtime change, just dev hint)
+    // Designed for 320x640: 2x4 cards with aspect 4/3, header+HUD fixed — no scroll in gameplay.
+  </script>
+</body>
+</html>
