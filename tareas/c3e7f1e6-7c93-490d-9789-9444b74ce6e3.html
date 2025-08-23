@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Clasifica tu kit eléctrico ⚡</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1: #1b3bff;
+      --bg2: #0a7cff;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --stroke: rgba(255,255,255,0.28);
+      --txt: #f7fbff;
+      --muted: #cfe6ff;
+      --ok: #1dd38a;
+      --bad: #ff6b6b;
+      --warn: #ffd166;
+      --btnH: 56px;
+      --gap: 10px;
+      --radius: 14px;
+      --shadow: 0 8px 24px rgba(0,0,0,.25);
+      --ui-scale: 1;
+      --cellH: 56px;  /* usado por ensureFits step 3 */
+      --cellAR: 3.5;  /* ancho/alto aproximado de botón */
+    }
+    *{box-sizing:border-box}
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--txt);
+      background: radial-gradient(120% 120% at 70% 20%, #2ea8ff 0%, #1e4bff 45%, #062662 100%);
+      overflow: hidden; /* bloquea scroll en gameplay */
+      overscroll-behavior: none;
+    }
+
+    /* Scene sizing with svh fallback */
+    .scene{
+      position: relative;
+      width: 100%;
+      height: 100vh; /* fallback last */
+      padding: calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      touch-action: none; /* anti-derrapes en gameplay */
+      background:
+        radial-gradient(130% 100% at 100% 0%, rgba(255,255,255,.06) 0%, rgba(255,255,255,0) 60%),
+        linear-gradient(180deg, rgba(0,0,0,.18) 0%, rgba(0,0,0,0) 30%);
+      isolation: isolate;
+    }
+    @supports (height: 100svh){
+      .scene{ height: 100svh; }
+    }
+    @supports not (height: 100svh){
+      @supports (height: 100dvh){
+        .scene{ height: 100dvh; }
+      }
+    }
+
+    .ui-scale{
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+    }
+
+    /* Header HUD */
+    .hud{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 8px 10px;
+      box-shadow: var(--shadow);
+      min-height: 56px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px; min-width:0;
+    }
+    .brand img{
+      height:28px; width:auto; display:block;
+    }
+    .title{
+      font-weight:800;
+      font-size: clamp(16px, 2.2vw + 12px, 20px);
+      letter-spacing:.2px;
+      margin:0;
+      line-height:1.2;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+    .progress{
+      display:flex; align-items:center; gap:8px;
+      font-weight:700; color: #e9f4ff;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.24);
+      padding:6px 10px; border-radius:12px; min-width:64px; justify-content:center;
+      font-size: clamp(12px, 2vw + 10px, 14px);
+    }
+
+    /* Main Area */
+    .arena{
+      flex:1;
+      position: relative;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:14px;
+      overflow: hidden;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+    }
+
+    /* Background avatar */
+    .avatar-wrap{
+      position:absolute; inset: 0; pointer-events:none; overflow:hidden; border-radius:inherit;
+      opacity: .18;
+    }
+    .avatar-wrap img{
+      position:absolute; right:-6%; bottom:-10%;
+      width: 70%;
+      max-width: 480px;
+      transform: rotate(-6deg);
+      filter: drop-shadow(0 12px 40px rgba(0,0,0,.5));
+      user-select: none;
+    }
+
+    .subtitle{
+      font-size: clamp(12px, 1.6vw + 10px, 14px);
+      color: var(--muted);
+      text-align:center;
+      margin: 2px 10px 0;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+
+    .item-card{
+      position: relative;
+      z-index: 2;
+      display:inline-flex;
+      align-items:center; justify-content:center;
+      text-align:center;
+      min-height: 64px;
+      max-width: 88%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
+      border:1px solid var(--stroke);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      font-weight:800;
+      font-size: clamp(16px, 2.5vw + 12px, 22px);
+      letter-spacing:.2px;
+      color: #ffffff;
+      line-height:1.2;
+      user-select:none;
+      will-change: transform;
+    }
+    .item-card .text{
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      max-width:100%;
+    }
+
+    /* Category buttons */
+    .cat-bar{
+      position: relative;
+      display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      align-items: stretch;
+      z-index: 3;
+    }
+    .cat-btn{
+      position: relative;
+      height: var(--cellH);
+      min-height: 44px;
+      display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+      border:1px solid var(--stroke);
+      border-radius: 14px;
+      color: var(--txt);
+      font-weight: 800;
+      font-size: clamp(13px, 1.8vw + 10px, 15px);
+      letter-spacing:.2px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      user-select: none;
+      transition: transform .06s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
+      overflow: hidden;
+      outline: none;
+    }
+    .cat-btn:active{ transform: translateY(1px) scale(.98); }
+    .cat-btn:focus-visible{ box-shadow: 0 0 0 3px rgba(255,255,255,.45), 0 10px 30px rgba(0,0,0,.35); }
+    .cat-btn .label{
+      padding: 0 8px;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      max-width: 100%;
+      text-align: center;
+    }
+
+    /* Visual ripple/soundless feedback */
+    .ripple{
+      position:absolute; width:12px; height:12px; border-radius: 999px;
+      background: rgba(255,255,255,.8);
+      left:50%; top:50%; transform:translate(-50%,-50%) scale(0);
+      opacity: .8; pointer-events:none;
+      animation: ripple .5s ease-out forwards;
+      mix-blend-mode: screen;
+    }
+    @keyframes ripple{
+      to{ transform: translate(-50%,-50%) scale(12); opacity: 0; }
+    }
+
+    /* Drop animation ghost */
+    .ghost{
+      position: absolute;
+      z-index: 5;
+      will-change: transform, opacity;
+      pointer-events: none;
+    }
+    .flash-ok{ box-shadow: 0 0 0 3px rgba(29,211,138,.6), var(--shadow) !important; border-color: rgba(29,211,138,.7) !important; }
+    .flash-bad{ box-shadow: 0 0 0 3px rgba(255,107,107,.6), var(--shadow) !important; border-color: rgba(255,107,107,.7) !important; }
+
+    /* Intro modal */
+    .modal{
+      position: fixed;
+      inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      display:flex; align-items:center; justify-content:center;
+      background: rgba(0,10,30,.52);
+      z-index: 20;
+      padding: 16px;
+    }
+    .card{
+      width: min(720px, 94%);
+      max-height: 90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+      border:1px solid var(--stroke);
+      border-radius: 18px;
+      box-shadow: 0 22px 60px rgba(0,0,0,.5);
+      overflow: hidden;
+      display:flex; flex-direction:column;
+    }
+    .card-header{
+      display:flex; align-items:center; gap:10px; padding: 14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.18);
+      background: linear-gradient(180deg, rgba(0,0,0,.24), rgba(0,0,0,0));
+    }
+    .card-header img{ height:24px; }
+    .card-body{
+      padding: 14px 16px;
+      overflow-y: auto;
+    }
+    .card-body h2{
+      margin: 6px 0 8px;
+      font-size: clamp(18px, 2.4vw + 14px, 22px);
+      line-height: 1.2;
+    }
+    .card-body p{
+      margin: 6px 0;
+      color: var(--muted);
+      font-size: clamp(13px, 1.4vw + 10px, 14px);
+      line-height: 1.4;
+      display:-webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .card-actions{
+      padding: 12px 16px;
+      display:flex; gap:10px; justify-content:flex-end; align-items:center; flex-wrap: wrap;
+      border-top: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(0deg, rgba(0,0,0,.12), rgba(0,0,0,0));
+    }
+    .btn{
+      min-height: 44px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.06));
+      color: var(--txt);
+      font-weight: 800;
+      font-size: clamp(14px, 1.6vw + 10px, 16px);
+      letter-spacing:.2px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+    .btn-primary{
+      background: linear-gradient(180deg, #5effb0, #19b87b);
+      color: #062b1d;
+      border: 1px solid rgba(0,0,0,.2);
+    }
+    .btn:focus-visible{ outline: 3px solid rgba(255,255,255,.45); outline-offset: 2px; }
+
+    /* Results view */
+    .results{
+      display:none;
+      position: relative;
+      padding: calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+      min-height: 100vh;
+    }
+    .results .header{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 10px;
+    }
+    .results .header .title{
+      font-size: clamp(18px, 2.2vw + 14px, 24px);
+    }
+    .stats{
+      display:flex; gap:8px; align-items:center; font-weight:800; color:#001a10;
+      background: linear-gradient(180deg, #b7ffd8, #78f0b2);
+      border:1px solid rgba(0,0,0,.18);
+      padding:6px 10px; border-radius: 12px;
+    }
+    .list{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .row{
+      display:grid; grid-template-columns: 1fr auto; gap:8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+      border:1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .row .name{
+      font-weight:800; line-height:1.2;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .row .tags{
+      display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .tag{
+      font-weight:800; font-size: 12px;
+      padding:4px 8px; border-radius: 999px;
+      border:1px solid rgba(255,255,255,.24);
+      background: rgba(0,0,0,.18);
+    }
+    .tag.ok{ background: rgba(29,211,138,.2); border-color: rgba(29,211,138,.6); color:#dffff2; }
+    .tag.bad{ background: rgba(255,107,107,.2); border-color: rgba(255,107,107,.6); color:#ffe9e9; }
+    .row .exp{
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.3;
+      display:-webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow:hidden;
+    }
+    .advice{
+      margin: 12px 0 6px;
+      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.08));
+      border:1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+    .advice strong{ color:#d7fff1; }
+    .results .cta-bar{
+      position: sticky; bottom: 0; margin-top: 12px;
+      display:flex; flex-direction:column; gap:8px;
+      background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.22));
+      padding-top: 10px; padding-bottom: env(safe-area-inset-bottom);
+    }
+    .warn{
+      color: var(--warn);
+      font-size: 12px;
+      opacity: .9;
+    }
+
+    /* Compact mode for tight screens */
+    .compact .hud{ min-height: 48px; }
+    .compact .title{ font-size: clamp(14px, 2vw + 12px, 18px); }
+    .compact .progress{ padding:4px 8px; }
+    .compact .item-card{ min-height: 56px; font-size: clamp(15px, 2vw + 11px, 20px); padding: 12px 14px; }
+    .compact .cat-btn{ height: calc(var(--cellH) - 6px); font-size: clamp(12px, 1.4vw + 10px, 14px); }
+    .compact .subtitle{ display:none; }
+
+    /* Results-mode enables scroll */
+    body.results-mode{ overflow-y: auto; }
+
+    /* Utility hidden */
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body>
+  <!-- Intro Modal -->
+  <div class="modal" id="introModal" aria-modal="true" role="dialog" aria-labelledby="introTitle">
+    <div class="card" role="document">
+      <div class="card-header">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe logo">
+        <div class="title" id="introTitle">Clasifica tu kit eléctrico ⚡</div>
+      </div>
+      <div class="card-body">
+        <h2>Escenario</h2>
+        <p>Eres aprendiz electricista. Llegas a una avería doméstica: antes de entrar, organiza tu mochila y tu protocolo de actuación.</p>
+        <h2>Cómo jugar</h2>
+        <p>Elige si cada ítem es de Seguridad PRL, Herramientas o Cliente. Toque rápido, microfeedback y avanza solo. Objetivo: 9 ítems, progreso visible.</p>
+        <p style="margin-top:10px; font-weight:800; color:#c8f9ff;">Tip rápido: “Primero me protejo, luego ejecuto y siempre informo”.</p>
+      </div>
+      <div class="card-actions">
+        <button class="btn" id="skipIntro" aria-label="Cerrar tutorial">Saltar</button>
+        <button class="btn btn-primary" id="startBtn" aria-label="Comenzar reto">Empezar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gameplay Scene -->
+  <main class="scene" id="scene" aria-live="polite">
+    <div class="ui-scale" id="uiScale">
+      <header class="hud" aria-label="Barra superior">
+        <div class="brand">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe">
+          <h1 class="title">Clasifica tu kit eléctrico ⚡</h1>
+        </div>
+        <div class="progress" id="progress">0/9</div>
+      </header>
+
+      <section class="arena" aria-label="Área de juego">
+        <div class="avatar-wrap" aria-hidden="true">
+          <img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+        </div>
+        <div class="subtitle">Elige categoría: Seguridad PRL, Herramientas o Cliente</div>
+
+        <div class="item-card" id="itemCard" role="group" aria-label="Ítem actual">
+          <div class="text" id="itemText">...</div>
+        </div>
+      </section>
+
+      <nav class="cat-bar" aria-label="Categorías">
+        <button class="cat-btn" id="cat-seg" data-cat="seg" aria-label="Asignar a Seguridad PRL">
+          <span class="label">Seguridad PRL</span>
+        </button>
+        <button class="cat-btn" id="cat-her" data-cat="her" aria-label="Asignar a Herramientas">
+          <span class="label">Herramientas</span>
+        </button>
+        <button class="cat-btn" id="cat-cli" data-cat="cli" aria-label="Asignar a Cliente">
+          <span class="label">Cliente</span>
+        </button>
+      </nav>
+    </div>
+  </main>
+
+  <!-- Results View -->
+  <section class="results" id="results" aria-labelledby="resTitle">
+    <div class="header">
+      <h2 class="title" id="resTitle">Tu resumen</h2>
+      <div class="stats" id="scoreBadge">0/9</div>
+    </div>
+
+    <div class="list" id="list"></div>
+
+    <div class="advice" role="note">
+      <strong>Consejo aplicable:</strong> “Primero me protejo, luego ejecuto y siempre informo”. Con esta regla mental, clasificarás rápido en campo.
+    </div>
+
+    <div class="cta-bar">
+      <button class="btn btn-primary" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+      <div class="warn hidden" id="warnInit">Aviso: no se recibió initData. Podrás vincular tu recompensa al iniciar sesión.</div>
+    </div>
+  </section>
+
+  <script>
+    // ---------------------------
+    // Data and Config
+    // ---------------------------
+    const CATEGORIES = {
+      seg: { id: 'seg', label: 'Seguridad PRL' },
+      her: { id: 'her', label: 'Herramientas' },
+      cli: { id: 'cli', label: 'Cliente' },
+    };
+
+    const ITEMS = [
+      { id:'i1', text:'Cortar corriente', correct:'seg', exp:'Primero corta la alimentación del circuito antes de intervenir; es la barrera básica para evitar contactos eléctricos.' },
+      { id:'i2', text:'Guantes dieléctricos', correct:'seg', exp:'EPI específico frente a descargas. Revisa fecha de ensayo y ausencia de cortes antes de usarlos.' },
+      { id:'i3', text:'Multímetro', correct:'her', exp:'Instrumento de medida para verificar tensión/continuidad. No es EPI: multímetro ≠ protección personal.' },
+      { id:'i4', text:'Señalizar zona', correct:'seg', exp:'Delimita y señaliza el área de trabajo para evitar accesos de terceros y riesgos colaterales.' },
+      { id:'i5', text:'Explicar presupuesto', correct:'cli', exp:'Buena práctica de trato: transparencia en alcance, tiempos y costes antes de actuar.' },
+      { id:'i6', text:'Llamar antes de llegar', correct:'cli', exp:'Avisa tu hora estimada y confirma disponibilidad; genera confianza y organiza al cliente.' },
+      { id:'i7', text:'Bloqueo-etiquetado (LOTO)', correct:'seg', exp:'Bloquea y etiqueta para impedir reenergización accidental durante la intervención.' },
+      { id:'i8', text:'Apretar bornes', correct:'her', exp:'Acción técnica de conexión: usa destornillador/par adecuados y verifica que no quede holgura.' },
+      { id:'i9', text:'Probar diferencial', correct:'her', exp:'Ensayo funcional con botón TEST o instrumento para confirmar disparo y protección de personas.' }
+    ];
+
+    const state = {
+      initData: "",
+      current: 0,
+      answers: [], // {id, text, chosen, correct, isCorrect, exp}
+      animating: false,
+      compactApplied: false,
+      fittedOnce: false,
+    };
+
+    // ---------------------------
+    // DOM Refs
+    // ---------------------------
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+    const skipIntro = document.getElementById('skipIntro');
+
+    const scene = document.getElementById('scene');
+    const uiScale = document.getElementById('uiScale');
+    const itemCard = document.getElementById('itemCard');
+    const itemText = document.getElementById('itemText');
+    const progress = document.getElementById('progress');
+
+    const catSeg = document.getElementById('cat-seg');
+    const catHer = document.getElementById('cat-her');
+    const catCli = document.getElementById('cat-cli');
+    const catButtons = [catSeg, catHer, catCli];
+
+    const results = document.getElementById('results');
+    const list = document.getElementById('list');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const warnInit = document.getElementById('warnInit');
+
+    // ---------------------------
+    // Init URL param handling
+    // ---------------------------
+    (function readInitData(){
+      const qs = new URLSearchParams(location.search);
+      state.initData = qs.get('initData') || "";
+    })();
+
+    // ---------------------------
+    // Helpers
+    // ---------------------------
+    function clampText(str, max=180){
+      if(!str) return '';
+      if(str.length <= max) return str;
+      return str.slice(0, max - 1).trim() + '…';
+    }
+
+    function labelFor(catId){
+      return CATEGORIES[catId]?.label || '—';
+    }
+
+    function updateProgress(){
+      progress.textContent = `${state.current + 1}/${ITEMS.length}`;
+    }
+
+    function renderItem(){
+      const it = ITEMS[state.current];
+      itemText.textContent = it.text;
+      updateProgress();
+      ensureFits();
+    }
+
+    function addRipple(btn){
+      const r = document.createElement('span');
+      r.className = 'ripple';
+      btn.appendChild(r);
+      setTimeout(()=> r.remove(), 600);
+    }
+
+    function animateDropTo(targetBtn, isCorrect, onDone){
+      const src = itemCard.getBoundingClientRect();
+      const dst = targetBtn.getBoundingClientRect();
+      const scn = scene.getBoundingClientRect();
+
+      // Create ghost element
+      const ghost = itemCard.cloneNode(true);
+      ghost.classList.add('ghost');
+      ghost.style.left = (src.left - scn.left) + 'px';
+      ghost.style.top = (src.top - scn.top) + 'px';
+      ghost.style.width = src.width + 'px';
+      ghost.style.height = src.height + 'px';
+      ghost.style.transform = 'translate(0px,0px)';
+      scene.appendChild(ghost);
+
+      // Flash on target
+      targetBtn.classList.add(isCorrect ? 'flash-ok' : 'flash-bad');
+      addRipple(targetBtn);
+
+      // Animate
+      const dx = (dst.left - src.left) + (dst.width/2 - src.width/2);
+      const dy = (dst.top - src.top) + (dst.height/2 - src.height/2);
+      requestAnimationFrame(()=>{
+        ghost.style.transition = 'transform .48s cubic-bezier(.22,1,.36,1), opacity .48s ease';
+        ghost.style.transform = `translate(${dx}px, ${dy}px) scale(.88) rotate(${isCorrect?3:-4}deg)`;
+        ghost.style.opacity = '.2';
+      });
+
+      setTimeout(()=>{
+        ghost.remove();
+        targetBtn.classList.remove('flash-ok','flash-bad');
+        if(typeof onDone === 'function') onDone();
+      }, 520);
+    }
+
+    function nextOrFinish(){
+      if(state.current < ITEMS.length - 1){
+        state.current++;
+        renderItem();
+      } else {
+        showResults();
+      }
+    }
+
+    function handleChoice(catId, btn){
+      if(state.animating) return;
+      state.animating = true;
+      const it = ITEMS[state.current];
+      const isCorrect = catId === it.correct;
+
+      // record answer
+      state.answers.push({
+        id: it.id,
+        text: it.text,
+        chosen: catId,
+        correct: it.correct,
+        isCorrect,
+        exp: clampText(it.exp, 180)
+      });
+
+      animateDropTo(btn, isCorrect, ()=>{
+        state.animating = false;
+        nextOrFinish();
+      });
+    }
+
+    // ---------------------------
+    // Results
+    // ---------------------------
+    function showResults(){
+      // hide gameplay scene, enable scrolling
+      scene.classList.add('hidden');
+      document.body.classList.add('results-mode');
+      results.style.display = 'block';
+
+      // render summary
+      const correctCount = state.answers.filter(a=>a.isCorrect).length;
+      scoreBadge.textContent = `${correctCount}/${ITEMS.length}`;
+
+      list.innerHTML = '';
+      for(const a of state.answers){
+        const row = document.createElement('div');
+        row.className = 'row';
+
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = a.text;
+
+        const tags = document.createElement('div');
+        tags.className = 'tags';
+        const t1 = document.createElement('span');
+        t1.className = 'tag ' + (a.isCorrect ? 'ok' : 'bad');
+        t1.textContent = a.isCorrect ? 'Correcto' : 'Revisa';
+        const t2 = document.createElement('span');
+        t2.className = 'tag';
+        t2.textContent = `Tu respuesta: ${labelFor(a.chosen)}`;
+        const t3 = document.createElement('span');
+        t3.className = 'tag';
+        t3.textContent = `Correcta: ${labelFor(a.correct)}`;
+        tags.append(t1,t2,t3);
+
+        const exp = document.createElement('div');
+        exp.className = 'exp';
+        exp.textContent = a.exp;
+
+        row.append(name, tags, exp);
+        list.appendChild(row);
+      }
+
+      // initData warning
+      if(!state.initData){
+        warnInit.classList.remove('hidden');
+      } else {
+        warnInit.classList.add('hidden');
+      }
+
+      ensureFits(); // ensure result header fits width (just cosmetic)
+    }
+
+    // ---------------------------
+    // Ensure Fits Pipeline
+    // ---------------------------
+    function assertNoOverflow(){
+      // true when scene content fits vertically
+      return scene.scrollHeight <= scene.clientHeight;
+    }
+
+    function applyCompactMode(){
+      if(!state.compactApplied){
+        document.body.classList.add('compact');
+        state.compactApplied = true;
+      }
+    }
+
+    function fitBoardToViewport(){
+      // Adjust control heights a bit
+      const currH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cellH')) || 56;
+      const newH = Math.max(44, currH - 6);
+      document.documentElement.style.setProperty('--cellH', newH + 'px');
+
+      // Optionally adjust aspect ratio var (not heavily used)
+      const currAR = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cellAR')) || 3.5;
+      const newAR = Math.max(3.0, currAR - 0.2);
+      document.documentElement.style.setProperty('--cellAR', String(newAR));
+    }
+
+    function autoscaleUI(){
+      // progressively scale down to min 0.88
+      let scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      let attempts = 0;
+      while(!assertNoOverflow() && scale > 0.88 && attempts < 8){
+        scale -= 0.02;
+        attempts++;
+        document.documentElement.style.setProperty('--ui-scale', scale.toFixed(2));
+      }
+    }
+
+    function ensureFits(){
+      // Only applies in gameplay scene (results allow scroll)
+      if(document.body.classList.contains('results-mode')) return;
+
+      // Reset scale to 1 for fresh calculation if not first render
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      // Step 1
+      if(assertNoOverflow()) return;
+      // Step 2
+      applyCompactMode();
+      if(assertNoOverflow()) return;
+      // Step 3
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+      // Step 4
+      autoscaleUI();
+    }
+
+    function onResize(){
+      ensureFits();
+    }
+
+    // ---------------------------
+    // Events
+    // ---------------------------
+    startBtn.addEventListener('click', ()=>{
+      introModal.style.display = 'none';
+      renderItem();
+      ensureFits();
+    });
+    skipIntro.addEventListener('click', ()=>{
+      introModal.style.display = 'none';
+      renderItem();
+      ensureFits();
+    });
+
+    catButtons.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const catId = btn.getAttribute('data-cat');
+        handleChoice(catId, btn);
+      });
+    });
+
+    rewardBtn.addEventListener('click', ()=>{
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(state.initData)}`;
+      window.location.href = url;
+    });
+
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+
+    // ---------------------------
+    // Boot
+    // ---------------------------
+    (function boot(){
+      // Preload first item into card so ensureFits can run visually
+      itemText.textContent = 'Listo para empezar';
+      progress.textContent = `0/${ITEMS.length}`;
+      ensureFits();
+    })();
+  </script>
+</body>
+</html>
