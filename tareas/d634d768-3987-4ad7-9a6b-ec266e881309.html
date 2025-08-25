@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kämpe | Primer Split, Cero Drama ❄️</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#0d49ff;
+      --bg2:#0aa3ff;
+      --glass:rgba(255,255,255,0.15);
+      --glass-2:rgba(255,255,255,0.25);
+      --stroke:rgba(255,255,255,0.35);
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.8);
+      --accent:#67ffcc;
+      --danger:#ff4d6d;
+      --warn:#ffd166;
+      --ok:#5CFFA5;
+      --ui-scale:1;
+      --radius:16px;
+      --btnH:64px;
+      --space:12px;
+      --titleClamp: clamp(18px, 3.5vw, 26px);
+      --bodyClamp: clamp(14px, 2.5vw, 18px);
+      --btnClamp: clamp(14px, 2.8vw, 18px);
+      --hudH:58px;
+      --msgMaxLines: 3;
+    }
+    * { box-sizing: border-box; }
+    html, body{
+      height:100%;
+      margin:0;
+      padding:0;
+      overflow:hidden; /* bloquea scroll global en gameplay */
+      overscroll-behavior: none;
+      background: radial-gradient(120% 100% at 50% 0%, var(--bg2) 0%, var(--bg1) 50%, #0824a6 100%);
+      color:var(--text);
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    body.resultsMode{
+      overflow-y:auto; /* solo resultados pueden hacer scroll */
+    }
+    .app{
+      position:relative;
+      width:100%;
+      height:100%;
+      isolation:isolate;
+    }
+    .scene{
+      position:relative;
+      width:100%;
+      height:100vh; /* fallback */
+      padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 8px) env(safe-area-inset-bottom, 8px) env(safe-area-inset-left, 8px);
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      touch-action: none; /* no scroll/touch pan in gameplay */
+    }
+    @supports(height: 100dvh) { .scene{ height:100dvh; } }
+    @supports(height: 100svh) { .scene{ height:100svh; } }
+
+    /* Header HUD */
+    .hud{
+      height:var(--hudH);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:8px 12px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.15), rgba(255,255,255,0.06));
+      border:1px solid var(--stroke);
+      border-radius:16px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      min-width: 0;
+    }
+    .brand img.logo{ width:34px; height:34px; object-fit:contain; }
+    .brand .t{
+      display:flex; flex-direction:column; line-height:1.1; min-width: 0;
+    }
+    .brand .t b{
+      font-size:var(--titleClamp);
+      letter-spacing:0.2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      max-width: 58vw;
+    }
+    .brand .t span{
+      font-size:12px; color:var(--muted);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      max-width:58vw;
+    }
+    .progress{
+      display:flex; align-items:center; gap:8px;
+      background: var(--glass);
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      font-weight:700;
+      font-size:14px;
+    }
+    .progress .dot{
+      width:20px;height:20px;border-radius:50%;
+      background: conic-gradient(var(--ok) calc(var(--p,0)*1%), rgba(255,255,255,0.12) 0);
+      border:2px solid rgba(255,255,255,0.25);
+    }
+
+    /* Content area */
+    .play-area{
+      position:relative;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-height:0;
+    }
+    .chat{
+      position:relative;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-height:0;
+      padding:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border:1px solid var(--stroke);
+      border-radius:16px;
+      overflow:hidden;
+    }
+
+    /* Ambient avatar background */
+    .ambient{
+      position:absolute; inset:0;
+      pointer-events:none;
+      opacity:0.12; filter: saturate(0.8);
+      display:flex; align-items:flex-end; justify-content:flex-end;
+      padding:20px;
+    }
+    .ambient img{ height:60%; max-height:420px; object-fit:contain; }
+
+    .bubbles{
+      position:relative;
+      z-index:1;
+      display:grid; grid-auto-rows:minmax(0,1fr);
+      gap:8px;
+      height:100%;
+    }
+    .bubble{
+      display:flex; gap:8px; align-items:flex-start;
+      background: rgba(0,0,0,0.18);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:10px;
+      min-height:56px;
+    }
+    .bubble .avatar{ width:42px;height:42px;border-radius:10px;overflow:hidden; flex:0 0 auto; border:1px solid var(--stroke); background:rgba(255,255,255,0.12); }
+    .bubble .avatar img{ width:100%; height:100%; object-fit:cover; }
+    .bubble .meta{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .bubble .meta .who{ font-weight:800; font-size:14px; letter-spacing:0.3px; }
+    .bubble .meta .txt{
+      font-size:var(--bodyClamp);
+      color:var(--text);
+      display:-webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: var(--msgMaxLines);
+      overflow: hidden;
+    }
+
+    /* Choice buttons (sticky) */
+    .choices{
+      position:sticky; bottom:0;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      padding:8px;
+      background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.25));
+      border-radius:16px;
+    }
+    .choice{
+      width:100%;
+      min-height:var(--btnH);
+      border-radius:14px;
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08));
+      color:var(--text);
+      font-weight:800;
+      font-size:var(--btnClamp);
+      letter-spacing:0.2px;
+      display:flex; align-items:center; justify-content:center;
+      text-align:center;
+      padding:10px 12px;
+      cursor:pointer;
+      outline:none;
+    }
+    .choice:focus-visible{ box-shadow:0 0 0 3px rgba(255,255,255,0.5); }
+    .choice[aria-disabled="true"]{ opacity:0.6; pointer-events:none; }
+
+    /* Reaction toast */
+    .toast{
+      position:absolute; left:50%; bottom: calc( var(--btnH) + 28px );
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.65);
+      color:#fff;
+      border:1px solid var(--stroke);
+      padding:8px 12px;
+      border-radius:999px;
+      font-weight:700;
+      font-size:14px;
+      display:none;
+      z-index:3;
+    }
+    .toast.show{ display:block; }
+
+    /* Intro / Modal */
+    .modal{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.15));
+      z-index:10;
+      padding:16px;
+    }
+    .modal .card{
+      width:min(720px, 96%);
+      max-height:90svh;
+      padding:16px;
+      background: rgba(255,255,255,0.16);
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      overflow-y:auto;
+    }
+    .modal header{
+      display:flex; align-items:center; gap:10px; margin-bottom:8px;
+    }
+    .modal header img{ width:40px;height:40px; object-fit:contain;}
+    .modal h1{
+      margin:0;
+      font-size: clamp(20px, 4.5vw, 28px);
+    }
+    .modal p{
+      margin:8px 0;
+      color:var(--text);
+      opacity:0.95;
+      font-size:var(--bodyClamp);
+    }
+    .pill{
+      display:inline-block; padding:6px 10px; border-radius:999px;
+      border:1px solid var(--stroke);
+      background: var(--glass-2);
+      font-weight:800; letter-spacing:0.3px;
+    }
+    .modal .cta{
+      margin-top:10px;
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .btn{
+      appearance:none; border:0; color:#00213b; background:var(--accent);
+      font-weight:900; padding:12px 16px; border-radius:12px;
+      cursor:pointer; font-size:var(--btnClamp);
+      min-height:48px;
+    }
+    .btn.alt{ background: rgba(255,255,255,0.2); color:#fff; border:1px solid var(--stroke); }
+
+    /* Results */
+    .results{
+      position:relative; inset:0;
+      display:none; flex-direction:column; gap:10px;
+      padding:10px;
+      overflow-y:auto; /* scroll solo aquí */
+    }
+    .results.show{ display:flex; }
+    .results h2{
+      margin:4px 0 2px 0; font-size: clamp(18px, 4vw, 24px);
+    }
+    .res-list{
+      display:grid; gap:10px;
+    }
+    .res-item{
+      background: rgba(0,0,0,0.2);
+      border:1px solid var(--stroke);
+      border-radius:12px;
+      padding:10px;
+    }
+    .res-item b{ display:block; margin-bottom:6px; }
+    .res-item .badge{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 8px; border-radius:999px; border:1px solid var(--stroke);
+      margin-right:8px; font-weight:800; font-size:12px;
+    }
+    .ok{ background: rgba(92,255,165,0.18); color:#D9FFE9; }
+    .partial{ background: rgba(255,209,102,0.18); color:#fff3d6; }
+    .wrong{ background: rgba(255,77,109,0.18); color:#ffd9df; }
+
+    .results .footer{
+      position:sticky; bottom:0; display:flex; flex-direction:column; gap:8px;
+      background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.25));
+      padding:10px 0;
+    }
+    .hint{
+      color:#eaffff; opacity:0.9; font-size:14px;
+    }
+    .warn{
+      color:#fff4cc; font-size:12px; opacity:0.9;
+    }
+
+    /* Compact mode tweaks */
+    .compact :root{}
+    body.compact{
+      --hudH:48px;
+      --btnH:56px;
+      --radius:14px;
+      --titleClamp: clamp(16px, 2.8vw, 22px);
+      --bodyClamp: clamp(13px, 2.2vw, 16px);
+      --btnClamp: clamp(13px, 2.4vw, 16px);
+      --msgMaxLines: 2;
+    }
+
+    /* Focus outline */
+    :focus-visible{ outline:2px dashed #fff; outline-offset:2px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="scene" id="scene" aria-live="polite">
+      <div class="hud" aria-label="Encabezado del reto">
+        <div class="brand">
+          <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          <div class="t">
+            <b>Primer Split, Cero Drama ❄️</b>
+            <span id="subtitle">Reto diario • 0/5</span>
+          </div>
+        </div>
+        <div class="progress" aria-label="Progreso">
+          <div class="dot" id="dot" style="--p:0;"></div>
+          <span id="progText">0/5</span>
+        </div>
+      </div>
+
+      <div class="play-area" id="play">
+        <div class="chat" id="chat" aria-label="Diálogo">
+          <div class="ambient" aria-hidden="true">
+            <img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+          </div>
+          <div class="bubbles" id="bubbles">
+            <!-- Bubbles render here -->
+          </div>
+          <div class="toast" id="toast" role="status" aria-live="assertive"></div>
+        </div>
+
+        <div class="choices" id="choices" aria-label="Opciones de respuesta">
+          <!-- Choice buttons render here -->
+        </div>
+      </div>
+
+      <!-- Intro Modal -->
+      <div class="modal" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+        <div class="card">
+          <header>
+            <img src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="Nuria" />
+            <h1 id="introTitle">Primer Split, Cero Drama ❄️</h1>
+          </header>
+          <p class="pill">Duración: 2–4 min • Rejugable</p>
+          <p>Escenario: acompañas a tu mentora a instalar un aire acondicionado split en un piso ocupado. La clienta tiene prisa por el calor y quiere entender el proceso.</p>
+          <p>Tus objetivos: seguridad básica (EPI, cortar corriente), trato con cliente y checklist de preparación/puesta en marcha con comunicación clara.</p>
+          <p><b>Tutorial:</b> elige la mejor respuesta en cada turno. Verás reacciones al instante. Sin scroll durante el juego.</p>
+          <div class="cta">
+            <button class="btn" id="startBtn" aria-label="Comenzar">¡Empezar!</button>
+            <button class="btn alt" id="howBtn" aria-label="Ver recordatorio breve">Recordatorio</button>
+          </div>
+          <p id="howTxt" style="display:none; max-width:66ch;">Cubre zona, EPI y disyuntor, ubicación correcta (10–15 cm del techo, soporte con tacos y nivel), prueba con vacío y limpieza final. Trato claro y respetuoso siempre.</p>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="results" id="results" tabindex="-1" aria-label="Resultados del reto">
+        <h2>Resultados</h2>
+        <p id="scoreLine" class="hint">Resumen de tus decisiones:</p>
+        <div class="res-list" id="resList"></div>
+        <h3>Consejo práctico</h3>
+        <p class="hint" id="tipText">Lleva siempre plásticos, nivel de burbuja y tacos adecuados. Explica en 20 segundos lo que harás y cuánto tardará: ahorra dudas y acelera el trabajo.</p>
+        <div class="footer">
+          <button class="btn" id="rewardBtn">Ver mi recompensa</button>
+          <span class="warn" id="idWarn" style="display:none;">No se encontró initData. Puedes continuar, pero tu racha podría no guardarse.</span>
+          <button class="btn alt" id="retryBtn">Reintentar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Data & Characters ---
+    const AVATARS = {
+      mentor: "https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png",
+      apprentice: "https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png",
+      recruiter: "https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png",
+      client: "https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png",
+    };
+    const CHARS = {
+      Nuria: { role: "Mentora", avatar: AVATARS.mentor },
+      Leo: { role: "Aprendiz", avatar: AVATARS.apprentice },
+      Marta: { role: "Clienta", avatar: AVATARS.client },
+    };
+
+    // Steps/turns (5)
+    const TURNS = [
+      {
+        id: "t1",
+        messages: [
+          { who: "Marta", text: "Hola, ¿podéis dejarlo funcionando hoy? Me aso." },
+          { who: "Nuria", text: "Sí. Leo te cuenta el plan y tiempos, ¿ok?" },
+        ],
+        choices: [
+          {
+            id: "t1a",
+            label: "Presentarme y explicar pasos y tiempo",
+            quality: "correct",
+            reaction: "Marta: ¡Genial! Así me organizo.",
+            explain: "Presentarte y fijar expectativas evita malentendidos. La clienta reduce interrupciones y aumenta su confianza.",
+            alt: "Saluda, resume el proceso, tiempos y pide permiso para proteger la zona."
+          },
+          {
+            id: "t1b",
+            label: "Saludar y decir: será rápido",
+            quality: "partial",
+            reaction: "Marta: Ok… ¿cuánto tardáis?",
+            explain: "Mejor que nada, pero falta detalle de pasos y tiempos. Podría generar dudas y microinterrupciones.",
+            alt: "Incluye breve plan: preparación, instalación, prueba y limpieza (≈2–4 h según obra)."
+          },
+          {
+            id: "t1c",
+            label: "Saco herramientas sin hablar",
+            quality: "wrong",
+            reaction: "Nuria: Alto. Primero saluda y aclara el plan.",
+            explain: "Ignorar a la clienta afecta la satisfacción y la coordinación del piso ocupado.",
+            alt: "Saluda, explica pasos y tiempo y confirma dónde trabajaréis."
+          },
+        ]
+      },
+      {
+        id: "t2",
+        messages: [
+          { who: "Nuria", text: "Antes de taladrar, protejamos la zona." },
+          { who: "Leo", text: "Veo muebles y plantas cerca del área." },
+        ],
+        choices: [
+          {
+            id: "t2a",
+            label: "Cubrir muebles y suelo; pedir mover plantas",
+            quality: "correct",
+            reaction: "Nuria: Así evitamos polvo y roces.",
+            explain: "Proteger reduce polvo/daños y el tiempo de limpieza. Mejora la experiencia en vivienda ocupada.",
+            alt: "Plástico/paños, cinta en zona de taladro y ruta despejada para herramientas."
+          },
+          {
+            id: "t2b",
+            label: "Solo una manta rápida, ya veremos",
+            quality: "partial",
+            reaction: "Marta: Vale… pero cuida la estantería.",
+            explain: "Parcial: algo de protección, pero incompleta. Riesgo de polvo y marcas.",
+            alt: "Usa plásticos, cubre suelo y muebles cercanos y delimita el área."
+          },
+          {
+            id: "t2c",
+            label: "Nada de plásticos; limpiamos después",
+            quality: "wrong",
+            reaction: "Nuria: No. Protegemos primero.",
+            explain: "Sin protección aumentan daños y tiempo extra. La percepción de calidad cae.",
+            alt: "Protege y solicita mover objetos frágiles antes de taladrar."
+          },
+        ]
+      },
+      {
+        id: "t3",
+        messages: [
+          { who: "Nuria", text: "Seguridad primero. ¿Qué haces antes de perforar?" },
+          { who: "Marta", text: "El cuadro eléctrico está aquí por si toca." },
+        ],
+        choices: [
+          {
+            id: "t3a",
+            label: "EPI + corto disyuntor; escalera estable",
+            quality: "correct",
+            reaction: "Nuria: Perfecto. A prueba de sustos.",
+            explain: "Guantes/gafas, disyuntor cortado y escalera estable previenen lesiones. Revisa que el cable no esté en tensión.",
+            alt: "Ponte EPI, corta el circuito del área, base firme de la escalera y cableado sin tensión."
+          },
+          {
+            id: "t3b",
+            label: "Solo guantes; nadie tocará cables",
+            quality: "partial",
+            reaction: "Nuria: Falta cortar corriente y revisar escalera.",
+            explain: "Parcial: EPI sin corte de corriente. Sigue habiendo riesgo eléctrico y de caída.",
+            alt: "Corta el disyuntor implicado y comprueba estabilidad y cables."
+          },
+          {
+            id: "t3c",
+            label: "Sin EPI; hay prisa",
+            quality: "wrong",
+            reaction: "Marta: Preferiría que lo hagáis seguro…",
+            explain: "Sin EPI y sin corte de corriente aumentan los accidentes. Mala práctica y mala imagen.",
+            alt: "EPI completo y disyuntor abajo antes de taladrar o cablear."
+          },
+        ]
+      },
+      {
+        id: "t4",
+        messages: [
+          { who: "Nuria", text: "Ubicación del split en esta pared, ¿te parece?" },
+          { who: "Marta", text: "Arriba, que no moleste y quede recto." },
+        ],
+        choices: [
+          {
+            id: "t4a",
+            label: "A 15 cm del techo; soporte con tacos y nivel",
+            quality: "correct",
+            reaction: "Nuria: Perfecto flujo y mantenimiento.",
+            explain: "Respetar 10–15 cm mejora el aire y el acceso. Nivel y tacos adecuados evitan vibraciones/caídas.",
+            alt: "Marca con nivel, usa tacos acordes al muro y deja holgura superior."
+          },
+          {
+            id: "t4b",
+            label: "A 5 cm del techo; ya cuadramos luego",
+            quality: "partial",
+            reaction: "Nuria: Muy pegado. Puede rendir peor.",
+            explain: "Parcial: demasiado cerca del techo reduce rendimiento y complica mantenimiento.",
+            alt: "Deja 10–15 cm. Comprueba plomada y estructura antes de fijar."
+          },
+          {
+            id: "t4c",
+            label: "Encima de la ventana, sin nivel ni tacos",
+            quality: "wrong",
+            reaction: "Marta: Preferiría algo seguro, por favor.",
+            explain: "Sin nivel ni tacos es inseguro y ruidoso. Riesgo de caída y garantías.",
+            alt: "Usa soporte homologado, nivel de burbuja y tacos correctos."
+          },
+        ]
+      },
+      {
+        id: "t5",
+        messages: [
+          { who: "Nuria", text: "Conexiones listas. ¿Hacemos la puesta en marcha?" },
+          { who: "Marta", text: "Sí, ¡quiero fresquito ya!" },
+        ],
+        choices: [
+          {
+            id: "t5a",
+            label: "Hago vacío, pruebo fugas y arranque; limpio todo",
+            quality: "correct",
+            reaction: "Marta: Gracias, quedó impecable y funciona bien.",
+            explain: "El vacío evita humedad/ácidos y asegura rendimiento. Limpieza y explicación final elevan la satisfacción.",
+            alt: "Vacío (≈15 min), prueba de estanqueidad, encender y explicar uso básico."
+          },
+          {
+            id: "t5b",
+            label: "Lo enciendo sin vacío; luego limpio",
+            quality: "partial",
+            reaction: "Nuria: Ojo, sin vacío puede fallar antes.",
+            explain: "Parcial: pruebas rápidas sin vacío comprometen la vida útil. Aun así, limpias después.",
+            alt: "Realiza vacío y comprobación de fugas antes de encender."
+          },
+          {
+            id: "t5c",
+            label: "Enciendo ya; la limpieza puede esperar",
+            quality: "wrong",
+            reaction: "Marta: No me gusta ver restos y polvo…",
+            explain: "Arrancar sin pruebas ni limpieza genera averías y mala experiencia.",
+            alt: "Vacío y revisión primero; deja el espacio como lo encontraste o mejor."
+          },
+        ]
+      },
+    ];
+
+    // State
+    let currentIndex = 0;
+    const decisions = [];
+    const bubblesEl = document.getElementById('bubbles');
+    const choicesEl = document.getElementById('choices');
+    const subtitleEl = document.getElementById('subtitle');
+    const progText = document.getElementById('progText');
+    const dot = document.getElementById('dot');
+    const toast = document.getElementById('toast');
+    const intro = document.getElementById('intro');
+    const results = document.getElementById('results');
+    const resList = document.getElementById('resList');
+    const scoreLine = document.getElementById('scoreLine');
+
+    // Query initData
+    const urlParams = new URLSearchParams(location.search);
+    const INIT_DATA = urlParams.get('initData') || "";
+
+    // Start / tutorial
+    document.getElementById('startBtn').addEventListener('click', () => {
+      intro.style.display = 'none';
+      renderTurn();
+      ensureFits();
+    });
+    document.getElementById('howBtn').addEventListener('click', () => {
+      const t = document.getElementById('howTxt');
+      t.style.display = t.style.display === 'none' ? 'block' : 'none';
+      ensureFits();
+    });
+
+    // Render functions
+    function renderTurn(){
+      const total = TURNS.length;
+      const idx = currentIndex;
+      const turn = TURNS[idx];
+
+      // HUD progress
+      subtitleEl.textContent = `Reto diario • ${idx+1}/${total}`;
+      progText.textContent = `${idx+1}/${total}`;
+      dot.style.setProperty('--p', ((idx+1)/total)*100);
+
+      // Clear previous
+      bubblesEl.innerHTML = '';
+      choicesEl.innerHTML = '';
+
+      // Render chat bubbles (1–2)
+      for (const m of turn.messages){
+        bubblesEl.appendChild(bubbleEl(m.who, m.text));
+      }
+
+      // Render choices (2–3)
+      turn.choices.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'choice';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', c.label);
+        btn.textContent = c.label.length > 48 ? c.label.slice(0,45)+'…' : c.label;
+        btn.addEventListener('click', () => onChoose(turn, c));
+        choicesEl.appendChild(btn);
+      });
+
+      // Re-ensure fitting UI
+      ensureFits();
+    }
+
+    function bubbleEl(who, text){
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      const a = document.createElement('div');
+      a.className = 'avatar';
+      const img = document.createElement('img');
+      img.loading = 'lazy';
+      img.alt = who;
+      img.src = CHARS[who]?.avatar || AVATARS.apprentice;
+      a.appendChild(img);
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const w = document.createElement('div');
+      w.className = 'who';
+      w.textContent = `${who}`;
+      const t = document.createElement('div');
+      t.className = 'txt';
+      t.textContent = text;
+      meta.appendChild(w); meta.appendChild(t);
+      b.appendChild(a); b.appendChild(meta);
+      return b;
+    }
+
+    function onChoose(turn, choice){
+      // Disable buttons
+      [...choicesEl.querySelectorAll('.choice')].forEach(b => b.setAttribute('aria-disabled','true'));
+
+      // Toast reaction
+      toast.textContent = choice.reaction;
+      toast.classList.add('show');
+
+      // Store decision
+      decisions.push({
+        turn: turn.id,
+        label: choice.label,
+        quality: choice.quality,
+        explain: choice.explain,
+        alt: choice.alt
+      });
+
+      // Auto-advance to next turn after short delay
+      setTimeout(() => {
+        toast.classList.remove('show');
+        currentIndex++;
+        if(currentIndex < TURNS.length){
+          renderTurn();
+        }else{
+          showResults();
+        }
+      }, 1100);
+    }
+
+    function showResults(){
+      // Update HUD to 5/5
+      const total = TURNS.length;
+      subtitleEl.textContent = `Reto diario • ${total}/${total}`;
+      progText.textContent = `${total}/${total}`;
+      dot.style.setProperty('--p', 100);
+
+      // Hide gameplay layer and show results
+      document.body.classList.add('resultsMode');
+      // Build list
+      resList.innerHTML = '';
+      let score = 0;
+      decisions.forEach((d, i) => {
+        if(d.quality === 'correct') score += 1;
+        const item = document.createElement('div');
+        item.className = 'res-item';
+        const badge = document.createElement('span');
+        badge.className = `badge ${d.quality}`;
+        badge.textContent = d.quality === 'correct' ? '✔ Correcta' : d.quality === 'partial' ? '≈ Parcial' : '✖ Incorrecta';
+        const title = document.createElement('b');
+        title.textContent = `Turno ${i+1}: ${TURNS[i].messages[0].who} • Tu respuesta: "${d.label}"`;
+        const p1 = document.createElement('p');
+        p1.textContent = d.explain;
+        const p2 = document.createElement('p');
+        p2.style.opacity = 0.9;
+        p2.style.fontSize = '14px';
+        p2.textContent = d.quality === 'correct' ? "Bien hecho: mantuviste calidad y seguridad." : `Alternativa recomendada: ${d.alt}`;
+        item.appendChild(badge);
+        item.appendChild(title);
+        item.appendChild(p1);
+        item.appendChild(p2);
+        resList.appendChild(item);
+      });
+      scoreLine.textContent = `Aciertos: ${score}/${TURNS.length} • Impacto: ${score >= 4 ? "Excelente flujo y satisfacción de clienta." : score >= 3 ? "Buen trabajo con margen de mejora." : "Revisa seguridad y comunicación."}`;
+
+      // Toggle views
+      document.getElementById('play').style.display = 'none';
+      results.classList.add('show');
+
+      // Accessibility focus
+      results.focus();
+
+      // Ensure compact not applied wrongly
+      autoscaleUI(1);
+      document.body.classList.remove('compact');
+    }
+
+    // Results actions
+    document.getElementById('retryBtn').addEventListener('click', () => {
+      // Reset state and UI
+      decisions.length = 0;
+      currentIndex = 0;
+      document.body.classList.remove('resultsMode');
+      document.getElementById('play').style.display = '';
+      results.classList.remove('show');
+      renderTurn();
+      ensureFits();
+    });
+
+    const rewardBtn = document.getElementById('rewardBtn');
+    const idWarn = document.getElementById('idWarn');
+    rewardBtn.addEventListener('click', () => {
+      const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(INIT_DATA)}`;
+      location.href = target;
+    });
+    if(!INIT_DATA){ idWarn.style.display = 'inline'; }
+
+    // --- Fit & Safety functions (guardrails) ---
+    function assertNoOverflow(){
+      const sc = document.getElementById('scene');
+      return sc.scrollHeight <= sc.clientHeight;
+    }
+    function applyCompactMode(){
+      if(!document.body.classList.contains('compact')){
+        document.body.classList.add('compact');
+      }
+    }
+    function fitBoardToViewport(){
+      // Hook to tweak layout variables if needed (e.g., reduce message lines)
+      // Already controlled via compact mode (--msgMaxLines).
+      // Could reduce scale a bit if still overflowing (handled by autoscaleUI).
+    }
+    function autoscaleUI(scale){
+      document.documentElement.style.setProperty('--ui-scale', scale);
+    }
+    function ensureFits(){
+      // Reset scaling and compact
+      autoscaleUI(1);
+      document.body.classList.remove('compact');
+
+      // Try plain
+      if(assertNoOverflow()) return;
+
+      // 1) Compact HUD and text
+      applyCompactMode();
+      if(assertNoOverflow()) return;
+
+      // 2) Minor layout tweaks (no-op, reserved)
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+
+      // 3) Scale down progressively to minimum 0.88
+      const steps = [0.96, 0.92, 0.88];
+      for(const s of steps){
+        autoscaleUI(s);
+        if(assertNoOverflow()) return;
+      }
+      // If still not fitting, keep min scale; content is clamped anyway.
+    }
+
+    // Initial ensure after any renderable element is ready
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', ensureFits);
+
+    // Prevent iOS rubber-band over-scroll in gameplay
+    document.addEventListener('touchmove', (e) => {
+      if(!document.body.classList.contains('resultsMode')) e.preventDefault();
+    }, { passive: false });
+
+    // Lazy pre-render ensure
+    requestAnimationFrame(() => ensureFits());
+  </script>
+</body>
+</html>
