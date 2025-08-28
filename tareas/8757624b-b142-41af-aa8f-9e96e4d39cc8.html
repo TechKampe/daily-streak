@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>Kämpe • ¿Riesgo o Seguro? ⚡</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ============ RESET & BASE ============ */
+    :root{
+      --bg1:#0c59d1;
+      --bg2:#052a7a;
+      --glow:#7cc9ff;
+      --accent:#00ffbf;
+      --danger:#ff4d6d;
+      --safe:#22c55e;
+      --ink:#ffffff;
+      --muted:rgba(255,255,255,0.72);
+      --glass:rgba(255,255,255,0.12);
+      --stroke:rgba(255,255,255,0.22);
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --ui-scale: 1;
+      --cardH: 56svh;
+      --cardAR: 0.68; /* width = height * AR */
+      --radius: 16px;
+      --hudH: 64px;
+      --btnH: 56px;
+      --titleSize: clamp(18px, 3.2vw, 24px);
+      --bodySize: clamp(14px, 2.6vw, 16px);
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      padding:0;
+      height:100%;
+      font-family:"Manrope",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--ink);
+      background: radial-gradient(1200px 800px at 70% -10%, #2da1ff33, transparent 60%), linear-gradient(180deg, var(--bg1), var(--bg2));
+      overscroll-behavior:none;
+    }
+    body.no-scroll{ overflow:hidden; }
+    body.scrollable{ overflow-y:auto; }
+    a,button{ font-family:inherit }
+    img{ max-width:100%; display:block }
+    /* ============ SCENE (100svh with fallbacks) ============ */
+    .scene{
+      position:relative;
+      width:100%;
+      height:100vh; /* fallback */
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom)) env(safe-area-inset-left);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      isolation:isolate;
+    }
+    @supports (height: 100dvh){
+      .scene{ height:100dvh; }
+    }
+    @supports (height: 100svh){
+      .scene{ height:100svh; }
+    }
+    /* Background flair */
+    .avatar-bg{
+      position:absolute; inset:auto -10px 60px auto; width: 42vw; max-width:340px; opacity:0.18; filter: drop-shadow(0 12px 24px rgba(0,0,0,0.35));
+      pointer-events:none; z-index:0;
+      transform: translateY(10px);
+    }
+    @media (max-width:400px){
+      .avatar-bg{ width:58vw; right:-20px; bottom:70px; }
+    }
+    /* ============ HUD ============ */
+    .hud{
+      z-index:2;
+      width:100%;
+      max-width:920px;
+      height:var(--hudH);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 8px 16px;
+      gap:8px;
+    }
+    .logo{
+      display:flex; align-items:center; gap:8px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
+      border:1px solid var(--stroke);
+      border-radius:12px;
+      padding:6px 10px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .logo img{ height:24px; width:auto }
+    .progress{
+      min-width:140px;
+      text-align:center;
+      font-weight:800;
+      letter-spacing:.3px;
+      padding:8px 12px;
+      border-radius:12px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+      border:1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .help-btn{
+      height:40px; min-width:40px; padding:0 12px;
+      border-radius:12px; border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      color:var(--ink);
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      cursor:pointer;
+      box-shadow: var(--shadow); backdrop-filter: blur(10px);
+    }
+    .help-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
+    /* ============ BOARD ============ */
+    .board{
+      z-index:1;
+      width:100%;
+      max-width:920px;
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 4px 16px 0;
+      touch-action: none; /* Anti-derrapes */
+    }
+    .stack{
+      position:relative;
+      width: min(92vw, calc(var(--cardH) * var(--cardAR)));
+      height: var(--cardH);
+      display:grid; place-items:center;
+    }
+    .card{
+      position:absolute; inset:0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:18px 16px;
+      border-radius:18px;
+      background:
+        radial-gradient(100% 120% at 50% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.06)),
+        linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      border:1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      user-select:none;
+      will-change: transform, opacity;
+      transition: transform .28s ease, opacity .28s ease, box-shadow .2s ease;
+    }
+    .card h3{
+      margin:0 0 10px;
+      font-size: clamp(18px, 4.8vw, 24px);
+      text-align:center;
+      line-height:1.1;
+      letter-spacing:.2px;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .pill-row{
+      display:flex; gap:8px; opacity:.9; font-size:12px; flex-wrap:wrap; justify-content:center;
+    }
+    .pill{
+      padding:4px 8px; border-radius:999px; border:1px solid var(--stroke);
+      background:rgba(0,0,0,0.18);
+    }
+    .ghost{
+      position:absolute; inset:0; border-radius:18px; pointer-events:none;
+      display:flex; align-items:flex-start; justify-content:space-between;
+      padding:14px;
+      opacity:0; transition:opacity .2s ease;
+      font-weight:800; text-transform:uppercase; letter-spacing:.6px;
+    }
+    .ghost .left{ color: var(--danger) }
+    .ghost .right{ color: var(--safe) }
+    .card.dragging .ghost{ opacity:.85 }
+    .card.swipe-left{ transform: translate(-140%, -6%) rotate(-18deg); opacity:0; }
+    .card.swipe-right{ transform: translate(140%, -6%) rotate(18deg); opacity:0; }
+    /* ============ CONTROLS ============ */
+    .controls{
+      z-index:2;
+      width:100%;
+      max-width:920px;
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+      display:flex; flex-direction:column; align-items:center; gap:10px;
+    }
+    .hint{
+      font-size:12px; color:var(--muted);
+      display:flex; gap:8px; align-items:center; justify-content:center;
+      text-align:center;
+    }
+    .btn-row{
+      width:100%;
+      display:grid; grid-template-columns:1fr 1fr; gap:12px;
+    }
+    .btn{
+      height:var(--btnH);
+      border-radius:14px; border:1px solid var(--stroke);
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      font-weight:800; letter-spacing:.4px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      color:var(--ink);
+      cursor:pointer;
+      box-shadow: var(--shadow); backdrop-filter: blur(10px);
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
+    }
+    .btn:active{ transform: translateY(1px) scale(0.99); }
+    .btn.danger{ border-color: color-mix(in oklab, var(--danger), white 30%); }
+    .btn.safe{ border-color: color-mix(in oklab, var(--safe), white 30%); }
+    .btn .dot{ width:10px; height:10px; border-radius:50%; background:currentColor; }
+    .btn.danger .dot{ color:var(--danger) }
+    .btn.safe .dot{ color:var(--safe) }
+    .kbd{
+      font-size:11px; padding:2px 6px; border:1px solid var(--stroke); border-radius:6px; background:rgba(0,0,0,0.18);
+    }
+    /* ============ INTRO MODAL ============ */
+    .modal{
+      position:fixed; inset:0;
+      display:grid; place-items:center;
+      background: linear-gradient(180deg, rgba(2,10,30,0.52), rgba(2,10,30,0.64));
+      z-index:5;
+      padding: 20px;
+    }
+    .sheet{
+      width:min(720px, 92vw);
+      max-height:90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      padding: 18px;
+      overflow-y:auto;
+    }
+    .sheet h2{
+      margin:2px 0 6px;
+      font-size: clamp(20px, 5.2vw, 28px);
+      letter-spacing:.3px;
+    }
+    .sheet p{
+      margin:8px 0;
+      color:var(--muted);
+      font-size: var(--bodySize);
+      line-height:1.3;
+    }
+    .sheet .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
+    .sheet .start{
+      margin-top:12px;
+      width:100%; height:52px; border-radius:14px; border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(0,255,191,0.28), rgba(0,255,191,0.18));
+      color:#001f1a;
+      font-weight:800; letter-spacing:.4px;
+      cursor:pointer;
+    }
+    /* ============ RESULTS SCREEN ============ */
+    .results{
+      display:none;
+      position:relative;
+      width:100%;
+      min-height:100%;
+      padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.12));
+    }
+    .results.active{ display:block; }
+    .results h2{ margin:4px 0 12px; font-size: clamp(20px, 5vw, 28px); }
+    .summary{
+      display:grid; gap:10px;
+    }
+    .res-item{
+      display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center;
+      padding:10px 12px; border-radius:12px; border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      backdrop-filter: blur(10px);
+    }
+    .res-item .q{ font-weight:700; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .res-item .chip{
+      padding:6px 10px; border-radius:999px; font-size:12px; font-weight:800; letter-spacing:.4px;
+      border:1px solid var(--stroke);
+    }
+    .chip.ok{ color:var(--safe); border-color: color-mix(in oklab, var(--safe), white 30%); background: rgba(34,197,94,0.12) }
+    .chip.bad{ color:var(--danger); border-color: color-mix(in oklab, var(--danger), white 30%); background: rgba(255,77,109,0.12) }
+    .explain{
+      grid-column:1/-1; color:var(--muted); font-size:13px; line-height:1.25;
+    }
+    .final{
+      margin-top:14px;
+      padding:12px;
+      border-radius:14px; border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+    }
+    .final strong{ color:var(--accent) }
+    .cta{
+      margin-top:12px;
+      width:100%; height:56px; border-radius:14px; border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(0,255,191,0.32), rgba(0,255,191,0.16));
+      color:#01261f; font-weight:800; letter-spacing:.4px; cursor:pointer;
+    }
+    .warn{
+      margin-top:8px; font-size:12px; color:#ffd27a; display:flex; gap:8px; align-items:center;
+    }
+    /* ============ ACCESSIBILITY ============ */
+    .btn:focus-visible, .cta:focus-visible, .start:focus-visible { outline:2px solid var(--accent); outline-offset:2px }
+    /* ============ COMPACT MODE ============ */
+    .compact :root, .compact{
+      --hudH: 54px;
+      --btnH: 52px;
+      --titleSize: clamp(16px, 3.4vw, 20px);
+      --bodySize: clamp(13px, 2.4vw, 15px);
+      --cardH: 52svh;
+    }
+    .compact .logo{ display:none; }
+    .compact .hint{ display:none; }
+  </style>
+</head>
+<body class="no-scroll">
+  <div class="scene" id="scene" aria-live="polite">
+    <!-- Decorative avatar -->
+    <img class="avatar-bg" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy" />
+
+    <!-- HUD -->
+    <div class="hud" role="region" aria-label="Barra superior">
+      <div class="logo">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <span style="font-weight:800; font-size:14px; letter-spacing:.4px;">Kämpe</span>
+      </div>
+      <div class="progress" id="progressText" aria-live="polite">Carta 1 de 6</div>
+      <button class="help-btn" id="helpBtn" aria-label="Ver tutorial">?
+      </button>
+    </div>
+
+    <!-- BOARD -->
+    <main class="board" id="board" aria-label="Área de juego">
+      <div class="stack" id="stack">
+        <!-- Cards injected by JS -->
+      </div>
+    </main>
+
+    <!-- CONTROLS -->
+    <nav class="controls" aria-label="Controles">
+      <div class="hint">Desliza o usa los botones. <span class="kbd">←</span> Peligro · <span class="kbd">→</span> Seguro</div>
+      <div class="btn-row">
+        <button class="btn danger" id="btnLeft" aria-label="Elegir Peligro / Incorrecto">
+          <span class="dot"></span> Peligro
+        </button>
+        <button class="btn safe" id="btnRight" aria-label="Elegir Seguro / Correcto">
+          <span class="dot"></span> Seguro
+        </button>
+      </div>
+    </nav>
+
+    <!-- INTRO MODAL -->
+    <div class="modal" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+      <section class="sheet">
+        <h2 id="introTitle">¿Riesgo o Seguro? ⚡</h2>
+        <p><strong>Escenario:</strong> Eres ayudante de electricista en una vivienda ocupada. Decide si cada acción es segura antes de tocar nada.</p>
+        <p><strong>Dinámica:</strong> Desliza izquierda = Peligro/Incorrecto. Derecha = Seguro/Correcto. Responde rápido y con atención.</p>
+        <div class="row" aria-hidden="true">
+          <span class="pill">EPIs</span>
+          <span class="pill">Corte de tensión</span>
+          <span class="pill">Bloqueo y aviso</span>
+          <span class="pill">Verificación</span>
+        </div>
+        <button class="start" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+      </section>
+    </div>
+
+    <!-- RESULTS -->
+    <section class="results" id="results" aria-live="polite" aria-label="Resultados">
+      <h2>Resultados • ¿Riesgo o Seguro?</h2>
+      <div id="summary" class="summary"></div>
+      <div class="final">
+        ¡Buen trabajo! Cada decisión segura te acerca a volver sano a casa. La seguridad va primero: comunicar, cortar, bloquear, verificar y usar los EPIs adecuados. <strong>¡Sigue así!</strong>
+        <button class="cta" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        <div class="warn" id="initWarn" style="display:none;">⚠ No se encontró initData. Aún puedes continuar.</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ------------- Utils: initData handling -------------
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+    // ------------- Data (6 cartas, <=48 chars each) -------------
+    const CARDS = [
+      {
+        text: "Manipular cables con manos húmedas",
+        safe: false,
+        explain: "El agua aumenta la conductividad y el riesgo de choque. Seca manos y superficies antes de acercarte a partes eléctricas."
+      },
+      {
+        text: "Probar el multímetro en punto conocido",
+        safe: true,
+        explain: "Verificar el multímetro en una fuente conocida confirma que funciona y te dará lecturas fiables."
+      },
+      {
+        text: "Cortar y bloquear magnetotérmico con cartel",
+        safe: true,
+        explain: "Corta la energía, bloquea el interruptor y coloca aviso 'No energizar' para evitar reenergizaciones accidentales."
+      },
+      {
+        text: "Guantes de cuero en vez de dieléctricos",
+        safe: false,
+        explain: "El cuero no aísla para trabajos eléctricos. Usa guantes dieléctricos certificados y, si hace falta, forros de cuero por encima."
+      },
+      {
+        text: "Confirmar ausencia de tensión en el enchufe",
+        safe: true,
+        explain: "Tras el corte, verifica ausencia de tensión antes de tocar. Mide fase, neutro y tierra para asegurarte."
+      },
+      {
+        text: "Trabajar sin avisar ni señalizar la zona",
+        safe: false,
+        explain: "Comunica a los ocupantes y colegas. Señaliza el área para evitar que alguien restablezca tensión o invada la zona."
+      }
+    ];
+
+    // ------------- State -------------
+    let index = 0;
+    const answers = []; // {choice: 'Peligro'|'Seguro', correct: boolean, safeChosen:boolean}
+
+    // ------------- DOM refs -------------
+    const scene = document.getElementById('scene');
+    const stack = document.getElementById('stack');
+    const progressText = document.getElementById('progressText');
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+    const helpBtn = document.getElementById('helpBtn');
+    const resultsView = document.getElementById('results');
+    const summaryEl = document.getElementById('summary');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+
+    // ------------- Accessibility helpers -------------
+    function clampText(txt, maxChars=48){
+      if(!txt) return "";
+      if(txt.length <= maxChars) return txt;
+      return txt.slice(0, maxChars-1) + "…";
+    }
+
+    // ------------- Render / Cards -------------
+    function renderProgress(){
+      progressText.textContent = `Carta ${Math.min(index+1, CARDS.length)} de ${CARDS.length}`;
+    }
+
+    function createCard(data){
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.setAttribute('role','group');
+      card.setAttribute('aria-label', 'Carta');
+      card.innerHTML = `
+        <div class="ghost"><div class="left">Peligro</div><div class="right">Seguro</div></div>
+        <h3>${clampText(data.text, 48)}</h3>
+        <div class="pill-row" aria-hidden="true">
+          <span class="pill">Desliza</span>
+          <span class="pill">Izq=Peligro</span>
+          <span class="pill">Der=Seguro</span>
+        </div>
+      `;
+      mountDrag(card, data);
+      return card;
+    }
+
+    function showCurrentCard(){
+      stack.innerHTML = '';
+      if(index >= CARDS.length){ finish(); return; }
+      const data = CARDS[index];
+      const card = createCard(data);
+      stack.appendChild(card);
+      // Small pop-in
+      card.style.transform = 'scale(0.98)';
+      requestAnimationFrame(()=> {
+        card.style.transform = 'scale(1)';
+      });
+      renderProgress();
+      ensureFits();
+    }
+
+    // ------------- Interactions (Buttons, Keys) -------------
+    btnLeft.addEventListener('click', ()=> decide('left'));
+    btnRight.addEventListener('click', ()=> decide('right'));
+
+    window.addEventListener('keydown', (e)=>{
+      if(resultsView.classList.contains('active')) return;
+      if(introModal && introModal.style.display !== 'none') return;
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); decide('left'); }
+      if(e.key === 'ArrowRight'){ e.preventDefault(); decide('right'); }
+    });
+
+    // ------------- Swipe / Drag -------------
+    function mountDrag(card, data){
+      let startX=0, startY=0, currentX=0, currentY=0, dragging=false;
+
+      function onDown(ev){
+        dragging = true;
+        const p = getPoint(ev);
+        startX = p.x; startY = p.y;
+        card.classList.add('dragging');
+        card.setPointerCapture && card.setPointerCapture(ev.pointerId || 0);
+      }
+      function onMove(ev){
+        if(!dragging) return;
+        const p = getPoint(ev);
+        currentX = p.x - startX;
+        currentY = p.y - startY;
+        const rot = currentX / 18;
+        const dampY = currentY * 0.2; // reduce vertical drift
+        card.style.transform = `translate(${currentX}px, ${dampY}px) rotate(${rot}deg)`;
+      }
+      function onUp(ev){
+        if(!dragging) return;
+        dragging = false;
+        card.classList.remove('dragging');
+        const threshold = Math.min(card.clientWidth * 0.28, 120);
+        if(currentX < -threshold){
+          swipeOut('left', card);
+        } else if(currentX > threshold){
+          swipeOut('right', card);
+        } else {
+          // Reset
+          card.style.transform = '';
+        }
+        startX=startY=currentX=currentY=0;
+      }
+
+      // Pointer events for mouse/touch
+      card.addEventListener('pointerdown', onDown);
+      card.addEventListener('pointermove', onMove);
+      card.addEventListener('pointerup', onUp);
+      card.addEventListener('pointercancel', onUp);
+    }
+
+    function getPoint(ev){
+      if(ev.touches && ev.touches[0]) return {x: ev.touches[0].clientX, y: ev.touches[0].clientY};
+      if(ev.changedTouches && ev.changedTouches[0]) return {x: ev.changedTouches[0].clientX, y: ev.changedTouches[0].clientY};
+      return {x: ev.clientX, y: ev.clientY};
+    }
+
+    function swipeOut(dir, card){
+      card.classList.add(dir === 'left' ? 'swipe-left' : 'swipe-right');
+      setTimeout(()=> {
+        decide(dir);
+      }, 180);
+    }
+
+    function decide(dir){
+      if(index >= CARDS.length) return;
+      const data = CARDS[index];
+      const safeChosen = dir === 'right';
+      const isCorrect = safeChosen === data.safe;
+      answers.push({
+        choice: safeChosen ? 'Seguro' : 'Peligro',
+        correct: isCorrect,
+        safeChosen
+      });
+      index++;
+      showCurrentCard();
+    }
+
+    // ------------- Intro / Help -------------
+    startBtn.addEventListener('click', ()=>{
+      introModal.style.display = 'none';
+      ensureFits();
+    });
+    helpBtn.addEventListener('click', ()=>{
+      introModal.style.display = 'grid';
+      ensureFits();
+    });
+
+    // ------------- Finish / Results -------------
+    function finish(){
+      // Build summary
+      summaryEl.innerHTML = '';
+      CARDS.forEach((c, i)=>{
+        const a = answers[i];
+        const item = document.createElement('div');
+        item.className = 'res-item';
+        const ok = a.correct;
+        item.innerHTML = `
+          <div class="q">${clampText(c.text, 64)}</div>
+          <div class="chip ${ok ? 'ok':'bad'}">${ok ? 'Correcto' : 'Incorrecto'}</div>
+          <div class="explain"><strong>Tú:</strong> ${a.choice} · <strong>Respuesta:</strong> ${c.safe ? 'Seguro' : 'Peligro'} — ${c.explain}</div>
+        `;
+      summaryEl.appendChild(item);
+      });
+      // Toggle views
+      document.body.classList.remove('no-scroll');
+      document.body.classList.add('scrollable');
+      resultsView.classList.add('active');
+      // initData notice
+      if(!initData){ initWarn.style.display = 'flex'; }
+      ensureFits();
+      // Focus CTA for accessibility
+      setTimeout(()=> rewardBtn.focus(), 80);
+    }
+
+    rewardBtn.addEventListener('click', ()=>{
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      location.href = url;
+    });
+
+    // ------------- Fit-to-viewport system -------------
+    function assertNoOverflow(){
+      const s = document.getElementById('scene');
+      return s.scrollHeight <= s.clientHeight + 1; // +1 for rounding
+    }
+    function applyCompactMode(){
+      document.documentElement.classList.add('compact');
+    }
+    function fitBoardToViewport(){
+      // reduce card height slightly
+      const current = getComputedStyle(document.documentElement).getPropertyValue('--cardH').trim();
+      // if defined in svh, switch to a smaller fraction
+      document.documentElement.style.setProperty('--cardH', '50svh');
+    }
+    function autoscaleUI(){
+      const s = document.getElementById('scene');
+      const client = s.clientHeight;
+      const scroll = s.scrollHeight;
+      let scale = Math.max(0.88, Math.min(1, client/scroll - 0.01));
+      document.documentElement.style.setProperty('--ui-scale', scale.toFixed(3));
+    }
+    function ensureFits(){
+      // Reset baseline
+      document.documentElement.classList.remove('compact');
+      document.documentElement.style.setProperty('--cardH', '56svh');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      // Step 1: check
+      if(assertNoOverflow()) return;
+      // Step 2: compact
+      applyCompactMode();
+      if(assertNoOverflow()) return;
+      // Step 3: fit board/card
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+      // Step 4: autoscale
+      autoscaleUI();
+    }
+    window.addEventListener('resize', ()=> ensureFits());
+    window.addEventListener('orientationchange', ()=> setTimeout(ensureFits, 120));
+
+    // ------------- Init -------------
+    function init(){
+      showCurrentCard();
+      ensureFits();
+    }
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
