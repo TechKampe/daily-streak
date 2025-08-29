@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Primera visita eléctrica ⚡ - Kämpe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#1f52ff;
+      --bg2:#00b2ff;
+      --glass: rgba(255,255,255,0.16);
+      --glass-strong: rgba(255,255,255,0.24);
+      --stroke: rgba(255,255,255,0.18);
+      --txt:#f4f7ff;
+      --muted:#cfe3ff;
+      --accent:#4df0ff;
+      --ok:#00e676;
+      --mid:#ffd740;
+      --bad:#ff5252;
+      --ui-scale: 1;
+      --hudH: 64px;
+      --ctrlH: 188px;
+      --bubbleFS: clamp(14px, 2.9vw, 16px);
+      --btnFS: clamp(14px, 3.6vw, 18px);
+      --titleFS: clamp(18px, 4.8vw, 24px);
+      --nameFS: clamp(12px, 2.8vw, 14px);
+    }
+    *{box-sizing:border-box}
+    html,body{
+      height:100%;
+      background: linear-gradient(160deg, var(--bg1), var(--bg2)) fixed;
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--txt);
+      overscroll-behavior: none;
+      overflow: hidden; /* locked during gameplay */
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app{
+      position:relative;
+      width:100%;
+      height:100%;
+      isolation:isolate;
+    }
+
+    /* Scene: fits exactly the safe viewport height */
+    .scene{
+      position:relative;
+      width:100%;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      display:flex;
+      flex-direction:column;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      touch-action: none; /* no pan/zoom while playing */
+    }
+    @supports (height: 100svh){ .scene{ height:100svh; } }
+    @supports not (height: 100svh){ .scene{ height:100dvh; } }
+    @supports not (height: 100dvh){ .scene{ height:100vh; } }
+
+    /* Fortnite-esque background deco: faint character silhouette */
+    .scene::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(65% 90% at 50% 0%, rgba(255,255,255,0.12), transparent 60%),
+        url("https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png") right -20px bottom -10px/280px auto no-repeat;
+      opacity:.16;
+      pointer-events:none;
+      filter: saturate(1.1) contrast(1.1);
+    }
+
+    /* HUD (top) */
+    .hud{
+      height: var(--hudH);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 14px;
+      gap:10px;
+      z-index:2;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      background: var(--glass);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:6px 10px;
+      backdrop-filter: blur(10px);
+    }
+    .brand img{ height:24px; width:auto; display:block; }
+    .title{
+      font-weight:800;
+      font-size: var(--titleFS);
+      line-height:1.05;
+      letter-spacing:.2px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    .progress{
+      min-width:110px;
+      display:flex; align-items:center; gap:10px;
+      background: var(--glass);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:8px 12px;
+      backdrop-filter: blur(10px);
+      font-weight:700;
+      font-size: clamp(12px,2.8vw,14px);
+    }
+    .pbar{
+      flex:1;
+      height:8px;
+      background: rgba(255,255,255,0.12);
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .pbar .fill{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, #4df0ff, #6aff9a);
+      box-shadow: 0 0 10px rgba(100,255,200,0.6);
+      transition: width .25s ease;
+    }
+
+    /* Chat area */
+    .chat{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      padding: 6px 14px;
+      gap:10px;
+      z-index:1;
+    }
+    .bubble{
+      display:flex; align-items:flex-start; gap:10px;
+      max-width: 100%;
+      background: var(--glass);
+      border:1px solid var(--stroke);
+      backdrop-filter: blur(8px);
+      border-radius:16px;
+      padding:10px;
+    }
+    .bubble .avatar{
+      width:42px; height:42px; border-radius:12px; overflow:hidden; flex:0 0 auto;
+      border:1px solid rgba(255,255,255,0.18);
+    }
+    .bubble .avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .bubble .content{ flex:1; min-width:0; }
+    .bubble .name{
+      font-size: var(--nameFS);
+      font-weight:800;
+      color: var(--accent);
+      margin-bottom: 2px;
+      letter-spacing:.2px;
+    }
+    .bubble .msg{
+      font-size: var(--bubbleFS);
+      line-height:1.22;
+      color: var(--txt);
+      display:-webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Controls (bottom) */
+    .controls{
+      position: sticky;
+      bottom:0;
+      padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,0.08));
+      z-index:3;
+      height: var(--ctrlH);
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      gap:8px;
+    }
+    .answers{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+    .btn{
+      appearance:none; border:none; cursor:pointer;
+      width:100%;
+      min-height:52px; /* >=44px */
+      border-radius:14px;
+      background: var(--glass-strong);
+      border:1px solid var(--stroke);
+      color: var(--txt);
+      font-weight:800;
+      font-size: var(--btnFS);
+      letter-spacing:.2px;
+      padding:12px 14px;
+      text-align:center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+      transition: transform .06s ease, background .2s ease, box-shadow .2s ease;
+      display:flex; align-items:center; justify-content:center;
+      gap:8px;
+    }
+    .btn:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
+    .btn:hover{ transform: translateY(-1px); }
+    .btn.ok{ background: linear-gradient(180deg, rgba(0,255,180,0.20), var(--glass-strong)); }
+    .btn.mid{ background: linear-gradient(180deg, rgba(255,215,64,0.18), var(--glass-strong)); }
+    .btn.bad{ background: linear-gradient(180deg, rgba(255,82,82,0.16), var(--glass-strong)); }
+
+    /* Reaction toast */
+    .reaction{
+      position:absolute;
+      left:14px; right:14px; bottom: calc(var(--ctrlH) + 6px);
+      display:flex; align-items:center; gap:8px;
+      background: rgba(0,0,0,0.35);
+      border:1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      border-radius:12px;
+      padding:8px 10px;
+      opacity:0; transform: translateY(6px);
+      pointer-events:none;
+      transition: opacity .18s ease, transform .18s ease;
+      z-index:5;
+    }
+    .reaction.show{ opacity:1; transform: translateY(0); }
+    .reaction img{ width:28px; height:28px; border-radius:8px; border:1px solid rgba(255,255,255,0.18); }
+    .reaction .rtext{
+      font-size: clamp(12px,2.8vw,14px);
+      display:-webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+    }
+
+    /* Intro modal */
+    .modal{
+      position:fixed; inset:0;
+      background: linear-gradient(160deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55));
+      display:flex; align-items:center; justify-content:center;
+      z-index:10;
+    }
+    .modal .card{
+      width:min(720px, 92%);
+      max-height:90svh;
+      overflow-y:auto;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(14px);
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      padding:16px;
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .modal .headline{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .modal .headline img{ height:28px; width:auto; }
+    .modal h1{
+      margin:0; font-size: clamp(20px,5.5vw,28px); line-height:1.05; font-weight:800;
+    }
+    .modal p{
+      margin:0; color: var(--muted); line-height:1.28;
+      font-size: clamp(14px,3.3vw,16px);
+    }
+    .modal .cta{
+      margin-top:6px;
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+
+    /* Results view */
+    .results{
+      position:absolute; inset:0;
+      padding: calc(10px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
+      display:none;
+      flex-direction:column;
+      gap:12px;
+      overflow-y:auto; /* will be enabled in results-mode */
+      z-index:9;
+      touch-action: auto;
+    }
+    .results .panel{
+      background: rgba(255,255,255,0.08);
+      border:1px solid var(--stroke);
+      border-radius:16px;
+      backdrop-filter: blur(12px);
+      padding:12px;
+    }
+    .results h2{
+      margin:.2rem 0 .4rem;
+      font-size: clamp(18px,4.8vw,22px);
+      font-weight:800;
+    }
+    .results .item{
+      display:grid; grid-template-columns: auto 1fr auto; align-items:center; gap:8px;
+      padding:8px; border-radius:12px;
+      background: rgba(255,255,255,0.06);
+      margin-bottom:6px;
+    }
+    .tag{
+      font-weight:800; font-size:12px; padding:4px 8px; border-radius:999px;
+      border:1px solid var(--stroke);
+    }
+    .tag.ok{ color:#002b1f; background: rgba(0,230,118,0.85); }
+    .tag.mid{ color:#382800; background: rgba(255,215,64,0.85); }
+    .tag.bad{ color:#3a0000; background: rgba(255,82,82,0.85); }
+    .itxt{
+      font-size: 14px; line-height:1.24;
+    }
+    .explain{
+      font-size:13px; color: var(--muted);
+      margin-top:3px;
+    }
+    .tips{
+      display:flex; flex-direction:column; gap:6px;
+      font-size:14px; color: var(--muted);
+    }
+    .reward{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between;
+    }
+    .reward .warn{
+      font-size:12px; color: #ffe082;
+    }
+    .reward .cta-btn{
+      appearance:none; border:none; cursor:pointer;
+      background: linear-gradient(90deg, #4df0ff, #6aff9a);
+      color:#003025;
+      font-weight:900; letter-spacing:.3px;
+      border-radius:14px; padding:12px 16px; min-height:48px;
+      box-shadow:0 10px 24px rgba(0,0,0,0.25);
+      font-size: clamp(14px,3.6vw,18px);
+    }
+
+    /* Compact mode for small screens or long text */
+    .compact{
+      --hudH: 56px;
+      --ctrlH: 172px;
+      --bubbleFS: clamp(13px, 2.6vw, 15px);
+      --btnFS: clamp(13px, 3.2vw, 16px);
+      --titleFS: clamp(16px, 4.0vw, 22px);
+      --nameFS: clamp(11px, 2.6vw, 13px);
+    }
+    .compact .brand{ display:none; } /* free space */
+
+    /* Accessibility: focus visible on key elements */
+    .answers .btn:focus-visible,
+    .cta-btn:focus-visible { outline:3px solid #fff; outline-offset:2px; }
+
+    /* Utility */
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- INTRO MODAL -->
+    <div class="modal" id="introModal" aria-modal="true" role="dialog" aria-label="Introducción">
+      <div class="card">
+        <div class="headline">
+          <h1>Primera visita eléctrica ⚡</h1>
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        </div>
+        <p><strong>Escenario:</strong> eres aprendiz de electricidad en tu primera visita a un piso con “salta” el magnetotérmico; tu mentor te guía por chat y la clienta está preocupada por la nevera.</p>
+        <p><strong>Objetivo:</strong> practicar seguridad básica (PRL), trato con cliente y diagnóstico inicial: comprobar diferencial, aislar cargas y observar señales.</p>
+        <div class="panel">
+          <p style="margin:0"><strong>Cómo jugar:</strong> Toca una respuesta por turno (5 turnos). Sin scroll. Mira reacciones, aprende y avanza.</p>
+        </div>
+        <div class="cta">
+          <button class="cta-btn" id="btnStart" aria-label="Empezar el reto">Empezar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME SCENE -->
+    <div class="scene" id="scene" aria-live="polite">
+      <div class="hud">
+        <div class="brand">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe">
+          <div class="title">Primera visita eléctrica ⚡</div>
+        </div>
+        <div class="progress" aria-label="Progreso">
+          <div id="progressText">1/5</div>
+          <div class="pbar" aria-hidden="true"><div class="fill" id="pfill"></div></div>
+        </div>
+      </div>
+
+      <div class="chat" id="chat">
+        <!-- Bubbles will be injected -->
+      </div>
+
+      <div class="reaction" id="reaction" aria-hidden="true">
+        <img id="reactionAvatar" alt="" loading="lazy">
+        <div class="rtext" id="reactionText"></div>
+      </div>
+
+      <div class="controls" id="controls">
+        <div class="answers" id="answers">
+          <!-- Answer buttons injected -->
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results" id="results" role="region" aria-label="Resultados del reto">
+      <div class="panel">
+        <h2>Tu recorrido</h2>
+        <div id="summary"></div>
+      </div>
+      <div class="panel">
+        <h2>Buenas prácticas</h2>
+        <div class="tips">
+          <div>• PRL primero: cortar general y verificar ausencia de tensión (V=0) antes de tocar. Si trabajáis dos personas, bloqueo/etiquetado básico.</div>
+          <div>• Comunicación clara: preséntate con EPI, explica tiempos y coste estimado, y pide contexto (qué estaba encendido).</div>
+          <div>• Diagnóstico simple: confirma si cayó diferencial o magnetotérmico; aísla cargas y reintenta rearmar sin consumidores conectados.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Consejo práctico</h2>
+        <div class="tips">
+          <div>Antes de rearmar, desenchufa o baja los circuitos sospechosos (nevera, encimera, enchufes cocina). Observa olor a quemado, marcas de calor o humedad en tomas.</div>
+          <div>Si el magneto vuelve a disparar, identifica el tramo y aparato con pinza amperimétrica y prueba por descarte, siempre con la general bajada al intervenir.</div>
+        </div>
+      </div>
+      <div class="reward">
+        <span class="warn" id="warnInit"> </span>
+        <button class="cta-btn" id="btnReward" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Data: Avatars and Turn content ---
+    const AVATARS = {
+      Mentor: "https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png",
+      Tú: "https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png",
+      Clienta: "https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png"
+    };
+
+    // 5 turns, each with 1–2 messages and 2–3 options (correct/partial/incorrect)
+    const TURNS = [
+      {
+        id: 1,
+        messages: [
+          { who: "Mentor", text: "Tranquilo, primera visita. La clienta te espera." },
+          { who: "Clienta", text: "Hola, la nevera puede perder frío. ¿Entráis?" }
+        ],
+        options: [
+          {
+            text: "Saludo, me presento y muestro mi EPI.",
+            tag: "correct",
+            reactWho: "Clienta",
+            reaction: "Gracias, me quedo más tranquila.",
+            explain: "Presentarte con EPI genera confianza y marca seguridad desde el inicio.",
+          },
+          {
+            text: "Saludo rápido, sin casco/guantes.",
+            tag: "partial",
+            reactWho: "Mentor",
+            reaction: "EPI siempre, aunque sea un piso.",
+            explain: "Saludar está bien; faltó EPI visible. La imagen y la seguridad importan.",
+          },
+          {
+            text: "Voy directo al cuadro sin saludar.",
+            tag: "incorrect",
+            reactWho: "Clienta",
+            reaction: "Oye… ¿y tú quién eres?",
+            explain: "Mala práctica: ignora la experiencia de la clienta y deteriora la confianza.",
+          }
+        ]
+      },
+      {
+        id: 2,
+        messages: [
+          { who: "Mentor", text: "Antes de tocar, obtén contexto del fallo." }
+        ],
+        options: [
+          {
+            text: "¿Qué aparatos estaban encendidos?",
+            tag: "correct",
+            reactWho: "Clienta",
+            reaction: "La nevera y el micro (solo reloj). Lavadora apagada.",
+            explain: "Saber qué estaba en uso orienta el circuito y posibles causas.",
+          },
+          {
+            text: "¿Dónde está la nevera exactamente?",
+            tag: "partial",
+            reactWho: "Mentor",
+            reaction: "Útil, pero primero contexto del disparo.",
+            explain: "Ubicar ayuda, pero es mejor empezar por condiciones del fallo.",
+          },
+          {
+            text: "¿Tienes la garantía de la nevera?",
+            tag: "incorrect",
+            reactWho: "Clienta",
+            reaction: "Em… ¿no mirarás el cuadro?",
+            explain: "No procede aún; primero diagnostica instalación, no el papeleo.",
+          }
+        ]
+      },
+      {
+        id: 3,
+        messages: [
+          { who: "Mentor", text: "Mira el cuadro: ¿cayó diferencial o magneto?" }
+        ],
+        options: [
+          {
+            text: "Confirmo qué interruptor bajó exactamente.",
+            tag: "correct",
+            reactWho: "Clienta",
+            reaction: "Bajó un magnetotérmico de enchufes cocina.",
+            explain: "Diferenciar diferencial vs magneto define si es fuga o sobrecarga/corto en circuito.",
+          },
+          {
+            text: "Rearmo todo a la vez a ver si aguanta.",
+            tag: "partial",
+            reactWho: "Mentor",
+            reaction: "Riesgo de arco y repetir fallo.",
+            explain: "Rearmar a ciegas puede ocultar causa y generar sobresaltos.",
+          },
+          {
+            text: "Ignoro etiquetas y pruebo al azar.",
+            tag: "incorrect",
+            reactWho: "Mentor",
+            reaction: "No improvises sin diagnóstico.",
+            explain: "Actuar sin identificar circuito aumenta riesgo y tiempo perdido.",
+          }
+        ]
+      },
+      {
+        id: 4,
+        messages: [
+          { who: "Mentor", text: "Seguridad primero." }
+        ],
+        options: [
+          {
+            text: "Corto general y verifico tensión = 0.",
+            tag: "correct",
+            reactWho: "Mentor",
+            reaction: "Bien. PRL: tocar solo sin tensión.",
+            explain: "Cortar general y comprobar ausencia de tensión evita choques y arcos.",
+          },
+          {
+            text: "Rearmo solo el magneto bajado.",
+            tag: "partial",
+            reactWho: "Mentor",
+            reaction: "Aún hay cargas conectadas…",
+            explain: "Puede servir, pero aísla cargas para un rearmado seguro y claro.",
+          },
+          {
+            text: "Toco cables sin cortar la luz.",
+            tag: "incorrect",
+            reactWho: "Mentor",
+            reaction: "No. Riesgo de choque.",
+            explain: "Intervenir en tensión es una imprudencia evitable.",
+          }
+        ]
+      },
+      {
+        id: 5,
+        messages: [
+          { who: "Clienta", text: "¿Tardaréis mucho? Me preocupa la comida." }
+        ],
+        options: [
+          {
+            text: "Explico tiempos/coste; rearmo sin cargas.",
+            tag: "correct",
+            reactWho: "Clienta",
+            reaction: "Vale, desconecto la nevera y probamos.",
+            explain: "Comunicar expectativas y rearmar aislando cargas es profesional y seguro.",
+          },
+          {
+            text: "Rearmo y ya veremos el coste luego.",
+            tag: "partial",
+            reactWho: "Mentor",
+            reaction: "Aclara tiempos/coste antes.",
+            explain: "Transparencia primero; luego pruebas y confirmaciones.",
+          },
+          {
+            text: "Cobro visita y vuelvo mañana.",
+            tag: "incorrect",
+            reactWho: "Clienta",
+            reaction: "¿En serio? Se estropea la comida…",
+            explain: "No resuelve lo urgente ni aporta diagnóstico mínimo.",
+          }
+        ]
+      }
+    ];
+
+    // --- State ---
+    let current = 0; // 0..TURNS.length-1
+    const decisions = []; // {turn, optionText, tag, reaction, explain, who}
+    let initData = "";
+
+    // --- DOM references ---
+    const introModal = document.getElementById('introModal');
+    const btnStart = document.getElementById('btnStart');
+    const scene = document.getElementById('scene');
+    const chat = document.getElementById('chat');
+    const answers = document.getElementById('answers');
+    const progressText = document.getElementById('progressText');
+    const pfill = document.getElementById('pfill');
+    const reaction = document.getElementById('reaction');
+    const reactionText = document.getElementById('reactionText');
+    const reactionAvatar = document.getElementById('reactionAvatar');
+
+    const results = document.getElementById('results');
+    const summary = document.getElementById('summary');
+    const btnReward = document.getElementById('btnReward');
+    const warnInit = document.getElementById('warnInit');
+
+    // --- Utilities: Fit UI to viewport (no scroll in gameplay) ---
+    function assertNoOverflow() {
+      // Check the scene content fits
+      return scene.scrollHeight <= scene.clientHeight;
+    }
+
+    function applyCompactMode(enable=true){
+      const root = document.querySelector('.app');
+      if (enable) root.classList.add('compact');
+      else root.classList.remove('compact');
+    }
+
+    function fitBoardToViewport(){
+      // Could tweak CSS vars if needed in future (placeholder for grid-based games)
+      // For chat layout we keep as is.
+    }
+
+    function autoscaleUI(minScale=0.88){
+      // Try scaling down slightly if still overflowing
+      const ratioH = scene.clientHeight / scene.scrollHeight;
+      const scale = Math.max(minScale, Math.min(1, ratioH));
+      document.documentElement.style.setProperty('--ui-scale', scale.toFixed(3));
+    }
+
+    function ensureFits(){
+      // Reset any scaling first
+      document.documentElement.style.setProperty('--ui-scale', "1");
+      applyCompactMode(false);
+      if (!assertNoOverflow()){
+        applyCompactMode(true);
+      }
+      if (!assertNoOverflow()){
+        fitBoardToViewport();
+      }
+      if (!assertNoOverflow()){
+        autoscaleUI(0.88);
+      }
+      // Final guard: if still not, clamp texts already truncate.
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 250));
+
+    // --- Render functions ---
+    function avatarFor(who){
+      return AVATARS[who] || AVATARS.Mentor;
+    }
+
+    function setProgress(){
+      const total = TURNS.length;
+      const step = Math.min(current+1, total);
+      progressText.textContent = `${step}/${total}`;
+      const percent = (step/total)*100;
+      pfill.style.width = `${percent}%`;
+    }
+
+    function renderTurn(){
+      const t = TURNS[current];
+      chat.innerHTML = "";
+      answers.innerHTML = "";
+
+      // Render messages (1–2 bubbles)
+      t.messages.forEach(m=>{
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.innerHTML = `
+          <div class="avatar"><img src="${avatarFor(m.who)}" alt="${m.who}" loading="lazy"></div>
+          <div class="content">
+            <div class="name">${m.who}</div>
+            <div class="msg">${m.text}</div>
+          </div>
+        `;
+        chat.appendChild(bubble);
+      });
+
+      // Render options (2–3 big buttons)
+      t.options.forEach((opt, idx)=>{
+        const btn = document.createElement('button');
+        const cls = opt.tag === 'correct' ? 'ok' : opt.tag === 'partial' ? 'mid' : 'bad';
+        btn.className = `btn ${cls}`;
+        btn.setAttribute('aria-label', `Opción ${idx+1}: ${opt.text}`);
+        btn.innerHTML = `${opt.text}`;
+        btn.addEventListener('click', ()=> onChoose(opt));
+        answers.appendChild(btn);
+      });
+
+      setProgress();
+      ensureFits();
+    }
+
+    function showReaction(who, text){
+      reactionAvatar.src = avatarFor(who);
+      reactionAvatar.alt = who;
+      reactionText.textContent = text;
+      reaction.classList.add('show');
+      setTimeout(()=> reaction.classList.remove('show'), 900);
+    }
+
+    function onChoose(opt){
+      // Store decision
+      decisions.push({
+        turn: current+1,
+        optionText: opt.text,
+        tag: opt.tag,
+        reaction: opt.reaction,
+        explain: opt.explain,
+        who: opt.reactWho
+      });
+
+      // Feedback, then advance
+      showReaction(opt.reactWho, opt.reaction);
+
+      // Prevent double taps
+      [...answers.children].forEach(b=> b.disabled = true);
+
+      setTimeout(()=>{
+        if (current < TURNS.length - 1) {
+          current++;
+          renderTurn();
+        } else {
+          showResults();
+        }
+      }, 900);
+    }
+
+    function showResults(){
+      // Allow scrolling in results
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+
+      // Hide gameplay views and show results
+      scene.style.display = 'none';
+      results.style.display = 'flex';
+
+      // Build summary
+      summary.innerHTML = "";
+      decisions.forEach(dec=>{
+        const item = document.createElement('div');
+        item.className = 'item';
+        const tagClass = dec.tag === 'correct' ? 'ok' : dec.tag === 'partial' ? 'mid' : 'bad';
+        const label = dec.tag === 'correct' ? 'Correcta' : dec.tag === 'partial' ? 'Parcial' : 'Incorrecta';
+        item.innerHTML = `
+          <div class="tag ${tagClass}">T${dec.turn} · ${label}</div>
+          <div class="itxt">${dec.optionText}</div>
+          <img src="${avatarFor(dec.who)}" alt="${dec.who}" style="width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,0.18)" loading="lazy">
+          <div class="explain" style="grid-column: 1 / -1;">${dec.explain}</div>
+        `;
+        summary.appendChild(item);
+      });
+      ensureFits(); // not critical here but keeps layout tidy
+    }
+
+    function startGame(){
+      introModal.classList.add('hidden');
+      // Keep gameplay no-scroll
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      current = 0;
+      decisions.length = 0;
+      renderTurn();
+    }
+
+    // --- initData handling & CTA ---
+    function readInitData(){
+      const params = new URLSearchParams(location.search);
+      initData = params.get('initData') || "";
+      const base = "https://kampe-game-phaser.onrender.com/daily_streak";
+      const url = `${base}?initData=${encodeURIComponent(initData)}`;
+      btnReward.addEventListener('click', ()=>{
+        location.href = url;
+      });
+      if(!initData){
+        warnInit.textContent = "initData no encontrado: podrás ver la recompensa igualmente.";
+      } else {
+        warnInit.textContent = "";
+      }
+    }
+
+    // --- Boot ---
+    btnStart.addEventListener('click', startGame);
+    readInitData();
+    // Render a placeholder of first turn under modal so ensureFits can measure
+    renderTurn();
+
+    // Ensure fit on load complete
+    window.addEventListener('load', ensureFits);
+  </script>
+</body>
+</html>
