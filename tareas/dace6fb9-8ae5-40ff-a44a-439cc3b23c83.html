@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | PRL Flash: Electricidad ⚡</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset + base */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    body {
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #ecf4ff;
+      background: radial-gradient(1200px 800px at 20% 10%, #3aa0ff 0%, #0a5adf 40%, #0b46a8 100%),
+                  linear-gradient(180deg, #0d5df4, #0b2a82);
+      background-attachment: fixed;
+    }
+    :root{
+      --glass-bg: rgba(255,255,255,0.12);
+      --glass-bd: rgba(255,255,255,0.18);
+      --accent: #42f5ff;
+      --accent-2: #1aff9c;
+      --danger: #ff4d6d;
+      --ok: #42ff88;
+      --btnH: 56px;
+      --gap: 12px;
+      --ui-scale: 1;
+      --cellH: 56px;
+      --cellAR: 4 / 1; /* width/height ratio hint */
+      --text-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.25);
+    }
+    /* Scene sizing with safe viewport units */
+    .scene {
+      position: relative;
+      width: 100%;
+      padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      touch-action: none;
+      isolation: isolate;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene { height: 100dvh; } }
+    @supports not (height: 100svh) and not (height: 100dvh) { .scene { height: 100vh; } }
+
+    /* Avatar background */
+    .avatar-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.12;
+      mix-blend-mode: screen;
+      object-fit: cover;
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 10px 30px rgba(0,0,0,0.4));
+      z-index: 0;
+    }
+
+    /* HUD */
+    .hud {
+      z-index: 2;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo {
+      height: clamp(18px, 3.2vh, 28px);
+      width: auto;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+    }
+    .title-wrap {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .title {
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: clamp(16px, 2.6vh, 20px);
+      text-shadow: var(--text-shadow);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .subtitle {
+      font-size: clamp(11px, 1.7vh, 13px);
+      opacity: 0.9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .progress {
+      display: grid;
+      place-items: center;
+      padding: 6px 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border: 1px solid var(--glass-bd);
+      border-radius: 12px;
+      min-width: 66px;
+      font-weight: 700;
+      font-size: clamp(12px, 2vh, 14px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+
+    /* Main panel (question) */
+    .panel {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: var(--gap);
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      border: 1px solid var(--glass-bd);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+      backdrop-filter: blur(10px);
+    }
+    .question {
+      padding: 6px 8px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(10, 40, 120, 0.45), rgba(10, 40, 120, 0.25));
+      border: 1px solid rgba(255,255,255,0.14);
+      font-size: clamp(16px, 2.5vh, 18px);
+      line-height: 1.2;
+      font-weight: 700;
+      text-shadow: var(--text-shadow);
+      min-height: 48px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--gap);
+      align-content: start;
+    }
+    .opt-btn {
+      position: relative;
+      height: var(--btnH);
+      min-height: 44px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.06);
+      color: #fff;
+      font-weight: 700;
+      font-size: clamp(14px, 2.2vh, 16px);
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+    }
+    .opt-btn .label {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    .opt-btn:hover { box-shadow: 0 10px 26px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.12); }
+    .opt-btn:active { transform: translateY(1px) scale(0.99); }
+    .opt-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .opt-bullet {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(255,255,255,0.65);
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.2) inset;
+    }
+    .opt-arrow {
+      color: rgba(255,255,255,0.8);
+      font-size: 14px;
+    }
+    .opt-btn:active .opt-arrow { transform: translateX(2px); }
+
+    /* Intro overlay */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      background: radial-gradient(100% 100% at 50% 0%, rgba(10,30,120,0.7), rgba(5,10,40,0.8));
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+    .modal {
+      width: min(560px, 94%);
+      max-height: 90svh;
+      overflow-y: auto;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border: 1px solid var(--glass-bd);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+      backdrop-filter: blur(12px);
+    }
+    .modal h2 {
+      margin: 0 0 6px;
+      font-size: clamp(18px, 3vh, 22px);
+      letter-spacing: 0.2px;
+      text-shadow: var(--text-shadow);
+    }
+    .modal p {
+      margin: 6px 0 12px;
+      font-size: clamp(13px, 2.1vh, 15px);
+      opacity: 0.95;
+      line-height: 1.25;
+    }
+    .cta {
+      display: inline-grid;
+      place-items: center;
+      padding: 12px 14px;
+      min-height: 44px;
+      border-radius: 12px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      background: linear-gradient(180deg, #42f5ff, #0df);
+      color: #06223a;
+      border: none;
+      box-shadow: 0 10px 24px rgba(0, 200, 255, 0.45);
+      cursor: pointer;
+      width: 100%;
+      transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+    }
+    .cta:hover { box-shadow: 0 14px 34px rgba(0, 200, 255, 0.55); }
+    .cta:active { transform: translateY(1px) scale(0.99); }
+    .cta:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+    /* Animations */
+    .fade-in { animation: fadeIn 220ms ease both; }
+    .slide-in { animation: slideIn 240ms ease both; }
+    .slide-out { animation: slideOut 220ms ease both; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-20px); opacity: 0; } }
+
+    /* Results */
+    .results {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      display: none;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.6));
+      backdrop-filter: blur(6px);
+    }
+    .results.active { display: grid; }
+    .results .list {
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border: 1px solid var(--glass-bd);
+      border-radius: 16px;
+      padding: 12px;
+      overflow-y: auto;
+      max-height: 90svh;
+    }
+    .res-item {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 4px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      margin-bottom: 10px;
+    }
+    .res-q {
+      font-weight: 800;
+      font-size: clamp(14px, 2.2vh, 16px);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .res-ans, .res-correct, .res-expl {
+      font-size: clamp(12px, 2vh, 14px);
+      line-height: 1.2;
+      opacity: 0.95;
+    }
+    .good { color: var(--ok); font-weight: 700; }
+    .bad { color: var(--danger); font-weight: 700; }
+    .res-footer {
+      display: grid;
+      gap: 8px;
+    }
+    .advice {
+      font-size: clamp(12px, 2vh, 14px);
+      opacity: 0.95;
+      text-align: center;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .warning {
+      text-align: center;
+      font-size: 12px;
+      opacity: 0.85;
+      color: #ffe08a;
+      min-height: 16px;
+    }
+
+    /* Compact mode to save space */
+    .compact .title { font-size: clamp(14px, 2.2vh, 18px); }
+    .compact .subtitle { display: none; }
+    .compact .progress { padding: 4px 8px; font-size: 12px; }
+    .compact .panel { padding: 10px; }
+    .compact .question { font-size: 15px; min-height: 40px; }
+    .compact .opt-btn { height: max(44px, calc(var(--btnH) - 8px)); font-size: 14px; }
+    .compact .hud { gap: 6px; }
+
+    /* Focus style general */
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <!-- Decorative avatar -->
+    <img class="avatar-bg" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" />
+
+    <!-- HUD -->
+    <div class="hud">
+      <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+      <div class="title-wrap">
+        <div class="title">PRL Flash: Electricidad ⚡</div>
+        <div class="subtitle" id="subtitle">Escenario: primer día como ayudante</div>
+      </div>
+      <div class="progress" id="progress" aria-live="polite">1/5</div>
+    </div>
+
+    <!-- Main panel -->
+    <div class="panel uiWrap" id="panel" role="group" aria-labelledby="qText">
+      <div class="question" id="qText"></div>
+      <div class="options" id="options"></div>
+    </div>
+
+    <!-- Intro overlay -->
+    <div class="overlay" id="intro">
+      <div class="modal slide-in" role="dialog" aria-labelledby="introTitle" aria-modal="true">
+        <h2 id="introTitle">Cómo jugar</h2>
+        <p>Responde 5 preguntas rápidas tocando la opción correcta. Avanza al instante y revisa el porqué al final.</p>
+        <button class="cta" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+      </div>
+    </div>
+
+    <!-- Results screen -->
+    <div class="results" id="results" aria-live="polite">
+      <div class="hud">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title-wrap">
+          <div class="title">Resultados</div>
+          <div class="subtitle" id="scoreSub">Tu desempeño</div>
+        </div>
+        <div class="progress" id="finalProg"></div>
+      </div>
+      <div class="list" id="resultsList" tabindex="0" aria-label="Detalle de respuestas"></div>
+      <div class="res-footer">
+        <div class="advice">Consejo: antes de tocar, corta y verifica ausencia de tensión; comunica el plan y mantén el área ordenada.</div>
+        <button class="cta" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        <div class="warning" id="initWarn"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Data and state
+    const QUESTIONS = [
+      {
+        q: "¿Qué haces antes de aflojar el tornillo del enchufe?",
+        options: [
+          { t: "Cortar circuito y verificar sin tensión", ok: true },
+          { t: "Poner guantes y ya", ok: false },
+          { t: "Bajar todo el general", ok: false },
+          { t: "Nada, es rápido", ok: false },
+        ],
+        expl: "Aísla el circuito y verifica ausencia de tensión con un comprobador. Aflojar sin cortar puede provocar arco o descarga.",
+      },
+      {
+        q: "¿Qué EPI mínimo usas para revisar el cuadro?",
+        options: [
+          { t: "Guantes dieléctricos y gafas", ok: true },
+          { t: "Gorra y mascarilla", ok: false },
+          { t: "Guantes de cuero", ok: false },
+          { t: "Nada, solo miro", ok: false },
+        ],
+        expl: "Protege manos y ojos ante partes vivas o proyecciones. El cuero no aísla eléctricamente.",
+      },
+      {
+        q: "Suelo húmedo y escalera metálica, ¿decisión?",
+        options: [
+          { t: "Parar y usar fibra tras secar la zona", ok: true },
+          { t: "Metálica con mucho cuidado", ok: false },
+          { t: "Que el cliente la sujete", ok: false },
+          { t: "Descalzarte para aislar", ok: false },
+        ],
+        expl: "Humedad + metal aumenta el riesgo de descarga. Usa escalera de fibra y trabaja en seco.",
+      },
+      {
+        q: "¿De qué color es el conductor de tierra?",
+        options: [
+          { t: "Verde/amarillo", ok: true },
+          { t: "Azul", ok: false },
+          { t: "Marrón o negro", ok: false },
+        ],
+        expl: "La toma de tierra es bicolor verde-amarillo según norma. Azul es el neutro.",
+      },
+      {
+        q: "El cliente pregunta el tiempo, ¿qué respondes?",
+        options: [
+          { t: "Explico pasos y doy tiempo aproximado", ok: true },
+          { t: "Digo “depende” y sigo", ok: false },
+          { t: "Prometo 5 min siempre", ok: false },
+          { t: "No respondo", ok: false },
+        ],
+        expl: "Comunica plan, tiempo y cortes previstos. Gestiona expectativas y seguridad.",
+      },
+    ];
+
+    let current = 0;
+    const picks = []; // { qIdx, selIdx, correctIdx, isCorrect }
+
+    // Elements
+    const sceneEl = document.getElementById('scene');
+    const panelEl = document.getElementById('panel');
+    const qTextEl = document.getElementById('qText');
+    const optionsEl = document.getElementById('options');
+    const progressEl = document.getElementById('progress');
+    const introEl = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+    const resultsEl = document.getElementById('results');
+    const resultsListEl = document.getElementById('resultsList');
+    const scoreSubEl = document.getElementById('scoreSub');
+    const finalProgEl = document.getElementById('finalProg');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+
+    // Parse and preserve initData
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || "";
+    const rewardBase = "https://kampe-game-phaser.onrender.com/daily_streak?initData=";
+
+    // Utility: truncate labels to 48 chars
+    function clampLabel(s, max=48) {
+      if (!s) return "";
+      if (s.length <= max) return s;
+      return s.slice(0, max - 1) + "…";
+    }
+
+    // Render a question turn
+    function renderTurn() {
+      const total = QUESTIONS.length;
+      const data = QUESTIONS[current];
+
+      progressEl.textContent = `${current + 1}/${total}`;
+      qTextEl.textContent = clampLabel(data.q, 64); // keep short; also CSS clamps lines
+
+      // Build options
+      optionsEl.innerHTML = '';
+      data.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', `Opción ${idx + 1}: ${opt.t}`);
+        btn.innerHTML = `
+          <span class="opt-bullet" aria-hidden="true"></span>
+          <span class="label">${clampLabel(opt.t)}</span>
+          <span class="opt-arrow" aria-hidden="true">›</span>
+        `;
+        btn.addEventListener('click', () => onPick(idx));
+        optionsEl.appendChild(btn);
+      });
+
+      // Intro animations for the new turn
+      panelEl.classList.remove('slide-out');
+      panelEl.classList.add('slide-in');
+      setTimeout(() => panelEl.classList.remove('slide-in'), 260);
+
+      // Focus first option for accessibility
+      const firstOpt = optionsEl.querySelector('button');
+      if (firstOpt) firstOpt.focus({ preventScroll: true });
+
+      // Ensure everything fits on screen
+      ensureFits();
+    }
+
+    // On option select
+    function onPick(selIdx) {
+      const data = QUESTIONS[current];
+      const correctIdx = data.options.findIndex(o => o.ok);
+      const isCorrect = selIdx === correctIdx;
+
+      picks.push({ qIdx: current, selIdx, correctIdx, isCorrect });
+
+      // Small transition then go next
+      panelEl.classList.remove('slide-in');
+      panelEl.classList.add('slide-out');
+
+      setTimeout(() => {
+        panelEl.classList.remove('slide-out');
+        if (current < QUESTIONS.length - 1) {
+          current++;
+          renderTurn();
+        } else {
+          showResults();
+        }
+      }, 180);
+    }
+
+    // Results
+    function showResults() {
+      const total = QUESTIONS.length;
+      const correctCount = picks.filter(p => p.isCorrect).length;
+
+      // Fill summary
+      resultsListEl.innerHTML = '';
+      picks.forEach(p => {
+        const q = QUESTIONS[p.qIdx];
+        const selText = q.options[p.selIdx]?.t || "";
+        const okText = q.options[p.correctIdx]?.t || "";
+        const item = document.createElement('div');
+        item.className = 'res-item';
+        item.innerHTML = `
+          <div class="res-q">${clampLabel(q.q, 80)}</div>
+          <div class="res-ans ${p.isCorrect ? 'good' : 'bad'}">Tu respuesta: ${clampLabel(selText, 64)}</div>
+          <div class="res-correct">Correcta: ${clampLabel(okText, 64)}</div>
+          <div class="res-expl">${q.expl}</div>
+        `;
+        resultsListEl.appendChild(item);
+      });
+
+      scoreSubEl.textContent = `Aciertos: ${correctCount}/${total}`;
+      finalProgEl.textContent = `${correctCount}/${total}`;
+
+      // Reveal results view
+      resultsEl.classList.add('active');
+
+      // Enable scroll only for results view
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+
+      // InitData warning and reward
+      if (!initData) {
+        initWarn.textContent = "Aviso: no se recibió initData. Puedes ver tu recompensa igualmente.";
+      } else {
+        initWarn.textContent = "";
+      }
+
+      rewardBtn.onclick = () => {
+        const url = rewardBase + encodeURIComponent(initData);
+        window.location.href = url;
+      };
+
+      // Focus the list for screen readers
+      resultsListEl.focus({ preventScroll: false });
+    }
+
+    // Intro start
+    startBtn.addEventListener('click', () => {
+      introEl.style.display = 'none';
+      renderTurn();
+    });
+
+    // Initial static progress text
+    progressEl.textContent = `1/${QUESTIONS.length}`;
+
+    // Fit/overflow management
+    function assertNoOverflow() {
+      const fits = sceneEl.scrollHeight <= sceneEl.clientHeight;
+      return fits;
+    }
+    function applyCompactMode() {
+      if (!sceneEl.classList.contains('compact')) {
+        sceneEl.classList.add('compact');
+      }
+    }
+    function fitBoardToViewport() {
+      // Adjust button height and gaps to try fitting
+      const curBtnH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--btnH')) || 56;
+      const curCellH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cellH')) || 56;
+      const newBtnH = Math.max(44, curBtnH - 6);
+      const newCellH = Math.max(44, curCellH - 6);
+      document.documentElement.style.setProperty('--btnH', newBtnH + 'px');
+      document.documentElement.style.setProperty('--cellH', newCellH + 'px');
+    }
+    function autoscaleUI(minScale = 0.88) {
+      // Compute a scale factor based on ratio
+      const h = sceneEl.clientHeight || 1;
+      const s = sceneEl.scrollHeight || 1;
+      const ratio = Math.min(1, (h / s) * 0.98);
+      const next = Math.max(minScale, Math.min(1, ratio));
+      document.documentElement.style.setProperty('--ui-scale', String(next));
+    }
+    function ensureFits() {
+      // Reset dynamic vars for a fresh check
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      document.documentElement.style.setProperty('--btnH', '56px');
+      document.documentElement.style.setProperty('--cellH', '56px');
+
+      // Pass 1: if overflow -> compact
+      if (!assertNoOverflow()) {
+        applyCompactMode();
+      }
+      // Pass 2: adjust board/button heights
+      let tries = 0;
+      while (!assertNoOverflow() && tries < 3) {
+        fitBoardToViewport();
+        tries++;
+      }
+      // Pass 3: autoscale as last resort
+      if (!assertNoOverflow()) {
+        autoscaleUI(0.88);
+      }
+    }
+
+    window.addEventListener('resize', () => ensureFits());
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 50));
+
+    // Initial: keep gameplay scroll disabled; intro is modal
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    // Pre-render first question text for initial layout (behind intro)
+    qTextEl.textContent = clampLabel(QUESTIONS[0].q, 64);
+    optionsEl.innerHTML = '';
+    QUESTIONS[0].options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.type = 'button';
+      btn.setAttribute('aria-label', `Opción ${idx + 1}: ${opt.t}`);
+      btn.innerHTML = `
+        <span class="opt-bullet" aria-hidden="true"></span>
+        <span class="label">${clampLabel(opt.t)}</span>
+        <span class="opt-arrow" aria-hidden="true">›</span>
+      `;
+      optionsEl.appendChild(btn);
+    });
+
+    // Run fit check at start
+    ensureFits();
+  </script>
+</body>
+</html>
