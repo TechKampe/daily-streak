@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kämpe | Memofugas: kit básico de fontanería</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#1d68ff;
+      --bg2:#0046c7;
+      --glass: rgba(255,255,255,0.14);
+      --glass-strong: rgba(255,255,255,0.22);
+      --txt:#f3f7ff;
+      --muted:#cfe1ff;
+      --accent:#4dffdf;
+      --accent-2:#ffd54d;
+      --danger:#ff5577;
+      --ok:#6dff80;
+      --warn:#ffcc66;
+      --shadow: rgba(0,0,0,0.35);
+      --ui-scale: 1;
+      --cellH: 112px;      /* altura base tarjeta */
+      --cellAR: 0.68;      /* aspect-ratio tarjeta */
+      --gap: 10px;
+      --radius: 14px;
+      --cardRadius: 12px;
+      --hudH: 112px;       /* altura estimada HUD */
+    }
+
+    /* Reset + base */
+    *{ box-sizing:border-box; }
+    html, body{
+      margin:0; padding:0;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--txt);
+      background: radial-gradient(80% 80% at 50% 0%, #2c7fff 0%, #144ecf 45%, #0a2f88 100%) fixed;
+      height:100%;
+      overscroll-behavior: none;
+      overflow:hidden; /* bloqueado durante gameplay; en resultados se habilita por JS */
+    }
+    body.results-mode{
+      overflow-y:auto;
+      overscroll-behavior: contain;
+      background-attachment: scroll;
+    }
+
+    /* Scene sizing with svh/dvh/vh fallbacks */
+    .scene{
+      width:100%;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      display:flex; align-items:stretch; justify-content:center;
+      position:relative;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+    }
+    @supports (height: 100svh) { .scene{ height:100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene{ height:100dvh; } }
+    @supports not (height: 100svh) and (not (height: 100dvh)) { .scene{ height:100vh; } }
+
+    .scene-inner{
+      width:100%;
+      max-width: 520px; /* centrado en móviles */
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding:10px 12px 12px;
+      position:relative;
+    }
+
+    /* Background avatar */
+    .avatar-bg{
+      position:absolute; inset:0;
+      background:
+        radial-gradient(120% 120% at 20% -10%, rgba(255,255,255,0.10) 0%, transparent 60%),
+        url("https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png") center 40% / 380px auto no-repeat;
+      opacity:0.22;
+      pointer-events:none;
+      filter: drop-shadow(0 10px 24px rgba(0,0,0,0.4));
+    }
+
+    /* Top HUD */
+    .hud{
+      display:flex; align-items:center; gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.10));
+      border:1px solid rgba(255,255,255,0.24);
+      border-radius:16px;
+      padding:8px 10px;
+      backdrop-filter: blur(10px) saturate(140%);
+      box-shadow: 0 10px 20px var(--shadow);
+      min-height: 64px;
+    }
+    .logo{
+      width:42px; height:42px; border-radius:10px; flex:0 0 auto;
+      background: rgba(255,255,255,0.1); display:grid; place-items:center;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+    }
+    .logo img{ width:34px; height:auto; display:block; }
+    .title-wrap{ flex:1; min-width:0; }
+    h1{
+      margin:0;
+      font-weight:800;
+      letter-spacing:0.2px;
+      font-size: clamp(16px, 2.2vw + 12px, 20px);
+      line-height:1.1;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+    }
+    .subtitle{
+      margin:2px 0 0; color:var(--muted); font-size: clamp(11px, 1.2vw + 9px, 13px);
+      line-height:1.2;
+      display:block;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .stats{
+      display:flex; flex-direction:column; gap:6px; align-items:flex-end;
+      min-width: 110px;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 10px; border-radius:999px;
+      background: rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.24);
+      font-weight:700; font-size:13px;
+      white-space:nowrap;
+    }
+    .pill .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent);}
+    .pill.warn .dot{ background:var(--warn); box-shadow:0 0 8px var(--warn); }
+    .meter{
+      position:relative; width:120px; height:10px; border-radius:999px;
+      background: rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.2);
+      overflow:hidden;
+    }
+    .meter > span{
+      position:absolute; left:0; top:0; bottom:0; width:0%;
+      background: linear-gradient(90deg, var(--accent), #00ffa6);
+      box-shadow: 0 0 10px rgba(0,255,200,0.6) inset;
+    }
+
+    /* Board */
+    .board-wrap{
+      flex:1; min-height:0;
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .hint{
+      font-size:12px; color:var(--muted); text-align:center;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+      margin-top:-2px;
+    }
+    .board{
+      flex:1; min-height:0;
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: var(--cellH);
+      gap: var(--gap);
+      touch-action:none; /* evitar derrapes */
+    }
+    .card{
+      position:relative;
+      perspective: 800px;
+      border-radius: var(--cardRadius);
+      cursor:pointer;
+      user-select:none;
+      outline:none;
+    }
+    .card[aria-disabled="true"]{ cursor: default; }
+    .card .inner{
+      position:absolute; inset:0;
+      transform-style: preserve-3d;
+      transition: transform 0.42s cubic-bezier(.2,.8,.2,1);
+      border-radius: var(--cardRadius);
+    }
+    .card .side{
+      position:absolute; inset:0;
+      backface-visibility: hidden;
+      border-radius: var(--cardRadius);
+      display:flex; align-items:center; justify-content:center;
+      padding:10px;
+      text-align:center;
+      box-shadow: 0 8px 16px var(--shadow);
+      border:1px solid rgba(255,255,255,0.24);
+    }
+    .card .back{
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      color: var(--txt);
+    }
+    .card .front{
+      background: linear-gradient(180deg, rgba(25,255,215,0.14), rgba(25,255,215,0.06));
+      transform: rotateY(180deg);
+    }
+    .card.flipped .inner{ transform: rotateY(180deg); }
+    .card .label{
+      font-weight:800;
+      font-size: clamp(12px, 1.4vw + 10px, 15px);
+      line-height:1.15;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .badge{
+      position:absolute; top:6px; left:6px;
+      padding:3px 6px; border-radius:8px;
+      background: rgba(0,0,0,0.28);
+      border:1px solid rgba(255,255,255,0.25);
+      font-size:10px; font-weight:800; letter-spacing:0.2px; color:#d4fff4;
+      pointer-events:none;
+    }
+    .card.matched .front{
+      background: linear-gradient(180deg, rgba(80,255,200,0.26), rgba(80,255,200,0.14));
+      border-color: rgba(100,255,220,0.8);
+      box-shadow: 0 0 0 2px rgba(100,255,220,0.5), 0 8px 16px var(--shadow);
+    }
+    .card.matched .inner{ animation: pop 420ms ease-out 1; }
+    @keyframes pop{
+      0%{ transform: rotateY(180deg) scale(1); }
+      40%{ transform: rotateY(180deg) scale(1.06); }
+      100%{ transform: rotateY(180deg) scale(1); }
+    }
+    .lock-overlay{
+      position:absolute; inset:0; border-radius: var(--cardRadius);
+      background: rgba(0,0,0,0.12);
+      display:none;
+    }
+    .card.matched .lock-overlay{ display:block; }
+
+    /* Footer controls (minimal, always visible) */
+    .footer{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border:1px solid rgba(255,255,255,0.22);
+      border-radius:14px;
+      padding:8px 10px;
+      min-height: 54px;
+      box-shadow: 0 10px 18px var(--shadow);
+    }
+    .footer .cta{
+      appearance:none; border:none; cursor:pointer;
+      background: linear-gradient(180deg, #00ffc7, #00c6a0);
+      color:#00333a; font-weight:900;
+      padding:10px 14px; border-radius:12px; min-height:44px;
+      font-size: clamp(14px, 1.2vw + 12px, 16px);
+      box-shadow: 0 8px 14px rgba(0,255,200,0.35);
+    }
+    .footer .cta:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+    .footer .secondary{
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.09));
+      color:var(--txt); border:1px solid rgba(255,255,255,0.24);
+      box-shadow:none;
+    }
+    .footer .info{
+      font-size:12px; color:var(--muted); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+
+    /* Modals */
+    .modal{
+      position:fixed; inset:auto 12px 12px 12px; top:12px;
+      display:none; z-index:20;
+      background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.45));
+      border:1px solid rgba(255,255,255,0.24);
+      border-radius:16px; padding:14px;
+      backdrop-filter: blur(12px) saturate(140%);
+      box-shadow: 0 18px 30px var(--shadow);
+      max-height:90svh; overflow-y:auto;
+    }
+    .modal.show{ display:block; }
+    .modal h2{
+      margin:0 0 6px; font-size: clamp(16px, 2vw + 14px, 20px); font-weight:800;
+    }
+    .modal p{
+      margin:8px 0; font-size:14px; color:var(--muted);
+      display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+      max-width: 60ch;
+    }
+    .modal .modal-actions{
+      display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;
+    }
+    .btn{
+      appearance:none; border:none; cursor:pointer; text-align:center;
+      padding:10px 14px; border-radius:12px; min-height:44px;
+      font-weight:900;
+      font-size: clamp(14px, 1vw + 12px, 16px);
+    }
+    .btn.primary{
+      background: linear-gradient(180deg, #00ffc7, #00c6a0);
+      color:#00333a; box-shadow: 0 8px 14px rgba(0,255,200,0.35);
+    }
+    .btn.ghost{
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      color:var(--txt); border:1px solid rgba(255,255,255,0.24);
+    }
+    .btn:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+
+    /* Results view (separate from scene to permitir scroll) */
+    .results{
+      display:none;
+      min-height:100svh;
+      padding: env(safe-area-inset-top) 12px calc(12px + env(safe-area-inset-bottom)) 12px;
+    }
+    .results.show{ display:block; }
+    .results .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border:1px solid rgba(255,255,255,0.22);
+      border-radius:16px;
+      padding:14px;
+      backdrop-filter: blur(10px) saturate(140%);
+      box-shadow: 0 10px 18px var(--shadow);
+      margin-bottom:12px;
+    }
+    .results h3{
+      margin:0 0 6px; font-size: clamp(16px, 2vw + 14px, 20px); font-weight:800;
+    }
+    .summary{
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    .chip{
+      background: rgba(0,0,0,0.28);
+      border:1px solid rgba(255,255,255,0.22);
+      border-radius:999px;
+      padding:8px 10px; font-weight:800; font-size:13px;
+    }
+    .pair-list{ display:grid; gap:10px; }
+    .pair-item{
+      display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center;
+      background: rgba(0,0,0,0.18);
+      border:1px solid rgba(255,255,255,0.2);
+      border-radius:12px; padding:10px;
+    }
+    .pair-title{
+      font-weight:800; font-size:14px; line-height:1.1;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .pair-explain{
+      grid-column:1 / -1; font-size:13px; color:var(--muted);
+      display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+      /* máx 180 caracteres por texto generado */
+    }
+    .tag{
+      font-size:11px; font-weight:900; padding:6px 8px; border-radius:999px;
+      border:1px solid rgba(255,255,255,0.26);
+      background: rgba(0,0,0,0.22);
+      color:#d8fff8;
+      white-space:nowrap;
+    }
+    .tag.ok{ background: rgba(0,255,170,0.2); color:#003a28; border-color: rgba(0,255,170,0.45); }
+    .tag.miss{ background: rgba(255,110,110,0.22); color:#3a0010; border-color: rgba(255,110,110,0.45); }
+
+    .results .cta-row{
+      position:sticky; bottom:0; z-index:5;
+      display:flex; gap:10px;
+      padding-top:8px;
+      background: linear-gradient(180deg, transparent, rgba(10,47,136,0.65) 45%, rgba(10,47,136,0.85));
+    }
+    .results .cta-row .btn{
+      flex:1; min-height:48px;
+    }
+    .small-note{
+      font-size:12px; color:#ffe8a3; margin-top:6px;
+    }
+
+    /* Compact mode (auto-applied if needed) */
+    .scene.compact .hud{ padding:6px 8px; }
+    .scene.compact h1{ font-size: clamp(14px, 2vw + 10px, 18px); }
+    .scene.compact .subtitle{ display:none; }
+    .scene.compact .stats{ min-width:98px; }
+    .scene.compact .board{ --gap:8px; }
+    .scene.compact .footer{ padding:6px 8px; min-height:50px; }
+    .scene.compact .footer .info{ display:none; }
+
+    /* Focus visible cards */
+    .card:focus-visible .back{
+      outline:2px solid #fff; outline-offset:-2px;
+    }
+
+    /* Accessibility contrast helpers */
+    .sr-only{ position:absolute; width:1px; height:1px; margin:-1px; border:0; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+    /* Utility hide */
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <div class="avatar-bg" aria-hidden="true"></div>
+    <div class="scene-inner" id="sceneInner">
+      <header class="hud" aria-label="Barra superior del reto">
+        <div class="logo" aria-hidden="true">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        </div>
+        <div class="title-wrap">
+          <h1>Memofugas: kit básico de fontanería 🔧</h1>
+          <span class="subtitle">Servicio express: un fregadero gotea; prepara el kit y asocia herramienta con función.</span>
+        </div>
+        <div class="stats">
+          <div class="pill" id="attemptPill" aria-live="polite"><span class="dot"></span><span id="attemptTxt">Intentos: 12</span></div>
+          <div class="meter" aria-hidden="true"><span id="meterFill"></span></div>
+        </div>
+      </header>
+
+      <div class="board-wrap">
+        <div class="hint" id="hint">Voltea dos cartas por turno y forma parejas. Tienes 12 intentos.</div>
+        <section class="board" id="board" role="grid" aria-label="Tablero de memoria">
+          <!-- Cards injected here -->
+        </section>
+      </div>
+
+      <footer class="footer">
+        <div class="info" id="footInfo">Parejas acertadas: <b id="pairsFound">0</b> / 4</div>
+        <button class="cta secondary" id="restartBtn" aria-label="Reiniciar partida">Reiniciar</button>
+      </footer>
+    </div>
+
+    <!-- Intro modal -->
+    <div class="modal show" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+      <h2 id="introTitle">Cómo jugar</h2>
+      <p>Voltea 2 cartas para emparejar herramienta con su uso. Acierta todas en ≤12 intentos. Flip rápido, brillo al acertar. ¡Listo para salir a reparar!</p>
+      <div class="modal-actions">
+        <button class="btn primary" id="startBtn">Empezar</button>
+        <button class="btn ghost" id="howBtn">Recordatorio: PTFE = Pega Tu Fuga en Enrosque</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results view -->
+  <main class="results" id="results" aria-live="polite">
+    <div class="panel">
+      <h3>Resumen de la misión</h3>
+      <div class="summary">
+        <span class="chip">Aciertos: <b id="sumHits">0</b></span>
+        <span class="chip">Fallos: <b id="sumMiss">0</b></span>
+        <span class="chip">Intentos usados: <b id="sumMoves">0</b>/12</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Parejas y explicación</h3>
+      <div class="pair-list" id="pairList"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Tip de memorización</h3>
+      <p style="margin:0">PTFE = “Pega Tu Fuga en Enrosque”. Repite mentalmente al ver una rosca.</p>
+    </div>
+
+    <div class="cta-row">
+      <button class="btn ghost" id="retry2">Reintentar</button>
+      <button class="btn primary" id="rewardBtn">Ver mi recompensa</button>
+    </div>
+    <div class="small-note" id="initWarn" aria-live="assertive" style="display:none;">Aviso: initData no detectado. Puedes continuar, pero tu progreso podría no registrarse.</div>
+  </main>
+
+  <script>
+    // -----------------------------
+    // Data y estado del juego
+    // -----------------------------
+    const initData = new URLSearchParams(location.search).get('initData') || "";
+    const scene = document.getElementById('scene');
+    const boardEl = document.getElementById('board');
+    const attemptTxt = document.getElementById('attemptTxt');
+    const meterFill = document.getElementById('meterFill');
+    const pairsFoundEl = document.getElementById('pairsFound');
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const resultsView = document.getElementById('results');
+    const pairList = document.getElementById('pairList');
+    const sumHits = document.getElementById('sumHits');
+    const sumMiss = document.getElementById('sumMiss');
+    const sumMoves = document.getElementById('sumMoves');
+    const retry2 = document.getElementById('retry2');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+    const attemptPill = document.getElementById('attemptPill');
+    const hintEl = document.getElementById('hint');
+
+    const MAX_MOVES = 12;
+
+    const pairs = [
+      {
+        id: "ajustable",
+        left: "Llave ajustable",
+        right: "Ajustar tuercas",
+        explanation: "Se adapta al tamaño para apretar o aflojar sin dañar. Error típico: usarla floja y redondear; ajusta bien la mordaza antes de girar."
+      },
+      {
+        id: "ptfe",
+        left: "Cinta PTFE",
+        right: "Sellar roscas",
+        explanation: "Enróllala en el sentido del enrosque para sellar uniones. Error: al revés o exceso; 3–5 vueltas con tensión uniforme."
+      },
+      {
+        id: "cortatubos",
+        left: "Cortatubos",
+        right: "Cortar tubo",
+        explanation: "Corta cobre o PVC con giro progresivo. Error: apretar de golpe y ovalar; ajusta poco a poco y gira hasta un corte limpio."
+      },
+      {
+        id: "nivel",
+        left: "Nivel de burbuja",
+        right: "Verificar horizontal",
+        explanation: "La burbuja centrada indica nivel. Error: fiarse del ojo; apoya el nivel y mide en dos direcciones."
+      }
+    ];
+
+    // Utilidad: clamp de longitud de string (cartas 48, explicaciones 180)
+    function clampText(str, max) {
+      if (!str) return "";
+      return str.length <= max ? str : (str.slice(0, max - 1) + "…");
+    }
+
+    // Construye cartas
+    let cards = [];
+    function buildCards(){
+      cards = [];
+      for (const p of pairs){
+        cards.push({ pairId: p.id, kind:'tool',   text: clampText(p.left, 48) });
+        cards.push({ pairId: p.id, kind:'use',    text: clampText(p.right, 48) });
+      }
+      shuffle(cards);
+    }
+
+    function shuffle(arr){
+      for (let i = arr.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // Estado por partida
+    let flipped = []; // índices de cartas volteadas en turno actual
+    let matchedIds = new Set();
+    let moves = 0;   // turnos realizados
+    let hits = 0;
+    let lock = false;
+
+    function resetGame(){
+      buildCards();
+      flipped = [];
+      matchedIds = new Set();
+      moves = 0;
+      hits = 0;
+      lock = false;
+      renderBoard();
+      updateHUD();
+      closeIntroIfOpen();
+      document.body.classList.remove('results-mode');
+      resultsView.classList.remove('show');
+      scene.style.display = 'flex';
+      ensureFits();
+    }
+
+    // Render tablero
+    function renderBoard(){
+      boardEl.innerHTML = "";
+      cards.forEach((c, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'card';
+        btn.setAttribute('role','gridcell');
+        btn.setAttribute('aria-label', 'Carta oculta');
+        btn.setAttribute('aria-disabled','false');
+        btn.dataset.index = idx;
+        btn.dataset.pairId = c.pairId;
+        btn.dataset.kind = c.kind;
+
+        const inner = document.createElement('div');
+        inner.className = 'inner';
+
+        const back = document.createElement('div');
+        back.className = 'side back';
+        const backLabel = document.createElement('div');
+        backLabel.className = 'label';
+        backLabel.textContent = 'Kämpe';
+        back.appendChild(backLabel);
+
+        const front = document.createElement('div');
+        front.className = 'side front';
+        const badge = document.createElement('div');
+        badge.className = 'badge';
+        badge.textContent = (c.kind === 'tool') ? 'Herramienta' : 'Función';
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = c.text;
+        front.appendChild(badge);
+        front.appendChild(label);
+
+        const lockOver = document.createElement('div');
+        lockOver.className = 'lock-overlay';
+
+        inner.appendChild(back);
+        inner.appendChild(front);
+        btn.appendChild(inner);
+        btn.appendChild(lockOver);
+
+        btn.addEventListener('click', onCardClick);
+        btn.addEventListener('keydown', (e)=>{
+          if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); onCardClick.call(btn, e); }
+        });
+
+        boardEl.appendChild(btn);
+      });
+    }
+
+    function onCardClick(e){
+      if (lock) return;
+      const el = this;
+      const idx = +el.dataset.index;
+      if (el.classList.contains('flipped') || el.classList.contains('matched')) return;
+      if (moves >= MAX_MOVES && flipped.length === 0) return; // no permitir iniciar nuevo turno si agotado
+
+      flipCard(el, true);
+      flipped.push(idx);
+      el.setAttribute('aria-label', 'Carta: ' + cards[idx].text);
+
+      if (flipped.length === 2){
+        lock = true;
+        moves++;
+        updateHUD();
+
+        const [i1, i2] = flipped;
+        const c1 = cards[i1]; const c2 = cards[i2];
+
+        const cardEl1 = boardEl.children[i1];
+        const cardEl2 = boardEl.children[i2];
+
+        const isMatch = (c1.pairId === c2.pairId) && (c1.kind !== c2.kind);
+
+        if (isMatch){
+          hits++;
+          matchedIds.add(c1.pairId);
+          setTimeout(()=>{
+            cardEl1.classList.add('matched');
+            cardEl2.classList.add('matched');
+            cardEl1.setAttribute('aria-disabled','true');
+            cardEl2.setAttribute('aria-disabled','true');
+            cardEl1.querySelector('.lock-overlay').style.display='block';
+            cardEl2.querySelector('.lock-overlay').style.display='block';
+            flipped = [];
+            lock = false;
+            updateHUD();
+            checkEnd();
+          }, 350);
+        } else {
+          setTimeout(()=>{
+            flipCard(cardEl1, false);
+            flipCard(cardEl2, false);
+            flipped = [];
+            lock = false;
+            updateHUD();
+            checkEnd();
+          }, 900);
+        }
+      }
+    }
+
+    function flipCard(el, toFront){
+      el.classList.toggle('flipped', toFront);
+    }
+
+    function updateHUD(){
+      const attemptsLeft = Math.max(0, MAX_MOVES - moves);
+      attemptTxt.textContent = 'Intentos: ' + attemptsLeft;
+      attemptPill.classList.toggle('warn', attemptsLeft <= 3);
+      pairsFoundEl.textContent = hits.toString();
+      const progress = Math.round((hits / pairs.length) * 100);
+      meterFill.style.width = progress + '%';
+
+      if (attemptsLeft === 0 && hits < pairs.length){
+        hintEl.textContent = 'Se acabaron los intentos. Verás las explicaciones.';
+      } else {
+        hintEl.textContent = 'Voltea dos cartas por turno y forma parejas. Tienes 12 intentos.';
+      }
+    }
+
+    function checkEnd(){
+      if (hits === pairs.length || moves >= MAX_MOVES){
+        endGame();
+      }
+    }
+
+    function endGame(){
+      // Preparar resultados
+      const misses = Math.max(0, moves - hits);
+      sumHits.textContent = String(hits);
+      sumMiss.textContent = String(misses);
+      sumMoves.textContent = String(moves);
+
+      pairList.innerHTML = "";
+      for (const p of pairs){
+        const item = document.createElement('div');
+        item.className = 'pair-item';
+
+        const title = document.createElement('div');
+        title.className = 'pair-title';
+        title.textContent = `${p.left} ↔ ${p.right}`;
+
+        const tag = document.createElement('div');
+        const found = matchedIds.has(p.id);
+        tag.className = 'tag ' + (found ? 'ok' : 'miss');
+        tag.textContent = found ? 'Encontrada' : 'No encontrada';
+
+        const explain = document.createElement('div');
+        explain.className = 'pair-explain';
+        explain.textContent = clampText(p.explanation, 180);
+
+        item.appendChild(title);
+        item.appendChild(tag);
+        item.appendChild(explain);
+        pairList.appendChild(item);
+      }
+
+      // Mostrar vista resultados con scroll activado
+      scene.style.display = 'none';
+      resultsView.classList.add('show');
+      document.body.classList.add('results-mode');
+
+      // initData warning
+      initWarn.style.display = initData ? 'none' : 'block';
+    }
+
+    // -----------------------------
+    // UX: Intro y controles
+    // -----------------------------
+    function closeIntroIfOpen(){
+      if (introModal.classList.contains('show')){
+        introModal.classList.remove('show');
+      }
+    }
+    startBtn.addEventListener('click', ()=>{
+      closeIntroIfOpen();
+      ensureFits();
+    });
+    document.getElementById('howBtn').addEventListener('click', ()=>{}); // solo info rápida
+
+    restartBtn.addEventListener('click', resetGame);
+    retry2.addEventListener('click', ()=>{
+      resultsView.classList.remove('show');
+      document.body.classList.remove('results-mode');
+      resetGame();
+    });
+
+    rewardBtn.addEventListener('click', ()=>{
+      const url = 'https://kampe-game-phaser.onrender.com/daily_streak?initData=' + encodeURIComponent(initData);
+      location.href = url;
+    });
+
+    // -----------------------------
+    // Layout safety: ensureFits()
+    // -----------------------------
+    function assertNoOverflow(){
+      const el = scene;
+      return el.scrollHeight <= el.clientHeight + 1; // tolerancia
+    }
+    function applyCompactMode(enable){
+      scene.classList.toggle('compact', !!enable);
+    }
+    function fitBoardToViewport(){
+      // Reducir altura de celda y aspect ratio si no cabe
+      const baseH = 112;
+      const minH = 92;
+      let current = baseH;
+      let changed = false;
+      for (let step = 0; step < 3; step++){
+        if (assertNoOverflow()) break;
+        current -= 8;
+        if (current < minH) break;
+        scene.style.setProperty('--cellH', current + 'px');
+        changed = true;
+      }
+      if (!assertNoOverflow()){
+        // Ajuste de aspect ratio (hacer tarjetas un poco más bajas)
+        scene.style.setProperty('--cellAR', '0.64');
+        changed = true;
+      }
+      return changed;
+    }
+    function autoscaleUI(){
+      const maxDown = 0.88;
+      let scale = 1;
+      if (!assertNoOverflow()){
+        const needed = scene.clientHeight / scene.scrollHeight;
+        scale = Math.max(maxDown, Math.min(1, needed));
+      }
+      scene.style.setProperty('--ui-scale', scale.toFixed(3));
+      return scale;
+    }
+    function ensureFits(){
+      // Reset a estado base antes de medir
+      scene.style.setProperty('--ui-scale', '1');
+      scene.style.setProperty('--cellH', '112px');
+      scene.style.setProperty('--cellAR', '0.68');
+      applyCompactMode(false);
+
+      // Paso 1: comprobar overflow
+      if (assertNoOverflow()) return;
+
+      // Paso 2: compactar HUD/UI
+      applyCompactMode(true);
+      if (assertNoOverflow()) return;
+
+      // Paso 3: recalcular tamaño de rejilla
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+
+      // Paso 4: auto-escalar todo el UI
+      autoscaleUI();
+    }
+
+    // Recalcular en resize/orientation
+    let resizeTimer;
+    window.addEventListener('resize', ()=>{
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(ensureFits, 50);
+    });
+    window.addEventListener('orientationchange', ()=>{
+      setTimeout(ensureFits, 120);
+    });
+
+    // -----------------------------
+    // Inicio
+    // -----------------------------
+    // Render inicial
+    buildCards();
+    renderBoard();
+    updateHUD();
+    // Bloqueo de scroll global en gameplay ya está por CSS; ejecutar ajuste
+    requestAnimationFrame(()=> ensureFits());
+
+    // Accesibilidad: keyboard focus initial
+    window.addEventListener('load', ()=>{
+      // Primer card focusable
+      const firstCard = boardEl.querySelector('.card');
+      if (firstCard) firstCard.focus({preventScroll:true});
+    });
+  </script>
+</body>
+</html>
