@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | PRL Eléctrica: ¿Seguro o riesgo? ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#0d5cff;
+      --bg2:#0a2bdc;
+      --glass:rgba(255,255,255,0.12);
+      --glass-strong:rgba(255,255,255,0.22);
+      --txt:#ffffff;
+      --muted:#cfe3ff;
+      --good:#18d36e;
+      --bad:#ff4d5a;
+      --accent:#ffd84d;
+      --cardW:min(92vw, 420px);
+      --cardH: clamp(280px, 48vh, 380px);
+      --radius:18px;
+      --hudH: 98px;
+      --btnH: 58px;
+      --ui-scale:1;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      background: radial-gradient(120% 120% at 70% 10%, var(--bg1) 0%, var(--bg2) 40%, #071b7a 100%);
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      color:var(--txt);
+      overflow:hidden;
+      overscroll-behavior:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .scene{
+      position:relative;
+      width:100%;
+      padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      display:flex; flex-direction:column; gap:8px;
+      align-items:center;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    .scene-inner{
+      position:relative;
+      width:100%;
+      height:100%;
+      display:flex; flex-direction:column; align-items:center;
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+    }
+
+    /* Background Avatar */
+    .bg-avatar{
+      position:absolute; inset:0;
+      pointer-events:none;
+      display:flex; align-items:flex-end; justify-content:flex-end;
+      opacity:.22; mix-blend-mode: screen;
+      filter: drop-shadow(0 12px 40px rgba(0,0,0,.25));
+    }
+    .bg-avatar img{ width:min(56vw, 380px); height:auto; user-select:none; }
+
+    /* Header / HUD */
+    .hud{
+      position:relative;
+      width:100%;
+      max-width: 680px;
+      height: var(--hudH);
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.15);
+      border-radius:16px;
+      backdrop-filter: blur(10px);
+    }
+    .logo{
+      display:flex; align-items:center; gap:8px;
+    }
+    .logo img{ width:92px; height:auto; display:block; }
+    .title{
+      text-align:center;
+      font-weight:800;
+      font-size: clamp(14px, 2.9vw, 18px);
+      line-height:1.1;
+      letter-spacing:.2px;
+      text-shadow: 0 2px 6px rgba(0,0,0,.35);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+    }
+    .subtitle{
+      font-size: clamp(11px, 2.3vw, 13px);
+      color: var(--muted);
+      margin-top:2px;
+      display:block;
+    }
+    .progress{
+      font-size: clamp(12px, 2.5vw, 14px);
+      font-weight:600;
+      padding:8px 10px;
+      background: var(--glass);
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:12px;
+      min-width:92px;
+      text-align:center;
+    }
+
+    /* Card area */
+    .board{
+      position:relative;
+      width:100%;
+      display:flex; justify-content:center; align-items:center;
+      flex: 1 1 auto;
+      min-height: 0; /* prevent overflow */
+      touch-action: none; /* anti-derrapes */
+    }
+    .card-stack{
+      position:relative;
+      width: var(--cardW);
+      height: var(--cardH);
+    }
+    .card{
+      position:absolute; inset:0;
+      background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.12));
+      border:1px solid rgba(255,255,255,.28);
+      border-radius: var(--radius);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 20px 40px rgba(0,0,0,.35);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:18px;
+      text-align:center;
+      user-select:none;
+      will-change: transform, opacity;
+      overflow:hidden;
+    }
+    .card:not(.active){ opacity:0; pointer-events:none; transform: scale(.98) translateY(8px); }
+    .card.active{ opacity:1; pointer-events:auto; }
+    .card h3{
+      margin:0;
+      font-size: clamp(18px, 4.8vw, 22px);
+      font-weight:800;
+      line-height:1.15;
+      display:-webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+      text-shadow: 0 2px 8px rgba(0,0,0,.35);
+    }
+    .hint{
+      position:absolute; top:12px; left:12px; right:12px;
+      display:flex; align-items:center; justify-content:space-between;
+      pointer-events:none; opacity:.2;
+      font-size: 12px; font-weight:700; letter-spacing:.6px;
+      text-transform:uppercase;
+    }
+    .hint .left{ color: var(--bad); }
+    .hint .right{ color: var(--good); }
+
+    /* Action buttons */
+    .cta-row{
+      width:100%;
+      max-width:680px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:8px;
+    }
+    .btn{
+      height: var(--btnH);
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.28);
+      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.06));
+      color:var(--txt);
+      font-weight:800;
+      font-size: clamp(14px, 3.8vw, 16px);
+      letter-spacing:.2px;
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      cursor:pointer;
+      box-shadow: 0 10px 22px rgba(0,0,0,.25);
+      transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .btn:active{ transform: translateY(1px) scale(.98); }
+    .btn:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
+    .btn.bad{ border-color: rgba(255,77,90,.6); }
+    .btn.good{ border-color: rgba(24,211,110,.6); }
+    .btn .dot{ width:10px; height:10px; border-radius:50%; background:currentColor; }
+    .btn.bad .dot{ color: var(--bad); }
+    .btn.good .dot{ color: var(--good); }
+
+    /* Tutorial / Modal */
+    .modal{
+      position:fixed; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      padding:20px;
+      z-index:50;
+      background: linear-gradient(180deg, rgba(5,9,36,.72), rgba(7,21,85,.78));
+      backdrop-filter: blur(4px);
+    }
+    .modal .panel{
+      width:min(92vw, 560px);
+      max-height: 90svh;
+      overflow-y:auto;
+      background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.1));
+      border:1px solid rgba(255,255,255,.28);
+      border-radius:18px;
+      padding:18px;
+      text-align:center;
+      box-shadow: 0 20px 46px rgba(0,0,0,.45);
+    }
+    .panel h2{
+      margin:0 0 8px;
+      font-size: clamp(18px, 5.5vw, 24px);
+      font-weight:800;
+    }
+    .panel p{
+      margin:6px auto 14px;
+      width: min(90%, 40ch);
+      font-size: clamp(13px, 3.5vw, 15px);
+      color: var(--muted);
+    }
+    .panel .modal-actions{
+      display:flex; justify-content:center; gap:10px;
+    }
+    .panel .btn.primary{
+      background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.14));
+      border-color: rgba(255,255,255,.5);
+    }
+
+    /* Results */
+    .results{
+      position:fixed; inset:0;
+      display:none;
+      z-index:60;
+      padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      background: radial-gradient(120% 120% at 70% 10%, var(--bg1) 0%, var(--bg2) 40%, #071b7a 100%);
+    }
+    .results.show{ display:flex; }
+    .results .sheet{
+      margin:0 auto;
+      width:min(100%, 820px);
+      max-height: 90svh;
+      overflow-y:auto;
+      background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.1));
+      border:1px solid rgba(255,255,255,.28);
+      border-radius:18px;
+      padding:16px;
+      box-shadow: 0 20px 46px rgba(0,0,0,.45);
+    }
+    .results h2{
+      margin:0 0 6px;
+      font-size: clamp(18px, 5.5vw, 26px);
+      font-weight:800;
+      text-align:center;
+    }
+    .results .summary{
+      text-align:center; color:var(--muted); margin-bottom:10px;
+      font-size: clamp(12px, 3.3vw, 14px);
+    }
+    .list{
+      display:flex; flex-direction:column; gap:10px;
+      margin-top:10px;
+    }
+    .item{
+      display:grid; grid-template-columns: 1fr auto;
+      gap:8px; align-items:center;
+      background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
+      border:1px solid rgba(255,255,255,.24);
+      border-radius:14px; padding:12px;
+    }
+    .q{
+      font-weight:700; font-size:14px;
+      display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .a{
+      font-size:12px; color:var(--muted); margin-top:4px;
+    }
+    .badge{
+      font-weight:800; font-size:12px; padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.24);
+      background: var(--glass);
+      white-space:nowrap;
+    }
+    .badge.ok{ color:var(--good); border-color: rgba(24,211,110,.55); }
+    .badge.ko{ color:var(--bad); border-color: rgba(255,77,90,.55); }
+    .exp{ font-size:12px; color: #f6faff; margin-top:6px; opacity:.92; }
+
+    .results .footer{
+      display:flex; flex-direction:column; align-items:center; gap:8px;
+      margin-top:12px;
+    }
+    .reward{
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      width: 100%;
+      max-width: 540px;
+      height: 56px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.5);
+      background: linear-gradient(180deg, rgba(255,255,255,.25), rgba(255,255,255,.12));
+      color:#0d1b3a; font-weight:900; font-size: clamp(15px, 4.2vw, 17px);
+      text-transform:none; cursor:pointer;
+    }
+    .reward .star{ color:#0d1b3a; background: var(--accent); width:16px; height:16px; border-radius:50%; box-shadow: 0 0 0 6px rgba(255,216,77,.35) inset; }
+
+    .warn{
+      font-size:12px; color:#ffe9a0; text-align:center;
+    }
+
+    /* Compact mode to save space */
+    .compact :root{} /* just a marker */
+    .compact .hud{ height: calc(var(--hudH) - 18px); }
+    .compact .title{ font-size: clamp(13px, 2.4vw, 16px); }
+    .compact .subtitle{ display:none; }
+    .compact .progress{ padding:6px 8px; min-width:auto; }
+    .compact .btn{ height: calc(var(--btnH) - 10px); }
+    .compact .card-stack{ --cardH: clamp(250px, 44vh, 340px); }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene">
+    <div class="scene-inner" id="sceneInner">
+      <div class="bg-avatar" aria-hidden="true">
+        <img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+      </div>
+
+      <header class="hud" aria-label="Encabezado del reto">
+        <div class="logo">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        </div>
+        <div class="title">
+          PRL Eléctrica: ¿Seguro o riesgo? ⚡
+          <span class="subtitle">Desliza: derecha = Seguro, izquierda = Riesgo</span>
+        </div>
+        <div class="progress" id="progress" aria-live="polite">Carta 1 de 6</div>
+      </header>
+
+      <main class="board" id="board" aria-label="Zona de juego">
+        <div class="card-stack" id="stack">
+          <!-- Cards injected by JS -->
+        </div>
+      </main>
+
+      <nav class="cta-row">
+        <button class="btn bad" id="btnLeft" aria-label="Elegir Riesgo (izquierda)">
+          <span class="dot"></span> Riesgo
+        </button>
+        <button class="btn good" id="btnRight" aria-label="Elegir Seguro (derecha)">
+          <span class="dot"></span> Seguro
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Tutorial Modal -->
+  <div class="modal" id="tutorial" role="dialog" aria-modal="true" aria-labelledby="tutTitle">
+    <div class="panel">
+      <h2 id="tutTitle">Cómo jugar</h2>
+      <p>Desliza la carta a izquierda o derecha para responder. Cada dirección representa Riesgo o Seguro.</p>
+      <div class="modal-actions">
+        <button class="btn primary" id="startBtn" aria-label="Empezar">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <section class="results" id="results" aria-live="polite">
+    <div class="sheet" role="region" aria-label="Resultados del reto">
+      <h2>Resultados</h2>
+      <div class="summary" id="scoreLine">Has acertado 0 de 6. ¡Buen comienzo!</div>
+      <div class="list" id="resultList"></div>
+
+      <div class="footer">
+        <div class="summary">Sigue practicando: cada decisión segura suma en obra.</div>
+        <button class="reward" id="rewardBtn" aria-label="Ver mi recompensa">
+          <span class="star"></span> Ver mi recompensa
+        </button>
+        <div class="warn" id="initWarn" style="display:none;">No se detectó initData. Podrás ver la recompensa, pero tu progreso no se vinculará.</div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  // -----------------------------
+  // Data and state
+  // -----------------------------
+  const urlParams = new URLSearchParams(location.search);
+  const INIT_DATA = urlParams.get('initData') || "";
+
+  // Cards: text <= 48 chars, right = Seguro, left = Riesgo
+  const CARDS = [
+    {
+      text: "Cortar el general antes de abrir un enchufe",
+      correct: "right",
+      explanation: "Bloquea la energía antes de intervenir. Cortar el general elimina contactos accidentales y es parte clave de la consignación en baja tensión."
+    },
+    {
+      text: "Verificar ausencia de tensión con multímetro",
+      correct: "right",
+      explanation: "Tras cortar, confirma 0 V con instrumento homologado. No toques conductores hasta medir ausencia de tensión."
+    },
+    {
+      text: "Usar escalera metálica junto al cuadro",
+      correct: "left",
+      explanation: "La escalera metálica conduce electricidad. Usa una de fibra o material aislante y mantén distancia del cuadro."
+    },
+    {
+      text: "EPI y zona ordenada antes de empezar",
+      correct: "right",
+      explanation: "Guantes dieléctricos y gafas protegen. Mantener orden y señalizar evita tropiezos y caídas por cables y restos en el paso."
+    },
+    {
+      text: "Tapar cable pelado con cinta y seguir",
+      correct: "left",
+      explanation: "La cinta es un apaño inseguro. Sustituye el tramo y usa empalmes y cajas homologadas; nunca trabajes con aislamiento dañado."
+    },
+    {
+      text: "Desenrollar el alargador para evitar calor",
+      correct: "right",
+      explanation: "Los alargadores enrollados se calientan y pueden arder. Desenróllalos por completo y respeta sección y carga máxima."
+    }
+  ];
+
+  // Enforce 48-char max on card texts (auto-summarize)
+  CARDS.forEach(c => { if(c.text.length > 48) c.text = c.text.slice(0,45).trim() + "…"; });
+
+  let index = 0;
+  const answers = []; // {choice: 'left'|'right', correct: boolean}
+
+  // -----------------------------
+  // DOM refs
+  // -----------------------------
+  const scene = document.getElementById('scene');
+  const sceneInner = document.getElementById('sceneInner');
+  const stack = document.getElementById('stack');
+  const progress = document.getElementById('progress');
+  const btnLeft = document.getElementById('btnLeft');
+  const btnRight = document.getElementById('btnRight');
+  const tutorial = document.getElementById('tutorial');
+  const startBtn = document.getElementById('startBtn');
+  const results = document.getElementById('results');
+  const resultList = document.getElementById('resultList');
+  const rewardBtn = document.getElementById('rewardBtn');
+  const initWarn = document.getElementById('initWarn');
+  const scoreLine = document.getElementById('scoreLine');
+
+  // -----------------------------
+  // Build cards
+  // -----------------------------
+  function buildStack(){
+    stack.innerHTML = "";
+    CARDS.forEach((c, i) => {
+      const el = document.createElement('div');
+      el.className = 'card' + (i===0 ? ' active' : '');
+      el.setAttribute('role','group');
+      el.setAttribute('aria-label', `Carta ${i+1} de ${CARDS.length}`);
+      el.style.zIndex = String(100 - i);
+      el.innerHTML = `
+        <div class="hint"><span class="left">Riesgo</span><span class="right">Seguro</span></div>
+        <h3>${escapeHTML(c.text)}</h3>
+      `;
+      stack.appendChild(el);
+      setupDrag(el);
+    });
+    updateProgress();
+  }
+
+  function escapeHTML(str){
+    return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // -----------------------------
+  // Progress
+  // -----------------------------
+  function updateProgress(){
+    progress.textContent = `Carta ${Math.min(index+1, CARDS.length)} de ${CARDS.length}`;
+  }
+
+  // -----------------------------
+  // Swipe mechanics
+  // -----------------------------
+  const DRAG = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0, el: null };
+
+  function setupDrag(card){
+    card.addEventListener('pointerdown', (e) => {
+      DRAG.active = true;
+      DRAG.startX = e.clientX;
+      DRAG.startY = e.clientY;
+      DRAG.el = card;
+      card.setPointerCapture(e.pointerId);
+    });
+
+    card.addEventListener('pointermove', (e) => {
+      if(!DRAG.active || DRAG.el !== card) return;
+      DRAG.currentX = e.clientX;
+      DRAG.currentY = e.clientY;
+      const dx = DRAG.currentX - DRAG.startX;
+      const dy = DRAG.currentY - DRAG.startY;
+      const rot = dx/12;
+      card.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+      // Visual hint intensity
+      const hint = card.querySelector('.hint');
+      const mag = Math.min(1, Math.abs(dx)/120);
+      hint.style.opacity = String(0.2 + mag*0.6);
+    });
+
+    card.addEventListener('pointerup', (e) => endDrag(e, card));
+    card.addEventListener('pointercancel', (e) => endDrag(e, card));
+  }
+
+  function endDrag(e, card){
+    if(!DRAG.active || DRAG.el !== card) return;
+    const dx = (DRAG.currentX || DRAG.startX) - DRAG.startX;
+    const threshold = Math.max(80, stack.clientWidth * 0.22);
+    const direction = dx > threshold ? 'right' : (dx < -threshold ? 'left' : null);
+
+    if(direction){
+      answer(direction);
+      animateOut(card, direction);
+    }else{
+      // snap back
+      card.style.transition = 'transform .2s ease';
+      card.style.transform = 'translate(0,0) rotate(0deg)';
+      setTimeout(()=>{ card.style.transition=''; const hint = card.querySelector('.hint'); if(hint) hint.style.opacity='.2'; }, 200);
+    }
+    DRAG.active = false; DRAG.el = null;
+  }
+
+  function animateOut(card, dir){
+    const toX = dir === 'right' ? stack.clientWidth * 1.2 : -stack.clientWidth * 1.2;
+    card.style.transition = 'transform .28s ease, opacity .28s ease';
+    card.style.transform = `translate(${toX}px, -20px) rotate(${dir==='right'?20:-20}deg)`;
+    card.style.opacity = '0';
+    setTimeout(()=> {
+      card.remove();
+      showNextCard();
+    }, 260);
+  }
+
+  function showNextCard(){
+    index++;
+    if(index >= CARDS.length){
+      endGame();
+      return;
+    }
+    const next = stack.querySelector('.card');
+    if(next) next.classList.add('active');
+    updateProgress();
+  }
+
+  function answer(choice){
+    const current = CARDS[index];
+    const isCorrect = (choice === current.correct);
+    answers.push({ choice, correct: isCorrect });
+  }
+
+  // Buttons
+  btnLeft.addEventListener('click', ()=> {
+    const card = stack.querySelector('.card.active');
+    if(!card) return;
+    answer('left'); animateOut(card, 'left');
+  });
+  btnRight.addEventListener('click', ()=> {
+    const card = stack.querySelector('.card.active');
+    if(!card) return;
+    answer('right'); animateOut(card, 'right');
+  });
+
+  // Keyboard (desktop)
+  window.addEventListener('keydown', (e) => {
+    const card = stack.querySelector('.card.active');
+    if(!card) return;
+    if(e.key === 'ArrowLeft'){ e.preventDefault(); answer('left'); animateOut(card, 'left'); }
+    if(e.key === 'ArrowRight'){ e.preventDefault(); answer('right'); animateOut(card, 'right'); }
+  });
+
+  // -----------------------------
+  // Tutorial
+  // -----------------------------
+  startBtn.addEventListener('click', () => {
+    tutorial.style.display='none';
+    ensureFits(); // recalc after modal hides
+  });
+
+  // -----------------------------
+  // Results
+  // -----------------------------
+  function endGame(){
+    // Build result list
+    const total = CARDS.length;
+    const score = answers.filter(a=>a.correct).length;
+    scoreLine.textContent = `Has acertado ${score} de ${total}. ¡Sigue subiendo de nivel!`;
+
+    resultList.innerHTML = CARDS.map((c,i)=>{
+      const a = answers[i];
+      const label = a.choice === 'right' ? 'Elegiste: Seguro' : 'Elegiste: Riesgo';
+      const cls = a.correct ? 'ok' : 'ko';
+      const exp = summarize(c.explanation, 180);
+      return `
+        <div class="item">
+          <div>
+            <div class="q">${escapeHTML(c.text)}</div>
+            <div class="a">${label}</div>
+            <div class="exp">${escapeHTML(exp)}</div>
+          </div>
+          <div class="badge ${cls}">${a.correct ? 'Correcto' : 'Incorrecto'}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Show results overlay, enable internal scroll
+    results.classList.add('show');
+
+    // Reward button behavior
+    rewardBtn.addEventListener('click', () => {
+      const url = 'https://kampe-game-phaser.onrender.com/daily_streak?initData=' + encodeURIComponent(INIT_DATA);
+      location.href = url;
+    });
+    if(!INIT_DATA){ initWarn.style.display='block'; }
+
+    // Keep global scroll locked; only results sheet scrolls (already with max-height)
+  }
+
+  function summarize(str, max){
+    if(!str) return "";
+    const clean = String(str).trim();
+    if(clean.length <= max) return clean;
+    return clean.slice(0, max-1).trim() + "…";
+  }
+
+  // -----------------------------
+  // Fit to viewport utilities
+  // -----------------------------
+  function assertNoOverflow(){
+    // Check if scene fits without scrolling
+    return scene.scrollHeight <= scene.clientHeight;
+  }
+
+  function applyCompactMode(){
+    if(!document.body.classList.contains('compact')){
+      document.body.classList.add('compact');
+    }
+  }
+
+  function fitBoardToViewport(){
+    // Reduce some CSS custom properties a bit
+    const style = document.documentElement.style;
+    style.setProperty('--btnH', '52px');
+    style.setProperty('--hudH', '88px');
+  }
+
+  function autoscaleUI(){
+    // scale down UI as a last resort (min 0.88)
+    let scale = Math.min(1, scene.clientHeight / scene.scrollHeight);
+    scale = Math.max(0.88, Math.min(1, scale));
+    document.documentElement.style.setProperty('--ui-scale', String(scale));
+  }
+
+  function ensureFits(){
+    // Reset scale to 1 before measuring
+    document.documentElement.style.setProperty('--ui-scale', '1');
+    if(assertNoOverflow()) return;
+
+    applyCompactMode();
+    if(assertNoOverflow()) return;
+
+    fitBoardToViewport();
+    if(assertNoOverflow()) return;
+
+    autoscaleUI();
+  }
+
+  // Re-run on resize/orientation
+  window.addEventListener('resize', () => ensureFits());
+  window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+  // -----------------------------
+  // Init
+  // -----------------------------
+  buildStack();
+  ensureFits();
+
+  // Accessibility: focus initial button
+  window.addEventListener('load', ()=>{
+    try{ startBtn.focus(); }catch(_){}
+    ensureFits();
+  });
+  </script>
+</body>
+</html>
