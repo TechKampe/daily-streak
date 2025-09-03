@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | PRL Exprés: Taller Eléctrico ⚡</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset + base */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    html, body { overflow: hidden; overscroll-behavior: none; background: #0f6bdc; }
+    body { font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #f4f7ff; }
+    img { max-width: 100%; display: block; }
+
+    :root{
+      --ui-scale: 1;
+      --hud-h: 64px;
+      --hud-h-compact: 52px;
+      --title-size: clamp(16px, 2.6vw, 20px);
+      --title-size-compact: clamp(14px, 2.2vw, 18px);
+      --affirmation-fs: clamp(18px, 3.8vw, 22px);
+      --affirmation-fs-compact: clamp(16px, 3.2vw, 20px);
+      --btn-fs: clamp(16px, 3.6vw, 18px);
+      --btn-fs-compact: clamp(14px, 3.2vw, 16px);
+      --gap: 12px;
+      --gap-compact: 8px;
+      --glass: rgba(255,255,255,0.12);
+      --glass-brd: rgba(255,255,255,0.18);
+      --glass-strong: rgba(255,255,255,0.22);
+      --good: #3ddc84;
+      --bad: #ff5a6a;
+      --accent: #7cc8ff;
+      --blue-1: #1b59f8;
+      --blue-2: #1653f1;
+      --blue-3: #0e49db;
+    }
+
+    /* Scene sizing with svh/dvh/vh fallbacks */
+    .scene { position: relative; width: 100%; height: 100vh; }
+    @supports (height: 100dvh) { .scene { height: 100dvh; } }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+
+    .scene{
+      display: flex;
+      flex-direction: column;
+      padding-left: max(12px, env(safe-area-inset-left));
+      padding-right: max(12px, env(safe-area-inset-right));
+      padding-top: max(12px, env(safe-area-inset-top));
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: radial-gradient(120% 120% at 80% 0%, #1a7aff 0%, #0a4bd3 55%, #052b86 100%);
+      background-attachment: fixed;
+      touch-action: none;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      isolation: isolate;
+    }
+
+    /* HUD */
+    .hud{
+      height: var(--hud-h);
+      display: grid;
+      grid-template-columns: 36px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.08));
+      border: 1px solid var(--glass-brd);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.06);
+    }
+    .hud .logo{
+      width: 36px; height: 36px; object-fit: contain;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+    }
+    .hud .title{
+      font-weight: 800;
+      font-size: var(--title-size);
+      letter-spacing: 0.2px;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hud .progress{
+      font-weight: 700;
+      font-size: clamp(14px, 3.2vw, 16px);
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(10, 36, 92, 0.5);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: #dff0ff;
+      min-width: 52px;
+      text-align: center;
+    }
+
+    /* Play area */
+    .play{
+      position: relative;
+      flex: 1;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: var(--gap);
+      margin-top: 10px;
+    }
+    .card{
+      position: relative;
+      border-radius: 16px;
+      padding: 16px 14px;
+      border: 1px solid var(--glass-brd);
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 160px;
+    }
+    .card .affirmation{
+      font-size: var(--affirmation-fs);
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.25;
+      color: #ffffff;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      max-width: 92%;
+    }
+
+    /* Avatar */
+    .avatar{
+      position: absolute;
+      right: -10px; bottom: -18px;
+      width: 40%;
+      max-width: 180px;
+      opacity: 0.26;
+      pointer-events: none;
+      transform: rotate(-3deg);
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.35));
+    }
+
+    /* Buttons */
+    .actions{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap);
+    }
+    .btn{
+      position: relative;
+      height: 56px;
+      min-height: 56px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      backdrop-filter: blur(10px);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: var(--btn-fs);
+      letter-spacing: 0.2px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(255,255,255,0.06);
+      cursor: pointer;
+      outline: none;
+      border-image: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0.10)) 1;
+      transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.12s ease;
+      touch-action: manipulation;
+    }
+    .btn:active{ transform: translateY(1px) scale(0.99); }
+    .btn:focus-visible{ outline: 3px solid #fff; outline-offset: 2px; }
+    .btn.true{ background: linear-gradient(180deg, rgba(40,190,255,0.22), rgba(25,120,255,0.18)); }
+    .btn.false{ background: linear-gradient(180deg, rgba(255,140,80,0.22), rgba(255,80,120,0.18)); }
+
+    .btn.pulse::after{
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      box-shadow: 0 0 0 999px rgba(255,255,255,0);
+      animation: pulseGlow 420ms ease forwards;
+      pointer-events: none;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.35); }
+      100% { box-shadow: 0 0 0 24px rgba(255,255,255,0); }
+    }
+
+    .chip{
+      position: absolute;
+      top: 8px; right: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0a1733;
+      background: #bfe7ff;
+      padding: 4px 8px;
+      border-radius: 999px;
+      opacity: 0;
+      transform: translateY(-6px);
+      transition: all 140ms ease;
+      pointer-events: none;
+    }
+    .chip.show{ opacity: 1; transform: translateY(0); }
+
+    /* Intro and Results modals */
+    .modal{
+      position: absolute;
+      inset: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      margin: auto;
+      max-width: 720px;
+      max-height: 90svh;
+      display: none;
+      z-index: 20;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(8,12,30,0.75), rgba(8,12,30,0.6));
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+      overflow: hidden;
+    }
+    .modal.active{ display: grid; grid-template-rows: auto 1fr auto; }
+    .modal header{
+      padding: 14px 16px 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .modal header h2{
+      margin: 0; font-size: clamp(18px, 4.2vw, 22px); font-weight: 800;
+    }
+    .modal .content{
+      padding: 12px 16px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .modal .content p{
+      margin: 0 0 8px 0;
+      color: #e7f1ff;
+      font-size: clamp(14px, 3.2vw, 16px);
+      line-height: 1.35;
+    }
+    .modal footer{
+      padding: 12px 16px 14px 16px;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      display: flex; align-items: center; gap: 10px; justify-content: space-between;
+    }
+    .cta{
+      min-height: 52px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.10));
+      color: #0a1733;
+      background-color: #bfe7ff;
+      font-weight: 900;
+      letter-spacing: 0.2px;
+      font-size: clamp(15px, 3.6vw, 17px);
+      cursor: pointer;
+    }
+    .cta.primary{
+      color: #05122e;
+      background: linear-gradient(180deg, #8ee2ff, #5bc2ff);
+      border-color: rgba(255,255,255,0.25);
+      box-shadow: 0 10px 26px rgba(0,0,0,0.25);
+    }
+    .note{
+      font-size: 12px; opacity: 0.8;
+    }
+
+    /* Results list */
+    .results-list{
+      display: grid;
+      gap: 10px;
+      margin: 8px 0;
+    }
+    .result-item{
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.08);
+    }
+    .result-item h4{
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .result-meta{
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      font-size: 12px; margin-bottom: 6px;
+    }
+    .tag{
+      padding: 4px 8px; border-radius: 999px; font-weight: 800; border: 1px solid rgba(255,255,255,0.18);
+    }
+    .tag.your.true{ background: rgba(61,220,132,0.18); color: #b9ffd8; }
+    .tag.your.false{ background: rgba(255,90,106,0.18); color: #ffd2d8; }
+    .tag.correct.true{ background: rgba(61,220,132,0.28); color: #dfffef; }
+    .tag.correct.false{ background: rgba(255,90,106,0.28); color: #ffe9ec; }
+    .explain{
+      font-size: 13px; color: #eaf5ff; opacity: 0.95; line-height: 1.3;
+    }
+    .summary{
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.16);
+      margin-bottom: 8px;
+    }
+    .summary .score{
+      font-size: 16px; font-weight: 900;
+    }
+    .tip{
+      margin-top: 8px; font-size: 14px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 12px; padding: 10px 12px; color: #e6f4ff; font-weight: 700;
+    }
+    .results footer{
+      position: sticky; bottom: 0; background: linear-gradient(180deg, rgba(8,12,30,0.45), rgba(8,12,30,0.8));
+      backdrop-filter: blur(10px);
+    }
+    .results.scrollable{ overflow-y: auto; touch-action: pan-y; }
+
+    /* Compact mode */
+    .scene.compact .hud{ height: var(--hud-h-compact); }
+    .scene.compact .hud .title{ font-size: var(--title-size-compact); }
+    .scene.compact .card .affirmation{ font-size: var(--affirmation-fs-compact); }
+    .scene.compact .btn{ height: 52px; min-height: 52px; font-size: var(--btn-fs-compact); }
+    .scene.compact .play{ gap: var(--gap-compact); }
+
+    /* Utility */
+    .hidden { display: none !important; }
+    .sr-only{ position: absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <!-- HUD -->
+    <div class="hud" aria-label="Barra superior">
+      <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+      <div class="title" id="title">PRL Exprés: Taller Eléctrico ⚡</div>
+      <div class="progress" id="progress" aria-live="polite" aria-atomic="true">1/7</div>
+    </div>
+
+    <!-- Gameplay -->
+    <div class="play" id="play" role="group" aria-label="Zona de juego">
+      <div class="card" aria-live="polite">
+        <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy" />
+        <div class="affirmation" id="affirmation" aria-label="Afirmación">
+          <!-- Populated by JS -->
+        </div>
+        <div class="chip" id="chip" aria-hidden="true">Guardado</div>
+      </div>
+      <div class="actions" aria-label="Respuestas">
+        <button class="btn true" id="btnTrue" aria-label="Responder Verdadero">Verdadero</button>
+        <button class="btn false" id="btnFalse" aria-label="Responder Falso">Falso</button>
+      </div>
+    </div>
+
+    <!-- Intro Modal -->
+    <section class="modal intro active" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+      <header>
+        <h2 id="introTitle">PRL Exprés: Taller Eléctrico ⚡</h2>
+      </header>
+      <div class="content">
+        <p><strong>Escenario:</strong> Sustituir un interruptor y revisar un enchufe en un piso ocupado; cliente presente y humedad cerca del baño. Solo herramientas de mano.</p>
+        <p><strong>Objetivo:</strong> Entrenar seguridad eléctrica esencial y comunicación con el cliente en una intervención sencilla.</p>
+        <p><strong>Dinámica:</strong> 7 afirmaciones. Responde Verdadero o Falso. Avance automático. La solución se revela al final.</p>
+      </div>
+      <footer>
+        <span class="note">Tip: juega sin scroll; los botones siempre visibles.</span>
+        <button class="cta primary" id="startBtn" aria-label="Empezar">Empezar</button>
+      </footer>
+    </section>
+
+    <!-- Results Modal -->
+    <section class="modal results" id="results" role="dialog" aria-modal="true" aria-labelledby="resultsTitle">
+      <header>
+        <h2 id="resultsTitle">Resultados</h2>
+      </header>
+      <div class="content">
+        <div class="summary">
+          <div class="score" id="scoreLabel">0/7 correctas</div>
+          <div class="note">PRL Exprés: Taller Eléctrico</div>
+        </div>
+        <div class="results-list" id="resultsList" aria-live="polite">
+          <!-- Filled by JS -->
+        </div>
+        <div class="tip" id="finalTip">Consejo: si dudas, desconecta y verifica ausencia de tensión en dos puntos.</div>
+      </div>
+      <footer>
+        <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
+          <a class="cta primary" id="rewardBtn" href="#" role="button" aria-label="Ver mi recompensa">Ver mi recompensa</a>
+          <span class="note" id="initDataWarn" aria-live="polite"></span>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  <script>
+    // Data
+    const ITEMS = [
+      {
+        text: "Corto el suministro general antes de empezar.",
+        correct: true,
+        explanation: "Desenergizar elimina el principal riesgo. Bloquea y verifica antes de tocar conductores."
+      },
+      {
+        text: "Verifico ausencia de tensión con multímetro.",
+        correct: true,
+        explanation: "Usa multímetro o detector certificado en el punto de trabajo y en dos polos. Nunca confíes solo en bajar el automático."
+      },
+      {
+        text: "No necesito guantes dieléctricos para esto.",
+        correct: false,
+        explanation: "Los EPI reducen el riesgo de contacto accidental. Para tareas en viviendas, guantes y gafas son recomendables."
+      },
+      {
+        text: "Prefiero escalera de fibra, no metálica.",
+        correct: true,
+        explanation: "La fibra no conduce la electricidad y es más segura en entornos con posibles tensiones o humedad."
+      },
+      {
+        text: "Puedo trabajar con manos húmedas si voy rápido.",
+        correct: false,
+        explanation: "La humedad baja la resistencia de la piel y aumenta el riesgo de descarga. Seca manos y zona antes de intervenir."
+      },
+      {
+        text: "Aviso al cliente antes de dejar sin luz.",
+        correct: true,
+        explanation: "La comunicación evita sorpresas y permite al cliente prepararse. Indica duración y zonas afectadas."
+      },
+      {
+        text: "Cinta aislante sirve como reparación definitiva.",
+        correct: false,
+        explanation: "La cinta es un recurso temporal. Las uniones deben realizarse con bornes/clemas o empalmes homologados en caja."
+      }
+    ];
+
+    // State
+    const scene = document.getElementById('scene');
+    const progressEl = document.getElementById('progress');
+    const affirmationEl = document.getElementById('affirmation');
+    const chipEl = document.getElementById('chip');
+    const btnTrue = document.getElementById('btnTrue');
+    const btnFalse = document.getElementById('btnFalse');
+    const intro = document.getElementById('intro');
+    const results = document.getElementById('results');
+    const resultsList = document.getElementById('resultsList');
+    const scoreLabel = document.getElementById('scoreLabel');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initDataWarn = document.getElementById('initDataWarn');
+
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+
+    const state = {
+      turn: 0,
+      total: ITEMS.length,
+      answers: [] // {choice: boolean}
+    };
+
+    // Ensure fits helpers
+    function assertNoOverflow() {
+      const fits = scene.scrollHeight <= scene.clientHeight;
+      return fits;
+    }
+    function applyCompactMode() {
+      if (!scene.classList.contains('compact')) {
+        scene.classList.add('compact');
+      }
+    }
+    function fitBoardToViewport() {
+      // Hook for grid/cell sizing if needed in future games
+      // For this quiz we slightly adjust gaps via compact mode already.
+    }
+    function autoscaleUI() {
+      let scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      let attempts = 0;
+      while (!assertNoOverflow() && scale > 0.88 && attempts < 6) {
+        scale -= 0.02;
+        document.documentElement.style.setProperty('--ui-scale', scale.toFixed(2));
+        attempts++;
+      }
+    }
+    function ensureFits() {
+      // Reset scale on each run to try natural layout first
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      // Step 1: check
+      if (assertNoOverflow()) return;
+      // Step 2: compact
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+      // Step 3: fit board (noop here)
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      // Step 4: autoscale
+      autoscaleUI();
+    }
+
+    // Gameplay
+    function renderTurn() {
+      const i = state.turn;
+      const item = ITEMS[i];
+      affirmationEl.textContent = item.text;
+      progressEl.textContent = `${i + 1}/${state.total}`;
+      // Reset buttons visual
+      [btnTrue, btnFalse].forEach(b => { b.disabled = false; b.classList.remove('pulse'); });
+      chipEl.classList.remove('show');
+      ensureFits();
+    }
+
+    function showMicrofeedback(btn) {
+      chipEl.textContent = "Guardado";
+      chipEl.classList.add('show');
+      btn.classList.add('pulse');
+      setTimeout(() => chipEl.classList.remove('show'), 500);
+    }
+
+    function handleAnswer(choice) {
+      // store answer
+      state.answers[state.turn] = { choice };
+      // lock buttons
+      btnTrue.disabled = true; btnFalse.disabled = true;
+      // microfeedback
+      showMicrofeedback(choice ? btnTrue : btnFalse);
+
+      // next after short delay
+      setTimeout(() => {
+        state.turn++;
+        if (state.turn >= state.total) {
+          showResults();
+        } else {
+          renderTurn();
+        }
+      }, 650);
+    }
+
+    // Results
+    function showResults() {
+      // Build list
+      resultsList.innerHTML = "";
+      let score = 0;
+      for (let i = 0; i < state.total; i++) {
+        const item = ITEMS[i];
+        const user = state.answers[i]?.choice;
+        const correct = item.correct;
+        if (user === correct) score++;
+
+        const li = document.createElement('div');
+        li.className = 'result-item';
+        li.innerHTML = `
+          <h4>${item.text}</h4>
+          <div class="result-meta">
+            <span class="tag your ${user ? 'true' : 'false'}">Tu: ${user ? 'Verdadero' : 'Falso'}</span>
+            <span class="tag correct ${correct ? 'true' : 'false'}">Correcta: ${correct ? 'Verdadero' : 'Falso'}</span>
+          </div>
+          <div class="explain">${truncateExplanation(item.explanation)}</div>
+        `;
+        resultsList.appendChild(li);
+      }
+      scoreLabel.textContent = `${score}/${state.total} correctas`;
+
+      // Prepare CTA preserving initData
+      const url = "https://kampe-game-phaser.onrender.com/daily_streak?initData=" + encodeURIComponent(initData);
+      rewardBtn.href = url;
+      if (!initData) {
+        initDataWarn.textContent = "Aviso: falta initData en la URL. Puedes continuar y recibirás tu recompensa igualmente.";
+      } else {
+        initDataWarn.textContent = "";
+      }
+
+      // Show results modal, enable inner scroll only there
+      results.classList.add('active');
+      results.classList.add('scrollable');
+
+      // Hide intro if still visible and keep gameplay behind
+      intro.classList.remove('active');
+
+      // Optional: announce for screen readers
+      results.setAttribute('aria-live', 'polite');
+    }
+
+    function truncateExplanation(text) {
+      // Limit to ~180 chars / 2 frases
+      const limit = 180;
+      if (text.length <= limit) return text;
+      return text.slice(0, limit - 1) + '…';
+    }
+
+    // Events
+    document.getElementById('startBtn').addEventListener('click', () => {
+      intro.classList.remove('active');
+      renderTurn();
+    });
+
+    btnTrue.addEventListener('click', () => handleAnswer(true));
+    btnFalse.addEventListener('click', () => handleAnswer(false));
+
+    // Keyboard accessibility (V/F, ArrowLeft/ArrowRight, Enter triggers True by default)
+    window.addEventListener('keydown', (e) => {
+      const modalOpen = intro.classList.contains('active') || results.classList.contains('active');
+      if (!modalOpen) {
+        if (e.key.toLowerCase() === 'v' || e.key === 'ArrowRight') {
+          if (!btnTrue.disabled) handleAnswer(true);
+        } else if (e.key.toLowerCase() === 'f' || e.key === 'ArrowLeft') {
+          if (!btnFalse.disabled) handleAnswer(false);
+        } else if (e.key === 'Enter') {
+          if (!btnTrue.disabled) handleAnswer(true);
+        }
+      } else if (intro.classList.contains('active') && (e.key === 'Enter' || e.key === ' ')) {
+        document.getElementById('startBtn').click();
+      }
+    });
+
+    // Fit on load and on resize/orientation
+    window.addEventListener('load', () => {
+      // Pre-render first affirmation text for initial fit under intro
+      affirmationEl.textContent = ITEMS[0].text;
+      progressEl.textContent = `1/${state.total}`;
+      ensureFits();
+    });
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 50));
+
+    // Dev safeguard: if something goes wrong, always allow progression
+    window.addEventListener('error', () => {
+      [btnTrue, btnFalse].forEach(b => b.disabled = false);
+    });
+  </script>
+</body>
+</html>
