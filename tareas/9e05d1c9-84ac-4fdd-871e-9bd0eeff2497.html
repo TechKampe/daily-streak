@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe — Herramienta Correcta: Fontanería</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <meta name="color-scheme" content="light only">
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; overscroll-behavior: none; }
+    body { font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #0b5cff; color: #eaf3ff; }
+
+    /* ===== Root vars ===== */
+    :root{
+      --ui-scale: 1;
+      --gap: 12px;
+      --pad: 14px;
+      --radius: 14px;
+      --glass: rgba(255,255,255,0.14);
+      --glass-2: rgba(255,255,255,0.10);
+      --shadow: 0 10px 30px rgba(0,0,0,0.3);
+      --title-size: clamp(18px, 3.8vw, 22px);
+      --task-size: clamp(16px, 3.6vw, 20px);
+      --btn-size: clamp(14px, 3.3vw, 16px);
+      --hud-h: 72px;
+      --option-h: 64px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* ===== Scene Sizing (100svh with fallbacks) ===== */
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100vh; /* fallback of fallback */
+      padding: calc(8px + var(--safe-top)) 12px calc(10px + var(--safe-bottom));
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
+      transform-origin: top center;
+      touch-action: none;
+      isolation: isolate;
+    }
+    @supports (height: 100dvh) {
+      .scene { height: 100dvh; }
+    }
+    @supports (height: 100svh) {
+      .scene { height: 100svh; }
+    }
+
+    /* ===== Background Fortnite vibe ===== */
+    .bg {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: -2;
+      background: radial-gradient(150% 100% at 50% 0%, #3e79ff 0%, #0b5cff 38%, #0739be 80%);
+    }
+    .bg::after{
+      content:"";
+      position:absolute; inset:-20% -10%;
+      background: radial-gradient(40% 40% at 85% 10%, rgba(255,255,255,0.25) 0%, transparent 60%),
+                  radial-gradient(35% 35% at 10% 80%, rgba(255,255,255,0.15) 0%, transparent 60%);
+      mix-blend-mode: screen;
+      filter: blur(18px);
+    }
+    .bg-avatar{
+      position:absolute; inset:0; z-index:-1; opacity:0.18;
+      background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png');
+      background-repeat:no-repeat; background-position: 80% 70%; background-size: 420px auto;
+      pointer-events: none;
+    }
+
+    /* ===== Header / HUD ===== */
+    .hud {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      height: var(--hud-h);
+    }
+    .logo {
+      display:flex; align-items:center; gap:8px; min-width:0;
+      padding: 6px 8px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.10));
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 12px;
+      backdrop-filter: blur(6px);
+      box-shadow: var(--shadow);
+    }
+    .logo img { width: 28px; height: 28px; object-fit: contain; }
+    .logo span {
+      font-weight:800; letter-spacing:0.3px; white-space:nowrap; font-size: 14px;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+    }
+    .titleBox {
+      display:grid; gap:6px; min-width:0;
+    }
+    .title {
+      font-size: var(--title-size);
+      font-weight: 800;
+      margin: 0;
+      line-height: 1.1;
+      letter-spacing: 0.2px;
+      text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+    }
+    .progress {
+      height: 8px; width: 100%; background: rgba(255,255,255,0.18);
+      border-radius: 999px; overflow: hidden; position: relative;
+      border: 1px solid rgba(255,255,255,0.28);
+    }
+    .bar { height:100%; width:0%; background: linear-gradient(90deg, #00ffe1, #5dff6a); transition: width 260ms ease; }
+
+    .streak {
+      display:flex; align-items:center; gap:6px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.24);
+      padding: 6px 10px; border-radius: 12px;
+      font-size: 12px; font-weight:700;
+    }
+
+    /* ===== Gameplay ===== */
+    .gameplay {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+    }
+    .taskCard {
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: var(--radius);
+      padding: var(--pad);
+      box-shadow: var(--shadow);
+    }
+    .taskTxt {
+      font-size: var(--task-size);
+      font-weight: 700;
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .options {
+      display: grid;
+      grid-template-rows: repeat(3, var(--option-h));
+      gap: 10px;
+    }
+    .optBtn {
+      position: relative;
+      display: flex;
+      align-items: center; justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.14);
+      border-radius: 14px;
+      color: #fff; text-align: center;
+      font-weight: 800; font-size: var(--btn-size);
+      letter-spacing: 0.2px;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+      user-select: none; -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+      min-height: 44px;
+    }
+    .optBtn:focus-visible { outline: 2px solid #00ffe1; outline-offset: 2px; }
+    .optBtn:hover { transform: translateY(-1px); }
+    .optBtn:active { transform: translateY(1px) scale(0.99); }
+    .optBtn .label {
+      display: -webkit-box;
+      -webkit-line-clamp: 2; line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+      max-width: 100%;
+      padding: 0 8px;
+    }
+    .optBtn.selected { border-color: #00ffe1; background: rgba(0,255,225,0.18); box-shadow: 0 0 0 3px rgba(0,255,225,0.20) inset; }
+    .optBtn.correct.flash { animation: correctPulse 560ms ease; }
+    .optBtn.wrong.flash   { animation: wrongPulse 560ms ease; }
+    @keyframes correctPulse {
+      0% { box-shadow: 0 0 0 0 rgba(32,255,140,0.6); }
+      100% { box-shadow: 0 0 0 12px rgba(32,255,140,0); }
+    }
+    @keyframes wrongPulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,90,90,0.6); }
+      100% { box-shadow: 0 0 0 12px rgba(255,90,90,0); }
+    }
+
+    .footer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+    .hint {
+      font-size: 12px; opacity: 0.85;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cta {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 44px; padding: 10px 16px;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,0.28);
+      background: linear-gradient(90deg, #00ffe1, #5dff6a);
+      color: #003a2f; font-weight: 900; letter-spacing: 0.3px;
+      box-shadow: var(--shadow);
+      font-size: clamp(14px, 3.2vw, 16px);
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .cta:disabled {
+      filter: grayscale(0.4) brightness(0.85); opacity: 0.7; cursor: not-allowed;
+    }
+    .fade-enter { opacity: 0; transform: translateY(6px); }
+    .fade-enter-active { opacity: 1; transform: translateY(0); transition: opacity 200ms ease, transform 200ms ease; }
+
+    /* ===== Intro / Modal ===== */
+    .modal {
+      position: fixed; inset: 0; display: grid; place-items: center;
+      padding: 12px; z-index: 50;
+      background: linear-gradient(180deg, rgba(2,14,56,0.5), rgba(2,14,56,0.2));
+      backdrop-filter: blur(5px);
+    }
+    .modalCard {
+      width: min(560px, 92vw);
+      max-height: 90svh;
+      background: rgba(14, 22, 60, 0.72);
+      border: 1px solid rgba(255,255,255,0.26);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      overflow-y: auto;
+    }
+    .modalHead {
+      display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center;
+    }
+    .modalHead img { width: 36px; height: 36px; object-fit: contain; }
+    .modalTitle { margin: 0; font-size: clamp(18px, 4.2vw, 22px); font-weight: 800; }
+    .modalText { font-size: 14px; opacity:0.95; margin: 8px 0 12px; }
+    .modalActions { display:flex; justify-content:flex-end; gap:8px; }
+    .ghostBtn {
+      background: rgba(255,255,255,0.12); color:#fff;
+      border: 1px solid rgba(255,255,255,0.28); border-radius: 12px;
+      padding: 10px 14px; min-height:44px; font-weight:800; letter-spacing:0.2px;
+    }
+
+    /* ===== Results ===== */
+    .resultsView {
+      position: absolute; inset: 0; padding: calc(8px + var(--safe-top)) 12px calc(10px + var(--safe-bottom));
+      display: grid; grid-template-rows: auto 1fr auto; gap: 10px;
+      background: linear-gradient(180deg, rgba(4,20,72,0.65), rgba(6,20,54,0.65));
+    }
+    .resultsScroll {
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.26);
+      border-radius: 14px; padding: 10px;
+      overflow-y: auto; max-height: 90svh;
+    }
+    .resultItem {
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 12px; padding: 10px; margin-bottom: 8px;
+    }
+    .rTitle { font-weight: 800; margin: 0 0 6px; font-size: 14px; }
+    .rRow { font-size: 13px; margin: 2px 0; }
+    .ok { color: #5dff6a; font-weight: 800; }
+    .ko { color: #ff9a9a; font-weight: 800; }
+    .tips { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 10px; margin-top: 10px; }
+    .tips h4{ margin: 0 0 6px; font-size: 14px; }
+    .tips ul{ margin: 0; padding-left: 18px; }
+    .tips li{ margin: 4px 0; font-size: 13px; }
+
+    .rewardRow {
+      display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+      margin-top: 8px;
+    }
+    .warn { font-size: 12px; color: #ffe08a; }
+
+    /* ===== Compact mode ===== */
+    .scene.compact {
+      --hud-h: 58px;
+      --option-h: 56px;
+      --gap: 10px;
+      --pad: 10px;
+      --radius: 12px;
+      --title-size: clamp(16px, 3.4vw, 20px);
+      --task-size: clamp(14px, 3.2vw, 18px);
+      --btn-size: clamp(13px, 3.0vw, 15px);
+    }
+    .scene.compact .logo span { display:none; }
+
+    /* ===== Utilities ===== */
+    .hidden { display: none !important; }
+    .sr-only {
+      position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+      overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="bg-avatar" aria-hidden="true"></div>
+
+  <div class="scene" id="scene" aria-live="polite">
+    <!-- HUD -->
+    <header class="hud">
+      <div class="logo" aria-label="Kämpe">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <span>Kämpe</span>
+      </div>
+      <div class="titleBox">
+        <h1 class="title">Herramienta Correcta: Fontanería 🛠️</h1>
+        <div class="progress" aria-label="Progreso">
+          <div class="bar" id="bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="streak" aria-hidden="true">
+        🚀 Reto diario
+      </div>
+    </header>
+
+    <!-- Gameplay -->
+    <main class="gameplay" id="gameplay">
+      <section class="taskCard">
+        <p class="taskTxt" id="taskTxt">Cargando…</p>
+      </section>
+      <section class="options" id="options" role="listbox" aria-label="Elige la herramienta correcta">
+        <!-- Buttons injected -->
+      </section>
+      <section class="footer">
+        <div class="hint" id="hint">Elige una opción para avanzar.</div>
+        <button id="nextBtn" class="cta" aria-label="Siguiente" disabled>Siguiente</button>
+      </section>
+    </main>
+
+    <!-- Results (hidden until end) -->
+    <section class="resultsView hidden" id="resultsView" aria-label="Resultados y retroalimentación">
+      <header class="hud">
+        <div class="logo" aria-label="Kämpe">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          <span>Kämpe</span>
+        </div>
+        <div class="titleBox">
+          <h2 class="title">Resultados del reto</h2>
+          <div class="progress" aria-label="Progreso">
+            <div class="bar" style="width:100%"></div>
+          </div>
+        </div>
+        <div class="streak" id="scoreBadge">Puntuación</div>
+      </header>
+      <div class="resultsScroll" id="resultsScroll" tabindex="0">
+        <div id="summaryList"></div>
+        <div class="tips">
+          <h4>Consejos prácticos</h4>
+          <ul>
+            <li>Prefiere cortatubos para PEX/Cu: corte limpio y perpendicular; la sierra deja rebabas y requiere desbarbar.</li>
+            <li>Cinta PTFE: envuelve de 6–8 vueltas en sentido de rosca, sin tapar el inicio. Ajusta sin excesos.</li>
+            <li>Antes de intervenir: cierra el paso de agua y usa guantes/gafas. Orden y limpieza evitan fugas.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="rewardRow">
+        <div id="initWarn" class="warn hidden">No se detectó initData. Aún puedes continuar.</div>
+        <button id="rewardBtn" class="cta" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+      </div>
+    </section>
+
+    <!-- Intro Modal -->
+    <div class="modal" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+      <div class="modalCard">
+        <div class="modalHead">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="" />
+          <h3 id="introTitle" class="modalTitle">Herramienta Correcta: Fontanería 🛠️</h3>
+        </div>
+        <p class="modalText">
+          Eres ayudante junior en una reparación rápida de baño y cocina. Elige la herramienta idónea en cada paso. 6 tareas, 3 opciones. Toca empezar.
+        </p>
+        <div class="modalActions">
+          <button class="ghostBtn" id="startBtn">Empezar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Read initData from URL =====
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+
+    // ===== Tasks Data =====
+    // Each option label <= 48 chars. Explanations <= 180 chars.
+    const TASKS = [
+      {
+        id: 1,
+        task: "Cortar un tramo de tubo PEX a medida.",
+        options: ["✂️ Cortatubos PEX", "🪚 Sierra de arco", "🗜️ Tenazas universales"],
+        correct: 0,
+        whyWrong: {
+          1: "La sierra deja rebabas y cortes no perpendiculares; puede dañar el ajuste del racor.",
+          2: "Las tenazas aplastan el PEX y deforman el extremo, arruinando el sellado."
+        }
+      },
+      {
+        id: 2,
+        task: "Sellar una rosca de latón en una conexión.",
+        options: ["🧵 Cinta PTFE (teflón)", "🧴 Silicona sanitaria", "🟠 Junta de goma"],
+        correct: 0,
+        whyWrong: {
+          1: "La silicona no está pensada para sellar roscas metálicas presurizadas; puede despegarse.",
+          2: "La junta de goma sella superficies planas, no roscas; puede fugar por los filetes."
+        }
+      },
+      {
+        id: 3,
+        task: "Aflojar la tuerca plástica del sifón del fregadero.",
+        options: ["🔧 Llave de tubo", "🦈 Alicates pico de loro", "🪛 Destornillador plano"],
+        correct: 0,
+        whyWrong: {
+          1: "Pueden morder y deformar la tuerca plástica, dejando marcas o rompiéndola.",
+          2: "No aplica par de giro a tuercas; herramienta incorrecta para este uso."
+        }
+      },
+      {
+        id: 4,
+        task: "Desatascar un lavabo con atasco leve.",
+        options: ["🧼 Desatascador de copa", "🧵 Serpiente de desagüe", "🧹 Aspirador de líquidos"],
+        correct: 0,
+        whyWrong: {
+          1: "La serpiente es para obstrucciones profundas; para leves es más lento y puede rayar.",
+          2: "El aspirador requiere adaptadores y sellado perfecto; no es lo más rápido."
+        }
+      },
+      {
+        id: 5,
+        task: "Comprobar la pendiente del desagüe nuevo.",
+        options: ["📏 Nivel de burbuja", "📐 Escuadra metálica", "🧵 Cuerda de albañil"],
+        correct: 0,
+        whyWrong: {
+          1: "La escuadra comprueba ángulos rectos, no inclinaciones o pendientes.",
+          2: "La cuerda no da lectura de nivel; sin referencia puede inducir error."
+        }
+      },
+      {
+        id: 6,
+        task: "Medir la longitud de un tramo de tubería.",
+        options: ["📐 Cinta métrica", "📏 Regla 30 cm", "📡 Metro láser"],
+        correct: 0,
+        whyWrong: {
+          1: "Demasiado corta y rígida para tramos largos o curvos; medida imprecisa.",
+          2: "Útil, pero requiere superficie visible y recta; en huecos con codos falla."
+        }
+      }
+    ];
+
+    // ===== State =====
+    const state = {
+      turn: 0,
+      answers: [] // {choice, correct, taskIndex}
+    };
+
+    // ===== DOM =====
+    const scene = document.getElementById('scene');
+    const gameplay = document.getElementById('gameplay');
+    const taskTxt = document.getElementById('taskTxt');
+    const optionsBox = document.getElementById('options');
+    const bar = document.getElementById('bar');
+    const nextBtn = document.getElementById('nextBtn');
+    const hint = document.getElementById('hint');
+    const introModal = document.getElementById('introModal');
+    const resultsView = document.getElementById('resultsView');
+    const summaryList = document.getElementById('summaryList');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const resultsScroll = document.getElementById('resultsScroll');
+
+    // ===== Accessibility helpers =====
+    function clampText(str, max = 48){
+      if(str.length <= max) return str;
+      return str.slice(0, max - 1) + "…";
+    }
+
+    // ===== Rendering =====
+    function renderTurn() {
+      const t = TASKS[state.turn];
+      // Progress
+      const progress = Math.round((state.turn / TASKS.length) * 100);
+      bar.style.width = progress + "%";
+
+      // Task
+      taskTxt.textContent = t.task;
+
+      // Options
+      optionsBox.innerHTML = "";
+      t.options.forEach((label, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "optBtn fade-enter";
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('aria-selected', 'false');
+        btn.setAttribute('data-idx', idx);
+        btn.style.minHeight = "44px";
+        btn.innerHTML = `<span class="label">${clampText(label, 48)}</span>`;
+        btn.addEventListener('click', () => handleChoice(idx, btn));
+        btn.addEventListener('keyup', (e)=>{ if(e.key === 'Enter' || e.key === ' ') handleChoice(idx, btn); });
+        optionsBox.appendChild(btn);
+        requestAnimationFrame(()=> btn.classList.add('fade-enter-active'));
+      });
+
+      // Footer
+      nextBtn.disabled = true;
+      hint.textContent = "Elige una opción para avanzar.";
+
+      // Fit to viewport
+      ensureFits();
+    }
+
+    function handleChoice(idx, btnEl){
+      // Lock immediate re-click
+      if (nextBtn.disabled === false) return; // already answered
+
+      // Visual selection
+      document.querySelectorAll('.optBtn').forEach(b => b.classList.remove('selected'));
+      btnEl.classList.add('selected');
+
+      const t = TASKS[state.turn];
+      const isCorrect = idx === t.correct;
+      btnEl.classList.add(isCorrect ? 'correct' : 'wrong', 'flash');
+      btnEl.setAttribute('aria-selected', 'true');
+
+      // Enable Next
+      nextBtn.disabled = false;
+      nextBtn.textContent = state.turn === TASKS.length - 1 ? "Finalizar" : "Siguiente";
+      hint.textContent = isCorrect ? "¡Bien! Avanza." : "Buena intuición. Mira la explicación al final.";
+
+      // Save answer
+      state.answers[state.turn] = { choice: idx, correct: isCorrect, taskIndex: state.turn };
+
+      // Auto-advance after short delay for flow
+      setTimeout(() => {
+        goNext();
+      }, 650);
+    }
+
+    function goNext(){
+      if (state.turn < TASKS.length - 1){
+        state.turn += 1;
+        renderTurn();
+      } else {
+        showResults();
+      }
+    }
+
+    nextBtn.addEventListener('click', goNext);
+
+    // ===== Results =====
+    function showResults(){
+      // finalize progress
+      bar.style.width = "100%";
+
+      // Build summary
+      summaryList.innerHTML = "";
+      let correctCount = 0;
+
+      TASKS.forEach((t, i) => {
+        const record = state.answers[i];
+        const your = t.options[record.choice];
+        const right = t.options[t.correct];
+        const othersIdx = [0,1,2].filter(x => x !== t.correct);
+        const why = othersIdx.map(idx => `• ${t.options[idx].replace(/^[^ ]+\s/, '')}: ${t.whyWrong[idx]}`).join(' ');
+
+        if (record.correct) correctCount++;
+
+        const item = document.createElement('div');
+        item.className = "resultItem";
+        item.innerHTML = `
+          <p class="rTitle">Tarea ${i+1}: ${t.task}</p>
+          <p class="rRow">Tu elección: <span class="${record.correct ? 'ok' : 'ko'}">${your}</span></p>
+          <p class="rRow">Herramienta correcta: <span class="ok">${right}</span></p>
+          <p class="rRow">Por qué no las otras: ${why}</p>
+        `;
+        summaryList.appendChild(item);
+      });
+
+      scoreBadge.textContent = `✅ ${correctCount}/6 correctas`;
+
+      // Swap views
+      gameplay.classList.add('hidden');
+      resultsView.classList.remove('hidden');
+
+      // Enable scrolling only now
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+
+      // InitData notice
+      if (!initData) initWarn.classList.remove('hidden');
+
+      // Focus results for a11y
+      resultsScroll.focus();
+    }
+
+    rewardBtn.addEventListener('click', () => {
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      location.href = url;
+    });
+
+    // ===== Intro modal =====
+    document.getElementById('startBtn').addEventListener('click', () => {
+      introModal.classList.add('hidden');
+      renderTurn();
+      // Ensure gameplay is on screen with no scroll
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      ensureFits();
+    });
+
+    // ===== Fit / Safety functions =====
+    function assertNoOverflow() {
+      const ok = scene.scrollHeight <= scene.clientHeight + 1;
+      return ok;
+    }
+
+    function applyCompactMode() {
+      if (!scene.classList.contains('compact')) {
+        scene.classList.add('compact');
+      }
+    }
+
+    function fitBoardToViewport() {
+      // Slightly reduce option height and gaps if needed via CSS vars
+      // Done by compact; here we can nudge via inline style if still overflow
+      const computed = getComputedStyle(scene);
+      const optH = parseInt(computed.getPropertyValue('--option-h')) || 64;
+      const gap = parseInt(computed.getPropertyValue('--gap')) || 12;
+
+      // Reduce a bit (min 52px option height)
+      const newOptH = Math.max(52, optH - 6);
+      const newGap = Math.max(8, gap - 2);
+
+      scene.style.setProperty('--option-h', newOptH + 'px');
+      scene.style.setProperty('--gap', newGap + 'px');
+    }
+
+    function autoscaleUI(minScale = 0.88) {
+      // Compute scale to fit height
+      const h = scene.clientHeight;
+      const sh = scene.scrollHeight;
+      if (sh <= h) { scene.style.setProperty('--ui-scale', '1'); return; }
+      const scale = Math.max(minScale, Math.min(1, (h - 2) / sh));
+      scene.style.setProperty('--ui-scale', String(scale));
+    }
+
+    function ensureFits() {
+      // Reset adjustable vars before measuring
+      scene.classList.remove('compact');
+      scene.style.removeProperty('--option-h');
+      scene.style.removeProperty('--gap');
+      scene.style.setProperty('--ui-scale', '1');
+
+      // Step 1: check
+      if (assertNoOverflow()) return;
+
+      // Step 2: compact
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+
+      // Step 3: tweak grid metrics
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+
+      // Step 4: autoscale as last resort
+      autoscaleUI(0.88);
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 120));
+
+    // ===== Init (show intro immediately) =====
+    // Preload first render to compute sizes (still show modal on top)
+    renderTurn();
+
+    // Keep CTAs always visible and avoid keyboard overlap
+    // Nothing else needed because CTAs are in-flow and scene is viewport-locked.
+
+    // ===== Performance notes =====
+    // All heavy images use low-res or single avatar background. Logo is small and critical.
+
+  </script>
+</body>
+</html>
