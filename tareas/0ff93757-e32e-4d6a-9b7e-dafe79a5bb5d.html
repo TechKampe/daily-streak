@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Hueco Eléctrico: Herramientas 101 ⚡ | Kämpe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ui-scale: 1;
+      --hudH: 64px;
+      --titleFS: clamp(18px, 2.6vh, 22px);
+      --statFS: clamp(12px, 1.7vh, 14px);
+      --qFS: clamp(18px, 2.5vh, 22px);
+      --optFS: clamp(16px, 2.2vh, 18px);
+      --optH: 56px;
+      --gap: 10px;
+      --radius: 14px;
+      --glass: rgba(255,255,255,0.12);
+      --glass-2: rgba(255,255,255,0.18);
+      --glass-b: rgba(255,255,255,0.28);
+      --accent: #5AE0FF;
+      --good: #35d07f;
+      --bad: #ff6b6b;
+      --progressH: 8px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --shadow: 0 6px 22px rgba(0,0,0,0.25);
+    }
+    *{box-sizing:border-box}
+    html,body{
+      height:100%;
+      margin:0;
+      background:#0a2cff;
+      font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:#fff;
+      overflow:hidden; /* locked during gameplay */
+      overscroll-behavior:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.results-mode{
+      overflow-y:auto; /* only results can scroll */
+    }
+    .scene{
+      position:relative;
+      width:100%;
+      height:100vh;
+      height:100dvh;
+      display:flex;
+      flex-direction:column;
+      isolation:isolate;
+      transform-origin: top center;
+    }
+    @supports (height: 100svh){
+      .scene{ height:100svh; }
+    }
+    @supports not (height: 100dvh){
+      .scene{ height:100vh; }
+    }
+    .bg{
+      position:absolute; inset:0; z-index:-2;
+      background: radial-gradient(120% 140% at 70% 20%, #5aa8ff55 0%, #2e47ff66 28%, #1326b0 55%, #0d1c83 100%), linear-gradient(180deg, #0b2dfc 0%, #071a66 100%);
+    }
+    .bg::after{
+      content:"";
+      position:absolute; inset:-20% -10%;
+      background: radial-gradient(80% 80% at 50% 0%, rgba(255,255,255,0.08), transparent 60%);
+      pointer-events:none;
+    }
+    .avatar-wrap{
+      position:absolute; inset:0; z-index:-1; opacity:.20; mix-blend-mode: screen;
+      display:flex; align-items:flex-end; justify-content:flex-end; padding:0 6% 8% 0;
+      pointer-events:none;
+    }
+    .avatar-wrap img{
+      max-width:48%;
+      height:auto;
+      filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
+      user-select:none; -webkit-user-drag: none;
+    }
+
+    /* HUD */
+    .hud{
+      height:var(--hudH);
+      padding: calc(6px + var(--safe-top)) calc(10px + var(--safe-right)) 4px calc(10px + var(--safe-left));
+      display:flex; align-items:center; gap:8px;
+    }
+    .logo{
+      height:36px; width:auto; aspect-ratio: 252/72;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+    }
+    .title{
+      font-weight:800; font-size:var(--titleFS);
+      letter-spacing:.2px; margin-left:6px; flex:1; min-width:0;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      display:flex; align-items:center; gap:8px;
+    }
+    .title .badge{
+      font-size: .72em; font-weight:700; color:#001134;
+      background: linear-gradient(180deg, #8af3ff, #4be4ff);
+      padding:3px 8px; border-radius:999px; border:1px solid #aef3ff;
+      box-shadow: 0 2px 10px rgba(90,224,255,0.5) inset;
+    }
+    .steps{
+      font-size: var(--statFS); opacity:.9; padding:6px 8px; border-radius:999px;
+      background: rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,0.22);
+    }
+
+    .progress{
+      height: var(--progressH);
+      margin: 0 14px 8px 14px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.14);
+      overflow:hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.25);
+    }
+    .progress .bar{
+      height:100%; width:0%;
+      background: linear-gradient(90deg, #5AE0FF, #49ffa1);
+      box-shadow: 0 0 16px #5AE0FF88;
+      transition: width .35s ease;
+    }
+
+    /* Gameplay card */
+    .content{
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      padding: 6px 14px calc(10px + var(--safe-bottom));
+      display:flex; flex-direction:column; gap:10px; flex:1;
+    }
+    .card{
+      flex:1; display:flex; flex-direction:column; justify-content:space-between;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.10));
+      border: 1px solid rgba(255,255,255,0.24);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow), inset 0 0 18px rgba(255,255,255,0.06);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      min-height: 0;
+    }
+    .scenario{
+      font-size: clamp(12px, 1.7vh, 14px);
+      opacity:.90;
+      display:flex; align-items:center; gap:6px;
+    }
+    .scenario .dot{width:6px; height:6px; background:#8af3ff; border-radius:50%; box-shadow:0 0 10px #8af3ff;}
+    .cloze{
+      margin: 6px 0 12px;
+      font-weight:800; line-height:1.2; font-size: var(--qFS);
+      min-height: 3.2em;
+      display:flex; align-items:center;
+    }
+    .clamp-3{
+      display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .blank{
+      display:inline-flex; align-items:baseline; position:relative; margin:0 6px;
+      min-width: 72px;
+    }
+    .blank .gap, .blank .fill{transition: opacity .22s ease, transform .22s ease;}
+    .blank .gap{opacity:.9; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px;}
+    .blank .fill{position:absolute; left:0; top:0; opacity:0; transform: translateY(6px); font-weight:900; text-decoration: underline; text-underline-offset: 3px;}
+    .blank.filled .gap{opacity:0; transform: translateY(-6px);}
+    .blank.filled .fill{opacity:1; transform: translateY(0);}
+    .feedback{
+      height:22px; font-size:12px; opacity:.95;
+    }
+    .feedback .msg{display:none}
+    .feedback.correct .msg.correct{display:inline; color: var(--good)}
+    .feedback.wrong .msg.wrong{display:inline; color: var(--bad)}
+
+    /* Options */
+    .options{
+      display:grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      margin-top: 6px;
+      touch-action: manipulation; /* allow taps */
+    }
+    .chip{
+      min-height: var(--optH);
+      padding: 10px 12px;
+      border-radius: 12px;
+      border:1px solid var(--glass-b);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      color:#fff; font-weight: 800; font-size: var(--optFS);
+      display:flex; align-items:center; justify-content:center; text-align:center;
+      outline:none; cursor:pointer; user-select:none;
+      box-shadow: 0 10px 18px rgba(0,0,0,0.25);
+      transition: transform .1s ease, background .2s ease, box-shadow .2s ease;
+    }
+    .chip:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+    .chip:active{ transform: translateY(1px) scale(0.99); }
+    .chip:hover{ background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.10)); }
+    .chip .label{
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .chip.good{ border-color: #37e3a3; box-shadow: 0 0 0 2px #37e3a366 inset, 0 10px 18px rgba(0,0,0,0.25);}
+    .chip.bad{ border-color: #ff7f7f; box-shadow: 0 0 0 2px #ff7f7f55 inset, 0 10px 18px rgba(0,0,0,0.25);}
+
+    /* Intro / Modal */
+    .modal{
+      position:absolute; inset: 0;
+      display:flex; align-items:center; justify-content:center;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(7, 13, 51, 0.45), rgba(7, 13, 51, 0.65));
+      backdrop-filter: blur(6px);
+    }
+    .modal .sheet{
+      width:100%; max-width: 540px; max-height:90svh; overflow:auto;
+      background: rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,0.24);
+      border-radius: 16px; padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .intro-title{
+      font-size: clamp(18px, 3.2vh, 24px); font-weight:800; margin: 6px 0 8px;
+    }
+    .intro-desc{
+      font-size: clamp(14px, 2.0vh, 16px); opacity:.95; line-height:1.25;
+    }
+    .intro-list{ margin: 10px 0 8px; font-size: clamp(13px, 1.9vh, 15px); opacity:.95;}
+    .k-actions{
+      display:flex; gap:10px; margin-top: 10px; position:sticky; bottom:0; background: linear-gradient(180deg, transparent, rgba(0,0,0,0.12));
+      padding-top:10px;
+    }
+    .btn{
+      flex:1; min-height:48px; border-radius:12px; border:0; color:#001134; font-weight:900; font-size: clamp(14px, 2vh, 16px);
+      background: linear-gradient(180deg, #9ff6ff, #5AE0FF);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.25), 0 0 0 2px #c5f7ff inset;
+      cursor:pointer;
+    }
+    .btn.secondary{
+      color:#fff; background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      border:1px solid rgba(255,255,255,0.28); box-shadow: 0 10px 18px rgba(0,0,0,0.25);
+    }
+    .btn:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+
+    /* Results */
+    .results{ display:none; }
+    .results.active{ display:block; }
+    .results .sheet{ max-width:680px; }
+    .score{
+      display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;
+    }
+    .pill{
+      font-size: clamp(12px, 1.8vh, 14px); font-weight:800; color:#001134; background: linear-gradient(180deg, #8af3ff, #4be4ff);
+      padding:6px 10px; border-radius:999px; border:1px solid #aef3ff; white-space:nowrap;
+    }
+    .score .big{
+      font-size: clamp(20px, 3.4vh, 28px); font-weight:800;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    }
+    .warn{ font-size:12px; opacity:.85; margin-left:8px; }
+    .list{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .res-item{
+      border:1px solid rgba(255,255,255,0.24); border-radius:12px; padding:12px;
+      background: rgba(255,255,255,0.10);
+    }
+    .res-phrase{ font-weight:800; margin-bottom:6px; }
+    .res-answers{ font-size: 13px; display:flex; flex-wrap:wrap; gap:6px; }
+    .tiny-chip{
+      padding:4px 8px; border-radius:999px; font-weight:800; font-size:12px;
+      border:1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.12);
+    }
+    .tiny-chip.good{ border-color:#37e3a3; background:rgba(55,227,163,0.15); }
+    .tiny-chip.bad{ border-color:#ff7f7f; background:rgba(255,127,127,0.15); }
+    .explain{ font-size:13px; opacity:.95; margin-top:6px; }
+    .tips{ margin-top:10px; padding:10px; border-radius:12px; border:1px dashed rgba(255,255,255,0.35); background: rgba(255,255,255,0.06); font-size:14px; }
+    .cta-row{ display:flex; gap:10px; margin-top:12px; }
+    .cta-row .btn{ flex:1; }
+    .cta-row .btn.primary{ background: linear-gradient(180deg, #00ffa4, #39e5b5); color:#001134; box-shadow: 0 10px 18px rgba(0,0,0,0.25), 0 0 0 2px #b9ffe7 inset; }
+    .link-note{ font-size:12px; opacity:.85; margin-top:4px; }
+
+    /* Animations / Transitions */
+    .fade-in{ animation: fade-in .35s ease both; }
+    @keyframes fade-in{ from{opacity:0; transform: translateY(6px);} to{opacity:1; transform: none;} }
+    .slide-out{ animation: slide-out .25s ease both; }
+    @keyframes slide-out{ from{opacity:1; transform:none;} to{opacity:0; transform: translateX(-6px);} }
+    .slide-in{ animation: slide-in .25s ease both; }
+    @keyframes slide-in{ from{opacity:0; transform: translateX(8px);} to{opacity:1; transform:none;} }
+
+    /* Compact mode for tiny screens */
+    .compact .hud{ --hudH: 54px; }
+    .compact .title{ font-size: clamp(16px, 2.3vh, 20px); }
+    .compact .progress{ --progressH: 6px; margin-bottom:6px; }
+    .compact .cloze{ --qFS: clamp(16px, 2.2vh, 20px); min-height: 2.8em; }
+    .compact .options .chip{ --optH: 48px; --optFS: clamp(14px, 2vh, 16px); }
+    .ultra-compact .title{ font-size: clamp(15px, 2vh, 18px); }
+    .ultra-compact .cloze{ --qFS: clamp(15px, 2vh, 18px); }
+    .ultra-compact .options .chip{ --optH: 46px; --optFS: clamp(13px, 1.8vh, 15px); }
+
+    /* Interaction safety */
+    .game-area{ touch-action: none; } /* No scroll/zoom in gameplay */
+    /* Ensure critical CTAs visible */
+    .options, .k-actions, .cta-row{ position:relative; z-index:2; }
+  </style>
+</head>
+<body>
+  <div class="scene game-area" id="scene">
+    <div class="bg"></div>
+    <div class="avatar-wrap">
+      <img src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Avatar Kämpe" loading="eager">
+    </div>
+
+    <div class="hud">
+      <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+      <div class="title">
+        Hueco Eléctrico: Herramientas 101 ⚡
+        <span class="badge" aria-hidden="true">Diario</span>
+      </div>
+      <div class="steps" id="stepsLabel" aria-live="polite">1/6</div>
+    </div>
+    <div class="progress" aria-hidden="true">
+      <div class="bar" id="progressBar"></div>
+    </div>
+
+    <div class="content" id="content">
+      <div class="card" id="card">
+        <div class="scenario">
+          <span class="dot"></span>
+          <span class="clamp-3">Escenario: taller básico. Elige bien antes de actuar.</span>
+        </div>
+
+        <div class="cloze clamp-3" id="cloze" aria-live="polite"></div>
+        <div class="feedback" id="feedback">
+          <span class="msg correct">¡Bien visto!</span>
+          <span class="msg wrong">No exactamente, sigue atento.</span>
+        </div>
+
+        <div class="options" id="options" role="group" aria-label="Opciones"></div>
+      </div>
+    </div>
+
+    <!-- Intro Modal -->
+    <div class="modal" id="introModal" aria-modal="true" role="dialog" aria-labelledby="introTitle">
+      <div class="sheet">
+        <div class="intro-title" id="introTitle">Hueco Eléctrico: Herramientas 101 ⚡</div>
+        <div class="intro-desc">
+          Estás en un taller de iniciación eléctrica. Elige la herramienta o EPI correctos en cada paso para montar un punto de luz con interruptor.
+        </div>
+        <ul class="intro-list">
+          <li>Dinámica: toca la opción correcta; el hueco se completa y pasas al siguiente.</li>
+          <li>Objetivo: vocabulario esencial, colores de conductores y protecciones.</li>
+        </ul>
+        <div class="k-actions">
+          <button class="btn" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+          <button class="btn secondary" id="howBtn" aria-label="Ver ejemplo">Ejemplo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div class="modal results" id="resultsModal" aria-modal="true" role="dialog" aria-labelledby="resultsTitle">
+      <div class="sheet">
+        <div class="score">
+          <div class="big" id="resultsTitle">Resultados</div>
+          <div class="pill" id="scorePill">0/6 correctas</div>
+        </div>
+        <div class="tips" id="finalTip">
+          Consejo: recuerda fase (marrón/negro), neutro (azul) y tierra (amarillo‑verde). Verifica tensión con multímetro y usa EPI (guantes dieléctricos) antes de tocar.
+        </div>
+        <div class="list" id="resultList"></div>
+        <div class="cta-row">
+          <button class="btn primary" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+          <button class="btn secondary" id="retryBtn" aria-label="Reintentar el reto">Reintentar</button>
+        </div>
+        <div class="link-note" id="initDataNote" hidden>Nota: initData ausente; podrás continuar igualmente.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Data model
+    const ITEMS = [
+      {
+        id: "tension",
+        text: "Para medir tensión, uso el ___",
+        options: ["multímetro", "buscapolos"],
+        correct: "multímetro",
+        expl: {
+          "multímetro": "Mide tensión con precisión (y otras magnitudes).",
+          "buscapolos": "Solo detecta presencia de fase; no da valores."
+        }
+      },
+      {
+        id: "epi",
+        text: "Antes de abrir el cuadro me pongo ___",
+        options: ["guantes dieléctricos", "gafas de sol"],
+        correct: "guantes dieléctricos",
+        expl: {
+          "guantes dieléctricos": "EPI específico para trabajos eléctricos.",
+          "gafas de sol": "No son EPI para riesgo eléctrico."
+        }
+      },
+      {
+        id: "fase",
+        text: "Detecto la fase con un ___",
+        options: ["buscapolos", "destornillador plano"],
+        correct: "buscapolos",
+        expl: {
+          "buscapolos": "Herramienta diseñada para identificar la fase.",
+          "destornillador plano": "No detecta tensión; es herramienta mecánica."
+        }
+      },
+      {
+        id: "corte",
+        text: "Para cortar cable utilizo ___",
+        options: ["alicate de corte", "pinza amperimétrica"],
+        correct: "alicate de corte",
+        expl: {
+          "alicate de corte": "Secciona conductores de forma limpia y segura.",
+          "pinza amperimétrica": "Mide corriente sin abrir el circuito; no corta."
+        }
+      },
+      {
+        id: "proteccion",
+        text: "Protejo la línea con un ___",
+        options: ["magnetotérmico", "llave inglesa"],
+        correct: "magnetotérmico",
+        expl: {
+          "magnetotérmico": "Protege frente a sobrecargas y cortocircuitos.",
+          "llave inglesa": "Herramienta de ajuste; no es protección eléctrica."
+        }
+      },
+      {
+        id: "colores",
+        text: "El cable azul suele ser el ___",
+        options: ["neutro", "tierra"],
+        correct: "neutro",
+        expl: {
+          "neutro": "Por norma IEC, el azul identifica el conductor neutro.",
+          "tierra": "La tierra es amarillo‑verde, no azul."
+        }
+      }
+    ];
+
+    // State
+    let idx = 0;
+    let responses = [];
+    let initData = "";
+    const scene = document.getElementById('scene');
+    const content = document.getElementById('content');
+    const clozeEl = document.getElementById('cloze');
+    const optionsEl = document.getElementById('options');
+    const progressBar = document.getElementById('progressBar');
+    const stepsLabel = document.getElementById('stepsLabel');
+    const feedbackEl = document.getElementById('feedback');
+    const introModal = document.getElementById('introModal');
+    const resultsModal = document.getElementById('resultsModal');
+
+    // Parse initData from URL
+    try {
+      const url = new URL(window.location.href);
+      initData = url.searchParams.get('initData') || "";
+    } catch(e){ initData = ""; }
+
+    // Utilities for layout fit
+    function assertNoOverflow() {
+      const fits = scene.scrollHeight <= scene.clientHeight;
+      return fits;
+    }
+    function applyCompactMode() {
+      document.body.classList.add('compact');
+    }
+    function fitBoardToViewport() {
+      // As an extra tightening step, reduce sizes further
+      document.body.classList.add('ultra-compact');
+    }
+    function autoscaleUI() {
+      const maxScale = 1;
+      const minScale = 0.88;
+      // Reset scale
+      document.documentElement.style.setProperty('--ui-scale', 1);
+      let needed = scene.clientHeight / scene.scrollHeight;
+      let target = Math.max(minScale, Math.min(maxScale, needed));
+      document.documentElement.style.setProperty('--ui-scale', target.toFixed(3));
+    }
+    function ensureFits() {
+      // Reset states
+      document.body.classList.remove('compact', 'ultra-compact');
+      document.documentElement.style.setProperty('--ui-scale', 1);
+      // Step 1: check
+      if (assertNoOverflow()) return;
+      // Step 2: compact
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+      // Step 3: tighter grid/text
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      // Step 4: autoscale
+      autoscaleUI();
+    }
+
+    // Gameplay rendering
+    function renderStep() {
+      const item = ITEMS[idx];
+      stepsLabel.textContent = (idx + 1) + "/" + ITEMS.length;
+
+      // Progress
+      const pct = (idx) / ITEMS.length * 100;
+      progressBar.style.width = pct + "%";
+
+      // Build cloze with blank
+      clozeEl.innerHTML = "";
+      const before = item.text.split("___")[0] || item.text.replace("___","");
+      const after = item.text.split("___")[1] || "";
+      const spanBlank = document.createElement('span');
+      spanBlank.className = 'blank';
+      const gap = document.createElement('span');
+      gap.className = 'gap';
+      gap.textContent = "___";
+      const fill = document.createElement('span');
+      fill.className = 'fill';
+      fill.textContent = ""; // set on choose
+      spanBlank.appendChild(gap);
+      spanBlank.appendChild(fill);
+
+      const frag = document.createDocumentFragment();
+      frag.append(document.createTextNode(before), spanBlank, document.createTextNode(after));
+      clozeEl.appendChild(frag);
+      clozeEl.classList.remove('slide-out','slide-in');
+      clozeEl.classList.add('fade-in');
+
+      // Clear feedback
+      feedbackEl.classList.remove('correct','wrong');
+
+      // Render options (max 2 visible)
+      optionsEl.innerHTML = "";
+      item.options.slice(0,2).forEach((opt,i) => {
+        const btn = document.createElement('button');
+        btn.className = 'chip';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', "Opción " + (i+1) + ": " + opt);
+        const lbl = document.createElement('div');
+        lbl.className = 'label';
+        lbl.textContent = truncate(opt, 48);
+        btn.appendChild(lbl);
+        btn.addEventListener('click', () => handleChoice(item, opt, spanBlank, fill, btn));
+        optionsEl.appendChild(btn);
+      });
+
+      // Fit to viewport
+      setTimeout(ensureFits, 0);
+    }
+
+    function handleChoice(item, choice, spanBlank, fill, btnEl) {
+      // Prevent double taps
+      Array.from(optionsEl.children).forEach(b => b.disabled = true);
+
+      const isCorrect = choice === item.correct;
+      // Mark chosen visually
+      Array.from(optionsEl.children).forEach(b => {
+        const txt = b.textContent.trim();
+        b.classList.add(txt === item.correct ? 'good' : 'bad');
+      });
+
+      // Animate blank fill
+      fill.textContent = choice;
+      spanBlank.classList.add('filled');
+      feedbackEl.classList.toggle('correct', isCorrect);
+      feedbackEl.classList.toggle('wrong', !isCorrect);
+
+      // Save response
+      responses.push({
+        id: item.id,
+        text: item.text,
+        correct: item.correct,
+        chosen: choice,
+        isCorrect,
+        expl: item.expl
+      });
+
+      // Advance after a brief pause
+      setTimeout(() => {
+        if (idx < ITEMS.length - 1) {
+          // Slide transition
+          clozeEl.classList.add('slide-out');
+          setTimeout(() => {
+            idx++;
+            renderStep();
+            clozeEl.classList.add('slide-in');
+          }, 180);
+        } else {
+          endGame();
+        }
+      }, 520);
+    }
+
+    function endGame() {
+      // Fill progress 100%
+      progressBar.style.width = "100%";
+      // Prepare results
+      const corrects = responses.filter(r => r.isCorrect).length;
+      document.getElementById('scorePill').textContent = `${corrects}/${ITEMS.length} correctas`;
+
+      const list = document.getElementById('resultList');
+      list.innerHTML = "";
+      responses.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'res-item';
+
+        const solved = r.text.replace("___", r.correct);
+        const phrase = document.createElement('div');
+        phrase.className = 'res-phrase';
+        phrase.textContent = solved;
+
+        const answers = document.createElement('div');
+        answers.className = 'res-answers';
+        const your = document.createElement('span');
+        your.className = 'tiny-chip ' + (r.isCorrect ? 'good' : 'bad');
+        your.textContent = `Tu respuesta: ${r.chosen}`;
+        const corr = document.createElement('span');
+        corr.className = 'tiny-chip';
+        corr.textContent = `Correcta: ${r.correct}`;
+        answers.append(your, corr);
+
+        const explain = document.createElement('div');
+        explain.className = 'explain';
+        // Microexplicación: por qué la otra no aplica (o refuerzo si acertó)
+        const other = r.options ? r.options.find(o => o !== r.correct) : null;
+        // We have original expl from ITEMS; use chosen explanation if wrong, else why other not applies
+        const why = r.isCorrect ? r.expl[other || r.chosen] : r.expl[r.chosen];
+        explain.textContent = r.isCorrect
+          ? `Por qué la otra no: ${why}`
+          : `Por qué no: ${why}`;
+
+        item.append(phrase, answers, explain);
+        list.appendChild(item);
+      });
+
+      // Unlock scroll only for results
+      document.body.classList.add('results-mode');
+      resultsModal.classList.add('active');
+
+      // Show initData note if missing
+      const note = document.getElementById('initDataNote');
+      if (!initData) note.hidden = false;
+
+      ensureFits(); // Not critical here, but keep UI safe
+    }
+
+    // Helpers
+    function truncate(str, max) {
+      if ((str||"").length <= max) return str||"";
+      return str.slice(0, max-1) + "…";
+    }
+
+    // Intro interactions
+    document.getElementById('startBtn').addEventListener('click', () => {
+      introModal.style.display = 'none';
+      renderStep();
+      ensureFits();
+    });
+
+    document.getElementById('howBtn').addEventListener('click', () => {
+      // Replace intro text briefly (micro tutorial within 180 chars)
+      const desc = introModal.querySelector('.intro-desc');
+      desc.textContent = "Toca la opción correcta. El hueco se rellena y pasas al siguiente. Solo 6 frases. Progreso visible arriba.";
+    });
+
+    // Results interactions
+    document.getElementById('retryBtn').addEventListener('click', () => {
+      // Reset state
+      idx = 0; responses = [];
+      resultsModal.classList.remove('active');
+      document.body.classList.remove('results-mode');
+      progressBar.style.width = "0%";
+      introModal.style.display = ''; // show intro again for a quick restart
+      ensureFits();
+    });
+
+    document.getElementById('rewardBtn').addEventListener('click', () => {
+      const base = "https://kampe-game-phaser.onrender.com/daily_streak";
+      const url = `${base}?initData=${encodeURIComponent(initData)}`;
+      window.location.href = url;
+    });
+
+    // Initialize gameplay data with options in responses for explaining "other"
+    // We enrich responses when saving (done in handleChoice), but ensure we keep options available.
+    // We'll store them via a getter when pushing:
+    const _push = responses.push.bind(responses);
+    responses.push = function(obj){
+      const it = ITEMS.find(x => x.id === obj.id) || {};
+      obj.options = it.options || [];
+      return _push(obj);
+    }
+
+    // Initial render locked until start
+    ensureFits();
+
+    // Responsive handling
+    window.addEventListener('resize', () => ensureFits());
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+    // Accessibility: allow Enter/Space on chips via default button behavior
+  </script>
+</body>
+</html>
