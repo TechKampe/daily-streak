@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | Match de Herramientas 🔧</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ----------------------------
+       Reset básico y variables
+    -----------------------------*/
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      overflow: hidden; /* bloquea scroll durante gameplay */
+      overscroll-behavior: none;
+      background: #0e3db8;
+    }
+    :root{
+      --bg1: #1b4bd6;
+      --bg2: #0a2e9a;
+      --glass: rgba(255,255,255,0.09);
+      --stroke: rgba(255,255,255,0.25);
+      --white: #ffffff;
+      --muted: rgba(255,255,255,0.72);
+      --ok: #34d399;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --accent: #22d3ee;
+      --accent-2: #60a5fa;
+      --ui-scale: 1;
+      --hudH: 64px;
+      --optionH: 96px;
+      --gap: 12px;
+      --radius: 14px;
+      --shadow: 0 8px 24px rgba(0,0,0,0.25);
+      --title-size: clamp(20px, 3.6vw, 28px);
+      --task-size: clamp(15px, 2.8vw, 18px);
+      --btn-size: clamp(15px, 2.8vw, 18px);
+      --ui-maxw: 540px;
+    }
+    body.compact :root, body.compact{
+      --hudH: 54px;
+      --optionH: 86px;
+      --gap: 10px;
+      --radius: 12px;
+      --title-size: clamp(18px, 3.2vw, 24px);
+      --task-size: clamp(14px, 2.6vw, 16px);
+      --btn-size: clamp(14px, 2.6vw, 16px);
+    }
+    body, button { font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--white); }
+
+    /* ----------------------------
+       Escena a pantalla completa (sin scroll)
+    -----------------------------*/
+    .scene{
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      padding: 10px;
+      padding-left: calc(10px + env(safe-area-inset-left, 0));
+      padding-right: calc(10px + env(safe-area-inset-right, 0));
+      padding-top: calc(10px + env(safe-area-inset-top, 0));
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0));
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
+      background: radial-gradient(120% 120% at 80% 10%, #2e6bff 0%, #0a2e9a 50%, #061c66 100%);
+      isolation: isolate;
+      touch-action: none; /* anti-derrapes en gameplay */
+    }
+    @supports (height: 100svh) { .scene{ height: 100svh; } }
+    @supports not (height: 100svh) { .scene{ height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene{ height: 100vh; } }
+
+    /* Cuando entramos en resultados, permitimos scroll */
+    html.results-mode, body.results-mode{ overflow-y: auto; }
+    body.results-mode .scene{
+      min-height: 100svh;
+      height: auto;
+      overflow: visible;
+      touch-action: auto;
+    }
+
+    /* ----------------------------
+       Decor: avatar y logo
+    -----------------------------*/
+    .avatar{
+      position: absolute;
+      right: 8px; top: 8px;
+      width: 210px; max-width: 40vw;
+      opacity: 0.16;
+      filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35));
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+    }
+    .logo{
+      height: 28px; width: auto;
+      display: block;
+      filter: drop-shadow(0 1px 4px rgba(0,0,0,0.25));
+    }
+
+    /* ----------------------------
+       HUD superior
+    -----------------------------*/
+    .hud{
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: var(--hudH);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .progress{
+      width: 54%;
+      display: grid;
+      gap: 6px;
+    }
+    .progress .label{
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.2px;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .bar{
+      position: relative;
+      height: 10px;
+      background: rgba(255,255,255,0.16);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bar > span{
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      border-radius: inherit;
+      transition: width 260ms ease;
+    }
+
+    /* ----------------------------
+       Área principal (UI glass)
+    -----------------------------*/
+    .ui-scale-wrap{
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      transition: transform 160ms ease;
+      will-change: transform;
+    }
+    .card{
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      max-width: var(--ui-maxw);
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: var(--gap);
+      padding: 12px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+    .title{
+      font-weight: 800;
+      font-size: var(--title-size);
+      letter-spacing: 0.3px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .desc{
+      font-size: 13px;
+      color: var(--muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .task{
+      font-size: var(--task-size);
+      font-weight: 700;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 2.6em;
+    }
+    .options{
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+      align-items: stretch;
+      touch-action: none;
+    }
+    .opt{
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      justify-items: center;
+      align-items: center;
+      gap: 6px;
+      height: var(--optionH);
+      min-height: 74px;
+      padding: 8px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.08);
+      color: var(--white);
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+      position: relative;
+    }
+    .opt:focus-visible{
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .opt:hover{ transform: translateY(-2px); }
+    .opt .icon{
+      font-size: 22px;
+      filter: drop-shadow(0 1px 4px rgba(0,0,0,0.45));
+    }
+    .opt .label{
+      font-size: 12px;
+      text-align: center;
+      color: var(--white);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      max-height: 2.6em;
+    }
+    .opt.selected{
+      border-color: transparent;
+      background: linear-gradient(180deg, rgba(34,211,238,0.25), rgba(96,165,250,0.25));
+      box-shadow: 0 0 0 2px rgba(34,211,238,0.6) inset, 0 8px 18px rgba(0,0,0,0.35);
+      transform: translateY(-3px);
+    }
+
+    /* ----------------------------
+       CTA inferior
+    -----------------------------*/
+    .cta{
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      max-width: var(--ui-maxw);
+      width: 100%;
+      margin: 0 auto;
+    }
+    .status{
+      font-size: 12px;
+      color: var(--muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 1.6em;
+    }
+    .btn{
+      min-height: 48px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: linear-gradient(90deg, #22d3ee, #60a5fa);
+      color: #061c66;
+      font-weight: 800;
+      font-size: var(--btn-size);
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: filter 120ms ease, transform 80ms ease, opacity 120ms ease;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn[disabled]{
+      opacity: 0.55;
+      cursor: not-allowed;
+      filter: grayscale(0.3);
+    }
+    .btn.ghost{
+      background: rgba(255,255,255,0.08);
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.23);
+    }
+
+    /* ----------------------------
+       Modales: intro y resultados
+    -----------------------------*/
+    .modal{
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(6, 14, 48, 0.55);
+      z-index: 10;
+    }
+    .modal .box{
+      width: min(640px, 92vw);
+      max-height: 90svh;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      box-shadow: var(--shadow);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .intro-title{
+      font-size: clamp(18px, 3.6vw, 24px);
+      font-weight: 800;
+      margin: 0 0 6px 0;
+    }
+    .intro-desc{
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .intro-actions{
+      display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px;
+    }
+
+    /* ----------------------------
+       Transiciones de pantalla
+    -----------------------------*/
+    .fade-enter{ opacity: 0; transform: translateY(6px); }
+    .fade-enter-active{ opacity: 1; transform: translateY(0); transition: opacity 220ms ease, transform 220ms ease; }
+    .fade-exit{ opacity: 1; transform: translateY(0); }
+    .fade-exit-active{ opacity: 0; transform: translateY(-6px); transition: opacity 180ms ease, transform 180ms ease; }
+
+    /* ----------------------------
+       Resultados
+    -----------------------------*/
+    .results{
+      max-width: 820px;
+      margin: 0 auto;
+      display: grid;
+      gap: 12px;
+      padding-bottom: 28px;
+    }
+    .score{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.09);
+    }
+    .score .big{
+      font-size: 22px; font-weight: 800;
+    }
+    .warn{
+      color: var(--warn);
+      font-size: 12px;
+    }
+    .list{
+      display: grid; gap: 10px;
+    }
+    .item{
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid; gap: 6px;
+    }
+    .q{
+      font-weight: 800; font-size: 14px;
+      display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .a{
+      font-size: 13px; color: var(--muted);
+    }
+    .correct{ color: var(--ok); font-weight: 700; }
+    .wrong{ color: var(--err); font-weight: 700; }
+    .tips{
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 12px;
+      display: grid; gap: 8px;
+    }
+    .tips h3{
+      margin: 0; font-size: 16px; font-weight: 800;
+    }
+    .tips ul{
+      margin: 0; padding-left: 18px; display: grid; gap: 6px;
+    }
+    .tips li{ font-size: 13px; color: var(--white); }
+
+    /* Focus visible global */
+    :focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; border-radius: 8px; }
+
+    /* Utilidades */
+    .sr { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
+
+  </style>
+</head>
+<body>
+  <!-- Avatar decorativo -->
+  <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="eager" />
+
+  <div class="scene" id="scene" aria-live="polite">
+    <!-- HUD -->
+    <header class="hud">
+      <img class="logo" alt="Kämpe" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png">
+      <div class="progress" aria-label="Progreso">
+        <div class="label" id="progressLabel">Progreso: 0/6</div>
+        <div class="bar" aria-hidden="true"><span id="barFill"></span></div>
+      </div>
+    </header>
+
+    <!-- UI principal (auto-escala) -->
+    <div class="ui-scale-wrap" id="uiScale">
+      <main class="card" id="card">
+        <div class="title">Match de Herramientas 🔧</div>
+        <div class="desc">Eres aprendiz en la brigada de mantenimiento. Identifica la herramienta básica más adecuada y segura en 6 mini tareas.</div>
+
+        <section class="content">
+          <div class="task" id="taskText">Tarea…</div>
+          <div class="options" id="options" role="listbox" aria-label="Opciones de herramienta">
+            <!-- Opciones dinámicas -->
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- CTA inferior -->
+    <div class="cta">
+      <div class="status" id="statusMsg">Elige una herramienta para continuar.</div>
+      <button class="btn" id="nextBtn" disabled aria-label="Continuar al siguiente paso">Continuar</button>
+    </div>
+  </div>
+
+  <!-- Modal: tutorial breve -->
+  <div class="modal" id="introModal" aria-modal="true" role="dialog">
+    <div class="box">
+      <div class="intro-title">Cómo jugar</div>
+      <div class="intro-desc" id="introDesc">Lee la tarea, elige la herramienta más adecuada y avanza. Prioriza uso correcto y seguridad. 6 pasos, sin prisas.</div>
+      <div class="intro-actions">
+        <button class="btn ghost" id="closeIntro">Jugar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------
+    // Estado y datos del juego
+    // -----------------------------
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || "";
+    // Tareas (6 pasos)
+    const tasks = [
+      {
+        id: 't1',
+        task: 'Apretar una tuerca de 13 mm.',
+        options: [
+          { id: 'llave', icon: '🔧', label: 'Llave ajustable' },
+          { id: 'alicate', icon: '🗜️', label: 'Alicate universal' },
+          { id: 'martillo', icon: '🔨', label: 'Martillo' }
+        ],
+        correct: 'llave',
+        explain: 'La llave ajustable se adapta a la tuerca y evita redondearla.',
+        nots: {
+          alicate: 'El alicate pellizca y puede dañar la tuerca.',
+          martillo: 'Golpear la tuerca es inseguro y puede romper piezas.'
+        }
+      },
+      {
+        id: 't2',
+        task: 'Comprobar si un enchufe tiene tensión.',
+        options: [
+          { id: 'busca', icon: '🔎', label: 'Buscapolos' },
+          { id: 'multi', icon: '📏', label: 'Multímetro (continuidad)' },
+          { id: 'cinta', icon: '🩹', label: 'Cinta aislante' }
+        ],
+        correct: 'busca',
+        explain: 'El buscapolos indica presencia de tensión de forma rápida.',
+        nots: {
+          multi: 'En continuidad no detecta tensión; es el modo incorrecto.',
+          cinta: 'No mide nada; solo sirve para aislar, no para comprobar.'
+        }
+      },
+      {
+        id: 't3',
+        task: 'Cortar una canaleta plástica.',
+        options: [
+          { id: 'cutter', icon: '✂️', label: 'Cúter' },
+          { id: 'serrucho', icon: '🪚', label: 'Serrucho de madera' },
+          { id: 'tijchap', icon: '✂️', label: 'Tijera de chapa' }
+        ],
+        correct: 'cutter',
+        explain: 'El cúter hace cortes limpios y controlados en plástico.',
+        nots: {
+          serrucho: 'Demasiado tosco; deja rebabas y es impreciso.',
+          tijchap: 'Es para chapa metálica; puede quebrar la canaleta.'
+        }
+      },
+      {
+        id: 't4',
+        task: 'Pelar el extremo de un cable fino.',
+        options: [
+          { id: 'pelacables', icon: '🔌', label: 'Pelacables' },
+          { id: 'corte', icon: '🔪', label: 'Alicate de corte' },
+          { id: 'destorn', icon: '🪛', label: 'Destornillador' }
+        ],
+        correct: 'pelacables',
+        explain: 'El pelacables retira aislamiento sin dañar los hilos.',
+        nots: {
+          corte: 'Puede seccionar hilos y debilitar el conductor.',
+          destorn: 'Riesgo de cortar hilos o marcar el cobre.'
+        }
+      },
+      {
+        id: 't5',
+        task: 'Nivelar un soporte de estante.',
+        options: [
+          { id: 'nivel', icon: '🫧', label: 'Nivel de burbuja' },
+          { id: 'metro', icon: '📏', label: 'Metro plegable' },
+          { id: 'escuadra', icon: '📐', label: 'Escuadra' }
+        ],
+        correct: 'nivel',
+        explain: 'El nivel de burbuja verifica horizontal y vertical.',
+        nots: {
+          metro: 'Mide distancia; no indica nivel.',
+          escuadra: 'Comprueba 90°, no nivelación.'
+        }
+      },
+      {
+        id: 't6',
+        task: 'Sellar la rosca de un grifo que gotea.',
+        options: [
+          { id: 'teflon', icon: '🧵', label: 'Cinta de teflón' },
+          { id: 'silicona', icon: '🧴', label: 'Silicona' },
+          { id: 'epoxi', icon: '🧱', label: 'Masilla epoxi' }
+        ],
+        correct: 'teflon',
+        explain: 'La cinta de teflón sella roscas y resiste presión.',
+        nots: {
+          silicona: 'No sella correctamente roscas presurizadas.',
+          epoxi: 'Es permanente y no apta para juntas desmontables.'
+        }
+      }
+    ];
+
+    // Consejos prácticos (por herramienta)
+    const toolTips = {
+      llave: 'Llave ajustable: ideal para tuercas variadas. Mantén la mordaza sin holgura para no redondear.',
+      busca: 'Buscapolos: úsalo solo para presencia/ausencia de tensión. Verifica antes en un punto conocido.',
+      cutter: 'Cúter: cortes limpios en plásticos y vinilos. Usa hoja afilada y corta alejando la mano.',
+      pelacables: 'Pelacables: ajusta al calibre del cable para no cortar hilos. Trabaja con la corriente cortada.',
+      nivel: 'Nivel de burbuja: comprueba horizontales y verticales. Revisa la burbuja en más de un punto.',
+      teflon: 'Cinta de teflón: envuelve en sentido de la rosca (2–3 vueltas) y ajusta sin exceso.',
+      multi: 'Multímetro: mide tensión solo en el rango correcto. Nunca uses continuidad con tensión presente.',
+      alicate: 'Alicate universal: sujeta y dobla, no para tuercas; puede dañar caras.',
+      martillo: 'Martillo: golpes controlados solo donde proceda; usa gafas en demoliciones.',
+      cinta: 'Cinta aislante: repara aislamientos superficiales; no sustituye conectores seguros.'
+    };
+
+    const dom = {
+      scene: document.getElementById('scene'),
+      card: document.getElementById('card'),
+      taskText: document.getElementById('taskText'),
+      options: document.getElementById('options'),
+      nextBtn: document.getElementById('nextBtn'),
+      statusMsg: document.getElementById('statusMsg'),
+      progressLabel: document.getElementById('progressLabel'),
+      barFill: document.getElementById('barFill'),
+      introModal: document.getElementById('introModal'),
+      closeIntro: document.getElementById('closeIntro'),
+      uiScale: document.getElementById('uiScale')
+    };
+
+    let state = {
+      step: 0,
+      selected: null,
+      answers: [] // {taskId, chosenId, correctId, isCorrect}
+    };
+
+    // -----------------------------
+    // Utilidades de layout y clamps
+    // -----------------------------
+    function clampLabel(text, max=48){
+      if(!text) return '';
+      const t = text.trim();
+      return (t.length <= max) ? t : (t.slice(0, max-1) + '…');
+    }
+
+    function setStatus(msg){
+      dom.statusMsg.textContent = msg;
+    }
+
+    // -----------------------------
+    // Render de una pantalla
+    // -----------------------------
+    function renderStep(){
+      const t = tasks[state.step];
+      if(!t){ return; }
+
+      dom.taskText.textContent = t.task;
+      dom.options.innerHTML = '';
+
+      t.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt fade-enter';
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('aria-label', opt.label);
+        btn.dataset.id = opt.id;
+        btn.innerHTML = `
+          <div class="icon" aria-hidden="true">${opt.icon}</div>
+          <div class="label">${clampLabel(opt.label, 48)}</div>
+        `;
+        btn.addEventListener('click', () => onSelectOption(opt.id, btn));
+        dom.options.appendChild(btn);
+        requestAnimationFrame(() => btn.classList.add('fade-enter-active'));
+      });
+
+      dom.nextBtn.disabled = true;
+      dom.nextBtn.textContent = (state.step < tasks.length - 1) ? 'Continuar' : 'Ver resultados';
+      setStatus('Elige una herramienta para continuar.');
+      updateProgress();
+
+      // Asegurar que todo cabe en una pantalla
+      ensureFits();
+    }
+
+    function updateProgress(){
+      const total = tasks.length;
+      const done = state.step;
+      dom.progressLabel.textContent = `Progreso: ${done}/${total}`;
+      const pct = (done / total) * 100;
+      dom.barFill.style.width = `${pct}%`;
+    }
+
+    function onSelectOption(id, el){
+      state.selected = id;
+      // Visual highlight
+      [...dom.options.children].forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+      dom.nextBtn.disabled = false;
+      setStatus('¡Listo! Pulsa continuar.');
+    }
+
+    function onNext(){
+      if(state.selected == null) return;
+      const current = tasks[state.step];
+      const chosen = state.selected;
+      const correct = current.correct;
+      state.answers.push({
+        taskId: current.id,
+        task: current.task,
+        chosenId: chosen,
+        chosenLabel: current.options.find(o => o.id === chosen)?.label || '',
+        correctId: correct,
+        correctLabel: current.options.find(o => o.id === correct)?.label || '',
+        isCorrect: chosen === correct,
+        explain: current.explain,
+        nots: current.nots
+      });
+
+      // Reset selection
+      state.selected = null;
+
+      // Transition out
+      dom.card.classList.add('fade-exit');
+      requestAnimationFrame(() => {
+        dom.card.classList.add('fade-exit-active');
+        setTimeout(() => {
+          dom.card.classList.remove('fade-exit', 'fade-exit-active');
+
+          // Next or results
+          if(state.step < tasks.length - 1){
+            state.step++;
+            renderStep();
+          } else {
+            showResults();
+          }
+        }, 180);
+      });
+    }
+
+    // -----------------------------
+    // Resultados
+    // -----------------------------
+    function showResults(){
+      // Cambiar a modo scroll para el detalle
+      document.documentElement.classList.add('results-mode');
+      document.body.classList.add('results-mode');
+
+      // Limpiar escena y montar resumen
+      dom.scene.innerHTML = '';
+      const container = document.createElement('div');
+      container.className = 'results';
+      container.innerHTML = `
+        <header class="hud" style="margin-top:8px;">
+          <img class="logo" alt="Kämpe" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png">
+          <div class="progress" aria-label="Progreso final">
+            <div class="label">Reto completado</div>
+            <div class="bar"><span style="width:100%"></span></div>
+          </div>
+        </header>
+      `;
+      const score = calcScore(state.answers);
+      const scoreBox = document.createElement('section');
+      scoreBox.className = 'score';
+      scoreBox.innerHTML = `
+        <div class="big">Resultado: ${score.correct}/${tasks.length} correctos</div>
+        <div>${feedbackBadge(score.correct)}</div>
+      `;
+      container.appendChild(scoreBox);
+
+      // Lista de preguntas y explicaciones
+      const list = document.createElement('section');
+      list.className = 'list';
+      state.answers.forEach((ans, idx) => {
+        const wrongIds = Object.keys(ans.nots || {});
+        const wrongExpl = wrongIds.map(k => `• ${labelOfOption(ans.taskId, k)}: ${ans.nots[k]}`).join(' ');
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = `
+          <div class="q">Paso ${idx+1}. ${ans.task}</div>
+          <div class="a"><span class="${ans.isCorrect ? 'correct' : 'wrong'}">${ans.isCorrect ? 'Tu elección fue correcta' : 'Tu elección no fue la idónea'}</span></div>
+          <div class="a">Elegiste: ${safe(ans.chosenLabel)} | Correcta: ${safe(ans.correctLabel)}</div>
+          <div class="a">Por qué: ${safe(ans.explain)}</div>
+          <div class="a">${wrongExpl}</div>
+        `;
+        list.appendChild(item);
+      });
+      container.appendChild(list);
+
+      // Consejos prácticos
+      const usedTools = collectUsedTools(state.answers);
+      const tips = document.createElement('section');
+      tips.className = 'tips';
+      tips.innerHTML = `
+        <h3>Consejos prácticos</h3>
+        <ul>
+          ${usedTools.map(tk => `<li>${safe(toolTips[tk])}</li>`).join('')}
+          <li>Seguridad: corta tensión y agua antes de intervenir. Usa EPP (guantes/gafas) cuando proceda.</li>
+          <li>Mantenimiento: limpia y seca tus herramientas, guarda hojas y puntas protegidas.</li>
+        </ul>
+      `;
+      container.appendChild(tips);
+
+      // CTA final
+      const ctas = document.createElement('div');
+      ctas.className = 'cta';
+      const warn = initData ? '' : `<span class="warn" aria-live="polite">Aviso: initData no encontrado. Continuarás igual.</span>`;
+      ctas.innerHTML = `
+        <div class="status">${warn}</div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn ghost" id="retryBtn" aria-label="Repetir el reto">Reintentar</button>
+          <button class="btn" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        </div>
+      `;
+      container.appendChild(ctas);
+
+      // Avatar sutil y fondo
+      const avatar = document.createElement('img');
+      avatar.className = 'avatar';
+      avatar.src = 'https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png';
+      avatar.alt = '';
+      avatar.loading = 'lazy';
+
+      // Ensamblar
+      dom.scene.appendChild(avatar);
+      dom.scene.appendChild(container);
+
+      // Listeners
+      document.getElementById('rewardBtn').addEventListener('click', () => {
+        const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+        location.href = target;
+      });
+      document.getElementById('retryBtn').addEventListener('click', () => {
+        resetGame();
+      });
+    }
+
+    function feedbackBadge(correct){
+      if(correct === tasks.length) return '¡Perfecto! 🏆';
+      if(correct >= tasks.length - 1) return '¡Casi perfecto! 💪';
+      if(correct >= Math.ceil(tasks.length/2)) return 'Bien hecho 👏';
+      return 'Sigue practicando 🔁';
+    }
+
+    function calcScore(answers){
+      const correct = answers.filter(a => a.isCorrect).length;
+      return { correct };
+    }
+
+    function labelOfOption(taskId, optId){
+      const t = tasks.find(x => x.id === taskId);
+      return t?.options.find(o => o.id === optId)?.label || optId;
+    }
+
+    function collectUsedTools(answers){
+      const set = new Set();
+      answers.forEach(a => {
+        if(toolTips[a.correctId]) set.add(a.correctId);
+        if(toolTips[a.chosenId]) set.add(a.chosenId);
+      });
+      return Array.from(set).slice(0, 8); // mantener conciso
+    }
+
+    function safe(s){ return (s || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+    function resetGame(){
+      // Volver a modo gameplay sin scroll global
+      document.documentElement.classList.remove('results-mode');
+      document.body.classList.remove('results-mode');
+      document.body.style.overflow = 'hidden';
+
+      // Reconstruir escena gameplay
+      dom.scene.innerHTML = `
+        <header class="hud">
+          <img class="logo" alt="Kämpe" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png">
+          <div class="progress" aria-label="Progreso">
+            <div class="label" id="progressLabel">Progreso: 0/6</div>
+            <div class="bar" aria-hidden="true"><span id="barFill"></span></div>
+          </div>
+        </header>
+        <div class="ui-scale-wrap" id="uiScale">
+          <main class="card" id="card">
+            <div class="title">Match de Herramientas 🔧</div>
+            <div class="desc">Eres aprendiz en la brigada de mantenimiento. Identifica la herramienta básica más adecuada y segura en 6 mini tareas.</div>
+            <section class="content">
+              <div class="task" id="taskText">Tarea…</div>
+              <div class="options" id="options" role="listbox" aria-label="Opciones de herramienta"></div>
+            </section>
+          </main>
+        </div>
+        <div class="cta">
+          <div class="status" id="statusMsg">Elige una herramienta para continuar.</div>
+          <button class="btn" id="nextBtn" disabled aria-label="Continuar al siguiente paso">Continuar</button>
+        </div>
+      `;
+      // Reasignar referencias
+      dom.card = document.getElementById('card');
+      dom.taskText = document.getElementById('taskText');
+      dom.options = document.getElementById('options');
+      dom.nextBtn = document.getElementById('nextBtn');
+      dom.statusMsg = document.getElementById('statusMsg');
+      dom.progressLabel = document.getElementById('progressLabel');
+      dom.barFill = document.getElementById('barFill');
+      dom.uiScale = document.getElementById('uiScale');
+
+      // Reagregar listeners
+      dom.nextBtn.addEventListener('click', onNext);
+
+      // Estado
+      state = { step: 0, selected: null, answers: [] };
+      renderStep();
+    }
+
+    // -----------------------------
+    // Ajuste de UI: ensureFits()
+    // -----------------------------
+    function assertNoOverflow(){
+      const hasOverflow = document.querySelector('.scene').scrollHeight > document.querySelector('.scene').clientHeight;
+      return !hasOverflow;
+    }
+    function applyCompactMode(){
+      document.body.classList.add('compact');
+    }
+    function fitBoardToViewport(){
+      // Reducir altura de opciones de forma progresiva
+      let current = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--optionH'));
+      if(current > 78){
+        document.documentElement.style.setProperty('--optionH', (current - 8) + 'px');
+      }
+    }
+    function autoscaleUI(min=0.88){
+      const wrap = dom.uiScale || document.getElementById('uiScale');
+      if(!wrap) return;
+      let scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      if(scale > min){
+        scale = Math.max(min, scale - 0.04);
+        document.documentElement.style.setProperty('--ui-scale', scale.toFixed(2));
+      }
+    }
+    function ensureFits(iteration=0){
+      if(assertNoOverflow()) return;
+      if(iteration === 0){
+        applyCompactMode();
+      } else if(iteration === 1){
+        fitBoardToViewport();
+      } else if(iteration === 2){
+        autoscaleUI();
+      } else if(iteration < 6){
+        fitBoardToViewport();
+        autoscaleUI();
+      }
+      if(iteration < 6){
+        requestAnimationFrame(() => ensureFits(iteration+1));
+      }
+    }
+
+    // -----------------------------
+    // Eventos
+    // -----------------------------
+    dom.nextBtn.addEventListener('click', onNext);
+    dom.closeIntro.addEventListener('click', () => {
+      dom.introModal.style.display = 'none';
+      renderStep();
+    });
+    window.addEventListener('resize', () => ensureFits());
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => ensureFits(), 200);
+    });
+
+    // Iniciar (si se omite intro)
+    // renderStep() se llama al cerrar intro.
+
+    // -----------------------------
+    // Accesibilidad menor: teclado
+    // -----------------------------
+    function onKeyDown(e){
+      if(e.key === 'Enter' && !dom.nextBtn.disabled){
+        onNext();
+      }
+    }
+    document.addEventListener('keydown', onKeyDown, false);
+
+  </script>
+</body>
+</html>
