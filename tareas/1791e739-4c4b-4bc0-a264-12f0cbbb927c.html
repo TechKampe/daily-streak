@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Memoria PRL Eléctrica</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ===============================
+       Reset & Base
+    ================================*/
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
+    html, body { overflow: hidden; overscroll-behavior: none; background: #0f56ff; }
+    body.allow-results-scroll { overflow-y: auto; }
+    :root{
+      --bg1: #0f56ff;
+      --bg2: #1a74ff;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --txt: #f4f8ff;
+      --muted: #cfe0ff;
+      --accent: #00f0ff;
+      --accent2:#7cff47;
+      --danger:#ff4d6d;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --ui-scale: 1;
+      --cellH: 102px;  /* base cell height */
+      --gap: 10px;
+      --hudH: 68px;
+      --radius: 14px;
+    }
+
+    /* ===============================
+       Scene (100svh + fallbacks)
+    ================================*/
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100vh; /* fallback */
+      padding: calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 12px);
+      background:
+        radial-gradient(80% 60% at 50% 0%, rgba(255,255,255,0.16), transparent 60%),
+        radial-gradient(100% 100% at 100% 0%, rgba(0,255,255,0.10), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene { height: 100dvh; } }
+
+    .scene-inner{
+      width: 100%;
+      max-width: 480px;
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      position: relative;
+    }
+
+    /* Background avatar */
+    .avatar-bg{
+      position: absolute; inset: 0;
+      background: url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png') center bottom / 70% auto no-repeat;
+      opacity: .12; pointer-events: none; filter: saturate(140%);
+    }
+
+    /* ===============================
+       Header / HUD
+    ================================*/
+    .hud{
+      min-height: var(--hudH);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      color: var(--txt);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+    .logo{
+      display: flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--glass);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px) saturate(140%);
+    }
+    .logo img{ width: 30px; height: auto; display: block; }
+    .title-wrap{
+      display: flex; flex-direction: column; gap: 4px; min-width: 0;
+    }
+    .title{
+      font-weight: 800; color: #fff;
+      font-size: clamp(16px, 2.8vw, 20px);
+      line-height: 1.05;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .subtitle{
+      font-size: clamp(11px, 2.2vw, 12px);
+      color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .stats{
+      display: grid; grid-auto-flow: column; gap: 8px; align-items: center;
+      font-weight: 700;
+    }
+    .pill{
+      padding: 6px 10px; border-radius: 999px;
+      background: var(--glass-strong); color: #fff; font-size: 12px;
+      backdrop-filter: blur(8px) saturate(140%);
+      box-shadow: var(--shadow);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .pill.bad{ color:#fff; background: rgba(255,77,109,0.25); }
+    .pill.good{ color:#0f2612; background: rgba(124,255,71,0.9); }
+
+    /* ===============================
+       Board
+    ================================*/
+    .board-wrap{
+      position: relative;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px) saturate(160%);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .board{
+      width: 100%;
+      touch-action: none;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: var(--cellH);
+      gap: 10px;
+      align-content: center; justify-items: stretch;
+    }
+
+    .card{
+      position: relative;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform 0.42s cubic-bezier(.2,.7,.2,1), filter .2s;
+      border-radius: 12px;
+      will-change: transform;
+    }
+    .card:focus-visible{ outline: 3px solid #00f0ff; }
+    .card.disabled{ pointer-events: none; }
+    .card-inner{
+      position: absolute; inset: 0; border-radius: inherit;
+      display: grid; place-items: center; padding: 8px;
+      -webkit-user-select: none; user-select: none;
+      background: linear-gradient(180deg, rgba(0,0,0,0.22), rgba(255,255,255,0.08));
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 6px 16px rgba(0,0,0,0.30);
+      backface-visibility: hidden;
+      color: #fff; text-align: center;
+    }
+
+    .card .front{
+      background: linear-gradient(180deg, rgba(28,97,255,0.85), rgba(13,49,158,0.9));
+    }
+    .card .back{
+      transform: rotateY(180deg);
+      background: linear-gradient(180deg, rgba(42,44,48,0.85), rgba(20,22,26,0.9));
+    }
+
+    .card .label{
+      font-weight: 800;
+      font-size: clamp(12px, 3.6vw, 16px);
+      line-height: 1.05;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    .card.flipped{ transform: rotateY(180deg); }
+    .card.matched{
+      animation: pulseMatch 800ms ease-in-out;
+      box-shadow: 0 0 0 2px rgba(124,255,71,0.8), 0 8px 20px rgba(124,255,71,0.35);
+    }
+    @keyframes pulseMatch {
+      0% { filter: drop-shadow(0 0 0 rgba(124,255,71,0)); }
+      50% { filter: drop-shadow(0 0 10px rgba(124,255,71,0.8)); }
+      100% { filter: drop-shadow(0 0 0 rgba(124,255,71,0)); }
+    }
+
+    /* ===============================
+       Footer / Control bar
+    ================================*/
+    .footer{
+      display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+    }
+    .hint{
+      font-size: clamp(11px, 2.4vw, 13px); color: var(--muted);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn{
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 44px; padding: 10px 16px; border-radius: 12px; border: none;
+      color: #06111f; font-weight: 800; cursor: pointer;
+      background: linear-gradient(180deg, #8eff6f, #58d636);
+      box-shadow: 0 8px 18px rgba(124,255,71,0.3);
+    }
+    .btn.secondary{
+      background: linear-gradient(180deg, #a7c7ff, #6ea0ff); color: #06111f;
+      box-shadow: 0 8px 18px rgba(0,240,255,0.22);
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    /* ===============================
+       Modals (Intro / Results)
+    ================================*/
+    .modal{
+      position: absolute; inset: auto 12px 12px 12px; top: 12px;
+      background: rgba(6, 16, 35, 0.7);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--txt);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px) saturate(160%);
+      display: grid; gap: 10px;
+      max-height: 90svh; overflow-y: auto;
+      z-index: 20;
+    }
+    .modal.hidden{ display: none; }
+    .modal h2{
+      margin: 0; font-size: clamp(16px, 3.8vw, 20px); font-weight: 800;
+    }
+    .modal p{
+      margin: 0; color: var(--muted); font-size: clamp(12px, 3.2vw, 14px);
+      display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .modal .actions{ display: grid; grid-auto-flow: column; gap: 10px; }
+    .modal .badge{
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--glass); padding: 8px 10px; border-radius: 12px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .pair-list{ display: grid; gap: 10px; }
+    .pair-item{
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px; padding: 10px; display: grid; gap: 6px;
+    }
+    .pair-item .k{
+      font-weight: 800; color: #fff; font-size: 14px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .pair-item .e{
+      color: var(--muted); font-size: 12px;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .pair-item .state{
+      font-size: 12px; font-weight: 800;
+      color: #102612; background: rgba(124,255,71,0.9);
+      padding: 4px 8px; border-radius: 999px; width: max-content;
+    }
+    .pair-item.missed .state{ background: rgba(255,77,109,0.85); color: #fff; }
+
+    /* ===============================
+       Compact mode
+    ================================*/
+    .compact :root{}
+    body.compact .title{ font-size: clamp(14px, 2.4vw, 18px); }
+    body.compact .subtitle{ display: none; }
+    body.compact .hud{ min-height: 56px; }
+    body.compact { --cellH: 94px; --gap: 8px; }
+    body.compact .board{ gap: 8px; }
+    body.compact .pill.secondaryStat{ display: none; }
+
+    /* Accessibility focus */
+    .btn:focus-visible{ outline: 3px solid #00f0ff; outline-offset: 2px; }
+  </style>
+</head>
+<body class="no-scroll">
+  <div class="scene" id="scene">
+    <div class="avatar-bg" aria-hidden="true"></div>
+    <div class="scene-inner" id="sceneInner">
+      <!-- HUD -->
+      <header class="hud" aria-label="Marcador y título">
+        <div class="logo" aria-hidden="true">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        </div>
+        <div class="title-wrap">
+          <div class="title">Memoria PRL Eléctrica ⚡️</div>
+          <div class="subtitle">Antes de abrir el cuadro: repasa seguridad y herramientas.</div>
+        </div>
+        <div class="stats" aria-live="polite" aria-atomic="true">
+          <div class="pill" id="movesPill" title="Intentos restantes">Intentos: <span id="attemptsLeft">12</span></div>
+          <div class="pill secondaryStat" title="Parejas encontradas">Pairs: <span id="pairsFound">0</span>/4</div>
+        </div>
+      </header>
+
+      <!-- Board -->
+      <main class="board-wrap">
+        <section class="board" id="board" role="grid" aria-label="Tablero de 8 cartas de memoria"></section>
+      </main>
+
+      <!-- Footer / Hint + Reset -->
+      <footer class="footer">
+        <div class="hint">Destapa dos cartas. Si fallas se ocultan tras 1 s.</div>
+        <button class="btn secondary" id="resetBtn" type="button" aria-label="Reiniciar partida">Reiniciar</button>
+      </footer>
+
+      <!-- Intro Modal -->
+      <div class="modal" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+        <h2 id="introTitle">Briefing: primer servicio como ayudante</h2>
+        <p id="introDesc">Repasa vocabulario clave de PRL y herramientas. Mecánica: 8 cartas, 12 intentos. Destapa 2; si coinciden, se fijan.</p>
+        <div class="badge">Objetivo: afianzar término–función para intervenir con criterio.</div>
+        <div class="actions">
+          <button class="btn" id="startBtn" type="button" aria-label="Empezar el reto">Empezar</button>
+          <button class="btn secondary" id="limitInfo" type="button" aria-label="Información de límite de intentos" disabled>Límite: 12</button>
+        </div>
+      </div>
+
+      <!-- Results Modal -->
+      <div class="modal hidden" id="resultsModal" role="dialog" aria-modal="true" aria-labelledby="resultsTitle">
+        <h2 id="resultsTitle">Resumen del reto</h2>
+        <div class="badge" id="summaryBadge">Parejas: 0/4 • Intentos usados: 0/12</div>
+        <div class="pair-list" id="pairList">
+          <!-- Filled by JS with explanations -->
+        </div>
+        <div class="badge" id="memoTip">Tip: usa la regla palabra–acción: EPI→Protégete, Multímetro→Mide, Diferencial→Detecta fuga, LOTO→Bloquea.</div>
+        <div class="actions">
+          <button class="btn secondary" id="playAgainBtn" type="button" aria-label="Repetir el reto">Repetir</button>
+          <button class="btn" id="rewardBtn" type="button" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        </div>
+        <div id="initWarn" style="font-size:12px;color:#ffd7df;opacity:0.9; margin-top:2px; display:none;">Nota: no se recibió initData; aún puedes continuar.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================
+       Kämpe Daily: Memoria PRL Eléctrica ⚡️
+       - Memory textual / parejas semánticas
+       - 8 cartas (4 parejas), 12 intentos
+       - Flip animation + highlight on match
+       - UX: no scroll en gameplay, autoscale to fit
+       ========================================================= */
+
+    // -----------------------------
+    // Global state
+    // -----------------------------
+    const MAX_MOVES = 12;
+    const scene = document.getElementById('scene');
+    const sceneInner = document.getElementById('sceneInner');
+    const boardEl = document.getElementById('board');
+    const introModal = document.getElementById('introModal');
+    const resultsModal = document.getElementById('resultsModal');
+    const attemptsLeftEl = document.getElementById('attemptsLeft');
+    const pairsFoundEl = document.getElementById('pairsFound');
+    const summaryBadge = document.getElementById('summaryBadge');
+    const pairListEl = document.getElementById('pairList');
+    const memoTipEl = document.getElementById('memoTip');
+    const initWarnEl = document.getElementById('initWarn');
+
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const rewardBtn = document.getElementById('rewardBtn');
+
+    let initData = "";
+    let deck = [];
+    let firstCard = null;
+    let secondCard = null;
+    let lockBoard = false;
+    let matchedPairs = new Set();
+    let revealedCount = 0;
+    let movesUsed = 0;
+
+    // -----------------------------
+    // Content (pairs + explanations)
+    // -----------------------------
+    const PAIRS = [
+      {
+        id: 'epi',
+        a: 'EPI',
+        b: 'Protección personal',
+        explanation: 'EPI: Equipo de Protección Individual. Protege al técnico frente a riesgo eléctrico. Ejemplo: usa guantes dieléctricos y gafas al abrir el cuadro.'
+      },
+      {
+        id: 'mult',
+        a: 'Multímetro',
+        b: 'Medir voltaje',
+        explanation: 'Multímetro: instrumento para medir tensión y continuidad. Ejemplo: verifica ausencia de tensión antes de manipular un circuito.'
+      },
+      {
+        id: 'dif',
+        a: 'Diferencial',
+        b: 'Fugas a tierra',
+        explanation: 'Interruptor diferencial: detecta corrientes a tierra y dispara. Ejemplo: si hay derivación, corta para evitar shock eléctrico.'
+      },
+      {
+        id: 'loto',
+        a: 'LOTO',
+        b: 'Bloqueo y etiquetado',
+        explanation: 'LOTO: Lockout/Tagout. Aísla y etiqueta para impedir energización. Ejemplo: coloca candado y tarjeta antes de intervenir.'
+      }
+    ];
+
+    // Utility: clamp text lengths
+    function clampText(str, max = 180) {
+      if (!str) return '';
+      const s = String(str).trim();
+      if (s.length <= max) return s;
+      return s.slice(0, max - 1).trimEnd() + '…';
+    }
+    function clampLabel(str, max = 48) {
+      return clampText(str, max);
+    }
+
+    // -----------------------------
+    // Init URL param (initData)
+    // -----------------------------
+    (function readInitData(){
+      const params = new URLSearchParams(location.search);
+      initData = params.get('initData') || "";
+      rewardBtn.addEventListener('click', () => {
+        const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+        window.location.href = target;
+      });
+      if (!initData) initWarnEl.style.display = 'block';
+    })();
+
+    // -----------------------------
+    // Deck creation & rendering
+    // -----------------------------
+    function createDeck() {
+      const cards = [];
+      for (const p of PAIRS) {
+        cards.push({ pairId: p.id, label: clampLabel(p.a), type: 'a' });
+        cards.push({ pairId: p.id, label: clampLabel(p.b), type: 'b' });
+      }
+      // Shuffle (Fisher-Yates)
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+      return cards;
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      deck.forEach((c, idx) => {
+        const card = document.createElement('button');
+        card.className = 'card';
+        card.setAttribute('role', 'gridcell');
+        card.setAttribute('aria-label', 'Carta boca abajo');
+        card.setAttribute('tabindex', '0');
+        card.dataset.index = String(idx);
+        card.dataset.pair = c.pairId;
+        card.dataset.type = c.type;
+        // fronts/backs
+        const front = document.createElement('div');
+        front.className = 'card-inner front';
+        front.innerHTML = `<div class="label">Kämpe</div>`;
+        const back = document.createElement('div');
+        back.className = 'card-inner back';
+        back.innerHTML = `<div class="label">${c.label}</div>`;
+        card.appendChild(front);
+        card.appendChild(back);
+        card.addEventListener('click', onCardClick, { passive: true });
+        boardEl.appendChild(card);
+      });
+      ensureFits(); // After render, ensure it fits the viewport
+    }
+
+    // -----------------------------
+    // Game control
+    // -----------------------------
+    function resetGame(full = true) {
+      lockBoard = false;
+      firstCard = null;
+      secondCard = null;
+      matchedPairs.clear();
+      revealedCount = 0;
+      movesUsed = 0;
+      attemptsLeftEl.textContent = String(MAX_MOVES);
+      pairsFoundEl.textContent = '0';
+
+      if (full) deck = createDeck();
+      renderBoard();
+      hideResults();
+      showIntro();
+    }
+
+    function startGame() {
+      hideIntro();
+      ensureFits();
+    }
+
+    function onCardClick(e) {
+      if (lockBoard) return;
+      const card = e.currentTarget;
+      if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+      flipCard(card);
+
+      if (!firstCard) {
+        firstCard = card;
+        return;
+      }
+      secondCard = card;
+      lockBoard = true;
+
+      // One move spent
+      movesUsed++;
+      const left = Math.max(0, MAX_MOVES - movesUsed);
+      attemptsLeftEl.textContent = String(left);
+
+      const isMatch = (firstCard.dataset.pair === secondCard.dataset.pair) && (firstCard !== secondCard);
+      if (isMatch) {
+        setTimeout(() => {
+          matchCards(firstCard, secondCard);
+          postTurnCleanup(true);
+        }, 380); // allow flip animation almost finish
+      } else {
+        setTimeout(() => {
+          unflipCards(firstCard, secondCard);
+          postTurnCleanup(false);
+        }, 1000);
+      }
+    }
+
+    function flipCard(card) {
+      card.classList.add('flipped');
+      card.setAttribute('aria-label', 'Carta boca arriba: ' + (deck[Number(card.dataset.index)].label || ''));
+    }
+
+    function unflipCards(a, b) {
+      a.classList.remove('flipped');
+      b.classList.remove('flipped');
+      a.setAttribute('aria-label', 'Carta boca abajo');
+      b.setAttribute('aria-label', 'Carta boca abajo');
+    }
+
+    function matchCards(a, b) {
+      a.classList.add('matched', 'disabled');
+      b.classList.add('matched', 'disabled');
+      a.setAttribute('aria-label', 'Pareja encontrada');
+      b.setAttribute('aria-label', 'Pareja encontrada');
+      matchedPairs.add(a.dataset.pair);
+      pairsFoundEl.textContent = String(matchedPairs.size);
+    }
+
+    function postTurnCleanup(wasMatch) {
+      revealedCount = wasMatch ? revealedCount + 2 : revealedCount;
+      firstCard = null;
+      secondCard = null;
+      lockBoard = false;
+
+      const allFound = matchedPairs.size === PAIRS.length;
+      const outOfMoves = movesUsed >= MAX_MOVES;
+
+      if (allFound || outOfMoves) {
+        setTimeout(showResults, 300);
+      }
+    }
+
+    // -----------------------------
+    // Modals visibility
+    // -----------------------------
+    function showIntro() {
+      introModal.classList.remove('hidden');
+      resultsModal.classList.add('hidden');
+      document.body.classList.remove('allow-results-scroll');
+    }
+    function hideIntro() {
+      introModal.classList.add('hidden');
+    }
+    function showResults() {
+      buildResults();
+      resultsModal.classList.remove('hidden');
+      document.body.classList.add('allow-results-scroll'); // enable scroll only for results reading
+      ensureFits(); // Re-evaluate layout with modal open
+    }
+    function hideResults() {
+      resultsModal.classList.add('hidden');
+      document.body.classList.remove('allow-results-scroll');
+    }
+
+    // -----------------------------
+    // Results building
+    // -----------------------------
+    function buildResults() {
+      const pairsFound = matchedPairs.size;
+      summaryBadge.textContent = `Parejas: ${pairsFound}/4 • Intentos usados: ${movesUsed}/${MAX_MOVES}`;
+
+      // Explanations list
+      pairListEl.innerHTML = '';
+      PAIRS.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'pair-item' + (matchedPairs.has(p.id) ? '' : ' missed');
+        const state = matchedPairs.has(p.id) ? 'Encontrada' : 'No encontrada';
+        item.innerHTML = `
+          <div class="k">${clampLabel(p.a)} ↔ ${clampLabel(p.b)} <span class="state">${state}</span></div>
+          <div class="e">${clampText(p.explanation, 180)}</div>
+        `;
+        pairListEl.appendChild(item);
+      });
+
+      memoTipEl.textContent = clampText('Tip: usa la regla palabra–acción: EPI→Protégete, Multímetro→Mide, Diferencial→Detecta fuga, LOTO→Bloquea. Repite en voz alta antes de empezar.', 180);
+    }
+
+    // -----------------------------
+    // Ensure Fits Pipeline
+    // 1) assertNoOverflow
+    // 2) applyCompactMode
+    // 3) fitBoardToViewport
+    // 4) autoscaleUI (floor 0.88)
+    // -----------------------------
+    function assertNoOverflow() {
+      return scene.scrollHeight <= scene.clientHeight + 1; // +1 for rounding
+    }
+
+    function applyCompactMode() {
+      document.body.classList.add('compact');
+    }
+
+    function fitBoardToViewport() {
+      // Reduce board cell height stepwise if still overflowing
+      const current = parseInt(getComputedStyle(document.body).getPropertyValue('--cellH')) || 102;
+      const next = Math.max(80, current - 10);
+      document.body.style.setProperty('--cellH', next + 'px');
+    }
+
+    function autoscaleUI() {
+      // Compute scale to fit; do not go below 0.88
+      let scale = 1;
+      const maxShrink = 0.88;
+      let tries = 0;
+      const maxTries = 6;
+      while (!assertNoOverflow() && tries < maxTries) {
+        scale = Math.max(maxShrink, scale - 0.03);
+        sceneInner.style.setProperty('--ui-scale', scale.toString());
+        tries++;
+        if (scale <= maxShrink) break;
+      }
+    }
+
+    function resetFitParams() {
+      document.body.classList.remove('compact');
+      document.body.style.setProperty('--cellH', '102px');
+      sceneInner.style.setProperty('--ui-scale', '1');
+    }
+
+    function ensureFits() {
+      // Reset, then check & progressively adapt
+      resetFitParams();
+      if (assertNoOverflow()) return;
+
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+
+      // Try a couple of steps reducing cellH
+      for (let i = 0; i < 3; i++) {
+        fitBoardToViewport();
+        if (assertNoOverflow()) return;
+      }
+
+      // Finally autoscale
+      autoscaleUI();
+    }
+
+    // -----------------------------
+    // Accessibility helpers (keyboard flip)
+    // -----------------------------
+    boardEl.addEventListener('keydown', (e) => {
+      const target = e.target;
+      if (!(target && target.classList && target.classList.contains('card'))) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        target.click();
+      }
+    });
+
+    // -----------------------------
+    // Event Bindings
+    // -----------------------------
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', () => resetGame(false));
+    playAgainBtn.addEventListener('click', () => {
+      hideResults();
+      resetGame();
+      setTimeout(() => hideIntro(), 100); // start right away
+    });
+
+    // Refit on resize/orientation
+    window.addEventListener('resize', () => ensureFits());
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 150));
+
+    // -----------------------------
+    // Init
+    // -----------------------------
+    (function init(){
+      deck = createDeck();
+      renderBoard();
+      showIntro();
+      ensureFits();
+    })();
+  </script>
+</body>
+</html>
