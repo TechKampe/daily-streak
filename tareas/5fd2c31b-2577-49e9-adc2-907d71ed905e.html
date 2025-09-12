@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | Clasiflash: Seguridad vs Herramientas vs Cliente ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* RESET + BASE */
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; overscroll-behavior: none; }
+    body { font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #0f4fd6; color: #eef3ff; }
+    img { max-width: 100%; display: block; }
+    button { font-family: inherit; }
+
+    :root{
+      --bg-fn: radial-gradient(1200px 800px at 70% 0%, #3aa1ff33 0%, #0f4fd6 35%, #0b2b7d 100%);
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --glass-border: rgba(255,255,255,0.25);
+      --ok: #30e88f;
+      --ko: #ff6b6b;
+      --warn: #ffd166;
+      --sec: #00e1ff;
+      --btn-sec: #00c2ff;
+      --btn-her: #ffb703;
+      --btn-cli: #a259ff;
+      --shadow: 0 8px 28px rgba(0,0,0,.35);
+      --ui-scale: 1;
+      --hud-h: 60px;
+      --item-h: 160px;
+      --btn-h: 56px;
+      --gap: 12px;
+      --radius: 16px;
+      --title-size: clamp(18px, 2.4vw, 22px);
+      --item-size: clamp(20px, 3.5vw, 26px);
+      --chip-size: clamp(13px, 2.5vw, 14px);
+      --progress-h: 8px;
+    }
+
+    /* Scene sizing: 100svh with fallbacks */
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      padding: calc(env(safe-area-inset-top) + 8px) 10px calc(env(safe-area-inset-bottom) + 10px);
+      display: grid;
+      grid-template-rows: var(--hud-h) 1fr auto;
+      grid-template-areas:
+        "hud"
+        "stage"
+        "ctas";
+      gap: var(--gap);
+      background: var(--bg-fn);
+      background-attachment: fixed;
+      isolation: isolate;
+      touch-action: none;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+    }
+    @supports (height: 100svh) { .scene{ height: 100svh; } }
+    @supports not (height: 100svh) { @supports (height: 100dvh) { .scene{ height: 100dvh; } } }
+
+    /* BACKDROP AVATAR */
+    .avatar-deco{
+      position: absolute; inset: 0; pointer-events: none; opacity: .25;
+      background: url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png') no-repeat right -10px bottom -20px / 40%;
+      filter: saturate(1.2) drop-shadow(0 12px 24px rgba(0,0,0,.25));
+      z-index: 0;
+    }
+
+    /* HUD */
+    .hud { grid-area: hud; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; }
+    .logo { height: 34px; width: auto; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
+    .title {
+      font-weight: 800; font-size: var(--title-size); letter-spacing: .2px; line-height: 1.15;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      text-shadow: 0 2px 12px rgba(0,0,0,.35);
+    }
+    .progress {
+      display: grid; align-items: center; gap: 6px; min-width: 90px;
+      justify-items: end;
+    }
+    .progress-text{ font-weight: 700; font-size: 12px; opacity: .9; }
+    .bar { width: 120px; height: var(--progress-h); background: rgba(255,255,255,.18); border-radius: 999px; overflow: hidden; }
+    .bar > i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #00f5ff, #1aff84); box-shadow: 0 0 18px #00f5ff66 inset; transition: width .25s ease; }
+
+    /* STAGE */
+    .stage { grid-area: stage; display: grid; place-items: center; position: relative; z-index: 1; }
+    .item-card {
+      width: min(560px, 92vw);
+      min-height: var(--item-h);
+      padding: 16px 18px;
+      border-radius: calc(var(--radius) + 2px);
+      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.10));
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px) saturate(1.1);
+      -webkit-backdrop-filter: blur(12px) saturate(1.1);
+      position: relative;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      text-align: center;
+    }
+    .item-label {
+      font-size: var(--item-size); font-weight: 800; letter-spacing: .3px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      line-height: 1.2;
+    }
+    .ghost-drop {
+      position: fixed; left: 0; top: 0; pointer-events: none; z-index: 9999;
+      padding: 10px 14px; border-radius: 14px; background: rgba(255,255,255,.16);
+      border: 1px solid var(--glass-border); backdrop-filter: blur(10px) saturate(1.2);
+      -webkit-backdrop-filter: blur(10px) saturate(1.2); box-shadow: var(--shadow);
+      transform: translate(var(--x), var(--y)) scale(1);
+      transition: transform .45s cubic-bezier(.2,.9,.25,1.2), opacity .3s ease;
+      will-change: transform;
+    }
+    .ghost-drop.drop { transform: translate(var(--tx), var(--ty)) scale(.85); }
+    .btn-ping::after{
+      content:""; position:absolute; inset:-2px; border-radius: 14px; pointer-events:none;
+      border: 2px solid currentColor; opacity: 0; transform: scale(.8);
+    }
+    .btn-ping.pulse::after{ animation: ping .45s ease forwards; }
+    @keyframes ping { 0%{opacity:.35; transform:scale(1)} 100%{opacity:0; transform:scale(1.25)} }
+
+    /* CTAS */
+    .ctas { grid-area: ctas; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; z-index: 2; }
+    .btn {
+      position: relative;
+      height: var(--btn-h);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.25);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.08));
+      color: #fff;
+      font-weight: 800; font-size: clamp(14px, 3.5vw, 16px);
+      letter-spacing: .3px;
+      display: inline-grid; place-items: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,.25);
+      user-select: none; cursor: pointer;
+      transition: transform .08s ease, box-shadow .12s ease, filter .12s ease;
+      outline: none;
+    }
+    .btn:active { transform: translateY(1px) scale(.99); filter: brightness(1.05); }
+    .btn-sec { background: linear-gradient(180deg, #00e1ff, #0094ff); }
+    .btn-her { background: linear-gradient(180deg, #ffd166, #ff9f1a); }
+    .btn-cli { background: linear-gradient(180deg, #a06bff, #7b2cff); }
+    .btn > span {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: center; padding: 0 8px;
+    }
+
+    /* MODALS */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 9990; background: linear-gradient(180deg, rgba(0,0,0,.5), rgba(0,0,0,.35));
+      display: grid; place-items: center;
+    }
+    .modal {
+      width: min(560px, 92vw);
+      max-height: 90svh;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px) saturate(1.1);
+      -webkit-backdrop-filter: blur(12px) saturate(1.1);
+      padding: 18px;
+      overflow-y: auto;
+    }
+    .modal h2 { margin: 0 0 8px; font-size: clamp(18px, 4.5vw, 22px); }
+    .modal p { margin: 6px 0; font-size: clamp(13px, 3.6vw, 14px); opacity: .95; }
+    .modal .cta-row{ margin-top: 12px; display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .modal .start-btn{ height: 52px; border-radius: 14px; border: none; background: linear-gradient(180deg, #43ffb0, #00c26e); color: #052; font-weight: 900; letter-spacing:.3px; }
+    .tip{
+      font-size: 12px; opacity: .9; display: grid; gap: 6px; padding: 10px; border-radius: 12px;
+      background: rgba(0,0,0,.15); border: 1px solid rgba(255,255,255,.18);
+    }
+    .mini-chips{ display: flex; gap: 6px; flex-wrap: wrap; }
+    .mini-chip{ font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.12); }
+
+    /* RESULTS */
+    .results {
+      position: absolute; inset: 0; z-index: 999;
+      display: grid; grid-template-rows: auto 1fr auto; gap: 10px;
+      padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 14px);
+      background: linear-gradient(180deg, rgba(2,22,90,.8), rgba(1,10,40,.8));
+      backdrop-filter: blur(10px) saturate(1.1);
+      -webkit-backdrop-filter: blur(10px) saturate(1.1);
+      overflow: hidden;
+    }
+    .results header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; }
+    .results h3 { margin: 0; font-size: clamp(18px, 4.5vw, 22px); }
+    .score-badge{ padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); font-weight: 800; }
+    .res-scroll { overflow-y: auto; padding-right: 6px; }
+    .res-list { display: grid; gap: 8px; margin-top: 6px; }
+    .res-item{
+      border-radius: 14px; padding: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.22);
+      display: grid; gap: 4px;
+    }
+    .res-head{ display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
+    .res-title{ font-weight: 800; font-size: clamp(14px, 3.8vw, 16px); display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .tag { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.3); }
+    .ok { background: linear-gradient(180deg, #19ffb6, #0ebf86); color: #052; }
+    .ko { background: linear-gradient(180deg, #ff9b9b, #e24e4e); }
+    .res-sub{ font-size: 12px; opacity: .95; display:flex; gap:6px; flex-wrap: wrap; }
+    .pill{ padding: 2px 8px; border-radius: 999px; border:1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.12); }
+    .explain{ font-size: 12px; opacity: .95; }
+
+    .orderBox, .adviceBox{
+      margin-top: 10px; padding: 10px; border-radius: 14px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.22);
+    }
+    .orderList{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+    .orderItem{ font-size: 12px; padding: 4px 8px; border-radius: 10px; background: rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.2);}
+    .res-ctas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-retry{ height: 50px; border-radius: 14px; border: 1px solid rgba(255,255,255,.25); background: linear-gradient(180deg, #c5d8ff, #6ea4ff); color: #041a4d; font-weight: 900; }
+    .btn-claim{ height: 50px; border-radius: 14px; border: none; background: linear-gradient(180deg, #ffe066, #ff6b6b); color: #3a120c; font-weight: 900; }
+    .initdata-warn{ font-size: 11px; opacity: .9; text-align: center; margin-top: 4px; color: #ffe9a6; }
+
+    /* COMPACT MODE */
+    .compact .scene { --hud-h: 52px; --item-h: 140px; --btn-h: 50px; --gap: 8px; --radius: 14px; --title-size: clamp(16px, 2.1vw, 20px); --item-size: clamp(18px, 3.1vw, 22px); }
+    .compact .bar { width: 96px; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite" aria-atomic="true">
+    <div class="avatar-deco" aria-hidden="true"></div>
+
+    <div class="hud">
+      <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+      <div class="title" id="title" aria-label="Título del reto">
+        Clasiflash: Seguridad vs Herramientas vs Cliente ⚡
+      </div>
+      <div class="progress" aria-label="Progreso">
+        <div class="progress-text"><span id="count">1/9</span></div>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="9" aria-valuenow="0"><i id="barFill"></i></div>
+      </div>
+    </div>
+
+    <div class="stage" id="stage" role="region" aria-label="Área de juego">
+      <div class="item-card" id="itemCard" role="group" aria-roledescription="ítem a clasificar">
+        <div class="item-label" id="itemLabel"></div>
+      </div>
+    </div>
+
+    <div class="ctas" id="ctas">
+      <button class="btn btn-sec btn-ping" data-cat="Seguridad" aria-label="Elegir Seguridad"><span>Seguridad</span></button>
+      <button class="btn btn-her btn-ping" data-cat="Herramientas" aria-label="Elegir Herramientas"><span>Herramientas</span></button>
+      <button class="btn btn-cli btn-ping" data-cat="Cliente" aria-label="Elegir Cliente"><span>Cliente</span></button>
+    </div>
+  </div>
+
+  <!-- Intro modal -->
+  <div class="modal-backdrop" id="intro">
+    <div class="modal" role="dialog" aria-labelledby="introTitle" aria-modal="true">
+      <h2 id="introTitle">Clasiflash: Seguridad vs Herramientas vs Cliente ⚡</h2>
+      <p>Te llaman para cambiar un enchufe. Distingue qué es seguridad, qué es herramienta y qué es trato con el cliente para organizar la intervención.</p>
+      <div class="tip">
+        <div class="mini-chips">
+          <span class="mini-chip">Juego rápido: 9 ítems</span>
+          <span class="mini-chip">Toca la categoría y avanza</span>
+        </div>
+        <p>Consejo: objeto que usas = Herramienta; proteger o verificar = Seguridad; hablar/organizar con la persona = Cliente.</p>
+      </div>
+      <div class="cta-row">
+        <button class="start-btn" id="startBtn">Empezar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Data and state
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || "";
+
+    const categories = ["Seguridad", "Herramientas", "Cliente"];
+
+    // Items (<=48 chars labels)
+    const items = [
+      { id: "presentarte", text: "Presentarte y explicar el trabajo", correct: "Cliente",
+        explain: "Empieza con una presentación breve y explica qué harás." },
+      { id: "avisar_corte", text: "Avisar al cliente del corte de luz", correct: "Cliente",
+        explain: "Gestiona expectativas y permisos antes de cortar la energía." },
+      { id: "retirar_mascotas", text: "Pedir retirar mascotas de la zona", correct: "Cliente",
+        explain: "Orden y seguridad: evita distracciones y riesgos en la zona." },
+      { id: "senalizar_cuadro", text: "Señalizar el cuadro general", correct: "Seguridad",
+        explain: "Evita reenergización accidental durante el trabajo." },
+      { id: "probar_tension", text: "Probar tensión antes de tocar", correct: "Seguridad",
+        explain: "Verifica “ausencia de tensión” antes de intervenir." },
+      { id: "guantes", text: "Guantes dieléctricos", correct: "Seguridad",
+        explain: "EPI que aísla frente a contactos eléctricos." },
+      { id: "buscapolos", text: "Buscapolos", correct: "Herramientas",
+        explain: "Herramienta de comprobación rápida para identificar fase." },
+      { id: "destornillador", text: "Destornillador aislado", correct: "Herramientas",
+        explain: "Herramienta básica con aislamiento para trabajos eléctricos." },
+      { id: "cinta", text: "Cinta aislante", correct: "Herramientas",
+        explain: "Material de acabado/aislamiento para conductores y empalmes." }
+    ];
+
+    // Recommended order (when it applies)
+    const recommendedOrder = [
+      "presentarte",
+      "avisar_corte",
+      "retirar_mascotas",
+      "senalizar_cuadro",
+      "probar_tension",
+      "guantes",
+      "buscapolos",
+      "destornillador",
+      "cinta"
+    ];
+
+    let index = 0;
+    const answers = []; // {id, text, picked, correct, isCorrect}
+
+    // DOM refs
+    const scene = document.getElementById('scene');
+    const itemCard = document.getElementById('itemCard');
+    const itemLabel = document.getElementById('itemLabel');
+    const count = document.getElementById('count');
+    const barFill = document.getElementById('barFill');
+    const ctas = document.getElementById('ctas');
+    const intro = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+
+    // Prevent global scroll during gameplay; enable only on results later.
+    function lockScrollGameplay(){
+      document.body.classList.remove('results-on');
+      document.body.style.overflow = 'hidden';
+      scene.style.overflow = 'hidden';
+    }
+    function enableScrollResults(){
+      document.body.classList.add('results-on');
+      document.body.style.overflowY = 'auto';
+      scene.style.overflow = 'hidden';
+    }
+
+    // Fit helpers
+    function assertNoOverflow() {
+      return scene.scrollHeight <= scene.clientHeight;
+    }
+    function applyCompactMode(on=true){
+      document.body.classList.toggle('compact', on);
+    }
+    function fitBoardToViewport() {
+      // Reduce some CSS variables slightly to win vertical space
+      document.documentElement.style.setProperty('--btn-h', '50px');
+      document.documentElement.style.setProperty('--item-h', '140px');
+      document.documentElement.style.setProperty('--hud-h', '52px');
+    }
+    function autoscaleUI() {
+      // As a last resort, scale down to a minimum of 0.88
+      const currentScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      const next = Math.max(0.88, currentScale - 0.06);
+      document.documentElement.style.setProperty('--ui-scale', String(next));
+    }
+    function ensureFits() {
+      // Reset first
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      applyCompactMode(false);
+      document.documentElement.style.removeProperty('--btn-h');
+      document.documentElement.style.removeProperty('--item-h');
+      document.documentElement.style.removeProperty('--hud-h');
+
+      if (assertNoOverflow()) return;
+
+      applyCompactMode(true);
+      if (assertNoOverflow()) return;
+
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+
+      autoscaleUI();
+      if (assertNoOverflow()) return;
+      // Try one more small scale step if still not fitting
+      autoscaleUI();
+    }
+
+    // Gameplay render
+    function renderItem() {
+      const it = items[index];
+      itemLabel.textContent = it.text;
+      count.textContent = `${index+1}/${items.length}`;
+      const pct = ((index) / items.length) * 100;
+      barFill.style.width = `${pct}%`;
+      barFill.setAttribute('aria-valuenow', String(index));
+
+      ensureFits();
+    }
+
+    function clampTextToMax(el, maxChars=48){
+      const txt = el.textContent.trim();
+      if (txt.length > maxChars) {
+        el.textContent = txt.slice(0, maxChars-1) + '…';
+      }
+    }
+
+    // Microinteraction: drop animation to target button
+    function animateDrop(toBtn, labelText, onDone) {
+      const src = itemCard.getBoundingClientRect();
+      const dst = toBtn.getBoundingClientRect();
+      const x = src.left + src.width/2;
+      const y = src.top + src.height/2;
+      const tx = dst.left + dst.width/2;
+      const ty = dst.top + dst.height/2;
+
+      const ghost = document.createElement('div');
+      ghost.className = 'ghost-drop';
+      ghost.style.setProperty('--x', `${x}px`);
+      ghost.style.setProperty('--y', `${y}px`);
+      ghost.style.setProperty('--tx', `${tx}px`);
+      ghost.style.setProperty('--ty', `${ty}px`);
+      ghost.textContent = labelText;
+      document.body.appendChild(ghost);
+
+      // Button pulse
+      toBtn.classList.add('pulse');
+
+      requestAnimationFrame(()=>{
+        ghost.classList.add('drop');
+      });
+
+      setTimeout(()=>{
+        toBtn.classList.remove('pulse');
+        ghost.style.opacity = '0';
+        setTimeout(()=>{
+          ghost.remove();
+          onDone && onDone();
+        }, 150);
+      }, 480);
+    }
+
+    // Handle answer selection
+    function handlePick(cat, btnEl){
+      const it = items[index];
+      const isCorrect = cat === it.correct;
+      answers.push({ id: it.id, text: it.text, picked: cat, correct: it.correct, isCorrect, explain: it.explain });
+      animateDrop(btnEl, it.text, ()=>{
+        index++;
+        if (index < items.length) {
+          renderItem();
+        } else {
+          showResults();
+        }
+      });
+    }
+
+    // Wire buttons
+    ctas.addEventListener('click', (ev)=>{
+      const btn = ev.target.closest('button[data-cat]');
+      if (!btn) return;
+      handlePick(btn.dataset.cat, btn);
+    });
+
+    // Intro start
+    startBtn.addEventListener('click', ()=>{
+      intro.remove();
+      renderItem();
+      ensureFits();
+      lockScrollGameplay();
+    });
+
+    // Initial label content for layout pre-measure
+    itemLabel.textContent = "—";
+    clampTextToMax(itemLabel);
+
+    // Results
+    function showResults(){
+      // Fill the last progress to 100%
+      barFill.style.width = '100%';
+      barFill.setAttribute('aria-valuenow', String(items.length));
+      count.textContent = `${items.length}/${items.length}`;
+
+      const correctCount = answers.filter(a=>a.isCorrect).length;
+
+      const res = document.createElement('section');
+      res.className = 'results';
+      res.innerHTML = `
+        <header>
+          <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          <h3>Resultados del reto</h3>
+          <div class="score-badge">${correctCount}/${items.length}</div>
+        </header>
+        <div class="res-scroll">
+          <div class="res-list" id="resList"></div>
+
+          <div class="orderBox">
+            <strong>Orden sugerido de actuación</strong>
+            <div class="orderList" id="orderList"></div>
+          </div>
+
+          <div class="adviceBox">
+            <strong>Consejo final</strong>
+            <p class="explain">Objeto que usas = Herramienta; proteger o verificar = Seguridad; hablar/organizar con la persona = Cliente.</p>
+          </div>
+        </div>
+        <div class="res-ctas">
+          <button class="btn-retry" id="retryBtn" aria-label="Repetir">Repetir</button>
+          <a class="btn-claim" id="claimBtn" href="#" role="button" aria-label="Ver mi recompensa" style="display:grid;place-items:center;text-decoration:none;">Ver mi recompensa</a>
+        </div>
+        ${!initData ? `<div class="initdata-warn">Aviso: no se detectó initData en la URL. Podrás reclamar igualmente.</div>` : ``}
+      `;
+      scene.appendChild(res);
+      enableScrollResults();
+
+      // Fill list
+      const resList = res.querySelector('#resList');
+      answers.forEach(a=>{
+        const row = document.createElement('div');
+        row.className = 'res-item';
+        row.innerHTML = `
+          <div class="res-head">
+            <div class="res-title">${a.text}</div>
+            <span class="tag ${a.isCorrect? 'ok':'ko'}">${a.isCorrect? 'Correcto':'Incorrecto'}</span>
+          </div>
+          <div class="res-sub">
+            <span class="pill">Tu elección: ${a.picked}</span>
+            <span class="pill">Correcta: ${a.correct}</span>
+          </div>
+          <div class="explain">${a.explain}</div>
+        `;
+        resList.appendChild(row);
+      });
+
+      // Order chips
+      const orderList = res.querySelector('#orderList');
+      recommendedOrder.forEach((id, i)=>{
+        const it = items.find(x=>x.id===id);
+        if (!it) return;
+        const chip = document.createElement('div');
+        chip.className = 'orderItem';
+        chip.textContent = `${i+1}. ${it.text}`;
+        orderList.appendChild(chip);
+      });
+
+      // Retry
+      res.querySelector('#retryBtn').addEventListener('click', ()=>{
+        // reset
+        while (scene.lastChild && scene.lastChild.classList && scene.lastChild.classList.contains('results')) {
+          scene.removeChild(scene.lastChild);
+        }
+        index = 0; answers.length = 0;
+        renderItem();
+        lockScrollGameplay();
+      });
+
+      // Claim link
+      const claimBtn = res.querySelector('#claimBtn');
+      const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      claimBtn.setAttribute('href', target);
+    }
+
+    // Fit on resize/orientation
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', ()=>setTimeout(ensureFits, 100));
+
+    // Initial ensure fits in case intro overlay + small screens
+    ensureFits();
+  </script>
+</body>
+</html>
