@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>ElectroVerdadero: PRL Básica ⚡ | Kämpe</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#0d47ff;
+      --bg2:#0a2fbf;
+      --glass:rgba(255,255,255,0.14);
+      --glass-2:rgba(255,255,255,0.22);
+      --stroke:rgba(255,255,255,0.25);
+      --text:#f6fbff;
+      --muted:#cfe3ff;
+      --accent:#51ffea;
+      --ok:#21e6a4;
+      --warn:#ffd257;
+      --err:#ff5a7a;
+      --btnTrue:#1bd5a0;
+      --btnFalse:#ff5b6e;
+      --btnBg:rgba(255,255,255,0.16);
+      --btnBgH:rgba(255,255,255,0.24);
+      --shadow:0 10px 30px rgba(0,0,0,0.35);
+      --radius:18px;
+      --ui-scale:1;
+      --hudH:64px;
+      --gap:14px;
+      --pad:16px;
+      --btnH:64px;
+      --titleFS: clamp(18px, 3.4vw, 22px);
+      --promptFS: clamp(18px, 4.2vw, 24px);
+      --btnFS: clamp(16px, 3.6vw, 20px);
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      padding:0;
+      height:100%;
+      background: radial-gradient(120% 120% at 10% 10%, #1b73ff 0%, var(--bg1) 40%, var(--bg2) 100%);
+      color:var(--text);
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      overflow:hidden;
+      overscroll-behavior:none;
+    }
+    img{max-width:100%;display:block}
+    .scene{
+      width:100%;
+      position:relative;
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      touch-action:none;
+    }
+    @supports (height: 100svh) { .scene{ height:100svh; } }
+    @supports not (height: 100svh) { .scene{ height:100dvh; } }
+    @supports not (height: 100dvh) { .scene{ height:100vh; } }
+
+    .scene-inner{
+      position:relative;
+      width:100%;
+      max-width:560px;
+      display:flex;
+      flex-direction:column;
+      gap:var(--gap);
+      padding:var(--pad);
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+    }
+
+    /* HUD */
+    .hud{
+      height:var(--hudH);
+      min-height:var(--hudH);
+      border-radius:calc(var(--radius) - 8px);
+      background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      border:1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 12px;
+      box-shadow: var(--shadow);
+    }
+    .brand{
+      display:flex; align-items:center; gap:8px;
+      min-width:0;
+    }
+    .brand img{
+      width:32px; height:32px; object-fit:contain;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    }
+    .title{
+      font-weight:800;
+      font-size:var(--titleFS);
+      letter-spacing:0.2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .progress{
+      font-weight:700;
+      font-size: clamp(14px, 3vw, 16px);
+      color: var(--accent);
+      background: rgba(81,255,234,0.12);
+      border:1px solid rgba(81,255,234,0.35);
+      padding:6px 10px;
+      border-radius:999px;
+      min-width:58px;
+      text-align:center;
+    }
+
+    /* Prompt area */
+    .card{
+      position:relative;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      gap:12px;
+      border-radius:var(--radius);
+      background: linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0.10));
+      border:1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      isolation:isolate;
+      padding: 12px;
+    }
+    .avatar{
+      position:absolute;
+      inset:auto -12% -12% auto;
+      width: 60%;
+      opacity: 0.25;
+      transform: translateY(8%);
+      pointer-events:none;
+      filter: drop-shadow(0 20px 40px rgba(0,0,0,0.35));
+      z-index:0;
+    }
+    .prompt-wrap{
+      position:relative;
+      z-index:1;
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding: 10px 12px;
+    }
+    .prompt{
+      font-size:var(--promptFS);
+      font-weight:800;
+      line-height:1.15;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      max-width: 92%;
+      margin: 0 auto;
+    }
+    .subnote{
+      font-size: clamp(12px, 2.8vw, 13px);
+      color: var(--muted);
+      margin-top:6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+    }
+
+    /* Controls */
+    .controls{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      align-items:center;
+      justify-content:center;
+      margin-top:auto;
+    }
+    .btn{
+      user-select:none;
+      appearance:none;
+      border:none;
+      border-radius:14px;
+      min-height:var(--btnH);
+      padding:12px 14px;
+      font-weight:800;
+      font-size:var(--btnFS);
+      letter-spacing:0.2px;
+      color:var(--text);
+      background: var(--btnBg);
+      border:1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+      transition: transform .08s ease, background .2s ease, box-shadow .2s ease, border-color .2s ease;
+      cursor:pointer;
+      position:relative;
+      overflow:hidden;
+    }
+    .btn:focus-visible{ outline: 3px solid rgba(81,255,234,0.75); outline-offset: 2px; }
+    .btn:active{ transform: translateY(1px) scale(0.99); }
+    .btn[disabled]{ opacity:0.7; pointer-events:none; }
+    .btn.true{ background: linear-gradient(180deg, rgba(27,213,160,0.22), rgba(27,213,160,0.12)); border-color: rgba(27,213,160,0.55);}
+    .btn.false{ background: linear-gradient(180deg, rgba(255,91,110,0.22), rgba(255,91,110,0.12)); border-color: rgba(255,91,110,0.55);}
+
+    /* Microinteraction flash */
+    .flash{
+      animation: flashPulse .45s ease;
+    }
+    @keyframes flashPulse{
+      0%{ box-shadow: inset 0 0 0 0 rgba(81,255,234,0); }
+      50%{ box-shadow: inset 0 0 0 6px rgba(81,255,234,0.18); }
+      100%{ box-shadow: inset 0 0 0 0 rgba(81,255,234,0); }
+    }
+
+    /* Intro & Results modal */
+    .modal{
+      position:fixed;
+      inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 14px;
+      z-index:50;
+      background: linear-gradient(180deg, rgba(2,8,43,0.55), rgba(3,10,48,0.65));
+      backdrop-filter: blur(6px);
+    }
+    .modal.show{ display:flex; }
+    .modal-card{
+      width:min(720px, 94vw);
+      max-height:90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.10));
+      border:1px solid var(--stroke);
+      border-radius:20px;
+      padding:16px;
+      overflow-y:auto;
+      box-shadow: var(--shadow);
+    }
+    .modal-head{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;
+    }
+    .modal-title{
+      font-size: clamp(18px, 4.6vw, 26px);
+      font-weight:800;
+      line-height:1.1;
+    }
+    .modal-desc{
+      color: var(--muted);
+      font-size: clamp(13px, 3.2vw, 15px);
+      margin-bottom:12px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+    }
+    .modal-actions{
+      display:flex; gap:10px; justify-content:flex-end; margin-top:10px;
+    }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(81,255,234,0.30), rgba(81,255,234,0.16));
+      border-color: rgba(81,255,234,0.65);
+      color:#042b2b;
+      text-shadow:none;
+    }
+
+    /* Results */
+    .score{
+      display:flex; align-items:center; gap:10px; margin: 8px 0 10px;
+    }
+    .score-badge{
+      font-weight:800;
+      color:#061f1f;
+      background: linear-gradient(180deg, rgba(81,255,234,0.95), rgba(81,255,234,0.75));
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,0.15);
+      font-size: clamp(14px, 3.4vw, 16px);
+    }
+    .result-list{
+      display:flex; flex-direction:column; gap:10px; margin-top:8px;
+    }
+    .res-item{
+      background: rgba(255,255,255,0.10);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:10px;
+    }
+    .res-top{
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+    }
+    .stmt{
+      font-weight:800;
+      font-size: clamp(14px, 3.6vw, 16px);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+      margin-right:auto;
+      max-width: 70%;
+    }
+    .chips{ display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+    .chip{
+      font-size:12px; font-weight:800; padding:4px 8px; border-radius:999px; border:1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.12);
+      color:#e9f8ff;
+      white-space:nowrap;
+    }
+    .chip.you{ background: rgba(255,255,255,0.10); }
+    .chip.ok{ background: rgba(33,230,164,0.22); border-color: rgba(33,230,164,0.55); color:#0d2c24; }
+    .chip.bad{ background: rgba(255,90,122,0.22); border-color: rgba(255,90,122,0.55); color:#3a0d14; }
+    .res-explain{
+      margin-top:6px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height:1.25;
+    }
+
+    .tips{
+      margin-top:12px; padding:10px; border-radius:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+      border:1px solid var(--stroke);
+    }
+    .tips h4{
+      margin:0 0 6px; font-size: clamp(14px, 3.8vw, 18px); font-weight:800;
+    }
+    .tips ul{ margin:0; padding-left:18px; }
+    .tips li{
+      margin:4px 0; font-size: 13.5px; color: var(--text);
+    }
+
+    .reward-area{
+      margin-top:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    .note{
+      color: var(--warn);
+      font-size:12px;
+    }
+    .cta{
+      display:flex; gap:8px; align-items:center;
+    }
+
+    /* Compact mode for tiny screens */
+    .compact :root{}
+    .compact .hud{ height:52px; min-height:52px; }
+    .compact .title{ font-size: clamp(16px, 3.2vw, 18px); }
+    .compact .progress{ padding:4px 8px; font-size: 12px; min-width:52px;}
+    .compact .prompt{ font-size: clamp(16px, 3.6vw, 20px); }
+    .compact .btn{ min-height:56px; font-size: clamp(14px, 3.2vw, 18px); }
+    .compact .avatar{ width: 64%; opacity:0.22; }
+    .compact .scene-inner{ gap:10px; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <div class="scene-inner" id="sceneInner">
+      <header class="hud" aria-label="Encabezado del reto">
+        <div class="brand">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" width="32" height="32" alt="Kämpe" />
+          <div class="title" id="title">ElectroVerdadero: PRL Básica ⚡</div>
+        </div>
+        <div class="progress" id="progress" aria-label="Progreso">0/8</div>
+      </header>
+
+      <main class="card" id="card" role="group" aria-label="Zona de pregunta">
+        <img class="avatar" alt="" loading="lazy"
+             src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png">
+        <div class="prompt-wrap">
+          <div class="prompt" id="prompt">Bienvenido</div>
+        </div>
+        <div class="subnote" id="subnote">Pulsa Empezar para iniciar el reto.</div>
+      </main>
+
+      <nav class="controls" aria-label="Controles de respuesta">
+        <button class="btn true" id="btnTrue" aria-label="Elegir Verdadero">Verdadero</button>
+        <button class="btn false" id="btnFalse" aria-label="Elegir Falso">Falso</button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Intro Modal -->
+  <section class="modal show" id="introModal" aria-modal="true" role="dialog" aria-labelledby="introTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title" id="introTitle">ElectroVerdadero: PRL Básica ⚡</div>
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" width="32" height="32" alt="Kämpe" />
+      </div>
+      <div class="modal-desc">
+        Escenario: primera visita como aprendiz. Enchufe quemado y saltos del automático; necesitas actuar rápido y seguro.
+      </div>
+      <div class="modal-desc">
+        Tutorial: lee la afirmación y elige Verdadero o Falso. Avanza solo y revisa tus aciertos al final.
+      </div>
+      <div class="modal-actions">
+        <button class="btn primary" id="startBtn" aria-label="Empezar reto">Empezar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results Modal -->
+  <section class="modal" id="resultsModal" aria-modal="true" role="dialog" aria-labelledby="resultsTitle">
+    <div class="modal-card" id="resultsCard">
+      <div class="modal-head">
+        <div class="modal-title" id="resultsTitle">Resumen del reto</div>
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" width="32" height="32" alt="Kämpe" />
+      </div>
+      <div class="score">
+        <span class="score-badge" id="scoreBadge">0/8 correctas</span>
+        <span class="modal-desc" id="scorePhrase">¡Buen trabajo! Revisa los puntos clave.</span>
+      </div>
+      <div class="result-list" id="resultList" aria-label="Resultados"></div>
+
+      <div class="tips" aria-label="Consejo práctico">
+        <h4>Checklist rápido en vivienda</h4>
+        <ul>
+          <li>Avisa al cliente y delimita la zona.</li>
+          <li>Corta la luz y bloquea si procede.</li>
+          <li>Verifica ausencia de tensión siempre.</li>
+          <li>Usa EPI: guantes aislantes y gafas.</li>
+          <li>Conecta en caja con bornes; ordena y protege.</li>
+        </ul>
+      </div>
+
+      <div class="reward-area">
+        <div class="note" id="initWarn" style="display:none;">initData no detectado: se usará una sesión local.</div>
+        <div class="cta">
+          <button class="btn primary" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Core data: 8 afirmaciones (≤48 chars), correct, explanation (≤2 frases / ≤180 chars)
+    const ITEMS = [
+      {
+        text: "Manos húmedas cerca de 230V es seguro",
+        correct: false,
+        explanation: "Riesgo alto de electrocución. Mantén manos y zona secas antes de intervenir."
+      },
+      {
+        text: "El cable azul suele ser el neutro",
+        correct: true,
+        explanation: "En instalaciones domésticas, azul = neutro según norma. Verifica siempre en campo."
+      },
+      {
+        text: "La cinta aislante sustituye una regleta",
+        correct: false,
+        explanation: "La cinta no asegura contacto ni fijación. Usa bornes o regleta homologada."
+      },
+      {
+        text: "Avisar al cliente antes de cortar la luz",
+        correct: true,
+        explanation: "Buena práctica de seguridad y comunicación. Evita sorpresas y pérdidas de datos."
+      },
+      {
+        text: "Probar ausencia de tensión es opcional",
+        correct: false,
+        explanation: "Es obligatorio verificar con un comprobador antes de tocar los conductores."
+      },
+      {
+        text: "Guantes aislantes y gafas son EPI útiles",
+        correct: true,
+        explanation: "Reducen riesgo de contacto eléctrico y proyecciones al manipular enchufes y cables."
+      },
+      {
+        text: "Empalmar sin caja ni bornes es aceptable",
+        correct: false,
+        explanation: "Empalmes deben ir dentro de caja y con bornes certificados para asegurar y proteger."
+      },
+      {
+        text: "Enchufe quemado: cambiar sin revisar circuito",
+        correct: false,
+        explanation: "Antes de sustituir, diagnostica la causa: aprietes, sobrecarga o daño en cableado/PIA."
+      }
+    ];
+
+    // State
+    const state = {
+      idx: 0,
+      answers: [], // {choice: boolean}
+      initData: ""
+    };
+
+    // Elements
+    const scene = document.getElementById('scene');
+    const sceneInner = document.getElementById('sceneInner');
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+    const card = document.getElementById('card');
+    const promptEl = document.getElementById('prompt');
+    const subnoteEl = document.getElementById('subnote');
+    const btnTrue = document.getElementById('btnTrue');
+    const btnFalse = document.getElementById('btnFalse');
+    const progressEl = document.getElementById('progress');
+    const resultsModal = document.getElementById('resultsModal');
+    const resultList = document.getElementById('resultList');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const scorePhrase = document.getElementById('scorePhrase');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+
+    // Init: read initData from URL
+    (function readInitData(){
+      const usp = new URLSearchParams(location.search);
+      const val = usp.get('initData') || "";
+      state.initData = val;
+      // Show subtle warning if missing on results later
+    })();
+
+    // Render functions
+    function renderTurn(){
+      const i = state.idx;
+      const total = ITEMS.length;
+      if(i >= total){
+        showResults();
+        return;
+      }
+      const item = ITEMS[i];
+      promptEl.textContent = clampText(item.text, 48);
+      subnoteEl.textContent = "Elige una opción. Progreso: " + (i+1) + "/" + total;
+      progressEl.textContent = (i+1) + "/" + total;
+      btnTrue.disabled = false;
+      btnFalse.disabled = false;
+      ensureFits();
+    }
+
+    function handleAnswer(val){
+      // Visual microinteraction (neutral flash)
+      card.classList.remove('flash');
+      void card.offsetWidth; // reflow to restart animation
+      card.classList.add('flash');
+
+      btnTrue.disabled = true;
+      btnFalse.disabled = true;
+
+      state.answers.push({ choice: !!val });
+      // Delay a bit then advance
+      setTimeout(() => {
+        state.idx++;
+        renderTurn();
+      }, 420);
+    }
+
+    function showResults(){
+      // Build results list
+      resultList.innerHTML = "";
+      let correctCount = 0;
+      ITEMS.forEach((it, idx) => {
+        const user = state.answers[idx]?.choice;
+        const isCorrect = user === it.correct;
+        if(isCorrect) correctCount++;
+
+        const itemEl = document.createElement('div');
+        itemEl.className = 'res-item';
+
+        const top = document.createElement('div');
+        top.className = 'res-top';
+
+        const stmt = document.createElement('div');
+        stmt.className = 'stmt';
+        stmt.textContent = it.text;
+
+        const chips = document.createElement('div');
+        chips.className = 'chips';
+
+        const yourChip = document.createElement('span');
+        yourChip.className = 'chip you';
+        yourChip.textContent = 'Tu: ' + (user ? 'Verdadero' : 'Falso');
+
+        const corrChip = document.createElement('span');
+        corrChip.className = 'chip ' + (isCorrect ? 'ok' : 'bad');
+        corrChip.textContent = 'Correcta: ' + (it.correct ? 'Verdadero' : 'Falso');
+
+        chips.appendChild(yourChip);
+        chips.appendChild(corrChip);
+
+        top.appendChild(stmt);
+        top.appendChild(chips);
+
+        const expl = document.createElement('div');
+        expl.className = 'res-explain';
+        expl.textContent = clampText(it.explanation, 180);
+
+        itemEl.appendChild(top);
+        itemEl.appendChild(expl);
+        resultList.appendChild(itemEl);
+      });
+
+      scoreBadge.textContent = `${correctCount}/${ITEMS.length} correctas`;
+      scorePhrase.textContent = correctCount >= 6
+        ? "¡Buen trabajo! Refuerza lo aprendido y sigue practicando."
+        : "Repasa los básicos: la seguridad siempre primero.";
+
+      // Reward button link
+      if(!state.initData){
+        initWarn.style.display = 'block';
+      } else {
+        initWarn.style.display = 'none';
+      }
+
+      // Open results modal
+      resultsModal.classList.add('show');
+      // Keep global scroll locked, but modal scrolls internally by design.
+    }
+
+    // CTA redirect preserving initData
+    rewardBtn.addEventListener('click', () => {
+      const base = "https://kampe-game-phaser.onrender.com/daily_streak";
+      const url = state.initData ? `${base}?initData=${encodeURIComponent(state.initData)}` : `${base}?initData=`;
+      location.href = url;
+    });
+
+    // Start flow
+    startBtn.addEventListener('click', () => {
+      introModal.classList.remove('show');
+      state.idx = 0;
+      state.answers = [];
+      renderTurn();
+    });
+
+    // Controls
+    btnTrue.addEventListener('click', () => handleAnswer(true));
+    btnFalse.addEventListener('click', () => handleAnswer(false));
+
+    // Utility: clamp string to length (adds ellipsis if needed)
+    function clampText(str, maxLen){
+      if(typeof str !== 'string') return '';
+      if(str.length <= maxLen) return str;
+      return str.slice(0, Math.max(0, maxLen - 1)).trimEnd() + '…';
+    }
+
+    // Ensure fit functions (guardrails)
+    function assertNoOverflow(){
+      // Checks if gameplay fits inside the scene without scroll
+      return scene.scrollHeight <= scene.clientHeight;
+    }
+    function applyCompactMode(){
+      if(!document.body.classList.contains('compact')){
+        document.body.classList.add('compact');
+      }
+    }
+    function fitBoardToViewport(){
+      // Reduce paddings/gaps slightly to gain space
+      document.documentElement.style.setProperty('--gap', '10px');
+      document.documentElement.style.setProperty('--pad', '12px');
+      document.documentElement.style.setProperty('--btnH', '56px');
+    }
+    function autoscaleUI(){
+      // Scale down as last resort (min 0.88)
+      // Compute required scale A = min(1, clientH / scrollH)
+      const needed = Math.min(1, scene.clientHeight / scene.scrollHeight);
+      const target = Math.max(0.88, Math.min(1, needed - 0.02)); // small headroom
+      document.documentElement.style.setProperty('--ui-scale', String(target));
+    }
+    function ensureFits(){
+      // Reset to defaults for accurate measurement
+      document.body.classList.remove('compact');
+      document.documentElement.style.setProperty('--gap', '14px');
+      document.documentElement.style.setProperty('--pad', '16px');
+      document.documentElement.style.setProperty('--btnH', '64px');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+
+      if(assertNoOverflow()) return;
+
+      // Step 2: compact
+      applyCompactMode();
+      if(assertNoOverflow()) return;
+
+      // Step 3: adjust layout variables
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+
+      // Step 4: autoscale
+      autoscaleUI();
+      // no further steps; accept minimal scale
+    }
+
+    // Recompute on resize/orientation
+    window.addEventListener('resize', () => ensureFits());
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 50));
+
+    // Initial paint
+    document.addEventListener('DOMContentLoaded', () => {
+      // Keep gameplay locked until start
+      promptEl.textContent = "Listo para empezar";
+      subnoteEl.textContent = "Serán 8 afirmaciones. ¡Responde rápido!";
+      progressEl.textContent = "0/8";
+      ensureFits();
+    });
+  </script>
+</body>
+</html>
