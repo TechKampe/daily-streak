@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Caza el fallo eléctrico ⚡ | Kämpe</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* -----------------------------
+       RESET + BASE
+    ------------------------------*/
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #0c2ba8;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #fff;
+      overflow: hidden; /* Lock gameplay by default */
+      overscroll-behavior: none;
+    }
+    :root{
+      --ui-scale: 1;
+      --bg1: #0C2BA8;
+      --bg2: #3B6BFA;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --stroke: rgba(255,255,255,0.22);
+      --accent: #4AF2FF;
+      --accent-2: #7AE67A;
+      --danger: #FF5A7A;
+      --warn: #FFD76A;
+      --txt: #F6FBFF;
+      --muted: #bcd8ff;
+      --cellH: 76px;  /* default option height */
+      --cellAR: 5;    /* width:height ratio in calc if needed */
+    }
+    /* Fortnite-like backdrop */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(255,255,255,0.16), transparent 60%),
+        radial-gradient(800px 500px at 10% 110%, rgba(74,242,255,0.18), transparent 60%),
+        linear-gradient(140deg, var(--bg1), var(--bg2));
+      z-index: -1;
+    }
+
+    /* -----------------------------
+       APP / SCENE
+    ------------------------------*/
+    .app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: stretch;
+    }
+    .scene {
+      position: relative;
+      width: 100%;
+      /* Safe area paddings */
+      padding: calc(8px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 8px;
+      transform-origin: top center;
+      touch-action: none; /* anti-derrapes */
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { @supports (height: 100dvh) { .scene { height: 100dvh; } } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    .scene-inner{
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+    }
+
+    /* HUD */
+    .hud {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.08));
+      background-clip: padding-box;
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+    }
+    .logo {
+      height: 28px;
+      width: auto;
+    }
+    .title {
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      color: #fff;
+      font-size: clamp(16px, 3.8vw, 18px);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+      margin: 0;
+      line-height: 1.2;
+    }
+    .progress {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: clamp(14px, 3.6vw, 16px);
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: rgba(74,242,255,0.12);
+      border: 1px solid rgba(74,242,255,0.35);
+      min-width: 58px;
+      text-align: center;
+    }
+
+    /* PLAY AREA */
+    .play-area {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+      overflow: hidden; /* no scroll during gameplay */
+    }
+    .scene-card {
+      position: relative;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+      min-height: 92px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      isolation: isolate;
+    }
+    .scene-text {
+      font-size: clamp(14px, 3.8vw, 16px);
+      color: var(--txt);
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .badge {
+      font-size: 12px;
+      color: #00112a;
+      background: linear-gradient(90deg, #7AE67A, #4AF2FF);
+      padding: 6px 8px;
+      border-radius: 999px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    /* Avatar decorative */
+    .avatar {
+      position: absolute;
+      right: -8px;
+      bottom: -16px;
+      opacity: 0.18;
+      width: 150px;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 22px rgba(0,0,0,0.4));
+      transform: rotate(2deg);
+      user-select: none;
+    }
+
+    /* OPTIONS */
+    .option-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-content: start;
+    }
+    .option {
+      position: relative;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 10px 10px;
+      min-height: var(--cellH);
+      border-radius: 14px;
+      color: #fff;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: clamp(14px, 3.8vw, 16px);
+      transition: transform .12s ease, box-shadow .12s ease, border-color .2s ease, background .2s ease;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.22);
+      user-select: none;
+      outline: none;
+    }
+    .option:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .option .label {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.2;
+      max-width: 100%;
+    }
+    .option:active { transform: scale(0.98); }
+    .option:hover { border-color: rgba(255,255,255,0.35); }
+
+    .option.chosen {
+      border-color: var(--accent);
+      box-shadow: 0 10px 26px rgba(72, 235, 255, 0.35);
+      background: linear-gradient(180deg, rgba(74,242,255,0.18), rgba(255,255,255,0.07));
+      animation: pulse 420ms ease;
+    }
+    .option.correct-pick {
+      border-color: rgba(122, 230, 122, 0.9);
+      background: linear-gradient(180deg, rgba(122,230,122,0.20), rgba(255,255,255,0.07));
+      box-shadow: 0 10px 26px rgba(122,230,122,0.35);
+    }
+    .option.wrong-pick {
+      border-color: rgba(255,90,122,0.9);
+      background: linear-gradient(180deg, rgba(255,90,122,0.22), rgba(255,255,255,0.07));
+      box-shadow: 0 10px 26px rgba(255,90,122,0.35);
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+
+    /* Scene transitions */
+    .scene-anim-in {
+      animation: sceneIn 280ms ease forwards;
+    }
+    .scene-anim-out {
+      animation: sceneOut 220ms ease forwards;
+    }
+    @keyframes sceneIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes sceneOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-10px); }
+    }
+
+    /* Intro modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(7,19,56,0.65);
+      display: grid;
+      place-items: center;
+      z-index: 20;
+      padding: 16px;
+    }
+    .modal {
+      width: min(560px, 92vw);
+      max-height: 90svh;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      gap: 12px;
+      padding: 18px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+      backdrop-filter: blur(12px);
+      overflow-y: auto;
+      box-shadow: 0 18px 42px rgba(0,0,0,0.35);
+    }
+    .modal h2 {
+      margin: 0;
+      font-weight: 800;
+      font-size: clamp(18px, 5.2vw, 22px);
+    }
+    .modal p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(14px, 3.8vw, 16px);
+      line-height: 1.3;
+    }
+    .modal .cta-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 8px;
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.12));
+      padding-top: 4px;
+    }
+    .btn {
+      display: inline-grid;
+      place-items: center;
+      padding: 12px 16px;
+      min-height: 48px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.35);
+      font-weight: 800;
+      color: #00112a;
+      background: linear-gradient(90deg, #4AF2FF, #7AE67A);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.22);
+      cursor: pointer;
+      font-size: clamp(15px, 4.2vw, 17px);
+      text-align: center;
+    }
+    .btn.secondary {
+      color: #fff;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      border: 1px solid var(--stroke);
+    }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* Compact mode to gain space */
+    .compact .hud { padding: 6px 8px; border-radius: 12px; }
+    .compact .title { font-size: clamp(14px, 3.4vw, 16px); }
+    .compact .progress { padding: 4px 8px; font-size: 13px; }
+    .compact .scene-card { min-height: 80px; padding: 10px; }
+    .compact .option { min-height: 62px; font-size: clamp(13px, 3.4vw, 15px); }
+    .compact .avatar { width: 120px; opacity: 0.16; }
+
+    /* RESULTS VIEW */
+    .results {
+      position: fixed;
+      inset: 0;
+      z-index: 15;
+      display: none;
+      grid-template-rows: auto 1fr auto;
+      padding: calc(10px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(255,255,255,0.16), transparent 60%),
+        radial-gradient(800px 500px at 10% 110%, rgba(74,242,255,0.18), transparent 60%),
+        linear-gradient(140deg, var(--bg1), var(--bg2));
+    }
+    .results.active { display: grid; }
+    .results .header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 16px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+      backdrop-filter: blur(10px);
+    }
+    .score {
+      font-weight: 800;
+      font-size: clamp(16px, 4.5vw, 20px);
+      color: #fff;
+    }
+    .advice {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: clamp(13px, 3.6vw, 15px);
+    }
+    .results-list {
+      margin-top: 10px;
+      overflow-y: auto; /* allow scroll only here */
+      padding-right: 4px;
+      display: grid;
+      gap: 10px;
+    }
+    .result-card {
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      backdrop-filter: blur(8px);
+      padding: 10px;
+      display: grid;
+      gap: 6px;
+    }
+    .result-card h4 {
+      margin: 0 0 2px 0;
+      font-size: clamp(14px, 3.8vw, 16px);
+    }
+    .pill-row {
+      display: grid;
+      gap: 6px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      font-size: clamp(12px, 3.2vw, 14px);
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      min-height: 32px;
+    }
+    .pill .tag { font-weight: 800; opacity: 0.9; }
+    .explain {
+      color: var(--muted);
+      font-size: clamp(12px, 3.2vw, 14px);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .results .cta-bar {
+      position: sticky;
+      bottom: 0;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 8px;
+      background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.16));
+    }
+    .note {
+      font-size: 12px;
+      color: #ffe9a8;
+      text-align: right;
+      margin-top: 2px;
+    }
+    .hidden { display: none !important; }
+
+    /* Focus ring for overall accessibility when tabbing */
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Gameplay Scene -->
+    <section class="scene" id="scene" aria-live="polite">
+      <div class="scene-inner">
+        <header class="hud">
+          <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          <h1 class="title" id="gameTitle">Caza el fallo eléctrico ⚡</h1>
+          <div class="progress" id="progress" aria-label="Progreso">1/5</div>
+        </header>
+
+        <div class="play-area scene-anim-in" id="playArea">
+          <article class="scene-card" aria-label="Micro-escena">
+            <div class="scene-text" id="sceneText">Eres ayudante electricista en una reforma...</div>
+            <span class="badge">Fallo: 1</span>
+            <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+          </article>
+
+          <div class="option-grid" id="optionGrid" role="listbox" aria-label="Opciones">
+            <!-- Options injected here -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Intro Modal -->
+    <div class="modal-backdrop" id="intro" aria-modal="true" role="dialog" aria-labelledby="introTitle">
+      <div class="modal">
+        <h2 id="introTitle">Caza el fallo eléctrico ⚡</h2>
+        <p>Eres ayudante electricista en una reforma de piso: ritmo real de obra y supervisión cercana. Toca el único ítem incorrecto en cada escena; avanzarás automáticamente.</p>
+        <div class="cta-row">
+          <button class="btn" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+          <button class="btn secondary" id="howBtn" aria-label="Ver tutorial rápido">¿Cómo se juega?</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results View -->
+    <section class="results" id="results" aria-live="polite">
+      <header class="header">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="score" id="scoreLabel">Tu resultado</div>
+        <div class="progress" id="finalProgress">5/5</div>
+      </header>
+
+      <div>
+        <p class="advice">
+          Consejo práctico: afina la mirada (colores, protecciones, IP), verifica siempre ausencia de tensión antes de tocar y comunica al cliente los cortes y riesgos.
+        </p>
+        <div class="results-list" id="resultsList" aria-label="Resumen de escenas">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <div class="cta-bar">
+        <button class="btn secondary" id="retryBtn" aria-label="Volver a intentar el reto">Reintentar</button>
+        <div>
+          <button class="btn" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+          <div class="note hidden" id="initWarn">Aviso: no se detectó initData en la URL.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    /* --------------------------------------------
+       DATA: 5 micro-escenas con 3–4 ítems (1 incorrecto)
+    ---------------------------------------------*/
+    const SCENES = [
+      {
+        id: 1,
+        situation: "Baño: montas un enchufe junto al lavabo.",
+        options: [
+          { label: "enchufe con toma de tierra", isWrong: false },
+          { label: "IP44 con tapa abatible", isWrong: false },
+          { label: "toma sin tierra", isWrong: true },
+          { label: "diferencial 30 mA", isWrong: false }
+        ],
+        explanation: "En baño la toma de corriente debe tener tierra. En zonas húmedas usa grado IP adecuado y protección diferencial de 30 mA."
+      },
+      {
+        id: 2,
+        situation: "Cuadro: vas a revisar un circuito del salón.",
+        options: [
+          { label: "bajar magnetotérmico", isWrong: false },
+          { label: "probar ausencia de tensión", isWrong: false },
+          { label: "no bajar el general", isWrong: true },
+          { label: "bloquear y etiquetar", isWrong: false }
+        ],
+        explanation: "Corta la energía antes de intervenir y verifica ausencia de tensión. Si procede, bloquea y etiqueta para evitar reenergizar."
+      },
+      {
+        id: 3,
+        situation: "Empalme: unes conductores en una caja.",
+        options: [
+          { label: "conector WAGO", isWrong: false },
+          { label: "cinta aislante", isWrong: false },
+          { label: "cinta de carrocero", isWrong: true },
+          { label: "caja de empalmes", isWrong: false }
+        ],
+        explanation: "La cinta de carrocero no aísla ni fija correctamente. Usa conectores homologados y, si aplicas cinta, que sea cinta aislante."
+      },
+      {
+        id: 4,
+        situation: "Luminaria: conectas una lámpara de techo.",
+        options: [
+          { label: "azul = neutro", isWrong: false },
+          { label: "verde/amarillo = tierra", isWrong: false },
+          { label: "azul usado como tierra", isWrong: true },
+          { label: "fijación con tacos adecuados", isWrong: false }
+        ],
+        explanation: "El azul es neutro y la tierra es verde/amarillo. Usar el azul como tierra es peligroso y confunde futuros mantenimientos."
+      },
+      {
+        id: 5,
+        situation: "Escalera: colocas un punto de luz en pasillo.",
+        options: [
+          { label: "escalera de fibra", isWrong: false },
+          { label: "escalera metálica en suelo húmedo", isWrong: true },
+          { label: "comprobar apoyos", isWrong: false }
+        ],
+        explanation: "Evita escaleras metálicas en suelos húmedos: riesgo de choque. Prefiere fibra y revisa apoyos y entorno."
+      }
+    ];
+
+    /* --------------------------------------------
+       STATE
+    ---------------------------------------------*/
+    let currentIndex = 0;
+    const answers = []; // { chosen, correct, isCorrect, explanation, situation }
+    const MAX_LABEL = 48;
+
+    // initData handling
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || "";
+
+    /* --------------------------------------------
+       DOM REFS
+    ---------------------------------------------*/
+    const sceneEl = document.getElementById('scene');
+    const playArea = document.getElementById('playArea');
+    const sceneTextEl = document.getElementById('sceneText');
+    const optionGrid = document.getElementById('optionGrid');
+    const progressEl = document.getElementById('progress');
+    const introEl = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+    const howBtn = document.getElementById('howBtn');
+
+    const resultsEl = document.getElementById('results');
+    const resultsList = document.getElementById('resultsList');
+    const scoreLabel = document.getElementById('scoreLabel');
+    const finalProgress = document.getElementById('finalProgress');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const initWarn = document.getElementById('initWarn');
+
+    /* --------------------------------------------
+       UTILITIES (fit + truncate + accessibility)
+    ---------------------------------------------*/
+    function clampLabel(txt) {
+      if (!txt) return "";
+      if (txt.length <= MAX_LABEL) return txt;
+      return txt.slice(0, MAX_LABEL - 1).trim() + "…";
+    }
+
+    function assertNoOverflow() {
+      return sceneEl.scrollHeight <= sceneEl.clientHeight;
+    }
+
+    function applyCompactMode(on = true) {
+      sceneEl.classList.toggle('compact', on);
+    }
+
+    function fitBoardToViewport() {
+      // Step 3: shrink option cell height if needed
+      const original = getComputedStyle(document.documentElement).getPropertyValue('--cellH');
+      const baseH = parseInt(original) || 76;
+
+      let h = baseH;
+      let attempts = 0;
+      while (!assertNoOverflow() && attempts < 4) {
+        h = Math.max(56, h - 6); // do not go below 56px to keep ≥44px tap target
+        document.documentElement.style.setProperty('--cellH', h + 'px');
+        attempts++;
+      }
+    }
+
+    function autoscaleUI(minScale = 0.88) {
+      // Step 4: scale down if still overflowing
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      if (assertNoOverflow()) return;
+
+      const needed = sceneEl.clientHeight / sceneEl.scrollHeight;
+      const scale = Math.max(minScale, Math.min(1, needed));
+      document.documentElement.style.setProperty('--ui-scale', String(scale));
+    }
+
+    function ensureFits() {
+      // reset adjustments
+      applyCompactMode(false);
+      document.documentElement.style.setProperty('--cellH', '76px');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+
+      // Step 1: check
+      if (assertNoOverflow()) return;
+
+      // Step 2: compact
+      applyCompactMode(true);
+      if (assertNoOverflow()) return;
+
+      // Step 3: resize option cells
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+
+      // Step 4: final autoscale
+      autoscaleUI();
+    }
+
+    function enableResultsScroll(enable) {
+      if (enable) {
+        // Activate global scroll (results view)
+        document.documentElement.style.overflow = 'auto';
+        document.body.style.overflowY = 'auto';
+      } else {
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    /* --------------------------------------------
+       RENDERING
+    ---------------------------------------------*/
+    function updateProgress() {
+      progressEl.textContent = `${currentIndex + 1}/${SCENES.length}`;
+    }
+
+    function renderScene() {
+      const data = SCENES[currentIndex];
+
+      // Enter animation
+      playArea.classList.remove('scene-anim-out');
+      void playArea.offsetWidth; // reflow for animation restart
+      playArea.classList.add('scene-anim-in');
+
+      // Texts (clamp automatically)
+      sceneTextEl.textContent = clampLabel(data.situation);
+      document.querySelector('.badge').textContent = `Fallo: ${currentIndex + 1}`;
+
+      // Options
+      optionGrid.innerHTML = '';
+      data.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('aria-label', `Opción ${idx + 1}: ${opt.label}`);
+        btn.dataset.index = idx;
+        btn.innerHTML = `<span class="label">${clampLabel(opt.label)}</span>`;
+        btn.addEventListener('click', () => handleChoice(idx));
+        optionGrid.appendChild(btn);
+      });
+
+      updateProgress();
+      ensureFits();
+    }
+
+    function handleChoice(idx) {
+      const data = SCENES[currentIndex];
+      const clicked = optionGrid.querySelector(`.option[data-index="${idx}"]`);
+      if (!clicked) return;
+
+      // Lock further taps until transition
+      optionGrid.querySelectorAll('.option').forEach(o => o.disabled = true);
+
+      const isCorrectPick = data.options[idx].isWrong === true;
+      clicked.classList.add('chosen');
+      clicked.classList.add(isCorrectPick ? 'correct-pick' : 'wrong-pick');
+
+      // Record answer
+      const correctItem = data.options.find(o => o.isWrong);
+      answers[currentIndex] = {
+        situation: data.situation,
+        chosen: data.options[idx].label,
+        correct: correctItem ? correctItem.label : "",
+        isCorrect: isCorrectPick,
+        explanation: data.explanation
+      };
+
+      // Transition out then next
+      setTimeout(() => {
+        playArea.classList.remove('scene-anim-in');
+        playArea.classList.add('scene-anim-out');
+        setTimeout(() => {
+          currentIndex++;
+          if (currentIndex < SCENES.length) {
+            renderScene();
+          } else {
+            showResults();
+          }
+        }, 220);
+      }, 680);
+    }
+
+    function showResults() {
+      // Build results UI
+      const total = SCENES.length;
+      const hits = answers.filter(a => a && a.isCorrect).length;
+      scoreLabel.textContent = `Tu resultado: ${hits}/${total} aciertos`;
+      finalProgress.textContent = `${total}/${total}`;
+
+      resultsList.innerHTML = '';
+      answers.forEach((a, i) => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        const sceneTitle = document.createElement('h4');
+        sceneTitle.textContent = `Escena ${i + 1} · ${a?.situation || ''}`;
+        // Pills
+        const pills = document.createElement('div');
+        pills.className = 'pill-row';
+
+        const pillYour = document.createElement('div');
+        pillYour.className = 'pill';
+        pillYour.innerHTML = `<span class="tag">Elegiste:</span> <span>${clampLabel(a?.chosen || '')}</span>`;
+
+        const pillCorrect = document.createElement('div');
+        pillCorrect.className = 'pill';
+        pillCorrect.style.borderColor = a?.isCorrect ? 'rgba(122,230,122,0.7)' : 'rgba(255,90,122,0.7)';
+        pillCorrect.style.background = a?.isCorrect ? 'rgba(122,230,122,0.12)' : 'rgba(255,90,122,0.12)';
+        pillCorrect.innerHTML = `<span class="tag">Fallo detectado:</span> <span>${clampLabel(a?.correct || '')}</span>`;
+
+        const explain = document.createElement('div');
+        explain.className = 'explain';
+        explain.textContent = clampExplain(a?.explanation || '');
+
+        pills.appendChild(pillYour);
+        pills.appendChild(pillCorrect);
+
+        card.appendChild(sceneTitle);
+        card.appendChild(pills);
+        card.appendChild(explain);
+
+        resultsList.appendChild(card);
+      });
+
+      // initData note
+      initWarn.classList.toggle('hidden', !!initData);
+
+      // Activate results view and allow scroll
+      resultsEl.classList.add('active');
+      enableResultsScroll(true);
+    }
+
+    // Clamp explanations to ~180 chars / 2 sentences
+    function clampExplain(txt) {
+      const max = 180;
+      if (txt.length <= max) return txt;
+      return txt.slice(0, max - 1).trim() + "…";
+    }
+
+    function resetGame() {
+      answers.length = 0;
+      currentIndex = 0;
+      resultsEl.classList.remove('active');
+      enableResultsScroll(false);
+      renderScene();
+    }
+
+    /* --------------------------------------------
+       INTRO / TUTORIAL
+    ---------------------------------------------*/
+    startBtn.addEventListener('click', () => {
+      introEl.style.display = 'none';
+      renderScene();
+    });
+    howBtn.addEventListener('click', () => {
+      // Replace content with ultra-brief tutorial (<= 2 frases)
+      const modal = howBtn.closest('.modal');
+      if (!modal) return;
+      modal.querySelector('p').textContent = "En cada turno aparece una micro-escena con 3–4 ítems. Toca el único que está mal; el juego avanza solo.";
+      ensureFits();
+    });
+
+    /* --------------------------------------------
+       RESULTS CTAs
+    ---------------------------------------------*/
+    rewardBtn.addEventListener('click', () => {
+      const target = "https://kampe-game-phaser.onrender.com/daily_streak?initData=" + encodeURIComponent(initData);
+      window.location.href = target;
+    });
+    retryBtn.addEventListener('click', () => {
+      resetGame();
+    });
+
+    /* --------------------------------------------
+       LIFECYCLE + FIT HANDLERS
+    ---------------------------------------------*/
+    function onResize() {
+      ensureFits();
+    }
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', () => setTimeout(onResize, 80));
+
+    // Initialize with a placeholder scene before "Empezar"
+    (function init() {
+      // Pre-render first scene's texts as preview (no options until start)
+      sceneTextEl.textContent = "Eres ayudante electricista en una reforma. Toca el ítem incorrecto en cada escena.";
+      optionGrid.innerHTML = "";
+      // ARIA focus management
+      startBtn.focus();
+      // Safety: if start was skipped somehow
+      ensureFits();
+    })();
+
+    /* --------------------------------------------
+       ACCESSIBILITY: Keyboard fallback
+    ---------------------------------------------*/
+    document.addEventListener('keydown', (e) => {
+      if (introEl && introEl.style.display !== 'none') {
+        if (e.key === 'Enter' || e.key === ' ') {
+          startBtn.click();
+        }
+      } else if (resultsEl.classList.contains('active')) {
+        if (e.key === 'Enter') rewardBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
