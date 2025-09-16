@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | PRL Express: Primer Servicio ⚡</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ============ Reset & Base ============ */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;             /* Bloquea scroll global en gameplay */
+      overscroll-behavior: none;
+      background: #10255f;
+      color: #fff;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    :root{
+      --ui-scale: 1;
+      --headerH: 64px;
+      --btnH: 56px;
+      --gap: 12px;
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0,0,0,.28);
+      --glass: rgba(255,255,255,0.12);
+      --glass-2: rgba(255,255,255,0.08);
+      --stroke: rgba(255,255,255,0.25);
+      --text-weak: #cfe3ff;
+      --accent: #47f2ff;
+      --accent-2: #7cffb5;
+      --warn: #ffd14d;
+      --danger: #ff6b6b;
+      --ok: #72ffa1;
+      --qFS: clamp(18px, 4.8vw, 24px);
+      --optFS: clamp(14px, 3.8vw, 18px);
+      --hudFS: clamp(12px, 2.8vw, 14px);
+      --titleFS: clamp(16px, 4.4vw, 20px);
+      --titleFS-compact: clamp(14px, 4vw, 18px);
+    }
+    /* ============ Scene height with fallbacks ============ */
+    .scene {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      isolation: isolate;
+      padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      background: radial-gradient(1200px 600px at 70% -10%, #2b7fff 0%, rgba(43,127,255,0) 60%), linear-gradient(180deg,#1a68f6 0%, #2c2beb 50%, #162269 100%);
+      touch-action: none; /* anti-derrapes en gameplay */
+      overflow: hidden;   /* gameplay sin scroll */
+      transform-origin: top center;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene { height: 100dvh; } }
+    @supports not (height: 100svh) and not (height: 100dvh) { .scene { height: 100vh; } }
+
+    .ui {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+    }
+
+    /* Background avatar decor */
+    .avatar-bg {
+      position: absolute;
+      right: 6%;
+      top: 8%;
+      width: 34%;
+      max-width: 180px;
+      opacity: .28;
+      filter: drop-shadow(0 8px 14px rgba(0,0,0,.35)) saturate(1.05);
+      pointer-events: none;
+      z-index: 0;
+      transform: translateZ(0);
+    }
+
+    /* ============ HUD ============ */
+    .hud {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      min-height: var(--headerH);
+      padding: 8px 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border: 1px solid var(--stroke);
+      border-radius: calc(var(--radius) + 6px);
+      backdrop-filter: blur(8px) saturate(1.2);
+      box-shadow: var(--shadow);
+      z-index: 2;
+    }
+    .logo {
+      height: 28px;
+      width: auto;
+      display: block;
+    }
+    .hud-title {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.1;
+      margin: 0 4px;
+    }
+    .title-long {
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: var(--titleFS);
+      text-shadow: 0 2px 8px rgba(0,0,0,.35);
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .title-short {
+      display: none;
+      font-weight: 800;
+      font-size: var(--titleFS-compact);
+    }
+    .progress {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: #e8f1ff;
+      font-size: var(--hudFS);
+    }
+    .pills {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,0,0,.15);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px;
+      padding: 4px 8px;
+    }
+    .progressbar {
+      width: 64px; height: 8px; border-radius: 999px;
+      background: rgba(255,255,255,.18);
+      overflow: hidden;
+      position: relative;
+    }
+    .progressbar > i {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent) 0%, #4efff4 100%);
+      border-radius: 999px;
+      transition: width .28s ease;
+    }
+
+    /* ============ Card: Question + Options ============ */
+    .card {
+      position: relative;
+      flex: 1;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: var(--gap);
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.07));
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      backdrop-filter: blur(10px) saturate(1.2);
+      box-shadow: var(--shadow);
+      z-index: 1;
+    }
+    .question {
+      font-size: var(--qFS);
+      font-weight: 800;
+      letter-spacing: .2px;
+      text-shadow: 0 2px 8px rgba(0,0,0,.35);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 2px;
+      min-height: 2.4em;
+    }
+    .options {
+      display: grid;
+      grid-template-rows: repeat(4, minmax(var(--btnH), auto));
+      gap: var(--gap);
+      align-content: start;
+    }
+    .option {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.22);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.10)),
+        linear-gradient(120deg, rgba(71,242,255,.20), rgba(124,255,181,.18));
+      color: #fff;
+      font-weight: 800;
+      font-size: var(--optFS);
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 6px 16px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.18);
+      transition: transform .08s ease, filter .12s ease, background .18s ease, border-color .18s ease;
+      min-height: 44px; /* Accesibilidad */
+      outline: none;
+    }
+    .option:hover { filter: brightness(1.04); }
+    .option:active { transform: scale(.98); }
+    .option:focus-visible { box-shadow: 0 0 0 3px rgba(71,242,255,.55), 0 6px 16px rgba(0,0,0,.22); }
+    .option span {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .option[data-hidden="true"]{ display: none; }
+
+    /* Animación de transición entre preguntas */
+    .slide-out-left { animation: slideOut .28s ease both; }
+    .slide-in-right { animation: slideIn .28s ease both; }
+    @keyframes slideOut { from{ opacity:1; transform: translateX(0);} to{ opacity:0; transform: translateX(-12%);} }
+    @keyframes slideIn  { from{ opacity:0; transform: translateX(12%);} to{ opacity:1; transform: translateX(0);} }
+
+    /* ============ Intro modal ============ */
+    .modal {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(8,14,38,.75), rgba(10,14,44,.65));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 18px;
+    }
+    .modal .box {
+      width: 100%;
+      max-width: 560px;
+      max-height: 90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.08));
+      border: 1px solid var(--stroke);
+      border-radius: calc(var(--radius) + 8px);
+      backdrop-filter: blur(12px) saturate(1.3);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      overflow-y: auto; /* sin afectar scroll global */
+    }
+    .intro-head {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .intro-head img.logo {
+      height: 30px;
+    }
+    .intro-title {
+      font-size: clamp(18px, 5vw, 22px);
+      font-weight: 800;
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .intro-sub {
+      color: var(--text-weak);
+      font-size: clamp(13px, 3.6vw, 15px);
+      margin: 6px 0 12px;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .intro-tip {
+      font-size: clamp(13px, 3.4vw, 14px);
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.18);
+      padding: 10px;
+      border-radius: 12px;
+      color: #e9f3ff;
+      margin-bottom: 12px;
+    }
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 52px;
+      min-height: 44px;
+      width: 100%;
+      border-radius: 14px;
+      font-weight: 800;
+      font-size: clamp(15px,4vw,18px);
+      color: #02132a;
+      background: linear-gradient(180deg, #7cffb5, #3fe4ff);
+      border: 1px solid rgba(255,255,255,.45);
+      box-shadow: 0 10px 18px rgba(2,19,42,.35);
+      cursor: pointer;
+      transition: transform .08s ease, filter .12s ease;
+      outline: none;
+    }
+    .cta:hover { filter: brightness(1.02); }
+    .cta:active { transform: translateY(1px) scale(.99); }
+    .cta:focus-visible { box-shadow: 0 0 0 3px rgba(71,242,255,.65), 0 10px 18px rgba(2,19,42,.35); }
+
+    /* ============ Results ============ */
+    .results {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
+      z-index: 60;
+      background: linear-gradient(180deg, rgba(8,14,38,.75), rgba(10,14,44,.7));
+      overflow-y: auto; /* scroll solo aquí tras finalizar */
+      touch-action: auto;
+    }
+    .results.active { display: flex; }
+    .results .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.08));
+      border: 1px solid var(--stroke);
+      border-radius: calc(var(--radius) + 6px);
+      backdrop-filter: blur(10px) saturate(1.2);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+    .summary h3 {
+      margin: 0;
+      font-size: clamp(18px, 5vw, 22px);
+      font-weight: 800;
+    }
+    .badge {
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.26);
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      color: #eafff6;
+    }
+    .list {
+      display: grid;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .item {
+      background: rgba(0,0,0,.22);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      gap: 6px;
+    }
+    .q {
+      font-weight: 800;
+      font-size: clamp(14px, 3.8vw, 16px);
+    }
+    .a, .c {
+      font-size: clamp(13px, 3.4vw, 14px);
+      color: #e9f3ff;
+    }
+    .a i, .c i { font-style: normal; padding: 2px 6px; border-radius: 6px; margin-right: 6px; }
+    .a.ok i { background: rgba(114,255,161,.2); border: 1px solid rgba(114,255,161,.35); color: var(--ok); }
+    .a.bad i { background: rgba(255,107,107,.15); border: 1px solid rgba(255,107,107,.35); color: var(--danger); }
+    .exp {
+      font-size: clamp(12px, 3.2vw, 14px);
+      color: var(--text-weak);
+    }
+    .tip {
+      margin-top: 6px;
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.18);
+      padding: 10px;
+      border-radius: 12px;
+      color: #e9f3ff;
+      font-size: clamp(13px, 3.6vw, 15px);
+    }
+    .final-cta-wrap {
+      position: sticky;
+      bottom: 0;
+      padding-top: 6px;
+      background: linear-gradient(180deg, rgba(8,14,38,0), rgba(8,14,38,.45));
+    }
+    .final-cta {
+      composes: cta;
+    }
+    .warn {
+      color: var(--warn);
+      font-size: clamp(11px, 3vw, 12px);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    /* ============ Compact mode ============ */
+    .compact {
+      --headerH: 56px;
+      --btnH: 48px;
+      --gap: 8px;
+      --qFS: clamp(16px, 4.2vw, 20px);
+      --optFS: clamp(13px, 3.4vw, 16px);
+    }
+    .compact .title-long { display: none; }
+    .compact .title-short { display: block; }
+
+    /* Utilidades */
+    .hidden { display: none !important; }
+    .sr-only {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <main class="scene" id="scene" aria-live="polite">
+    <img class="avatar-bg" alt="" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" loading="eager" decoding="async">
+    <div class="ui" id="ui">
+      <!-- HUD -->
+      <header class="hud" role="banner" aria-label="Cabecera del reto">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="hud-title">
+          <div class="title-long">PRL Express: Primer Servicio ⚡</div>
+          <div class="title-short">PRL Express ⚡</div>
+        </div>
+        <div class="progress" aria-live="polite">
+          <span class="pills"><span id="progressText">1/5</span></span>
+          <div class="progressbar" aria-hidden="true"><i id="progressBar"></i></div>
+        </div>
+      </header>
+
+      <!-- Gameplay Card -->
+      <section class="card" id="card" aria-label="Pregunta y opciones">
+        <div class="question" id="question">...</div>
+        <div class="options" id="options" role="group" aria-label="Opciones de respuesta">
+          <!-- Buttons inserted dynamically -->
+        </div>
+      </section>
+    </div>
+
+    <!-- Intro Modal -->
+    <div class="modal" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle" aria-describedby="introDesc">
+      <div class="box">
+        <div class="intro-head">
+          <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          <h2 class="intro-title" id="introTitle">PRL Express: Primer Servicio ⚡</h2>
+        </div>
+        <p class="intro-sub" id="introDesc">
+          Escenario: primer día en climatización. Revisas un split.
+          Objetivo: decisiones básicas de seguridad (EPI, corte, orden y comunicación).
+        </p>
+        <div class="intro-tip">
+          Tutorial: toca una opción para avanzar. Son 5 preguntas rápidas con progreso 1/5, sin scroll. Al final verás tus aciertos y por qué.
+        </div>
+        <button class="cta" id="startBtn" type="button" aria-label="Empezar el reto">Empezar</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <section class="results" id="results" aria-labelledby="resTitle">
+      <div class="panel summary">
+        <h3 id="resTitle">Resultados</h3>
+        <div class="badge" id="scoreBadge">0/5 correctas</div>
+      </div>
+
+      <div class="panel">
+        <div class="list" id="resultsList" aria-live="polite">
+          <!-- Items dynamically -->
+        </div>
+        <div class="tip" id="generalTip">Regla 4C: Corta, Comprueba, Señaliza y Comunica.</div>
+        <div class="final-cta-wrap">
+          <button class="cta" id="rewardBtn" type="button" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+          <div class="warn" id="initWarn" hidden>initData no recibido. Puedes continuar.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SR helper -->
+    <div class="sr-only" aria-live="assertive" id="srStatus"></div>
+  </main>
+
+  <script>
+    // ================== Data & State ==================
+    const initData = new URL(location.href).searchParams.get('initData') || "";
+    const GAME = {
+      current: 0,
+      total: 5,
+      answers: [],
+      started: false,
+      dataset: [
+        {
+          id: 1,
+          q: "Para limpiar filtros en altura, ¿qué EPI eliges?",
+          options: [
+            "Gafas, mascarilla P2 y guantes de trabajo",
+            "Solo guantes de látex",
+            "Nada, es una tarea rápida",
+            "Arnés y casco pesado en interior"
+          ],
+          correct: 0,
+          exp: "El polvo irrita ojos y vías respiratorias. Gafas, P2 y guantes reducen riesgo; arnés no aplica en interior con escalera estable."
+        },
+        {
+          id: 2,
+          q: "¿Dónde ubicas la escalera de tijera?",
+          options: [
+            "En suelo firme, abierta y bloqueada",
+            "Apoyada directamente en el split",
+            "En un pasillo con paso de personas"
+          ],
+          correct: 0,
+          exp: "En suelo firme y bloqueada evitas vuelcos. Nunca la apoyes en el equipo ni obstaculices rutas de paso."
+        },
+        {
+          id: 3,
+          q: "Ves un charco junto a una toma. ¿Qué haces?",
+          options: [
+            "Cortar, secar y señalizar; luego seguir",
+            "Pisar con cuidado y continuar",
+            "Ignorar si usas guantes"
+          ],
+          correct: 0,
+          exp: "Agua + electricidad = choque. Elimina el riesgo: corta, seca y señaliza antes de continuar."
+        },
+        {
+          id: 4,
+          q: "Secuencia segura antes de intervenir en el split:",
+          options: [
+            "Identificar→Cortar→Bloquear→Verificar",
+            "Verificar→Cortar→Bloquear",
+            "Solo bajar el magneto y tocar"
+          ],
+          correct: 0,
+          exp: "Identifica el circuito, corta, bloquea/señaliza y verifica ausencia de tensión con comprobador. Solo entonces intervén."
+        },
+        {
+          id: 5,
+          q: "Antes del corte, ¿cómo avisas a la clienta?",
+          options: [
+            "Avisar y acordar momento del corte",
+            "Cortar sin avisar para ir rápido",
+            "Avisar por chat después"
+          ],
+          correct: 0,
+          exp: "Comunica impacto y pide permiso. Consensuar el momento evita sorpresas y molestias."
+        }
+      ]
+    };
+
+    // Shortening long labels proactively (max 48 chars)
+    const MAX_LABEL = 48;
+    function clampLabel(text, max = MAX_LABEL) {
+      if (!text) return "";
+      const clean = String(text).trim();
+      return clean.length > max ? clean.slice(0, max - 1).trimEnd() + "…" : clean;
+    }
+
+    // ================== Elements ==================
+    const scene = document.getElementById('scene');
+    const ui = document.getElementById('ui');
+    const cardEl = document.getElementById('card');
+    const qEl = document.getElementById('question');
+    const optsEl = document.getElementById('options');
+    const progText = document.getElementById('progressText');
+    const progBar = document.getElementById('progressBar');
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+    const resultsEl = document.getElementById('results');
+    const resultsList = document.getElementById('resultsList');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+    const srStatus = document.getElementById('srStatus');
+
+    // ================== Rendering ==================
+    function render() {
+      const idx = GAME.current;
+      const data = GAME.dataset[idx];
+      if (!data) return;
+      const total = GAME.dataset.length;
+      // Progress
+      progText.textContent = `${idx + 1}/${total}`;
+      progBar.style.width = `${((idx) / total) * 100}%`;
+      // Question
+      qEl.textContent = clampLabel(data.q, 80); // slightly longer cap for question
+      // Options
+      optsEl.innerHTML = "";
+      const optCount = data.options.length;
+      const maxSlots = 4; // grid has 4 rows; hide extra if not used
+      data.options.forEach((label, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', `Opción ${i + 1}: ${label}`);
+        btn.dataset.index = i;
+        btn.innerHTML = `<span>${clampLabel(label)}</span>`;
+        btn.addEventListener('click', onAnswer);
+        btn.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAnswer.call(btn, e); }
+        });
+        optsEl.appendChild(btn);
+      });
+      // Fill up to 4 rows with hidden placeholders to keep spacing consistent
+      for (let j = optCount; j < maxSlots; j++) {
+        const ph = document.createElement('div');
+        ph.className = 'option';
+        ph.dataset.hidden = "true";
+        ph.setAttribute('aria-hidden', 'true');
+        ph.innerHTML = `<span></span>`;
+        optsEl.appendChild(ph);
+      }
+      ensureFits(); // Adjust UI to fit without scroll
+    }
+
+    function goNext() {
+      const total = GAME.dataset.length;
+      const was = GAME.current;
+      GAME.current = Math.min(GAME.current + 1, total);
+      if (GAME.current < total) {
+        // animate transition
+        animateToNext();
+      } else {
+        showResults();
+      }
+    }
+
+    function animateToNext() {
+      cardEl.classList.remove('slide-in-right');
+      cardEl.classList.add('slide-out-left');
+      setTimeout(() => {
+        cardEl.classList.remove('slide-out-left');
+        render();
+        requestAnimationFrame(() => {
+          cardEl.classList.add('slide-in-right');
+          setTimeout(() => cardEl.classList.remove('slide-in-right'), 280);
+        });
+      }, 200);
+    }
+
+    function onAnswer(e) {
+      const btn = e.currentTarget || this;
+      const i = Number(btn.dataset.index);
+      const q = GAME.dataset[GAME.current];
+      GAME.answers[GAME.current] = i;
+      // minimal micro-anim feedback
+      btn.style.transform = 'scale(0.98)';
+      setTimeout(() => btn.style.transform = '', 90);
+      // Update progress to include the answered question
+      const total = GAME.dataset.length;
+      progBar.style.width = `${((GAME.current + 1) / total) * 100}%`;
+      srStatus.textContent = `Respuesta registrada. Avanzando a ${Math.min(GAME.current + 2, total)}/${total}.`;
+      // Advance after brief pause
+      setTimeout(goNext, 160);
+    }
+
+    // ================== Results ==================
+    function showResults() {
+      // enable results overlay with scroll only there
+      resultsList.innerHTML = "";
+      const total = GAME.dataset.length;
+      let corrects = 0;
+      GAME.dataset.forEach((item, idx) => {
+        const chosen = GAME.answers[idx];
+        const isOk = chosen === item.correct;
+        if (isOk) corrects++;
+
+        const wrap = document.createElement('div');
+        wrap.className = 'item';
+        const q = document.createElement('div');
+        q.className = 'q';
+        q.textContent = item.q;
+
+        const a = document.createElement('div');
+        a.className = 'a ' + (isOk ? "ok" : "bad");
+        const chosenText = item.options[chosen] ?? "(sin respuesta)";
+        a.innerHTML = `<i>${isOk ? "✔" : "✖"}</i> Tu respuesta: ${chosenText}`;
+
+        const c = document.createElement('div');
+        c.className = 'c';
+        c.innerHTML = `<i>✔</i> Correcta: ${item.options[item.correct]}`;
+
+        const exp = document.createElement('div');
+        exp.className = 'exp';
+        exp.textContent = summarizeExp(item.exp);
+
+        wrap.appendChild(q);
+        wrap.appendChild(a);
+        wrap.appendChild(c);
+        wrap.appendChild(exp);
+        resultsList.appendChild(wrap);
+      });
+
+      scoreBadge.textContent = `${corrects}/${total} correctas`;
+      // Show results
+      resultsEl.classList.add('active');
+      // Allow internal scrolling for results
+      scene.style.overflowY = 'auto';
+      scene.style.touchAction = 'auto';
+      ensureFits(); // Re-evaluate, though results can scroll internally
+
+      // Final CTA behavior
+      rewardBtn.addEventListener('click', () => {
+        const url = "https://kampe-game-phaser.onrender.com/daily_streak?initData=" + encodeURIComponent(initData);
+        location.href = url;
+      });
+      if (!initData) {
+        initWarn.hidden = false;
+      }
+    }
+
+    function summarizeExp(text) {
+      // Ensure max ~180 chars per requirement
+      const t = String(text || "");
+      return t.length > 180 ? t.slice(0, 177).trimEnd() + "…" : t;
+    }
+
+    // ================== Fit & Safety functions ==================
+    function assertNoOverflow() {
+      // Verifica si la UI cabe en la escena visible
+      const fits = scene.scrollHeight <= scene.clientHeight + 1;
+      return fits;
+    }
+
+    function applyCompactMode() {
+      if (!scene.classList.contains('compact')) {
+        scene.classList.add('compact');
+      }
+    }
+
+    function fitBoardToViewport() {
+      // Reajusta variables para ahorrar espacio progresivamente
+      // Reducimos suave altura de botones si aún no cabe
+      const currBtnH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--btnH')) || 56;
+      if (currBtnH > 46) {
+        document.documentElement.style.setProperty('--btnH', Math.max(46, currBtnH - 4) + 'px');
+      }
+    }
+
+    function autoscaleUI() {
+      // Último recurso: escala total de la UI hasta .88
+      const step = 0.02;
+      let scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      if (scale > 0.88) {
+        scale = Math.max(0.88, scale - step);
+        document.documentElement.style.setProperty('--ui-scale', scale.toFixed(2));
+      }
+    }
+
+    function ensureFits() {
+      // Orden de acciones:
+      // 1) Chequear si cabe
+      if (assertNoOverflow()) return;
+      // 2) Activar modo compacto
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+      // 3) Recalcular tamaños de elementos (botones)
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      // 4) Escalar UI
+      autoscaleUI();
+      // No loop infinito: se invoca de nuevo si sigue sin caber
+      // En móviles pequeños, quizá haga falta más de una pasada:
+      // ejecutar hasta 4 iteraciones máximo
+      let safety = 0;
+      while (!assertNoOverflow() && safety < 4) {
+        fitBoardToViewport();
+        autoscaleUI();
+        safety++;
+      }
+    }
+
+    // ================== Init & Events ==================
+    function startGame() {
+      GAME.started = true;
+      introModal.style.display = 'none';
+      GAME.current = 0;
+      GAME.answers = [];
+      // Reset progress visuals
+      progBar.style.width = '0%';
+      render();
+      srStatus.textContent = "Reto iniciado. Pregunta 1 de " + GAME.dataset.length;
+    }
+
+    // Start button
+    startBtn.addEventListener('click', startGame);
+
+    // On load, pre-render first to measure
+    document.addEventListener('DOMContentLoaded', () => {
+      // Prefill first question for initial layout under modal
+      render();
+      ensureFits();
+    });
+
+    // Resize / orientation
+    let resizeTimer;
+    function onResize() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        ensureFits();
+      }, 120);
+    }
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+    // Keyboard: ensure options can be tabbed
+    optsEl.addEventListener('keydown', (e) => {
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && e.target.classList.contains('option')) {
+        e.preventDefault();
+        const next = e.target.nextElementSibling;
+        if (next && next.classList.contains('option') && next.dataset.hidden !== "true") next.focus();
+      }
+      if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && e.target.classList.contains('option')) {
+        e.preventDefault();
+        const prev = e.target.previousElementSibling;
+        if (prev && prev.classList.contains('option') && prev.dataset.hidden !== "true") prev.focus();
+      }
+    });
+
+    // Set progress bar initial state
+    progBar.style.width = '0%';
+
+    // Accessibility improvement: focus first option on render
+    const observer = new MutationObserver(() => {
+      const firstOpt = optsEl.querySelector('.option:not([data-hidden="true"])');
+      if (firstOpt) firstOpt.setAttribute('tabindex', '0');
+      optsEl.querySelectorAll('.option').forEach((b, i) => {
+        if (b.dataset.hidden === "true") return;
+        if (i > 0) b.setAttribute('tabindex', '0');
+      });
+    });
+    observer.observe(optsEl, { childList: true });
+
+    // Reward button initData hint
+    if (!initData) {
+      initWarn.hidden = false;
+    }
+
+  </script>
+</body>
+</html>
