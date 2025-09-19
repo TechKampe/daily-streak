@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>PRL Express: Taller Seguro ⚡ | Kämpe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#0e45ff;
+      --bg2:#0b1a4a;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --stroke: rgba(255,255,255,0.28);
+      --txt:#ffffff;
+      --txt-dim: rgba(255,255,255,0.78);
+      --accent:#6CFF7F;
+      --accent2:#00D1FF;
+      --warn:#FFC83D;
+      --bad:#FF5D73;
+      --good:#4BE08A;
+      --shadow: 0 10px 30px rgba(0,0,0,0.32);
+      --ui-scale:1;
+      --hudH:56px;
+      --optH:56px;
+      --gap:12px;
+      --radius:16px;
+      --focus:#fff;
+    }
+    *{ box-sizing:border-box; }
+    html, body{
+      height:100%;
+      background: linear-gradient(160deg, var(--bg1), var(--bg2));
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--txt);
+      overscroll-behavior: none;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Scene height: 100svh with fallbacks */
+    .scene{
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: stretch;
+      align-items: stretch;
+      padding: calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 12px);
+      overflow: hidden;
+      transform: translateZ(0);
+      contain: layout size style;
+    }
+    @supports (height: 100svh){ .scene{ height: 100svh; } }
+    @supports not (height: 100svh){ @supports (height: 100dvh){ .scene{ height: 100dvh; } } }
+    @supports not (height: 100svh){ @supports not (height: 100dvh){ .scene{ height: 100vh; } } }
+
+    .bg-avatar{
+      position: absolute;
+      inset:0;
+      pointer-events: none;
+      background: radial-gradient(60% 60% at 80% 85%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 60%) no-repeat;
+      z-index: 0;
+    }
+    .bg-avatar img{
+      position: absolute;
+      right: -6%;
+      bottom: -4%;
+      width: 56%;
+      max-width: 320px;
+      opacity: .35;
+      filter: saturate(1.2) drop-shadow(0 10px 30px rgba(0,0,0,.25));
+      user-select: none;
+    }
+
+    .ui{
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      height: 100%;
+    }
+
+    /* HUD */
+    .hud{
+      display:flex;
+      align-items: center;
+      justify-content: space-between;
+      height: var(--hudH);
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      gap: 10px;
+      min-height: 48px;
+    }
+    .brand{
+      display:flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .brand img{ height: 26px; width:auto; display:block; }
+    .title{
+      font-weight: 800;
+      font-size: clamp(14px, 3.5vw, 16px);
+      letter-spacing: 0.2px;
+      color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,.35);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
+    }
+    .progress{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--txt);
+      font-weight: 700;
+      font-size: clamp(14px, 3.5vw, 16px);
+    }
+    .pills{
+      display:flex; gap:6px;
+    }
+    .dot{
+      width:10px; height:10px; border-radius: 999px;
+      background: rgba(255,255,255,.28);
+      outline: 1px solid rgba(255,255,255,.18);
+    }
+    .dot.on{ background: linear-gradient(180deg, var(--accent2), #6efcff); }
+
+    /* Gameplay card */
+    .gameplay{
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--glass), rgba(255,255,255,0.08));
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      flex: 1;
+      min-height: 0;
+      touch-action: none; /* anti-derrapes en gameplay */
+    }
+    .qwrap{
+      display:flex;
+      flex-direction: column;
+      gap: 12px;
+      flex:1;
+      min-height: 0;
+    }
+    .qhead{
+      display:flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .qtag{
+      padding: 6px 10px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.20);
+      font-size: clamp(11px, 2.8vw, 12px);
+      font-weight: 700;
+      color: var(--txt-dim);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+    .qtext{
+      font-size: clamp(16px, 4.6vw, 20px);
+      font-weight: 800;
+      line-height: 1.15;
+      text-shadow: 0 2px 10px rgba(0,0,0,.25);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      min-height: 2.4em;
+    }
+
+    .options{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: var(--gap);
+      align-content: start;
+    }
+    .opt{
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, var(--glass-strong), rgba(255,255,255,0.1));
+      color: var(--txt);
+      border-radius: 14px;
+      padding: 12px 14px;
+      min-height: var(--optH);
+      display:flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: clamp(14px, 4vw, 16px);
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+      outline: none;
+      transition: transform .12s ease, background .12s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+    .opt:hover{ transform: translateY(-1px); background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.12)); }
+    .opt:active{ transform: scale(.98); }
+    .opt:focus-visible{ box-shadow: 0 0 0 3px rgba(0,209,255,.6), 0 8px 18px rgba(0,0,0,.25); }
+    .txt{
+      flex:1; min-width: 0;
+      overflow:hidden; text-overflow: ellipsis;
+      display:-webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    }
+    .key{
+      flex:0 0 auto;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.16);
+      font-size: 12px; font-weight: 800;
+    }
+
+    /* Animations between turns */
+    .turn{
+      will-change: transform, opacity;
+      transition: transform .22s ease, opacity .22s ease;
+    }
+    .turn.out{ transform: translateY(-10px); opacity: 0; }
+    .turn.in{ transform: translateY(0); opacity: 1; }
+
+    /* Intro modal */
+    .modal{
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: linear-gradient(180deg, rgba(8,17,41,.66), rgba(8,17,41,.66));
+      z-index: 5;
+    }
+    .modal.on{ display: flex; }
+    .sheet{
+      width: 100%;
+      max-width: 520px;
+      max-height: 90svh;
+      @supports not (max-height: 90svh){ max-height: 90vh; }
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.1));
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      backdrop-filter: blur(14px);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      overflow-y: auto;
+      display:flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sheet h2{
+      margin:0;
+      font-size: clamp(18px,5.2vw,22px);
+      font-weight: 900;
+      letter-spacing: .2px;
+    }
+    .sheet p{
+      margin:0;
+      color: var(--txt-dim);
+      font-size: clamp(13px, 3.6vw, 14px);
+      line-height: 1.25;
+    }
+    .cta{
+      margin-top: 8px;
+      display:flex; gap:10px; align-items:center; justify-content:center;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center; justify-content:center;
+      padding: 12px 16px;
+      min-height: 48px;
+      min-width: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.32);
+      background: linear-gradient(180deg, #00d1ff, #0085ff);
+      color:#03132e;
+      font-weight: 900; letter-spacing:.2px;
+      text-shadow: 0 1px 0 rgba(255,255,255,.35);
+      box-shadow: 0 10px 25px rgba(0, 133, 255, .4);
+      cursor:pointer;
+      outline: none;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 14px 30px rgba(0, 133, 255, .48); }
+    .btn:active{ transform: translateY(0) scale(.98); }
+    .btn:focus-visible{ box-shadow: 0 0 0 3px rgba(255,255,255,.55), 0 10px 25px rgba(0, 133, 255, .4); }
+
+    /* Results screen (scrollable only here) */
+    .scene.results{ overflow-y: auto; }
+    .results{
+      display:none;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--glass), rgba(255,255,255,0.08));
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      min-height: 0;
+    }
+    .results.on{ display:flex; }
+    .score{
+      display:flex; align-items:center; justify-content: space-between;
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.2);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 800;
+    }
+    .items{ display:flex; flex-direction: column; gap: 8px; }
+    .item{
+      display:grid; grid-template-columns: 1fr auto; grid-template-rows:auto auto; gap:6px 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08));
+      border:1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+    .iq{ grid-column: 1 / -1; font-weight: 800; font-size: 14px; }
+    .ia, .ic{
+      font-size: 13px;
+      color: var(--txt-dim);
+    }
+    .ia b{ color: var(--bad); }
+    .ic b{ color: var(--good); }
+    .iexp{
+      grid-column: 1 / -1;
+      font-size: 12px; color: #e6f7ff;
+      background: rgba(0,209,255,.12);
+      border: 1px solid rgba(0,209,255,.25);
+      padding: 8px; border-radius: 10px;
+    }
+    .advice{
+      font-size: 13px; color: var(--txt);
+      background: rgba(75,224,138,.12);
+      border: 1px solid rgba(75,224,138,.35);
+      padding: 10px 12px; border-radius: 12px;
+      font-weight: 700;
+    }
+    .results-footer{
+      position: sticky; bottom: 0; left:0; right:0;
+      display:flex; flex-direction: column; gap: 6px;
+      background: linear-gradient(180deg, rgba(6, 18, 49, 0), rgba(6, 18, 49, .6));
+      padding-top: 8px;
+      margin-top: 4px;
+    }
+    .miniwarn{
+      font-size: 12px;
+      color: #ffe28a;
+      text-align: center;
+    }
+
+    /* Compact mode to free space */
+    .compact .hud{ height: 48px; }
+    .compact .title{ font-size: 13px; }
+    .compact .progress{ font-size: 13px; }
+    .compact .qtext{ font-size: 16px; -webkit-line-clamp: 2; }
+    .compact .opt{ min-height: 48px; font-size: 14px; padding: 10px 12px; }
+    .compact .gameplay{ padding: 10px; }
+    .compact .options{ gap: 10px; }
+    .compact .qtag{ display:none; }
+
+    /* Utility */
+    .hidden{ display:none !important; }
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene">
+    <div class="bg-avatar" aria-hidden="true">
+      <img src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy">
+    </div>
+
+    <div class="ui" id="ui">
+      <!-- HUD -->
+      <header class="hud" aria-label="Encabezado del reto">
+        <div class="brand">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          <div class="title" id="challengeTitle">PRL Express: Taller Seguro ⚡</div>
+        </div>
+        <div class="progress">
+          <span id="progressText">1/5</span>
+          <div class="pills" aria-hidden="true" id="pills"></div>
+        </div>
+      </header>
+
+      <!-- Gameplay -->
+      <main class="gameplay" id="gameplay" aria-live="polite" aria-atomic="true">
+        <div class="qwrap turn in" id="turn">
+          <div class="qhead">
+            <div class="qtag">Electricidad · PRL</div>
+            <div class="qtag" id="miniProgress">1/5</div>
+          </div>
+          <div class="qtext" id="qText">Pregunta</div>
+          <div class="options" id="options"></div>
+        </div>
+      </main>
+
+      <!-- Results (hidden until end) -->
+      <section class="results" id="results" aria-live="polite" aria-atomic="true">
+        <div class="score">
+          <div><strong>Tu puntuación</strong></div>
+          <div id="scoreText">0/5</div>
+        </div>
+        <div class="items" id="items"></div>
+        <div class="advice" id="advice">Si no puedes garantizar un entorno seguro, detén la tarea y pide apoyo; la seguridad va primero.</div>
+        <div class="results-footer">
+          <button class="btn" id="rewardBtn" type="button">Ver mi recompensa</button>
+          <div class="miniwarn hidden" id="initWarn">No se detectó initData. Aún puedes continuar.</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Intro modal -->
+    <div class="modal on" id="intro">
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+        <h2 id="introTitle">PRL Express: Taller Seguro ⚡</h2>
+        <p>Escenario: primer día como aprendiz electricista. Revisa seguridad antes de tocar cables. Responde 5 preguntas rápidas.</p>
+        <p>Dinámica: toca la opción correcta. Avanza solo. ¡Listo en 1 minuto!</p>
+        <div class="cta">
+          <button class="btn" id="startBtn" type="button" aria-label="Empezar reto">Empezar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------
+    // Data and helpers
+    // -----------------------------
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+
+    // Quiz pack: 5 questions, options <=48 chars, explanations <=180 chars
+    const pack = [
+      {
+        q: "¿Qué EPI usas para abrir el cuadro?",
+        options: [
+          { t: "Guantes dieléctricos y gafas", correct: true },
+          { t: "Guantes de cuero", correct: false },
+          { t: "Sin EPI, solo cuidado", correct: false }
+        ],
+        exp: "Guantes dieléctricos y gafas aíslan y protegen de arcos. El cuero no aísla."
+      },
+      {
+        q: "Enchufe chisporrotea. ¿Primero?",
+        options: [
+          { t: "Cortar la energía del circuito", correct: true },
+          { t: "Tocar el enchufe con guantes", correct: false },
+          { t: "Echar agua", correct: false },
+          { t: "Avisar sin actuar", correct: false }
+        ],
+        exp: "Quitar la energía reduce el riesgo de choque e incendio. Nunca uses agua."
+      },
+      {
+        q: "Colocación segura de la escalera",
+        options: [
+          { t: "Ángulo 75° y apoyos firmes", correct: true },
+          { t: "A 90° pegada a pared", correct: false },
+          { t: "Sobre suelo mojado", correct: false },
+          { t: "Frente a una puerta abierta", correct: false }
+        ],
+        exp: "Regla 4:1 (75°) y apoyos firmes previenen caídas. Evita suelos inestables."
+      },
+      {
+        q: "Uso correcto del alargador",
+        options: [
+          { t: "Sin nudos, potencia adecuada y sin enrollar", correct: true },
+          { t: "Enrollado y bajo alfombra", correct: false },
+          { t: "Varias T/regletas en cascada", correct: false }
+        ],
+        exp: "Sin nudos ni enrollado: menos calor y tropiezos. Usa sección y potencia correctas."
+      },
+      {
+        q: "Antes de cortar la luz al cliente…",
+        options: [
+          { t: "Avisas y acuerdas momento seguro", correct: true },
+          { t: "Cortas sin avisar", correct: false },
+          { t: "Solo envías un texto", correct: false },
+          { t: "Lo haces y pides permiso luego", correct: false }
+        ],
+        exp: "Avisar y acordar el momento evita problemas con equipos y con el cliente."
+      }
+    ];
+
+    // Trim helper to avoid layout breaks
+    function trimTo(str, max){
+      if(!str) return "";
+      const s = String(str).trim();
+      return s.length <= max ? s : s.slice(0, Math.max(0, max-1)).trim() + "…";
+    }
+
+    // -----------------------------
+    // State
+    // -----------------------------
+    let current = 0;
+    const answers = []; // { idx, text, correct }
+
+    // -----------------------------
+    // DOM refs
+    // -----------------------------
+    const scene = document.getElementById('scene');
+    const gameplay = document.getElementById('gameplay');
+    const results = document.getElementById('results');
+    const turnEl = document.getElementById('turn');
+    const qText = document.getElementById('qText');
+    const optionsEl = document.getElementById('options');
+    const progressText = document.getElementById('progressText');
+    const miniProgress = document.getElementById('miniProgress');
+    const pills = document.getElementById('pills');
+    const startBtn = document.getElementById('startBtn');
+    const intro = document.getElementById('intro');
+    const itemsEl = document.getElementById('items');
+    const scoreText = document.getElementById('scoreText');
+    const adviceEl = document.getElementById('advice');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+
+    // Build pills
+    function renderPills(){
+      pills.innerHTML = '';
+      for(let i=0;i<pack.length;i++){
+        const d = document.createElement('div');
+        d.className = 'dot' + (i<current ? ' on':'');
+        pills.appendChild(d);
+      }
+    }
+
+    // Render current question
+    function renderTurn(){
+      const data = pack[current];
+      const total = pack.length;
+      // keep texts compact
+      const q = trimTo(data.q, 64);
+      qText.textContent = q;
+      progressText.textContent = `${current+1}/${total}`;
+      miniProgress.textContent = `${current+1}/${total}`;
+      renderPills();
+
+      // Build options
+      optionsEl.innerHTML = '';
+      const letters = ['A','B','C','D','E'];
+      data.options.forEach((opt, idx)=>{
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'opt';
+        btn.setAttribute('aria-label', `Respuesta ${letters[idx]}: ${opt.t}`);
+        btn.dataset.index = idx;
+
+        const spanTxt = document.createElement('span');
+        spanTxt.className = 'txt';
+        spanTxt.textContent = trimTo(opt.t, 48);
+
+        const key = document.createElement('span');
+        key.className = 'key';
+        key.textContent = letters[idx];
+
+        btn.appendChild(spanTxt);
+        btn.appendChild(key);
+
+        btn.addEventListener('click', ()=>onChoose(idx));
+        btn.addEventListener('keydown', (e)=>{
+          if(e.key==='Enter' || e.key===' '){ e.preventDefault(); btn.click(); }
+        });
+
+        optionsEl.appendChild(btn);
+      });
+
+      ensureFits();
+    }
+
+    // Handle answer and auto-advance with animation
+    function onChoose(idx){
+      const data = pack[current];
+      const chosen = data.options[idx];
+      answers[current] = { idx, text: chosen.t, correct: !!chosen.correct };
+      // animate out
+      turnEl.classList.remove('in');
+      turnEl.classList.add('out');
+      disableOptions(true);
+
+      setTimeout(()=>{
+        // next
+        current++;
+        if(current < pack.length){
+          turnEl.classList.remove('out');
+          // update UI
+          renderTurn();
+          // animate in
+          requestAnimationFrame(()=> turnEl.classList.add('in'));
+          // re-enable
+          disableOptions(false);
+        }else{
+          showResults();
+        }
+      }, 220);
+    }
+
+    function disableOptions(state){
+      Array.from(optionsEl.children).forEach(b=> b.disabled = state);
+    }
+
+    // Results
+    function showResults(){
+      // lock gameplay area and switch to results view
+      gameplay.classList.add('hidden');
+      results.classList.add('on');
+      scene.classList.add('results'); // allow local scroll
+
+      // pills full on
+      pills.innerHTML = '';
+      for(let i=0;i<pack.length;i++){
+        const d = document.createElement('div');
+        d.className = 'dot on';
+        pills.appendChild(d);
+      }
+      progressText.textContent = `${pack.length}/${pack.length}`;
+
+      // score
+      const corrects = answers.filter(a=>a && a.correct).length;
+      scoreText.textContent = `${corrects}/${pack.length}`;
+
+      // items
+      itemsEl.innerHTML = '';
+      pack.forEach((q, i)=>{
+        const my = answers[i] || { idx: -1, text: "Sin respuesta", correct: false };
+        const rightIndex = q.options.findIndex(o=>o.correct);
+        const rightText = q.options[rightIndex]?.t || "";
+        const item = document.createElement('div');
+        item.className = 'item';
+        const iq = document.createElement('div');
+        iq.className = 'iq';
+        iq.textContent = trimTo(q.q, 64);
+        const ia = document.createElement('div');
+        ia.className = 'ia';
+        ia.innerHTML = `Tu respuesta: <b>${trimTo(my.text, 48) || "—"}</b>`;
+        const ic = document.createElement('div');
+        ic.className = 'ic';
+        ic.innerHTML = `Correcta: <b>${trimTo(rightText, 48)}</b>`;
+        const iexp = document.createElement('div');
+        iexp.className = 'iexp';
+        iexp.textContent = trimTo(q.exp, 180);
+
+        item.append(iq, ia, ic, iexp);
+        itemsEl.appendChild(item);
+      });
+
+      // initData warning
+      if(!initData){ initWarn.classList.remove('hidden'); }
+
+      ensureFits(); // recalibrate after layout change
+    }
+
+    // Start
+    startBtn.addEventListener('click', ()=>{
+      intro.classList.remove('on');
+      renderTurn();
+      // safety fit check after intro closes
+      setTimeout(ensureFits, 100);
+    });
+
+    // Reward CTA
+    rewardBtn.addEventListener('click', ()=>{
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      location.href = url;
+    });
+
+    // -----------------------------
+    // Fit to viewport functions
+    // -----------------------------
+    function assertNoOverflow(){
+      const fits = scene.scrollHeight <= scene.clientHeight + 1;
+      return fits;
+    }
+
+    function applyCompactMode(){
+      if(!document.body.classList.contains('compact')){
+        document.body.classList.add('compact');
+      }
+    }
+
+    function fitBoardToViewport(){
+      // tighten option height and gaps a bit
+      const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--optH')) || 56;
+      if(cur > 48){
+        document.documentElement.style.setProperty('--optH','48px');
+        document.documentElement.style.setProperty('--gap','10px');
+      }
+    }
+
+    function autoscaleUI(){
+      // downscale UI to min 0.88 if needed
+      const root = document.documentElement;
+      const currentScale = parseFloat(getComputedStyle(root).getPropertyValue('--ui-scale')) || 1;
+      if(currentScale > 0.88){
+        const next = Math.max(0.88, currentScale - 0.04);
+        root.style.setProperty('--ui-scale', String(next));
+      }
+    }
+
+    function ensureFits(){
+      // Reset potentially scaled state first to avoid cumulative shrink on rapid calls
+      // But keep it gentle: only on first calls during gameplay
+      let steps = 0;
+      const maxSteps = 6;
+      while(!assertNoOverflow() && steps < maxSteps){
+        if(steps === 0){
+          applyCompactMode();
+        } else if(steps === 1){
+          fitBoardToViewport();
+        } else {
+          autoscaleUI();
+        }
+        steps++;
+      }
+    }
+
+    window.addEventListener('resize', ()=> {
+      ensureFits();
+    });
+    window.addEventListener('orientationchange', ()=>{
+      setTimeout(ensureFits, 150);
+    });
+
+    // Initial pills render and prefit
+    renderPills();
+    ensureFits();
+
+    // Accessibility: allow keyboard focus traversal
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+        const focusables = Array.from(document.querySelectorAll('.opt:not([disabled])'));
+        if(!focusables.length) return;
+        const idx = focusables.indexOf(document.activeElement);
+        if(e.key === 'ArrowDown'){
+          const next = focusables[(idx+1) % focusables.length];
+          next.focus();
+          e.preventDefault();
+        } else if(e.key === 'ArrowUp'){
+          const prev = focusables[(idx-1+focusables.length) % focusables.length];
+          prev.focus();
+          e.preventDefault();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
