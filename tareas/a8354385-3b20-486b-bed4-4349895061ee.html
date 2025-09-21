@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>PRL Flash: ¿EPP, Herramienta o Riesgo? ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* =========================
+       Base, Reset & Variables
+    ========================== */
+    :root{
+      --bg1: #0c5eff;
+      --bg2: #1b6cff;
+      --bg3: #072053;
+      --glass-bg: rgba(255,255,255,0.12);
+      --glass-bd: rgba(255,255,255,0.35);
+      --text: #ffffff;
+      --muted: #cfe3ff;
+      --accent: #6ae1ff;
+      --epp: #16db65;
+      --tool: #ffd166;
+      --risk: #ff5d5d;
+      --epp-ink:#073d22;
+      --tool-ink:#3b2b00;
+      --risk-ink:#400808;
+
+      --chipH: 112px;        /* Central chip height (can be reduced on fit) */
+      --catH: 64px;          /* Category button height (reduced on fit) */
+      --ui-scale: 1;         /* Auto scaling last resort */
+      --gap: 12px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --shadow-1: 0 10px 30px rgba(0,0,0,0.25);
+      --shadow-2: 0 6px 18px rgba(0,0,0,0.22);
+      --focus: 0 0 0 3px rgba(255,255,255,0.5);
+
+      --title-size: clamp(18px, 3.6vw, 22px);
+      --hud-size: clamp(12px, 2.8vw, 14px);
+      --chip-size: clamp(18px, 4.2vw, 22px);
+      --btn-size: clamp(14px, 3.6vw, 16px);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin:0; padding:0; }
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    body {
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 600px at 20% -10%, #2b7bff 0%, rgba(43,123,255,0) 60%) , linear-gradient(160deg, var(--bg1), var(--bg2) 40%, var(--bg3) 100%);
+      background-attachment: fixed;
+    }
+
+    /* =========================
+       Scene (full viewport)
+    ========================== */
+    .scene {
+      position: relative;
+      width: 100%;
+      max-width: 560px; /* optional desktop narrow frame */
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
+      padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      touch-action: none; /* anti-derrapes */
+      isolation: isolate;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { @supports (height: 100dvh) { .scene { height: 100dvh; } } }
+    @supports not (height: 100svh) { @supports not (height: 100dvh) { .scene { height: 100vh; } } }
+
+    /* Background avatar */
+    .avatar-bg {
+      position: absolute;
+      inset: 0;
+      background: url('https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png') center right/contain no-repeat;
+      opacity: 0.18;
+      filter: saturate(1.1) contrast(1.05);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* HUD */
+    .hud {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid var(--glass-bd);
+      backdrop-filter: blur(8px);
+      padding: 6px 10px;
+      border-radius: 999px;
+      box-shadow: var(--shadow-2);
+    }
+    .brand img {
+      width: 22px;
+      height: 22px;
+      display: block;
+    }
+    .brand .title {
+      font-weight: 800;
+      font-size: var(--title-size);
+      letter-spacing: 0.2px;
+      line-height: 1;
+    }
+
+    .progress {
+      display: grid;
+      grid-auto-flow: column;
+      gap: 8px;
+      align-items: center;
+      justify-content: end;
+    }
+    .progress .count {
+      font-size: var(--hud-size);
+      color: var(--muted);
+      min-width: 50px;
+      text-align: right;
+    }
+    .progress .bar {
+      width: 120px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.2);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .progress .bar span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #7df8ff, #6ae1ff);
+    }
+
+    /* Play area */
+    .play {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 8px;
+    }
+    .subtitle {
+      font-size: var(--hud-size);
+      color: var(--muted);
+      text-align: center;
+      max-width: 90%;
+      opacity: 0.9;
+      display: none; /* hide during gameplay to save space */
+    }
+
+    .item-chip {
+      display: grid;
+      place-items: center;
+      text-align: center;
+      max-width: 88%;
+      height: var(--chipH);
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.10));
+      border: 1px solid var(--glass-bd);
+      color: var(--text);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-1);
+      font-weight: 800;
+      font-size: var(--chip-size);
+      letter-spacing: 0.2px;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      user-select: none;
+      position: relative;
+    }
+    .item-chip::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(80px 40px at 50% 0%, rgba(255,255,255,0.20), transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Categories */
+    .categories {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+    }
+    .cat {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 8px;
+      height: var(--catH);
+      border-radius: var(--radius-md);
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.35);
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow-2);
+      padding: 10px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+    .cat:focus-visible { box-shadow: var(--shadow-2), var(--focus); }
+    .cat .icon {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      font-size: 18px;
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+    .cat .label {
+      font-weight: 800;
+      font-size: var(--btn-size);
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .cat[data-id="EPP"] { background: linear-gradient(180deg, rgba(22,219,101,0.38), rgba(22,219,101,0.15)); }
+    .cat[data-id="Herramienta"] { background: linear-gradient(180deg, rgba(255,209,102,0.38), rgba(255,209,102,0.15)); }
+    .cat[data-id="Riesgo"] { background: linear-gradient(180deg, rgba(255,93,93,0.38), rgba(255,93,93,0.15)); }
+
+    /* Drop animation layer */
+    .fx-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .drop-clone {
+      position: absolute;
+      padding: 8px 12px;
+      background: #fff;
+      color: #000;
+      border-radius: 12px;
+      font-weight: 800;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      white-space: nowrap;
+      transform-origin: center;
+      will-change: transform, opacity;
+    }
+
+    /* Ripple visual cue on category */
+    .cat.ripple::after {
+      content:'';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at var(--rx,50%) var(--ry,50%), rgba(255,255,255,0.8), transparent 50%);
+      animation: rippleOut 380ms ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes rippleOut {
+      from { opacity: 0.75; transform: scale(0.8); }
+      to { opacity: 0; transform: scale(1.8); }
+    }
+
+    /* Modals (Intro / Results) */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(7,10,26,0.7), rgba(7,10,26,0.92));
+      display: grid;
+      place-items: center;
+      z-index: 10;
+      padding: 12px;
+    }
+    .modal-card {
+      width: min(680px, 92%);
+      max-height: 90svh;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 18px;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow-1);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .modal-header {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    .modal-header img { width: 28px; height: 28px; }
+    .modal-title { font-weight: 800; font-size: clamp(18px, 4.2vw, 24px); }
+    .modal-body {
+      padding: 14px;
+      overflow-y: auto;
+    }
+    .modal-body p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: clamp(14px, 3.6vw, 16px);
+    }
+    .modal-footer {
+      padding: 14px;
+      display: grid;
+      grid-auto-flow: row;
+      gap: 10px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 44px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: clamp(14px, 3.8vw, 16px);
+      cursor: pointer;
+      text-align: center;
+      border: 0;
+      color: #0b1a3a;
+      background: linear-gradient(180deg, #7df8ff, #6ae1ff);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+    }
+    .btn:focus-visible { outline: none; box-shadow: 0 8px 22px rgba(0,0,0,0.35), var(--focus); }
+    .btn.secondary { background: linear-gradient(180deg, #ffd166, #f3b24a); color: #352100; }
+    .btn.ghost { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.35); }
+
+    /* Results list */
+    .results-list {
+      display: grid;
+      gap: 8px;
+    }
+    .result-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: start;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .result-title {
+      font-weight: 800;
+      font-size: 15px;
+      margin-bottom: 4px;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .result-explain {
+      font-size: 13px;
+      color: var(--muted);
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.15);
+    }
+    .tag.ok { background: rgba(22,219,101,0.25); border-color: rgba(22,219,101,0.5); }
+    .tag.bad { background: rgba(255,93,93,0.25); border-color: rgba(255,93,93,0.5); }
+
+    .results-summary {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .final-tip {
+      margin: 10px 0 0;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.2);
+      font-size: 14px;
+    }
+    .warning {
+      color: #ffe9a6;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    /* Compact mode to free space */
+    body.compact .brand .title { font-size: clamp(16px, 3.0vw, 18px); }
+    body.compact .progress .bar { width: 100px; height: 6px; }
+    body.compact .item-chip { height: calc(var(--chipH) - 18px); font-size: clamp(16px, 3.6vw, 20px); }
+    body.compact .cat { height: calc(var(--catH) - 8px); }
+    body.compact .categories { gap: 10px; }
+
+    /* Accessibility helpers */
+    .sr { position: absolute; left: -9999px; width:1px; height:1px; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <div class="avatar-bg" aria-hidden="true"></div>
+
+    <!-- HUD -->
+    <header class="hud">
+      <div class="brand" aria-label="Kämpe">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title">PRL Flash ⚡</div>
+      </div>
+      <div class="progress">
+        <div class="count" id="count">0/10</div>
+        <div class="bar"><span id="bar" style="width:0%"></span></div>
+      </div>
+    </header>
+
+    <!-- Play area -->
+    <main class="play" id="playArea" role="region" aria-label="Zona de juego">
+      <div class="subtitle" id="subtitle">Clasifica el ítem tocando una categoría.</div>
+      <div class="item-chip" id="itemChip" aria-live="assertive">—</div>
+    </main>
+
+    <!-- Categories -->
+    <footer class="categories" id="categories">
+      <button class="cat" data-id="EPP" aria-label="Elegir EPP (Equipo de Protección Personal)">
+        <div class="icon">🛡️</div>
+        <div class="label">EPP</div>
+      </button>
+      <button class="cat" data-id="Herramienta" aria-label="Elegir Herramienta">
+        <div class="icon">🪛</div>
+        <div class="label">Herramienta</div>
+      </button>
+      <button class="cat" data-id="Riesgo" aria-label="Elegir Riesgo">
+        <div class="icon">⚠️</div>
+        <div class="label">Riesgo</div>
+      </button>
+    </footer>
+
+    <!-- FX layer for drop animation -->
+    <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
+  </div>
+
+  <!-- Intro Modal -->
+  <div class="modal" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" loading="lazy">
+        <div class="modal-title" id="introTitle">PRL Flash: ¿EPP, Herramienta o Riesgo? ⚡</div>
+      </div>
+      <div class="modal-body" id="introBody">
+        <p>Escenario: eres aprendiz de electricidad; vas a revisar un cuadro y la zona de trabajo.</p>
+        <p>Tu formador lanza ítems. En cada turno toca EPP, Herramienta o Riesgo. ¡Decide rápido!</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Modal -->
+  <div class="modal" id="resultsModal" role="dialog" aria-modal="true" aria-labelledby="resultsTitle" style="display:none">
+    <div class="modal-card">
+      <div class="modal-header">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" loading="lazy">
+        <div class="modal-title" id="resultsTitle">Resultados del reto</div>
+      </div>
+      <div class="modal-body">
+        <div class="results-summary" id="summary"></div>
+        <div class="results-list" id="resultsList" role="list"></div>
+        <div class="final-tip">Consejo: antes de actuar piensa “¿me protege, me sirve o me expone?”. Esa pregunta te ayuda a categorizar al instante en el trabajo.</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn secondary" id="retryBtn" aria-label="Reintentar y mejorar tiempo">Reintentar y mejorar tiempo</button>
+        <button class="btn" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        <div class="warning" id="initDataWarn" style="display:none">Aviso: initData no encontrado; se enviará vacío.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===========================================
+       Data, State & Utilities
+    ============================================ */
+    const categories = [
+      { id: 'EPP', emoji:'🛡️', color: getComputedStyle(document.documentElement).getPropertyValue('--epp') },
+      { id: 'Herramienta', emoji:'🪛', color: getComputedStyle(document.documentElement).getPropertyValue('--tool') },
+      { id: 'Riesgo', emoji:'⚠️', color: getComputedStyle(document.documentElement).getPropertyValue('--risk') },
+    ];
+    const itemsPool = [
+      { text: 'Guantes dieléctricos', correct: 'EPP', explain: 'Guantes aislantes que te protegen de descargas eléctricas. Es EPP.' },
+      { text: 'Gafas de seguridad', correct: 'EPP', explain: 'Protegen tus ojos de chispas, polvo o fragmentos. Es EPP.' },
+      { text: 'Calzado de seguridad', correct: 'EPP', explain: 'Suela aislante y puntera reducen daño y conducción. Es EPP.' },
+      { text: 'Destornillador aislado', correct: 'Herramienta', explain: 'Afloja o aprieta tornillos con aislamiento para trabajos eléctricos. Es herramienta.' },
+      { text: 'Multímetro', correct: 'Herramienta', explain: 'Mide tensión, continuidad y otras magnitudes. Es una herramienta.' },
+      { text: 'Pelacables', correct: 'Herramienta', explain: 'Retira el aislamiento del cable sin dañarlo. Es herramienta.' },
+      { text: 'Cable pelado', correct: 'Riesgo', explain: 'Conductor expuesto que puede causar choque eléctrico o cortocircuito. Es un riesgo inmediato.' },
+      { text: 'Escalera mojada', correct: 'Riesgo', explain: 'Superficie resbaladiza y conductora; aumenta caída y electrocución. Es riesgo.' },
+      { text: 'Enchufe sobrecargado', correct: 'Riesgo', explain: 'Demasiados equipos elevan la temperatura y el riesgo de incendio. Es riesgo.' },
+      { text: 'Manos húmedas', correct: 'Riesgo', explain: 'La humedad baja la resistencia del cuerpo y favorece la descarga. Es riesgo.' },
+    ];
+    const TOTAL = 10;
+
+    let deck = [];
+    let step = 0;
+    let answers = []; // {text, picked, correct, explain, isRight}
+    let startedAt = 0;
+    let finishedAt = 0;
+
+    // Query param initData preservation
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || "";
+
+    // Shallow shuffle
+    function shuffle(a){
+      const arr = a.slice();
+      for(let i=arr.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [arr[i],arr[j]]=[arr[j],arr[i]];
+      }
+      return arr;
+    }
+
+    // Clamp display text to limit (48 chars)
+    function clampLabel(str, max=48){
+      if(!str) return '';
+      const clean = (str+'').trim();
+      if(clean.length<=max) return clean;
+      return clean.slice(0, max-1) + '…';
+    }
+
+    /* ===========================================
+       DOM Refs
+    ============================================ */
+    const scene = document.getElementById('scene');
+    const playArea = document.getElementById('playArea');
+    const itemChip = document.getElementById('itemChip');
+    const categoriesElm = document.getElementById('categories');
+    const fxLayer = document.getElementById('fxLayer');
+    const countElm = document.getElementById('count');
+    const barElm = document.getElementById('bar');
+
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+
+    const resultsModal = document.getElementById('resultsModal');
+    const resultsList = document.getElementById('resultsList');
+    const summaryElm = document.getElementById('summary');
+    const retryBtn = document.getElementById('retryBtn');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initDataWarn = document.getElementById('initDataWarn');
+
+    /* ===========================================
+       Fit & Layout Guards
+    ============================================ */
+    function assertNoOverflow() {
+      // Return true if scene fits vertically
+      return scene.scrollHeight <= scene.clientHeight;
+    }
+    function applyCompactMode(enable=true){
+      document.body.classList.toggle('compact', !!enable);
+    }
+    function fitBoardToViewport(){
+      // Reduce chip/buttons sizes slightly through CSS variables
+      document.documentElement.style.setProperty('--chipH', '96px');
+      document.documentElement.style.setProperty('--catH', '56px');
+    }
+    function autoscaleUI(minScale=0.88){
+      // Last resort: scale down UI until it fits or hit minScale
+      let scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      let guard = 0;
+      while(!assertNoOverflow() && scale > minScale && guard < 12){
+        scale -= 0.02;
+        document.documentElement.style.setProperty('--ui-scale', String(scale));
+        guard++;
+      }
+    }
+    function resetFitTweaks(){
+      document.body.classList.remove('compact');
+      document.documentElement.style.setProperty('--chipH', '112px');
+      document.documentElement.style.setProperty('--catH', '64px');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+    }
+    function ensureFits(){
+      // Reset and attempt progressive adjustments
+      resetFitTweaks();
+      if(assertNoOverflow()) return;
+      applyCompactMode(true);
+      if(assertNoOverflow()) return;
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+      autoscaleUI();
+    }
+
+    window.addEventListener('resize', ensureFits, {passive:true});
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100), {passive:true});
+
+    /* ===========================================
+       Gameplay
+    ============================================ */
+    function setup(){
+      deck = shuffle(itemsPool).slice(0, TOTAL);
+      step = 0;
+      answers = [];
+      startedAt = 0;
+      finishedAt = 0;
+      updateProgress();
+      itemChip.textContent = '—';
+      // Focus first category for accessibility hint
+      setTimeout(() => {
+        const firstCat = categoriesElm.querySelector('.cat');
+        if (firstCat) firstCat.blur();
+      }, 50);
+      ensureFits();
+    }
+
+    function startGame(){
+      introModal.style.display = 'none';
+      startedAt = performance.now();
+      showItem();
+      ensureFits();
+    }
+
+    function updateProgress(){
+      countElm.textContent = `${Math.min(step, TOTAL)}/${TOTAL}`;
+      const pct = (step/TOTAL)*100;
+      barElm.style.width = `${pct}%`;
+    }
+
+    function showItem(){
+      if(step >= deck.length){
+        endGame();
+        return;
+      }
+      const current = deck[step];
+      itemChip.textContent = clampLabel(current.text);
+      updateProgress();
+    }
+
+    function animateDropToCategory(catBtn, labelText, done){
+      const chipRect = itemChip.getBoundingClientRect();
+      const catRect  = catBtn.getBoundingClientRect();
+      const sceneRect = scene.getBoundingClientRect();
+
+      // Create a floating clone with white bg for contrast
+      const clone = document.createElement('div');
+      clone.className = 'drop-clone';
+      clone.textContent = clampLabel(labelText);
+      fxLayer.appendChild(clone);
+
+      const startX = chipRect.left - sceneRect.left + chipRect.width/2;
+      const startY = chipRect.top  - sceneRect.top  + chipRect.height/2;
+      const endX   = catRect.left  - sceneRect.left + catRect.width/2;
+      const endY   = catRect.top   - sceneRect.top  + catRect.height/2;
+
+      const dx = endX - startX;
+      const dy = endY - startY;
+
+      const cloneW = Math.min(chipRect.width, 200);
+      const cloneH = 40;
+      clone.style.left = `${startX - cloneW/2}px`;
+      clone.style.top = `${startY - cloneH/2}px`;
+      clone.style.width = `${cloneW}px`;
+      clone.style.height = `${cloneH}px`;
+      clone.style.opacity = '1';
+      clone.style.transform = 'translate(0,0) scale(1)';
+
+      // Trigger transition
+      requestAnimationFrame(()=>{
+        clone.style.transition = 'transform 420ms cubic-bezier(.2,.8,.2,1), opacity 420ms ease-out';
+        clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.88)`;
+        clone.style.opacity = '0.96';
+      });
+
+      // Ripple visual on category (no audio)
+      const rx = ((chipRect.left + chipRect.width/2) - catRect.left) / catRect.width * 100;
+      const ry = ((chipRect.top + chipRect.height/2) - catRect.top) / catRect.height * 100;
+      catBtn.style.setProperty('--rx', `${Math.min(100, Math.max(0, rx))}%`);
+      catBtn.style.setProperty('--ry', `${Math.min(100, Math.max(0, ry))}%`);
+      catBtn.classList.add('ripple');
+      setTimeout(() => catBtn.classList.remove('ripple'), 420);
+
+      // Cleanup and callback
+      setTimeout(()=>{
+        clone.remove();
+        done && done();
+      }, 430);
+    }
+
+    function pickCategory(catId){
+      if(step >= deck.length) return;
+      const current = deck[step];
+      const catBtn = [...categoriesElm.querySelectorAll('.cat')].find(c => c.dataset.id === catId);
+      if(!catBtn) return;
+
+      // Record answer
+      const picked = catId;
+      const isRight = picked === current.correct;
+      answers.push({
+        text: current.text,
+        picked, correct: current.correct,
+        explain: current.explain,
+        isRight
+      });
+
+      animateDropToCategory(catBtn, current.text, () => {
+        step++;
+        showItem();
+      });
+    }
+
+    function endGame(){
+      finishedAt = performance.now();
+      showResults();
+    }
+
+    /* ===========================================
+       Results Rendering
+    ============================================ */
+    function showResults(){
+      // Build summary
+      const right = answers.filter(a=>a.isRight).length;
+      const total = answers.length;
+      const ms = Math.max(0, finishedAt - startedAt);
+      const sec = (ms/1000).toFixed(1);
+
+      summaryElm.innerHTML = `
+        <div>Puntuación: <strong>${right}/${total}</strong></div>
+        <div>Tiempo: <strong>${sec}s</strong></div>
+        <div>Objetivo: distinguir EPP vs Herramienta vs Riesgo en entorno eléctrico básico.</div>
+      `;
+
+      // Build list
+      resultsList.innerHTML = '';
+      answers.forEach((a, idx)=>{
+        const row = document.createElement('div');
+        row.className = 'result-row';
+        const left = document.createElement('div');
+        const rightCol = document.createElement('div');
+
+        const title = document.createElement('div');
+        title.className = 'result-title';
+        title.textContent = `${idx+1}. ${clampLabel(a.text)}`;
+
+        const explain = document.createElement('div');
+        explain.className = 'result-explain';
+        // Keep explanation short; autosummarize if needed (<=180 chars)
+        const maxExplain = 180;
+        const exp = (a.explain || '').trim();
+        explain.textContent = exp.length > maxExplain ? (exp.slice(0, maxExplain-1)+'…') : exp;
+
+        left.appendChild(title);
+        left.appendChild(explain);
+
+        const tagPicked = document.createElement('div');
+        tagPicked.className = 'tag ' + (a.isRight ? 'ok' : 'bad');
+        tagPicked.textContent = `Tú: ${a.picked}`;
+        const tagCorrect = document.createElement('div');
+        tagCorrect.className = 'tag';
+        tagCorrect.textContent = `Correcta: ${a.correct}`;
+
+        rightCol.appendChild(tagPicked);
+        rightCol.appendChild(document.createElement('div')).className='sr';
+        rightCol.appendChild(tagCorrect);
+
+        row.appendChild(left);
+        row.appendChild(rightCol);
+        resultsList.appendChild(row);
+      });
+
+      // Show modal
+      resultsModal.style.display = 'grid';
+
+      // Enable scroll only inside results modal content
+      // (global scroll remains disabled)
+      ensureFits();
+
+      // initData warning
+      if(!initData) initDataWarn.style.display = 'block';
+    }
+
+    /* ===========================================
+       Event bindings
+    ============================================ */
+    categoriesElm.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.cat');
+      if(!btn) return;
+      pickCategory(btn.dataset.id);
+    });
+
+    // Keyboard support (left/mid/right)
+    window.addEventListener('keydown', (e)=>{
+      if(resultsModal.style.display !== 'none') return;
+      if(introModal.style.display !== 'none') return;
+      const map = {
+        '1': 'EPP',
+        '2': 'Herramienta',
+        '3': 'Riesgo',
+        'ArrowLeft': 'EPP',
+        'ArrowUp': 'Herramienta',
+        'ArrowRight': 'Riesgo'
+      };
+      const sel = map[e.key];
+      if(sel) {
+        e.preventDefault();
+        pickCategory(sel);
+      }
+    });
+
+    startBtn.addEventListener('click', ()=>{
+      startGame();
+    });
+
+    retryBtn.addEventListener('click', ()=>{
+      // Reset state and start again
+      resultsModal.style.display = 'none';
+      setup();
+      startGame();
+    });
+
+    rewardBtn.addEventListener('click', ()=>{
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      window.location.href = url;
+    });
+
+    /* ===========================================
+       Boot
+    ============================================ */
+    setup();
+    ensureFits();
+  </script>
+</body>
+</html>
