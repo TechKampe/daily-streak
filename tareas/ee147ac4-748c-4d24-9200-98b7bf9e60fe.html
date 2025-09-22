@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | Detecta el fallo: Electricidad 101 ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset y base */
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #f8fbff;
+      background: radial-gradient(1200px 600px at 20% 0%, #3aa0ff 0%, #1b62ff 36%, #0d2dc8 68%, #071b6f 100%) fixed;
+      overflow: hidden; /* Bloquea scroll en gameplay */
+      overscroll-behavior: none;
+    }
+    :root{
+      --ui-scale: 1;
+      --glass: rgba(255,255,255,0.12);
+      --glass-2: rgba(255,255,255,0.18);
+      --panel: rgba(10, 20, 55, 0.45);
+      --primary: #6ee7ff;
+      --accent: #22d3ee;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --shadow: 0 10px 24px rgba(0,0,0,0.35);
+      --radius: 14px;
+      --gap: 12px;
+      --btnH: 60px;
+      --btnH-compact: 50px;
+      --cellAR: 6;  /* anchura/altura relativa para auto fit */
+    }
+
+    /* Contenedor raíz escalable (para autoscaleUI) */
+    .uiRoot{
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      transition: transform 150ms ease;
+    }
+
+    /* Escena con 100svh + fallbacks y safe-areas */
+    .scene {
+      position: relative;
+      width: 100%;
+      padding: 10px;
+      padding-left: calc(10px + env(safe-area-inset-left));
+      padding-right: calc(10px + env(safe-area-inset-right));
+      padding-top: calc(6px + env(safe-area-inset-top));
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
+      touch-action: none; /* anti-derrapes */
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    /* HUD superior */
+    .hud{
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: var(--shadow);
+      padding: 8px 10px;
+      border-radius: 14px;
+      backdrop-filter: blur(12px);
+    }
+    .logo{
+      height: 26px;
+      width: auto;
+      display: block;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    }
+    .title{
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: clamp(14px, 3.6vw, 18px);
+      line-height: 1.1;
+      color: #ffffff;
+      opacity: 0.95;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.35);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2; 
+      -webkit-box-orient: vertical;
+    }
+    .progress{
+      font-weight: 800;
+      font-size: clamp(12px, 3.2vw, 15px);
+      color: #c9f3ff;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(18,168,255,0.28), rgba(18,168,255,0.16));
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 4px 12px rgba(0,0,0,0.25);
+      user-select: none;
+    }
+
+    /* Cuerpo gameplay */
+    .board{
+      display: grid;
+      gap: var(--gap);
+      grid-template-rows: auto 1fr;
+      min-height: 0;
+    }
+    .micro{
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: var(--radius);
+      padding: 12px 12px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .microText{
+      font-size: clamp(14px, 3.8vw, 17px);
+      line-height: 1.22;
+      font-weight: 700;
+      color: #e8f7ff;
+      letter-spacing: 0.2px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .avatar{
+      flex: none;
+      height: 48px;
+      width: 48px;
+      border-radius: 12px;
+      background: radial-gradient(60% 60% at 50% 10%, rgba(255,255,255,0.25), rgba(255,255,255,0.05)),
+                  rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+    .avatar img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.88;
+    }
+
+    .options{
+      display: grid;
+      grid-auto-rows: minmax(var(--btnH), 1fr);
+      gap: var(--gap);
+      min-height: 0;
+    }
+    .option{
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 12px 13px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      backdrop-filter: blur(10px);
+      color: #041227;
+      text-align: left;
+      font-weight: 800;
+      font-size: clamp(14px, 3.6vw, 16px);
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.35);
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+      min-height: var(--btnH);
+      position: relative;
+      overflow: hidden;
+    }
+    .option:focus-visible{
+      outline: 3px solid rgba(255,255,255,0.9);
+      outline-offset: 2px;
+    }
+    .option:hover{ transform: translateY(-1px); }
+    .option:active{ transform: translateY(0); }
+
+    .option .txt{
+      color: #081d3c;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+      overflow: hidden; 
+      display: -webkit-box; 
+      -webkit-line-clamp: 2; 
+      -webkit-box-orient: vertical;
+      max-height: 2.7em;
+    }
+    .pill{
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.4);
+      background: linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0.18));
+      color: #0b274f;
+      font-weight: 900;
+      letter-spacing: 0.4px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    /* Estados respuesta */
+    .option.correct{
+      border-color: rgba(34,197,94, 0.9);
+      background: linear-gradient(180deg, rgba(34,197,94,0.35), rgba(34,197,94,0.18));
+      box-shadow: var(--shadow), 0 0 0 2px rgba(34,197,94,0.5) inset;
+    }
+    .option.wrong{
+      border-color: rgba(239,68,68, 0.9);
+      background: linear-gradient(180deg, rgba(239,68,68,0.35), rgba(239,68,68,0.18));
+      box-shadow: var(--shadow), 0 0 0 2px rgba(239,68,68,0.5) inset;
+    }
+    .option .marker{
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%) scale(0.5);
+      opacity: 0;
+      transition: all 180ms ease;
+      height: 22px; width: 22px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      display: grid; place-items: center;
+      font-size: 14px;
+      font-weight: 900;
+    }
+    .option.correct .marker{
+      background: #16a34a; border-color: #eafff0; color: #eafff0; opacity: 1; transform: translateY(-50%) scale(1);
+    }
+    .option.wrong .marker{
+      background: #dc2626; border-color: #ffecec; color: #ffecec; opacity: 1; transform: translateY(-50%) scale(1);
+    }
+
+    /* Pie de escena (tips/ayuda compacto) */
+    .footerBar{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: linear-gradient(180deg, rgba(12,34,80,0.6), rgba(12,34,80,0.4));
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 8px 10px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      min-height: 44px;
+    }
+    .minitip{
+      font-size: clamp(12px, 3.1vw, 13px);
+      color: #dbf7ff;
+      opacity: 0.9;
+      overflow: hidden; 
+      display: -webkit-box; 
+      -webkit-line-clamp: 2; 
+      -webkit-box-orient: vertical;
+    }
+    .small{
+      font-size: 12px;
+      opacity: 0.88;
+    }
+
+    /* Modal intro */
+    .modal{
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: linear-gradient(180deg, rgba(0,10,40,0.65), rgba(0,10,40,0.5));
+      z-index: 10;
+    }
+    .modalCard{
+      width: 100%;
+      max-width: 720px;
+      max-height: 90svh;
+      overflow-y: auto;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .modalCard h1{
+      margin: 0 0 8px 0;
+      font-size: clamp(18px, 4.6vw, 22px);
+      line-height: 1.1;
+    }
+    .modalCard p{
+      margin: 0 0 10px 0;
+      opacity: 0.95;
+      line-height: 1.35;
+      font-size: clamp(13px, 3.8vw, 15px);
+    }
+    .modalActions{
+      display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;
+    }
+    .btn{
+      appearance: none;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      font-size: clamp(14px, 3.7vw, 16px);
+      cursor: pointer;
+      min-height: 44px;
+      color: #0b234e;
+      background: linear-gradient(180deg, #8be6ff, #3fd6ff);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.5);
+    }
+    .btn.secondary{
+      background: linear-gradient(180deg, rgba(255,255,255,0.45), rgba(255,255,255,0.25));
+      color: #072049;
+    }
+    .btn:focus-visible{ outline: 3px solid #fff; outline-offset: 2px; }
+
+    /* Resultados */
+    .results{
+      position: fixed;
+      inset: 0;
+      display: none;
+      grid-template-rows: auto 1fr auto;
+      padding: 12px;
+      padding-left: calc(12px + env(safe-area-inset-left));
+      padding-right: calc(12px + env(safe-area-inset-right));
+      padding-top: calc(10px + env(safe-area-inset-top));
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(0, 10, 40, 0.65), rgba(0, 10, 40, 0.5));
+      z-index: 20;
+    }
+    .results.active{ display: grid; }
+    .resultsCard{
+      background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08));
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 16px;
+      max-height: 90svh;
+      overflow-y: auto; /* scroll sólo aquí */
+      padding: 12px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .summaryTop{
+      display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 10px;
+    }
+    .score{
+      font-weight: 900; font-size: clamp(16px, 4.4vw, 20px);
+      color: #e9fbff;
+    }
+    .advice{
+      font-size: clamp(13px, 3.7vw, 15px);
+      color: #d7f5ff; opacity: 0.95; margin: 8px 0 12px;
+    }
+    .list{
+      display: grid; gap: 10px;
+    }
+    .row{
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid; gap: 6px;
+    }
+    .row h4{
+      margin: 0; font-size: clamp(13px, 3.6vw, 15px); color: #e9f8ff;
+    }
+    .meta{
+      display: grid; gap: 6px;
+      font-size: clamp(12px, 3.2vw, 14px);
+    }
+    .meta .ok{ color: #b7ffcb; }
+    .meta .bad{ color: #ffd1d1; }
+    .smallTag{
+      font-size: 11px; padding: 2px 8px; border-radius: 999px;
+      background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.35);
+      display: inline-block; margin-right: 6px;
+    }
+    .resultActions{
+      position: sticky; bottom: 0; left: 0; right: 0;
+      margin-top: 12px; padding-top: 8px;
+      background: linear-gradient(180deg, rgba(8,22,66,0.1), rgba(8,22,66,0.45));
+      display: grid; gap: 8px; grid-template-columns: 1fr;
+      border-top: 1px solid rgba(255,255,255,0.18);
+    }
+    .warning{
+      text-align: center; font-size: 12px; color: #fff5c7; opacity: 0.9;
+    }
+
+    /* Compact mode para liberar espacio */
+    .compact .hud{ padding: 6px; }
+    .compact .title{ font-size: clamp(13px, 3.2vw, 15px); -webkit-line-clamp: 1; }
+    .compact .progress{ padding: 4px 8px; font-size: clamp(11px, 2.9vw, 13px); }
+    .compact .micro{ padding: 10px; }
+    .compact .microText{ font-size: clamp(13px, 3.4vw, 15px); }
+    .compact .avatar{ height: 44px; width: 44px; }
+    .compact .option{ min-height: var(--btnH-compact); padding: 10px 12px; }
+    .compact .footerBar{ padding: 6px 8px; min-height: 40px; }
+    .compact .minitip{ -webkit-line-clamp: 1; }
+
+    /* Transiciones entre escenas */
+    .fadeIn{ animation: fadeIn 280ms ease both; }
+    .fadeOut{ animation: fadeOut 240ms ease both; }
+    @keyframes fadeIn{ from{opacity:0; transform: translateY(8px);} to{opacity:1; transform: translateY(0);} }
+    @keyframes fadeOut{ from{opacity:1; transform: translateY(0);} to{opacity:0; transform: translateY(-8px);} }
+
+    /* Visibilidad del foco para accesibilidad */
+    .visually-hidden{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+
+  </style>
+</head>
+<body>
+  <!-- Intro / Tutorial breve -->
+  <div class="modal" id="introModal" aria-modal="true" role="dialog">
+    <div class="modalCard" role="document">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" class="logo" style="height:30px;">
+        <strong class="small" style="opacity:0.9;">Reto diario</strong>
+      </div>
+      <h1>Detecta el fallo: Electricidad 101 ⚡</h1>
+      <p>Escenario: acompañas a tu oficial en una instalación doméstica. Tu misión: detectar fallos básicos de seguridad y técnica antes de actuar.</p>
+      <p><strong>Cómo jugar:</strong> toca el ítem que está mal en cada micro-escena. Son 5 turnos. Sin scroll.</p>
+      <div class="modalActions">
+        <button class="btn" id="startBtn" aria-label="Empezar el reto">¡Empezar!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gameplay -->
+  <div id="app" class="uiRoot">
+    <section class="scene" id="scene" aria-live="polite" aria-atomic="true">
+      <!-- HUD -->
+      <header class="hud">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Logo Kämpe" class="logo" />
+        <h2 class="title">Detecta el fallo: Electricidad 101 ⚡</h2>
+        <div class="progress" id="progress">1/5</div>
+      </header>
+
+      <!-- Contenido -->
+      <div class="board" id="board">
+        <div class="micro">
+          <div class="microText clamp-2" id="microText">Cargando…</div>
+          <div class="avatar">
+            <img loading="lazy" id="avatarImg" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Avatar técnico" />
+          </div>
+        </div>
+        <div class="options" id="options" role="listbox" aria-label="Opciones de la escena">
+          <!-- opciones -->
+        </div>
+      </div>
+
+      <!-- Footer in-game -->
+      <div class="footerBar">
+        <div class="minitip" id="miniTip">Tip: atención al detalle evita chapuzas.</div>
+        <div class="small" id="turnInfo" aria-hidden="true">Turno <span id="turnNumber">1</span> de 5</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Resultados -->
+  <section class="results" id="resultsView" aria-live="polite" aria-atomic="true">
+    <header class="summaryTop">
+      <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" class="logo" />
+      <div class="progress" id="finalScoreBadge">0/5</div>
+    </header>
+    <div class="resultsCard" id="resultsCard" role="document">
+      <div class="score" id="scoreText">¡Bien jugado!</div>
+      <p class="advice" id="adviceText">Consejo: verifica tensión, usa EPI y comunica al cliente antes de cortar la luz.</p>
+      <div class="list" id="detailList">
+        <!-- filas de resultados -->
+      </div>
+      <div class="resultActions">
+        <button class="btn" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        <div class="warning" id="initDataWarn" style="display:none;">Aviso: initData no encontrado, intentaremos continuar.</div>
+        <button class="btn secondary" id="retryBtn" aria-label="Reintentar el reto">Reintentar</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // ----------------------------
+    // Datos del reto (5 micro-escenas)
+    // ----------------------------
+    const scenes = [
+      {
+        id: 1,
+        micro: "Vas a cambiar un enchufe empotrado en el salón.",
+        items: [
+          { label: "Cortar la corriente en el magneto del circuito", wrong: false },
+          { label: "Usar destornillador aislado VDE", wrong: false },
+          { label: "Empalmar cables con cinta aislante suelta", wrong: true }
+        ],
+        explanation: "Nunca dejes empalmes con cinta suelta; usa bornes/regletas dentro de caja. La cinta sola puede aflojarse y provocar calentamiento y riesgo eléctrico."
+      },
+      {
+        id: 2,
+        micro: "Revisas un automático que salta en el cuadro general.",
+        items: [
+          { label: "Tocar el cuadro con las manos húmedas", wrong: true },
+          { label: "Verificar ausencia de tensión con comprobador", wrong: false },
+          { label: "Etiquetar el circuito tras la revisión", wrong: false }
+        ],
+        explanation: "Manos húmedas aumentan la conductividad y el riesgo de descarga. Seca las manos y usa guantes aislantes si procede."
+      },
+      {
+        id: 3,
+        micro: "Instalas una regleta LED bajo mueble en la cocina.",
+        items: [
+          { label: "Conectar el conductor de tierra a la regleta", wrong: false },
+          { label: "Fijar la regleta con tacos adecuados", wrong: false },
+          { label: "Usar cable 0,75 mm² para 16 A", wrong: true }
+        ],
+        explanation: "0,75 mm² no es apto para 16 A. Para tomas de 16 A se usa típicamente 1,5 mm² Cu con protección adecuada (consulta normativa local)."
+      },
+      {
+        id: 4,
+        micro: "Vas a taladrar en altura usando una escalera.",
+        items: [
+          { label: "Trabajar con el suelo mojado y sin zapatas", wrong: true },
+          { label: "Tu compañero sujeta la escalera", wrong: false },
+          { label: "Trabajar por debajo del nivel de hombros", wrong: false }
+        ],
+        explanation: "Suelo mojado reduce agarre: seca la zona y usa escalera con zapatas antideslizantes. Evita deslizamientos y caídas."
+      },
+      {
+        id: 5,
+        micro: "Debes cortar la luz para intervenir en un circuito.",
+        items: [
+          { label: "Cortar la luz sin avisar al cliente", wrong: true },
+          { label: "Señalizar y delimitar la zona de trabajo", wrong: false },
+          { label: "Usar EPI básicos: gafas y guantes", wrong: false }
+        ],
+        explanation: "Corta la luz avisando y acordando el momento. Señaliza la zona para evitar interferencias y trabaja con EPI."
+      }
+    ];
+
+    // Utilidades de text limit
+    function clampLabel(str, max=48){
+      if(!str) return '';
+      return (str.length > max) ? (str.slice(0, max-1).trimEnd() + "…") : str;
+    }
+    function clampExplanation(str){
+      const max = 180;
+      if(!str) return '';
+      return (str.length > max) ? (str.slice(0, max-1).trimEnd() + "…") : str;
+    }
+
+    // Estado de juego en memoria
+    let current = 0;
+    const total = scenes.length;
+    const answers = []; // {sceneId, chosenLabel, correctLabel, isHit, explanation}
+    let initData = "";
+
+    // Elementos DOM
+    const sceneEl = document.getElementById('scene');
+    const progressEl = document.getElementById('progress');
+    const microTextEl = document.getElementById('microText');
+    const optionsEl = document.getElementById('options');
+    const turnInfoEl = document.getElementById('turnInfo');
+    const turnNumberEl = document.getElementById('turnNumber');
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+    const resultsView = document.getElementById('resultsView');
+    const resultsCard = document.getElementById('resultsCard');
+    const finalScoreBadge = document.getElementById('finalScoreBadge');
+    const scoreText = document.getElementById('scoreText');
+    const adviceText = document.getElementById('adviceText');
+    const detailList = document.getElementById('detailList');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const initDataWarn = document.getElementById('initDataWarn');
+
+    // Avatar aleatorio (1-4)
+    const avatarImg = document.getElementById('avatarImg');
+    const avatars = [
+      "https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png",
+      "https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png",
+      "https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png",
+      "https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png"
+    ];
+    function setRandomAvatar(){
+      const idx = Math.floor(Math.random() * avatars.length);
+      avatarImg.src = avatars[idx];
+    }
+
+    // ----------------------------
+    // Render de la escena
+    // ----------------------------
+    function renderScene(index){
+      const s = scenes[index];
+      if(!s) return;
+      // HUD
+      progressEl.textContent = `${index+1}/${total}`;
+      turnNumberEl.textContent = `${index+1}`;
+      // Micro
+      microTextEl.textContent = s.micro;
+      // Opciones
+      optionsEl.innerHTML = '';
+      s.items.forEach((it, i) => {
+        const opt = document.createElement('button');
+        opt.className = 'option fadeIn';
+        opt.setAttribute('role','option');
+        opt.setAttribute('aria-label', `Opción ${i+1}: ${it.label}`);
+        const label = clampLabel(it.label, 48);
+        opt.innerHTML = `
+          <span class="txt clamp-2">${label}</span>
+          <span class="pill">Tocar</span>
+          <span class="marker">${it.wrong ? '!' : '✓'}</span>
+        `;
+        opt.addEventListener('click', () => onChoose(it, opt));
+        optionsEl.appendChild(opt);
+      });
+
+      ensureFits(); // Ajustar UI a viewport
+    }
+
+    // Gestión de selección
+    let lock = false;
+    function onChoose(item, optEl){
+      if(lock) return;
+      lock = true;
+      const s = scenes[current];
+      const wrongItem = s.items.find(i => i.wrong);
+      const chosenIsWrong = !!item.wrong;
+
+      // Feedback visual inmediato
+      if(chosenIsWrong){
+        optEl.classList.add('correct');
+      }else{
+        optEl.classList.add('wrong');
+        // resalta el que era
+        const children = Array.from(optionsEl.children);
+        const idx = s.items.findIndex(i => i.wrong);
+        if(children[idx]){
+          children[idx].classList.add('correct');
+        }
+      }
+
+      // Guardar respuesta
+      answers.push({
+        sceneId: s.id,
+        micro: s.micro,
+        chosenLabel: clampLabel(item.label, 48),
+        correctLabel: clampLabel(wrongItem.label, 48),
+        isHit: chosenIsWrong,
+        explanation: clampExplanation(s.explanation)
+      });
+
+      // Avance automático con pequeña transición
+      setTimeout(() => {
+        goNext();
+      }, 900);
+    }
+
+    function goNext(){
+      // transición
+      sceneEl.classList.add('fadeOut');
+      setTimeout(() => {
+        sceneEl.classList.remove('fadeOut');
+        current++;
+        if(current < total){
+          renderScene(current);
+          sceneEl.classList.add('fadeIn');
+          setTimeout(() => sceneEl.classList.remove('fadeIn'), 260);
+          lock = false;
+        }else{
+          showResults();
+        }
+      }, 220);
+    }
+
+    // ----------------------------
+    // Resultados
+    // ----------------------------
+    function showResults(){
+      // Calcular score
+      const hits = answers.filter(a => a.isHit).length;
+      finalScoreBadge.textContent = `${hits}/${total}`;
+      scoreText.textContent = hits === total
+        ? "¡Perfecto! Ojo clínico de electricista pro."
+        : hits >= 3
+          ? "¡Buen trabajo! Aún puedes afinar detalles."
+          : "Sigue practicando: lo importante es detectar a tiempo.";
+
+      // Consejo práctico
+      adviceText.textContent = "Consejo: atención al detalle, primero la seguridad (PRL) y comunica siempre con el cliente antes de cortar la luz.";
+
+      // Detalle por escena
+      detailList.innerHTML = '';
+      answers.forEach((a, idx) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const hitTag = a.isHit ? '<span class="smallTag" style="background:rgba(22,163,74,0.35); border-color:rgba(22,163,74,0.8);">Acierto</span>' : '<span class="smallTag" style="background:rgba(239,68,68,0.35); border-color:rgba(239,68,68,0.8);">Error</span>';
+        row.innerHTML = `
+          <h4>${hitTag} Escena ${idx+1}</h4>
+          <div class="meta">
+            <div><strong>Tu elección:</strong> <span class="${a.isHit ? 'ok' : 'bad'}">${a.chosenLabel}</span></div>
+            <div><strong>Fallo real:</strong> <span class="ok">${a.correctLabel}</span></div>
+            <div>${a.explanation}</div>
+          </div>
+        `;
+        detailList.appendChild(row);
+      });
+
+      // Mostrar resultados (y permitir scroll SOLO aquí)
+      resultsView.classList.add('active');
+      resultsCard.scrollTop = 0;
+      // Mantener scroll global bloqueado (el contenedor resultsCard tiene su propio scroll)
+
+      // Ajuste de UI por si rotó o cambió el viewport
+      ensureFits();
+    }
+
+    // ----------------------------
+    // Fit & guardarraíles de UI
+    // ----------------------------
+    function assertNoOverflow(){
+      const el = document.getElementById('scene');
+      const ok = el.scrollHeight <= el.clientHeight;
+      // console.log('assertNoOverflow:', {scroll: el.scrollHeight, client: el.clientHeight, ok});
+      return ok;
+    }
+
+    function applyCompactMode(enable=true){
+      const app = document.getElementById('app');
+      if(enable) app.classList.add('compact');
+      else app.classList.remove('compact');
+    }
+
+    function fitBoardToViewport(){
+      // Ajustar altura de botones si no cabe (reduce btnH unos px)
+      const app = document.getElementById('app');
+      const styles = getComputedStyle(app);
+      // ya manejamos via .compact; adicionalmente podemos bajar --btnH
+      const root = document.documentElement;
+      const currentBtnH = parseInt(styles.getPropertyValue('--btnH')) || 60;
+      if(!assertNoOverflow() && currentBtnH > 52){
+        root.style.setProperty('--btnH', (currentBtnH - 6) + 'px');
+      }
+    }
+
+    function autoscaleUI(){
+      const app = document.querySelector('.uiRoot');
+      // Decrementar escala hasta 0.88 si no cabe
+      let scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      let tries = 0;
+      while(!assertNoOverflow() && scale > 0.88 && tries < 6){
+        scale -= 0.02;
+        document.documentElement.style.setProperty('--ui-scale', scale.toFixed(2));
+        tries++;
+      }
+    }
+
+    function ensureFits(){
+      // Paso 1: comprobar overflow
+      if(assertNoOverflow()) return;
+
+      // Paso 2: activar modo compacto
+      applyCompactMode(true);
+      if(assertNoOverflow()) return;
+
+      // Paso 3: ajustar rejilla/altura de botones
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+
+      // Paso 4: autoscale UI
+      autoscaleUI();
+      // Fin: si aún no cabe, se queda en el mínimo acordado
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+    // ----------------------------
+    // initData y navegación final
+    // ----------------------------
+    function readInitData(){
+      const usp = new URLSearchParams(location.search);
+      const raw = usp.get('initData') || "";
+      initData = raw;
+      if(!raw){
+        initDataWarn.style.display = '';
+      }else{
+        initDataWarn.style.display = 'none';
+      }
+    }
+    function goToReward(){
+      const url = 'https://kampe-game-phaser.onrender.com/daily_streak?initData=' + encodeURIComponent(initData || '');
+      location.assign(url);
+    }
+
+    // ----------------------------
+    // Inicio
+    // ----------------------------
+    function startGame(){
+      introModal.style.display = 'none';
+      setRandomAvatar();
+      current = 0;
+      answers.length = 0;
+      // Reset UI scale / compact
+      document.documentElement.style.setProperty('--btnH', '60px');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      applyCompactMode(false);
+      resultsView.classList.remove('active');
+
+      renderScene(current);
+      lock = false;
+    }
+
+    // Reintento desde resultados
+    function retry(){
+      startGame();
+    }
+
+    // Eventos
+    startBtn.addEventListener('click', startGame);
+    rewardBtn.addEventListener('click', goToReward);
+    retryBtn.addEventListener('click', retry);
+
+    // Inicializar al cargar
+    readInitData();
+    // Pintar primera escena por si se cierra el modal con teclado
+    renderScene(0);
+
+    // Micro tip rotativo (no crítico, aporta dinamismo)
+    const tips = [
+      "Tip: atención al detalle evita chapuzas.",
+      "Tip: antes de tocar, comprueba ausencia de tensión.",
+      "Tip: comunica al cliente antes de cortar la luz.",
+      "Tip: orden y limpieza mejoran la seguridad."
+    ];
+    let tipIdx = 0;
+    setInterval(() => {
+      tipIdx = (tipIdx + 1) % tips.length;
+      const el = document.getElementById('miniTip');
+      el.classList.add('fadeOut');
+      setTimeout(() => {
+        el.textContent = tips[tipIdx];
+        el.classList.remove('fadeOut');
+        el.classList.add('fadeIn');
+        setTimeout(()=> el.classList.remove('fadeIn'), 260);
+      }, 210);
+    }, 3200);
+
+  </script>
+</body>
+</html>
