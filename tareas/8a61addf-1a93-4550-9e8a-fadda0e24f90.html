@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | Match de Herramientas: Electricidad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1264ff" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ============ RESET + ROOT ============ */
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial, sans-serif;
+      color: #eaf2ff;
+      background: radial-gradient(1200px 480px at 70% -10%, #4db8ff55, transparent 60%) , linear-gradient(180deg, #0b4bf1 0%, #0a2b9e 60%, #081c63 100%);
+      overflow: hidden; /* gameplay: no scroll */
+      overscroll-behavior: none;
+    }
+    :root{
+      --ui-scale: 1;
+      --hudH: 72px;
+      --cardMinH: 64px;
+      --cardAR: 3.6; /* width / height approx; we use for min width if needed */
+      --gap: 10px;
+      --radius: 16px;
+      --glass: linear-gradient(180deg, #ffffff1a, #ffffff0a);
+      --shadow-strong: 0 10px 30px rgba(0,0,0,.35);
+      --fg: #eaf2ff;
+      --muted: #b8cfff;
+      --accent: #7ef0ff;
+      --ok: #00e18e;
+      --bad: #ff5d6c;
+      --focus: #ffd166;
+      --titleClamp: clamp(18px, 4.2vw, 26px);
+      --btnClamp: clamp(15px, 3.8vw, 18px);
+    }
+
+    /* ============ SAFE SCENE HEIGHT ============ */
+    .scene {
+      position: relative;
+      width: 100%;
+      padding:
+        calc(8px + env(safe-area-inset-top))
+        calc(12px + env(safe-area-inset-right))
+        calc(12px + env(safe-area-inset-bottom))
+        calc(12px + env(safe-area-inset-left));
+      transform-origin: top center;
+      touch-action: none; /* anti-derrapes inside scene */
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    /* Scale wrapper for autoscaleUI() */
+    .ui-scaler { transform: scale(var(--ui-scale)); }
+
+    /* Background avatar flair */
+    .avatar-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      opacity: .25;
+    }
+    .avatar-bg img {
+      position: absolute;
+      right: -8%;
+      bottom: -12%;
+      width: min(70vh, 82vw);
+      filter: drop-shadow(0 10px 25px rgba(0,0,0,.45)) saturate(1.05);
+      user-select: none;
+    }
+    .bg-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(80% 60% at center, transparent 50%, rgba(0,0,0,.35) 100%);
+      pointer-events: none;
+    }
+
+    /* ============ HUD ============ */
+    .hud {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      height: var(--hudH);
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 20px rgba(0,0,0,.25) inset, 0 6px 14px rgba(0,0,0,.25);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 120px;
+    }
+    .logo img { height: 30px; width: auto; }
+    .title-wrap {
+      min-width: 0;
+    }
+    .title {
+      font-weight: 800;
+      font-size: var(--titleClamp);
+      line-height: 1.1;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: .2px;
+      text-shadow: 0 2px 6px rgba(0,0,0,.35);
+    }
+    .subtitle {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .help-btn {
+      appearance: none;
+      border: 0;
+      background: linear-gradient(180deg, #ffffff2a, #ffffff1a);
+      color: #fff;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: inline-grid; place-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,.35);
+      cursor: pointer;
+    }
+    .help-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+    /* ============ PROGRESS ============ */
+    .progress {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #ffffff18, #00000018);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.25) inset;
+    }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+    .step {
+      height: 8px;
+      border-radius: 6px;
+      background: #2a4bd9;
+      position: relative;
+      overflow: hidden;
+    }
+    .step.fill::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, #49f4ff, #1df2b6);
+      box-shadow: 0 0 12px #49f4ff9a;
+    }
+    .progress-count { font-size: 12px; color: var(--muted); }
+
+    /* ============ BODY / BOARD ============ */
+    .board {
+      margin-top: 10px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+      height: calc(100% - var(--hudH) - 10px - 10px); /* scene padding spacing considered separately */
+    }
+    .prompt {
+      background: var(--glass);
+      backdrop-filter: blur(8px);
+      border-radius: var(--radius);
+      box-shadow: 0 6px 18px rgba(0,0,0,.28) inset;
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 10px;
+      min-height: 64px;
+    }
+    .prompt .badge {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      background: linear-gradient(180deg, #0ef0ff, #00a2ff);
+      color: #001133;
+      font-weight: 800;
+      box-shadow: 0 6px 16px rgba(0,0,0,.3);
+    }
+    .prompt .text {
+      font-size: clamp(15px, 3.6vw, 18px);
+      font-weight: 700;
+      line-height: 1.15;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-rows: repeat(3, minmax(var(--cardMinH), 1fr));
+      gap: var(--gap);
+      min-height: 0; /* allow grid to shrink within board */
+      touch-action: none;
+    }
+    .card {
+      display: grid;
+      grid-template-columns: 46px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: linear-gradient(180deg, #ffffff24, #00000018);
+      box-shadow: 0 6px 14px rgba(0,0,0,.28), 0 0 0 2px rgba(255,255,255,.06) inset;
+      user-select: none;
+      cursor: pointer;
+      transition: transform .12s ease, box-shadow .2s ease, background .2s ease;
+      min-height: var(--cardMinH);
+    }
+    .card:active { transform: translateY(1px) scale(.996); }
+    .card:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .card .icon {
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      display: grid; place-items: center;
+      font-size: 22px;
+      background: linear-gradient(180deg, #ffffff40, #00000022);
+      box-shadow: 0 4px 12px rgba(0,0,0,.28) inset;
+    }
+    .card .label {
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: .2px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card .tick {
+      width: 22px; height: 22px;
+      border-radius: 999px;
+      border: 2px solid #ffffff55;
+      display: grid; place-items: center;
+      font-size: 14px;
+      color: #ffffff;
+    }
+
+    .card.selected {
+      box-shadow: 0 8px 20px rgba(0,0,0,.35), 0 0 0 2px #ffffff55 inset;
+      background: linear-gradient(180deg, #ffffff36, #00000028);
+    }
+    .card.revealed.correct {
+      box-shadow: 0 8px 22px rgba(0,0,0,.38), 0 0 0 2px #0bffb059 inset;
+    }
+    .card.revealed.wrong {
+      box-shadow: 0 8px 22px rgba(0,0,0,.38), 0 0 0 2px #ff6b79a4 inset;
+      opacity: .95;
+    }
+    .card.revealed.correct .tick {
+      background: #00e18e; border-color: #00e18e; color: #002a1b;
+    }
+    .card.revealed.wrong .tick {
+      background: #ff5d6c; border-color: #ff5d6c; color: #2b0006;
+    }
+
+    .footer-cta {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+    .status {
+      min-height: 36px;
+      display: grid; align-content: center;
+      font-size: 13px;
+      color: var(--muted);
+      padding-left: 2px;
+    }
+    .btn {
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #49f4ff, #1df2b6);
+      color: #001a22;
+      font-weight: 800;
+      padding: 12px 18px;
+      font-size: var(--btnClamp);
+      letter-spacing: .2px;
+      min-height: 46px;
+      box-shadow: 0 10px 22px rgba(0,0,0,.35), 0 4px 0 #0d927a inset;
+      cursor: pointer;
+    }
+    .btn:disabled {
+      opacity: .5;
+      filter: grayscale(.2);
+      cursor: not-allowed;
+    }
+    .btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+    /* ============ MODALS (INTRO / RESULTS) ============ */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      padding:
+        calc(14px + env(safe-area-inset-top))
+        calc(14px + env(safe-area-inset-right))
+        calc(14px + env(safe-area-inset-bottom))
+        calc(14px + env(safe-area-inset-left));
+      background: linear-gradient(180deg, rgba(4, 14, 51, .65), rgba(4, 8, 38, .86));
+      z-index: 6;
+    }
+    .overlay.show { display: grid; place-items: center; }
+    .modal {
+      width: min(720px, 96vw);
+      max-height: 90svh;
+      background: linear-gradient(180deg, #1937a055, #0b1c6c88);
+      backdrop-filter: blur(12px);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px #ffffff22 inset;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .modal header {
+      padding: 14px 16px;
+      display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center;
+      background: linear-gradient(180deg, #ffffff1c, transparent);
+    }
+    .modal header img { height: 28px; margin-right: 6px; }
+    .modal .content {
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .modal h2 {
+      margin: 0;
+      font-size: clamp(18px, 4.6vw, 24px);
+      font-weight: 800;
+      letter-spacing: .3px;
+    }
+    .modal p {
+      margin: 8px 0 0;
+      color: #d7e6ff;
+      font-size: 14px;
+    }
+    .modal .actions {
+      padding: 12px 16px;
+      display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+      background: linear-gradient(180deg, transparent, #00000025);
+    }
+    .modal .actions .btn { min-height: 48px; }
+
+    /* Results specific */
+    .results-summary {
+      display: grid; gap: 10px; margin-bottom: 8px;
+    }
+    .score-badge {
+      display: inline-grid; place-items:center;
+      padding: 6px 10px; border-radius: 999px;
+      background: linear-gradient(180deg, #0ef0ff, #00a2ff);
+      color: #00223d; font-weight: 800; width: fit-content;
+      box-shadow: 0 8px 18px rgba(0,0,0,.32);
+    }
+    .result-list {
+      display: grid; gap: 10px;
+    }
+    .result-item {
+      background: linear-gradient(180deg, #ffffff14, #00000024);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.28) inset, 0 0 0 1px #ffffff1a inset;
+    }
+    .ri-head {
+      display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center;
+    }
+    .ri-head .num {
+      font-weight: 800; font-size: 14px; color: #a9c7ff;
+      background: #0b1a56; padding: 4px 8px; border-radius: 8px;
+    }
+    .ri-head .task {
+      font-weight: 700; line-height: 1.2;
+    }
+    .ri-head .mark {
+      font-weight: 800;
+      color: #001b10;
+      background: #00e18e;
+      padding: 4px 8px; border-radius: 10px; font-size: 12px;
+    }
+    .ri-head .mark.bad { background: #ff5d6c; color: #2b0006; }
+    .ri-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    .ri-row .tag {
+      display: inline-grid; grid-auto-flow: column; gap: 6px; align-items: center;
+      background: #06133f; color:#cfe1ff; padding: 6px 8px; border-radius: 10px;
+    }
+    .ri-exp {
+      margin-top: 8px; font-size: 13px; color: #d7e6ff;
+    }
+    .ri-tip {
+      margin-top: 6px; font-size: 12px; color: #b9d5ff;
+    }
+    .tips-global {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #00f0ff22, #00f0ff08);
+      box-shadow: 0 0 0 1px #00f0ff33 inset;
+    }
+    .tips-global ul { padding-left: 18px; margin: 8px 0; }
+    .tips-global li { margin: 6px 0; }
+
+    /* ============ COMPACT MODE ============ */
+    .compact .hud { height: 58px; }
+    .compact .title { font-size: clamp(16px, 3.8vw, 20px); }
+    .compact .prompt { min-height: 56px; padding: 10px 12px; }
+    .compact .card { min-height: 58px; gap: 8px; }
+    .compact .card .icon { width: 42px; height: 42px; font-size: 20px; }
+    .compact .btn { min-height: 44px; padding: 10px 14px; }
+
+    /* ============ UTILITIES ============ */
+    .hidden { display: none !important; }
+    .muted { color: var(--muted); }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .shake {
+      animation: shake .34s ease;
+    }
+    @keyframes shake {
+      0%,100%{ transform: translateX(0) }
+      25%{ transform: translateX(-4px) }
+      50%{ transform: translateX(4px) }
+      75%{ transform: translateX(-2px) }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .shake, .card, .btn, .ui-scaler { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene">
+    <!-- Background flair -->
+    <div class="avatar-bg" aria-hidden="true">
+      <img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="eager">
+      <div class="bg-vignette"></div>
+    </div>
+
+    <div class="ui-scaler">
+      <!-- HUD -->
+      <div class="hud">
+        <div class="logo" aria-label="Kämpe">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe">
+        </div>
+        <div class="title-wrap">
+          <h1 class="title">Match de Herramientas: Electricidad ⚡</h1>
+          <div class="subtitle">6 tareas rápidas • Elige la herramienta idónea</div>
+        </div>
+        <button class="help-btn" id="helpBtn" aria-label="Ver tutorial">?</button>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress" aria-label="Progreso">
+        <div class="steps" id="steps">
+          <div class="step" aria-hidden="true"></div>
+          <div class="step" aria-hidden="true"></div>
+          <div class="step" aria-hidden="true"></div>
+          <div class="step" aria-hidden="true"></div>
+          <div class="step" aria-hidden="true"></div>
+          <div class="step" aria-hidden="true"></div>
+        </div>
+        <div class="progress-count" id="progressCount">0/6</div>
+      </div>
+
+      <!-- Board -->
+      <div class="board" role="region" aria-live="polite">
+        <div class="prompt" id="promptBox">
+          <div class="badge" id="taskNum">1</div>
+          <div class="text line-clamp-2" id="taskText">Tarea...</div>
+        </div>
+
+        <div class="cards" id="cards" role="listbox" aria-label="Opciones de herramienta">
+          <!-- Cards injected -->
+        </div>
+
+        <div class="footer-cta">
+          <div class="status" id="statusMsg">Selecciona una herramienta.</div>
+          <button class="btn" id="nextBtn" disabled>Siguiente</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Intro Overlay -->
+    <div class="overlay show" id="intro">
+      <div class="modal" role="dialog" aria-labelledby="introTitle" aria-modal="true">
+        <header>
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe">
+          <h2 id="introTitle">Match de Herramientas: Electricidad ⚡</h2>
+        </header>
+        <div class="content" id="introContent">
+          <p class="muted">
+            Servicio a domicilio: acompañas a tu oficial para renovar un interruptor y pasar un nuevo cable. El cliente quiere rapidez sin chapuzas.
+          </p>
+          <p>
+            Cómo jugar: elige la herramienta idónea en cada tarea. 6 turnos. Seguridad primero: comprueba ausencia de tensión antes de tocar.
+          </p>
+        </div>
+        <div class="actions">
+          <div class="muted" style="font-size:12px">Tipo de actividad: Selección de herramienta (3 opciones)</div>
+          <button class="btn" id="startBtn">¡Empezar!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Overlay -->
+    <div class="overlay" id="results">
+      <div class="modal" role="dialog" aria-labelledby="resultsTitle" aria-modal="true">
+        <header>
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe">
+          <h2 id="resultsTitle">Resultados del reto</h2>
+        </header>
+        <div class="content" id="resultsContent">
+          <!-- Summary + items inserted -->
+        </div>
+        <div class="actions">
+          <div id="initDataWarn" class="muted" style="font-size:12px"></div>
+          <button class="btn" id="rewardBtn">Ver mi recompensa</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ======================= DATA =======================
+    const tasks = [
+      {
+        id: 1,
+        text: "Pelar conductor 2,5 mm² sin dañarlo.",
+        options: [
+          {icon:"✂️", label:"Pelacables ajustable", correct:true},
+          {icon:"🔪", label:"Cúter", correct:false},
+          {icon:"🗜️", label:"Alicate de presión", correct:false}
+        ],
+        exp: "El pelacables ajustable retira el aislamiento sin dañar el cobre. El cúter puede morder el conductor y el alicate de presión no es para pelar.",
+        tip: "Ajusta el calibre a 2,5 mm² y pela 10–12 mm."
+      },
+      {
+        id: 2,
+        text: "Medir si hay tensión en un enchufe (230 V~).",
+        options: [
+          {icon:"📟", label:"Multímetro en AC", correct:true},
+          {icon:"🖊️", label:"Buscapolos", correct:false},
+          {icon:"🧲", label:"Detector de metales", correct:false}
+        ],
+        exp: "El multímetro en AC mide tensión de forma fiable. El buscapolos es poco seguro y el detector de metales no mide electricidad.",
+        tip: "Selecciona V~ 200/600 y mide entre fase y neutro."
+      },
+      {
+        id: 3,
+        text: "Apretar bornes de un interruptor.",
+        options: [
+          {icon:"🪛", label:"Destornillador aislado", correct:true},
+          {icon:"🔧", label:"Llave inglesa", correct:false},
+          {icon:"🔨", label:"Martillo", correct:false}
+        ],
+        exp: "El destornillador aislado protege y encaja en la cabeza del tornillo. La llave inglesa no sirve y el martillo es inseguro.",
+        tip: "Usa la punta correcta y un torque firme sin barrer."
+      },
+      {
+        id: 4,
+        text: "Cortar canaleta plástica a medida.",
+        options: [
+          {icon:"🪚", label:"Sierra de arco", correct:true},
+          {icon:"✂️", label:"Tijera para chapa", correct:false},
+          {icon:"🪵", label:"Serrucho", correct:false}
+        ],
+        exp: "La sierra de arco hace cortes limpios en canaleta plástica. La tijera de chapa deforma y el serrucho es tosco.",
+        tip: "Sujeta la pieza y desbarba el canto tras cortar."
+      },
+      {
+        id: 5,
+        text: "Marcar trazado recto para la canaleta.",
+        options: [
+          {icon:"📏", label:"Nivel de burbuja", correct:true},
+          {icon:"📐", label:"Regla metálica", correct:false},
+          {icon:"📏", label:"Cinta métrica", correct:false}
+        ],
+        exp: "El nivel de burbuja asegura líneas horizontales/verticales. La regla y la cinta no te dan nivel.",
+        tip: "Marca con lápiz y verifica la burbuja centrada."
+      },
+      {
+        id: 6,
+        text: "Comprobar continuidad sin tensión.",
+        options: [
+          {icon:"📟", label:"Multímetro en continuidad", correct:true},
+          {icon:"💡", label:"Lámpara serie", correct:false},
+          {icon:"🖊️", label:"Buscapolos", correct:false}
+        ],
+        exp: "El multímetro en continuidad verifica circuitos sin tensión con pitido. La lámpara serie no es precisa y el buscapolos no sirve.",
+        tip: "Con el circuito abierto y sin tensión, mide entre extremos."
+      }
+    ];
+
+    // ======================= STATE =======================
+    const state = {
+      idx: 0,
+      selected: null,
+      history: [], // {taskId, text, options, chosenIndex, correctIndex, isCorrect}
+      initData: ""
+    };
+
+    // ======================= HELPERS =======================
+    const scene = document.getElementById('scene');
+    const stepsEl = document.getElementById('steps');
+    const progressCount = document.getElementById('progressCount');
+    const taskNum = document.getElementById('taskNum');
+    const taskText = document.getElementById('taskText');
+    const cardsEl = document.getElementById('cards');
+    const statusMsg = document.getElementById('statusMsg');
+    const nextBtn = document.getElementById('nextBtn');
+    const helpBtn = document.getElementById('helpBtn');
+
+    const intro = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+
+    const results = document.getElementById('results');
+    const resultsContent = document.getElementById('resultsContent');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initDataWarn = document.getElementById('initDataWarn');
+
+    // ======================= INIT DATA (URL) =======================
+    function readInitData() {
+      const q = new URLSearchParams(location.search);
+      const d = q.get('initData') ?? "";
+      state.initData = d;
+    }
+
+    // ======================= RENDER =======================
+    function clampLabel(str, max = 48) {
+      if (!str) return '';
+      return str.length > max ? str.slice(0, max - 1) + '…' : str;
+    }
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function renderProgress() {
+      const total = tasks.length;
+      progressCount.textContent = `${state.idx}/${total}`;
+      Array.from(stepsEl.children).forEach((el, i) => {
+        el.classList.toggle('fill', i < state.idx);
+      });
+    }
+
+    function renderTask() {
+      const total = tasks.length;
+      const t = tasks[state.idx];
+      taskNum.textContent = String(state.idx + 1);
+      taskText.textContent = clampLabel(t.text, 60); // clamp to avoid long
+      statusMsg.textContent = "Selecciona una herramienta.";
+      nextBtn.disabled = true;
+      cardsEl.innerHTML = "";
+
+      // create a remapped array with original index to identify correct after shuffle
+      const withIndex = t.options.map((o, i) => ({...o, _i: i}));
+      const shuffled = shuffle(withIndex);
+
+      shuffled.forEach((opt, pos) => {
+        const el = document.createElement('button');
+        el.className = "card";
+        el.setAttribute('role', 'option');
+        el.setAttribute('aria-selected', 'false');
+        el.setAttribute('data-pos', String(pos));
+        el.dataset.originalIndex = String(opt._i);
+        el.innerHTML = `
+          <div class="icon" aria-hidden="true">${opt.icon}</div>
+          <div class="label line-clamp-2">${clampLabel(opt.label)}</div>
+          <div class="tick" aria-hidden="true"></div>
+        `;
+        el.addEventListener('click', () => onSelectOption(el, shuffled, t));
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            el.click();
+          }
+        });
+        cardsEl.appendChild(el);
+      });
+
+      renderProgress();
+      ensureFits(); // Make sure everything fits after rendering
+    }
+
+    function onSelectOption(el, shuffled, task) {
+      if (state.selected !== null) {
+        // allow change before reveal? Let's reveal immediately on first selection.
+        return;
+      }
+      const chosenPos = Number(el.dataset.pos);
+      state.selected = chosenPos;
+
+      // Mark selection
+      Array.from(cardsEl.children).forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+
+      // Evaluate
+      const chosenOriginalIndex = Number(el.dataset.originalIndex);
+      const correctOriginalIndex = task.options.findIndex(o => o.correct);
+      const isCorrect = (chosenOriginalIndex === correctOriginalIndex);
+
+      // Reveal
+      Array.from(cardsEl.children).forEach((c) => {
+        const oIdx = Number(c.dataset.originalIndex);
+        const good = oIdx === correctOriginalIndex;
+        c.classList.add('revealed', good ? 'correct' : (Number(c.dataset.pos) === chosenPos ? 'wrong' : ''));
+        const badge = c.querySelector('.tick');
+        badge.textContent = good ? '✓' : (Number(c.dataset.pos) === chosenPos ? '✕' : '');
+      });
+
+      statusMsg.textContent = isCorrect ? "¡Correcto!" : "No es la herramienta idónea.";
+      nextBtn.disabled = false;
+      nextBtn.textContent = (state.idx === tasks.length - 1) ? "Finalizar" : "Siguiente";
+
+      // Save to history
+      state.history.push({
+        taskId: task.id,
+        text: task.text,
+        options: task.options.map(o => ({icon:o.icon, label:o.label, correct:o.correct})),
+        chosenIndex: chosenOriginalIndex,
+        correctIndex: correctOriginalIndex,
+        isCorrect,
+        exp: task.exp,
+        tip: task.tip
+      });
+    }
+
+    function nextStep() {
+      if (state.selected === null) {
+        cardsEl.classList.add('shake');
+        setTimeout(()=> cardsEl.classList.remove('shake'), 360);
+        return;
+      }
+      state.idx++;
+      state.selected = null;
+      if (state.idx >= tasks.length) {
+        openResults();
+      } else {
+        renderTask();
+      }
+    }
+
+    function openResults() {
+      // Build results content
+      const total = tasks.length;
+      const correct = state.history.filter(h => h.isCorrect).length;
+
+      const praise = correct === total ? "¡Perfecto!" :
+                     correct >= total - 1 ? "¡Muy bien!" :
+                     correct >= Math.ceil(total/2) ? "¡Bien!" : "A seguir entrenando";
+
+      const summary = `
+        <div class="results-summary">
+          <div class="score-badge" aria-label="Puntuación">${correct}/${total}</div>
+          <div style="font-weight:800; font-size:16px">${praise}</div>
+          <p class="muted">Tarea, tu elección, herramienta correcta y por qué. Incluye consejo práctico y recordatorio PRL.</p>
+        </div>
+      `;
+
+      const items = state.history.map((h, idx) => {
+        const chosen = h.options[h.chosenIndex];
+        const correctOpt = h.options[h.correctIndex];
+        const ok = h.isCorrect;
+        return `
+          <div class="result-item">
+            <div class="ri-head">
+              <div class="num">#${idx+1}</div>
+              <div class="task">${h.text}</div>
+              <div class="mark ${ok ? '' : 'bad'}">${ok ? 'Correcto' : 'Incorrecto'}</div>
+            </div>
+            <div class="ri-row" aria-label="Comparativa">
+              <div class="tag" title="Tu elección">
+                <span>${chosen.icon}</span><span>${chosen.label}</span>
+              </div>
+              <div class="tag" title="Herramienta correcta">
+                <span>${correctOpt.icon}</span><span>${correctOpt.label}</span>
+              </div>
+            </div>
+            <div class="ri-exp">${h.exp}</div>
+            <div class="ri-tip">Consejo: ${h.tip}</div>
+          </div>
+        `;
+      }).join('');
+
+      const safety = `
+        <div class="tips-global">
+          <strong>Seguridad y orden (PRL)</strong>
+          <ul>
+            <li>Verifica ausencia de tensión antes de intervenir (lockout/tagout si procede).</li>
+            <li>EPI: guantes aislantes CE y gafas; usa herramientas aisladas.</li>
+            <li>Mantén el puesto ordenado y sin restos; evita tropiezos.</li>
+            <li>Comprueba aprietes y continuidad antes de energizar.</li>
+          </ul>
+        </div>
+      `;
+
+      resultsContent.innerHTML = summary + '<div class="result-list">' + items + '</div>' + safety;
+
+      // initData warning
+      if (!state.initData) {
+        initDataWarn.textContent = "Nota: initData no detectado. Puedes continuar para ver tu recompensa.";
+      } else {
+        initDataWarn.textContent = "";
+      }
+
+      // Show overlay
+      results.classList.add('show');
+
+      // Allow scroll only inside modal (max-height handled)
+      // Keep global gameplay scroll hidden.
+    }
+
+    // ======================= ENSURE FITS =======================
+    function assertNoOverflow() {
+      return scene.scrollHeight <= scene.clientHeight;
+    }
+    function applyCompactMode() {
+      document.body.classList.add('compact');
+    }
+    function fitBoardToViewport() {
+      // Reduce card min height slightly and adjust gaps if needed
+      const current = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cardMinH')) || 64;
+      const newH = Math.max(52, Math.floor(current - 6));
+      document.documentElement.style.setProperty('--cardMinH', newH + 'px');
+      const gap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--gap')) || 10;
+      if (gap > 8) document.documentElement.style.setProperty('--gap', (gap - 2) + 'px');
+    }
+    function autoscaleUI() {
+      // Scale down ui-scaler so that content fits, but not less than 0.88
+      const h = scene.scrollHeight;
+      const c = scene.clientHeight;
+      let needed = Math.min(1, Math.max(0.88, c / h));
+      document.documentElement.style.setProperty('--ui-scale', needed.toFixed(3));
+    }
+    function ensureFits() {
+      // Reset dynamic vars (partial) before checks
+      document.documentElement.style.setProperty('--ui-scale', '1');
+
+      // Step 1: check
+      if (assertNoOverflow()) return;
+
+      // Step 2: compact
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+
+      // Step 3: fit board vars
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+
+      // Step 4: autoscale
+      autoscaleUI();
+      // No further steps; we accept small overflows are unlikely now.
+    }
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 60));
+
+    // ======================= EVENTS =======================
+    nextBtn.addEventListener('click', nextStep);
+    helpBtn.addEventListener('click', () => {
+      intro.classList.add('show');
+    });
+    startBtn.addEventListener('click', () => {
+      intro.classList.remove('show');
+      ensureFits();
+    });
+
+    rewardBtn.addEventListener('click', () => {
+      const base = "https://kampe-game-phaser.onrender.com/daily_streak";
+      const url = `${base}?initData=${encodeURIComponent(state.initData || "")}`;
+      location.href = url;
+    });
+
+    // ======================= INIT =======================
+    function init() {
+      readInitData();
+      // Initial render
+      state.idx = 0;
+      state.selected = null;
+      state.history = [];
+      renderProgress();
+      renderTask();
+    }
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
