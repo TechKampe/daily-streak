@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | Tu primer servicio eléctrico ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light only">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset + base */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%;
+      overflow: hidden; /* Bloquear scroll en gameplay */
+      overscroll-behavior: none;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #F6FAFF;
+      background: #0f5dff; /* fallback */
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root{
+      /* UI Vars + scales */
+      --ui-scale: 1;
+      --radius: 16px;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --titleSize: clamp(18px, 2.6vh, 28px);
+      --labelSize: clamp(12px, 1.8vh, 16px);
+      --btnSize: clamp(14px, 2vh, 18px);
+      --chipMinH: 52px;
+      --chipGap: 12px;
+      --safeP: max(12px, env(safe-area-inset-left));
+      --safePR: max(12px, env(safe-area-inset-right));
+      --safePT: max(12px, env(safe-area-inset-top));
+      --safePB: max(12px, env(safe-area-inset-bottom));
+      --cellH: 1;     /* para fitBoardToViewport() - sin uso crítico */
+      --cellAR: 1.6;  /* idem */
+    }
+
+    /* Fortnite-ish vibrant gradient bg */
+    .bg {
+      position: fixed; inset: 0;
+      background: radial-gradient(150% 110% at 80% 0%, #26a0ff 0%, #1570ff 45%, #0b3bd9 100%),
+                  radial-gradient(60% 80% at 0% 100%, #3ce0ff88 0%, transparent 60%),
+                  linear-gradient(180deg, #053fe8 0%, #0c2d8a 100%);
+      filter: saturate(1.1);
+    }
+
+    /* Avatar as soft background element */
+    .avatar {
+      position: fixed; right: -6%; bottom: -2%;
+      width: min(55svh, 55dvh, 55vh);
+      max-width: 420px;
+      opacity: 0.20;
+      transform: rotate(-8deg);
+      pointer-events: none;
+      user-select: none;
+      filter: drop-shadow(0 20px 40px rgba(0,0,0,0.45));
+    }
+
+    /* Scene (viewport-locked) */
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100vh; /* fallback chain updated below */
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: calc(var(--safePT) + 6px) calc(var(--safeP) + 4px) calc(var(--safePB) + 6px);
+      gap: 10px;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      touch-action: none; /* anti-derrapes */
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene { height: 100dvh; } }
+
+    /* HUD */
+    .hud {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--glass); border: 1px solid rgba(255,255,255,0.18);
+      padding: 6px 10px; border-radius: 999px; box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      max-width: 48%;
+    }
+    .brand img { height: 22px; width: auto; }
+    .brand span {
+      font-size: 12px; opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .title {
+      justify-self: center; text-align: center;
+      font-weight: 800; font-size: var(--titleSize);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+      line-height: 1.05;
+      max-width: 64vw;
+      display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .progress-wrap {
+      justify-self: end; display: flex; align-items: center; gap: 8px;
+    }
+    .progress-bar {
+      display: grid; grid-auto-flow: column; gap: 4px;
+      background: rgba(255,255,255,0.1);
+      padding: 6px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: var(--shadow); backdrop-filter: blur(8px);
+    }
+    .dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      outline: 1px solid rgba(0,0,0,0.15);
+      transition: transform 200ms ease, background 220ms ease;
+    }
+    .dot.active { background: #ffdf7a; transform: scale(1.15); }
+    .dot.done   { background: #1cff9b; }
+
+    /* Play area card */
+    .card {
+      align-self: center;
+      display: grid; grid-template-rows: auto 1fr auto; gap: 14px;
+      background: var(--glass); border: 1px solid rgba(255,255,255,0.18);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      backdrop-filter: blur(10px);
+      min-height: 0; /* avoid overflow */
+    }
+    .scenario {
+      font-size: 12px; opacity: 0.85;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .phrase {
+      display: grid; align-content: center;
+      min-height: 80px;
+      font-size: clamp(16px, 2.4vh, 20px);
+      font-weight: 700;
+      line-height: 1.2;
+      text-align: center;
+      padding: 4px 8px;
+    }
+    .phrase .blank {
+      color: #ffdf7a;
+      border-bottom: 3px dashed rgba(255,255,255,0.5);
+      padding: 0 6px 2px;
+      transition: background 220ms ease, color 220ms ease, border-color 220ms ease;
+    }
+    .phrase .blank.filled {
+      background: rgba(255,255,255,0.12);
+      border-bottom-style: solid;
+      color: #fff;
+      text-decoration: underline;
+      text-decoration-thickness: 3px;
+      text-decoration-color: #1cff9b;
+      text-underline-offset: 6px;
+    }
+
+    .options {
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--chipGap);
+      align-content: start;
+      min-height: calc(var(--chipMinH) + 8px);
+    }
+    .chip {
+      min-height: var(--chipMinH);
+      display: grid; place-items: center; text-align: center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.10) 100%);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 14px;
+      color: #fff; font-weight: 700; font-size: var(--btnSize);
+      box-shadow: var(--shadow);
+      cursor: pointer; user-select: none;
+      padding: 8px 10px;
+      outline: none;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+      position: relative;
+    }
+    .chip:focus-visible { box-shadow: 0 0 0 3px rgba(255,255,255,0.55), var(--shadow); }
+    .chip:hover { transform: translateY(-1px); }
+    .chip:active { transform: translateY(0); }
+    .chip.correct { background: linear-gradient(180deg, #1cff9b 0%, #0fd37c 100%); color: #052b18; border-color: #15a265; }
+    .chip.wrong   { background: linear-gradient(180deg, #ff6b6b 0%, #ff4545 100%); color: #2a0606; border-color: #bb1e1e; }
+
+    .chip .label {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      max-width: 90%;
+    }
+
+    /* Bottom hint */
+    .hint {
+      font-size: 12px; opacity: 0.8; text-align: center;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* Intro & Results modals */
+    .overlay {
+      position: fixed; inset: 0; display: grid; place-items: center;
+      background: rgba(3,13,43,0.55);
+      padding: 12px;
+      z-index: 20;
+    }
+    .modal {
+      width: min(620px, 92vw);
+      max-height: 90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.10) 100%);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow-y: auto;
+    }
+    .intro h2, .results h2 { margin: 0 0 6px; font-size: clamp(18px, 2.6vh, 26px); }
+    .intro p {
+      margin: 8px 0; font-size: 14px; opacity: 0.95;
+      display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .modal .cta-row {
+      display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px;
+      position: sticky; bottom: 0; background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.2) 40%);
+      padding-top: 8px;
+    }
+    .btn {
+      min-height: 48px; border-radius: 12px; border: 0; color: #041226; font-weight: 800;
+      background: linear-gradient(180deg, #ffdf7a 0%, #ffc53d 100%);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+      cursor: pointer; font-size: var(--btnSize);
+    }
+    .btn.secondary {
+      background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.18) 100%);
+      color: #fff; border: 1px solid rgba(255,255,255,0.35);
+    }
+
+    .results .klist {
+      display: grid; gap: 10px; margin: 10px 0;
+    }
+    .kitem {
+      display: grid; gap: 6px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 12px; padding: 10px;
+    }
+    .kitem .q { font-weight: 800; font-size: 14px; }
+    .kitem .a { font-size: 13px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .tag { padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+    .good { background: #1cff9b; color: #042116; }
+    .bad  { background: #ff6b6b; color: #2a0606; }
+    .kitem .explain { font-size: 12px; opacity: 0.9; }
+    .final-tip {
+      margin-top: 10px; padding: 10px;
+      border-radius: 12px; background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      font-size: 13px;
+    }
+    .warn {
+      font-size: 12px; color: #ffe3a0; opacity: 0.95; text-align: center;
+    }
+
+    /* Compact mode for tight screens */
+    .compact .brand span { display: none; }
+    .compact .title { font-size: clamp(16px, 2.2vh, 22px); }
+    .compact .phrase { font-size: clamp(15px, 2.2vh, 18px); min-height: 68px; }
+    .compact .chip { min-height: 48px; font-size: clamp(13px, 1.8vh, 16px); }
+    .compact .progress-bar .dot { width: 10px; height: 10px; }
+    .compact .card { padding: 10px; }
+
+    /* Simple fade/slide transitions */
+    .fade-in { animation: fadeIn 260ms ease forwards; }
+    .slide-in-up { animation: slideUp 260ms ease forwards; }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes slideUp { from { transform: translateY(8px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
+    /* Focus ring global */
+    .focus-ring:focus-visible { box-shadow: 0 0 0 3px rgba(255,255,255,0.5), var(--shadow); outline: none; }
+
+    /* Clamp any long text in gameplay */
+    .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+  <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="eager">
+
+  <main class="scene" role="application" aria-labelledby="title">
+    <!-- HUD -->
+    <header class="hud">
+      <div class="brand">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <span>Reto diario</span>
+      </div>
+      <div id="title" class="title">Tu primer servicio eléctrico ⚡</div>
+      <div class="progress-wrap">
+        <div id="progressBar" class="progress-bar" aria-label="Progreso"></div>
+      </div>
+    </header>
+
+    <!-- Card gameplay -->
+    <section class="card" id="gameCard" aria-live="polite">
+      <div class="scenario clamp-2" id="scenario">
+        Escenario: eres aprendiz y acompañas al oficial a revisar un enchufe que falla. Prioriza rapidez y seguridad.
+      </div>
+
+      <div class="phrase fade-in" id="phrase">
+        <!-- Will be injected -->
+      </div>
+
+      <div class="options" id="options" role="group" aria-label="Opciones">
+        <!-- Chips injected -->
+      </div>
+
+      <div class="hint" id="hint">Toca una opción para completar el hueco y avanzar.</div>
+    </section>
+
+    <!-- Footer reserved for spacing/safe-area; no critical CTA during gameplay -->
+    <footer aria-hidden="true"></footer>
+  </main>
+
+  <!-- Intro modal -->
+  <div class="overlay" id="introOverlay" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="modal intro">
+      <h2 id="introTitle">Tu primer servicio eléctrico ⚡</h2>
+      <p>Antes de tocar nada, tomarás microdecisiones sobre herramienta y protección. Objetivo: afianzar vocabulario básico y evitar confusiones.</p>
+      <p><strong>Cómo jugar:</strong> completa el hueco tocando una opción; avanzarás automáticamente.</p>
+      <div class="cta-row">
+        <button id="startBtn" class="btn focus-ring" aria-label="Empezar el reto">¡Empezar!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results modal (hidden initially) -->
+  <div class="overlay" id="resultsOverlay" role="dialog" aria-modal="true" aria-labelledby="resultsTitle" style="display:none;">
+    <div class="modal results">
+      <h2 id="resultsTitle">Resumen del diagnóstico</h2>
+      <div id="scoreLine" style="font-weight:800; margin-bottom:8px;"></div>
+      <div class="klist" id="klist"></div>
+      <div class="final-tip" id="finalTip">
+        Consejo: repasa terminología (multímetro vs buscapolos), EPI y el orden seguro: desconectar, verificar ausencia de tensión y trabajar.
+      </div>
+      <div class="cta-row">
+        <button id="retryBtn" class="btn secondary focus-ring" aria-label="Repetir reto">Repetir</button>
+        <button id="rewardBtn" class="btn focus-ring" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        <div id="warnInit" class="warn" aria-live="polite" style="display:none;">Aviso: initData no detectado.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Data and state
+    const data = [
+      {
+        text: "Para comprobar si hay tensión uso el ___",
+        options: ["buscapolos", "martillo"],
+        correct: 0,
+        explain: "El buscapolos detecta presencia de tensión. Un martillo no aplica en diagnosis eléctrica."
+      },
+      {
+        text: "Para medir voltaje exacto uso el ___",
+        options: ["multímetro", "pinza amperimétrica"],
+        correct: 0,
+        explain: "El multímetro mide tensión con precisión. La pinza está diseñada para corriente sin abrir el circuito."
+      },
+      {
+        text: "Antes de manipular el enchufe, me pongo ___",
+        options: ["guantes dieléctricos", "gafas de sol"],
+        correct: 0,
+        explain: "Los guantes dieléctricos protegen contra contacto eléctrico. Las gafas de sol no son EPI adecuado."
+      },
+      {
+        text: "Para cortar la alimentación bajo el ___ del circuito",
+        options: ["automático", "interruptor de lámpara"],
+        correct: 0,
+        explain: "El automático (magnetotérmico) desenergiza el circuito. El interruptor de lámpara no asegura corte total."
+      },
+      {
+        text: "Para pelar el cable empleo ___",
+        options: ["pelacables", "cúter sin control"],
+        correct: 0,
+        explain: "El pelacables evita dañar conductores. Un cúter puede cortar hilos y es mala práctica."
+      },
+      {
+        text: "Para identificar el neutro consulto el ___",
+        options: ["código de colores", "termómetro"],
+        correct: 0,
+        explain: "El código de colores y esquemas ayudan a identificar conductores. Un termómetro no aporta esa información."
+      }
+    ];
+
+    // Parse initData from URL
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || "";
+
+    // Elements
+    const scene = document.querySelector('.scene');
+    const titleEl = document.getElementById('title');
+    const progressBar = document.getElementById('progressBar');
+    const phraseEl = document.getElementById('phrase');
+    const optionsEl = document.getElementById('options');
+    const introOverlay = document.getElementById('introOverlay');
+    const resultsOverlay = document.getElementById('resultsOverlay');
+    const klist = document.getElementById('klist');
+    const scoreLine = document.getElementById('scoreLine');
+    const warnInit = document.getElementById('warnInit');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const startBtn = document.getElementById('startBtn');
+    const scenarioEl = document.getElementById('scenario');
+
+    // State
+    let step = 0;
+    const total = data.length;
+    const answers = []; // {chosenIndex, correctIndex, isCorrect}
+    let locked = false;
+
+    // Build progress dots
+    function renderProgress() {
+      progressBar.innerHTML = '';
+      for (let i = 0; i < total; i++) {
+        const d = document.createElement('div');
+        d.className = 'dot' + (i < step ? ' done' : (i === step ? ' active' : ''));
+        d.setAttribute('aria-hidden', 'true');
+        progressBar.appendChild(d);
+      }
+    }
+
+    function clampLabel(text, max = 48) {
+      if (!text) return "";
+      if (text.length <= max) return text;
+      return text.slice(0, max - 1) + '…';
+    }
+
+    function renderStep() {
+      if (step >= total) {
+        return showResults();
+      }
+      locked = false;
+      renderProgress();
+
+      const item = data[step];
+      // Build phrase with blank
+      const parts = item.text.split('___');
+      const phraseHTML = `${sanitize(parts[0])}<span class="blank" id="blank" aria-live="polite">___</span>${sanitize(parts[1] || '')}`;
+      phraseEl.classList.remove('slide-in-up'); void phraseEl.offsetWidth; phraseEl.classList.add('slide-in-up');
+      phraseEl.innerHTML = phraseHTML;
+
+      optionsEl.innerHTML = '';
+      const opts = item.options;
+      // 2 options only (as per guardrails)
+      for (let i = 0; i < opts.length; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'chip focus-ring';
+        btn.setAttribute('role', 'button');
+        btn.setAttribute('aria-label', `Opción ${i+1}: ${opts[i]}`);
+        btn.addEventListener('click', () => handleChoice(i));
+        const span = document.createElement('span');
+        span.className = 'label';
+        span.textContent = clampLabel(opts[i], 48);
+        btn.appendChild(span);
+        optionsEl.appendChild(btn);
+      }
+
+      ensureFits();
+    }
+
+    function handleChoice(choiceIndex) {
+      if (locked) return;
+      locked = true;
+
+      const item = data[step];
+      const isCorrect = choiceIndex === item.correct;
+
+      // Visual feedback on chips
+      const chips = Array.from(optionsEl.querySelectorAll('.chip'));
+      chips.forEach((chip, idx) => {
+        chip.classList.add(idx === item.correct ? 'correct' : (idx === choiceIndex ? 'wrong' : ''));
+        chip.disabled = true;
+      });
+
+      // Fill blank with chosen option
+      const blank = document.getElementById('blank');
+      blank.textContent = item.options[choiceIndex];
+      blank.classList.add('filled');
+      blank.setAttribute('aria-label', `Respuesta: ${item.options[choiceIndex]}`);
+
+      // Save
+      answers[step] = {
+        chosenIndex: choiceIndex,
+        correctIndex: item.correct,
+        isCorrect
+      };
+
+      // Advance after small delay
+      setTimeout(() => {
+        step++;
+        renderStep();
+      }, 680);
+    }
+
+    function showResults() {
+      // Update score
+      const correctCount = answers.filter(a => a && a.isCorrect).length;
+      scoreLine.textContent = `Aciertos: ${correctCount}/${total}`;
+
+      // Build list
+      klist.innerHTML = '';
+      for (let i = 0; i < data.length; i++) {
+        const item = data[i];
+        const res = answers[i];
+        const wrap = document.createElement('div');
+        wrap.className = 'kitem';
+
+        const solved = item.text.replace('___', item.options[item.correct]);
+        const q = document.createElement('div');
+        q.className = 'q';
+        q.textContent = solved;
+        wrap.appendChild(q);
+
+        const a = document.createElement('div');
+        a.className = 'a';
+        const tagY = document.createElement('span');
+        tagY.className = 'tag good';
+        tagY.textContent = `Correcta: ${item.options[item.correct]}`;
+        const tagM = document.createElement('span');
+        tagM.className = 'tag ' + (res.isCorrect ? 'good' : 'bad');
+        tagM.textContent = `Tu respuesta: ${item.options[res.chosenIndex]}`;
+        a.appendChild(tagY);
+        a.appendChild(tagM);
+        wrap.appendChild(a);
+
+        const ex = document.createElement('div');
+        ex.className = 'explain';
+        ex.textContent = item.explain;
+        wrap.appendChild(ex);
+
+        klist.appendChild(wrap);
+      }
+
+      // initData warning
+      if (!initData) warnInit.style.display = 'block';
+      else warnInit.style.display = 'none';
+
+      // Show results overlay
+      resultsOverlay.style.display = 'grid';
+      resultsOverlay.classList.add('fade-in');
+
+      // Allow scroll only inside modal (global keeps hidden)
+      // Modal already has max-height and overflow-y: auto
+
+      // Ensure focus for accessibility
+      rewardBtn.focus({preventScroll: true});
+    }
+
+    function restart() {
+      step = 0;
+      answers.length = 0;
+      resultsOverlay.style.display = 'none';
+      renderStep();
+    }
+
+    // Navigation/CTAs
+    startBtn.addEventListener('click', () => {
+      introOverlay.style.display = 'none';
+      renderStep();
+    });
+
+    retryBtn.addEventListener('click', () => restart());
+
+    rewardBtn.addEventListener('click', () => {
+      const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      window.location.href = target;
+    });
+    rewardBtn.textContent = 'Ver mi recompensa';
+
+    // Helpers
+    function sanitize(str) {
+      return (str || '').replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    }
+
+    // Fit logic (ensureFits)
+    function assertNoOverflow() {
+      // returns true if scene content fits vertically
+      return scene.scrollHeight <= scene.clientHeight + 1;
+    }
+
+    function applyCompactMode() {
+      document.body.classList.add('compact');
+    }
+
+    function fitBoardToViewport() {
+      // We don't have a grid board, but we can adjust spacing vars anyway
+      // Reduce chip gap and min height a bit to gain room
+      document.documentElement.style.setProperty('--chipGap', '10px');
+      document.documentElement.style.setProperty('--chipMinH', '48px');
+      document.documentElement.style.setProperty('--titleSize', 'clamp(16px, 2.2vh, 22px)');
+    }
+
+    function autoscaleUI(minScale = 0.88) {
+      // Compute a scale to fit, not going below minScale
+      const h = scene.clientHeight || window.innerHeight;
+      const need = scene.scrollHeight;
+      const targetScale = Math.max(minScale, Math.min(1, h / need));
+      document.documentElement.style.setProperty('--ui-scale', targetScale.toFixed(3));
+    }
+
+    function ensureFits() {
+      // Reset scale before measurements
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      // Step 1: check
+      if (assertNoOverflow()) return;
+      // Step 2: compact
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+      // Step 3: adjust layout vars
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      // Step 4: autoscale
+      autoscaleUI(0.88);
+      // final: nothing else
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 60));
+
+    // Initial progress render for intro screen
+    (function initProgressDots() {
+      progressBar.innerHTML = '';
+      for (let i = 0; i < total; i++) {
+        const d = document.createElement('div');
+        d.className = 'dot' + (i === 0 ? ' active' : '');
+        progressBar.appendChild(d);
+      }
+    })();
+
+    // Initial ensureFits
+    ensureFits();
+  </script>
+</body>
+</html>
