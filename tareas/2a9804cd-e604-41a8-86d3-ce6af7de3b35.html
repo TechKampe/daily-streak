@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Memopares: Electricidad Segura ⚡ | Kämpe</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Base + Reset */
+    :root{
+      --ui-scale: 1;
+      --hudH: 84px;
+      --gap: 12px;
+      --cardAspect: 0.8; /* width/height; 0.8 => alto = ancho/0.8 = 1.25*ancho */
+      --cardRadius: 14px;
+      --glass: rgba(255,255,255,0.14);
+      --glass-border: rgba(255,255,255,0.35);
+      --txt: #E9F0FF;
+      --txt-dim: #C7D4FF;
+      --accent: #35FFB5;
+      --accent-2: #FFD166;
+      --danger: #FF6B6B;
+      --fortnite-1: #0E52F1;
+      --fortnite-2: #091F77;
+      --fortnite-3: #0A2DA9;
+      --shadow: 0 8px 24px rgba(0,0,0,0.35);
+      --shadow-soft: 0 6px 18px rgba(0,0,0,0.22);
+      --boardMaxW: min(92vw, 480px);
+      --safe-inset-top: env(safe-area-inset-top, 0px);
+      --safe-inset-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    *{box-sizing: border-box}
+    html, body{
+      height: 100%;
+      background: radial-gradient(1200px 800px at 20% 10%, var(--fortnite-1), transparent 60%), 
+                  linear-gradient(160deg, var(--fortnite-3), var(--fortnite-2) 70%);
+      color: var(--txt);
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden; /* Bloquea scroll en gameplay */
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Scene sizing: 100svh + fallbacks */
+    .scene{
+      position: relative;
+      width: 100%;
+      padding: 12px 16px;
+      padding-top: calc(12px + var(--safe-inset-top));
+      padding-bottom: calc(12px + var(--safe-inset-bottom));
+      display: grid;
+      place-items: center;
+      isolation: isolate;
+    }
+    @supports (height: 100svh){
+      .scene{ height: 100svh; }
+    }
+    @supports not (height: 100svh){
+      @supports (height: 100dvh){
+        .scene{ height: 100dvh; }
+      }
+      @supports not (height: 100dvh){
+        .scene{ height: 100vh; }
+      }
+    }
+
+    /* Background layers */
+    .bg{
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .bg::before{
+      content:"";
+      position:absolute; inset:-20% -10% auto -10%;
+      height:70%;
+      background: radial-gradient(60% 55% at 50% 35%, rgba(255,255,255,0.08), transparent 65%);
+      transform: rotate(-6deg);
+    }
+    .avatar{
+      position: absolute; right:-6%; bottom:-10%;
+      width: 70%;
+      max-width: 520px;
+      opacity: 0.22;
+      filter: drop-shadow(0 12px 32px rgba(0,0,0,0.4));
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* Stage wrapper for autoscaling */
+    .stage{
+      width: 100%;
+      max-width: 560px;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      row-gap: 10px;
+      z-index: 1;
+    }
+
+    /* HUD */
+    .hud{
+      height: var(--hudH);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      column-gap: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: var(--shadow-soft);
+    }
+    .logo{
+      display: grid; align-items: center; justify-content: center;
+      width: 56px; height: 56px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .logo img{ width:100%; height:100%; object-fit: contain; }
+
+    .titleWrap{
+      min-width: 0;
+    }
+    .title{
+      font-weight: 800;
+      font-size: clamp(16px, 4.4vw, 20px);
+      line-height: 1.1;
+      letter-spacing: 0.2px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .subtitle{
+      margin-top: 6px;
+      font-size: clamp(12px, 3.6vw, 13px);
+      color: var(--txt-dim);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .stats{
+      display: grid;
+      justify-items: end;
+      row-gap: 6px;
+    }
+    .pill{
+      display: inline-grid; grid-auto-flow: column; align-items: center; column-gap: 6px;
+      padding: 8px 10px;
+      background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: clamp(12px, 3.8vw, 13px);
+    }
+    .pill .star{
+      color: var(--accent-2);
+      filter: drop-shadow(0 0 8px rgba(255,209,102,0.6));
+    }
+    .pill .off{ color: #bbb; filter:none;}
+
+    /* Board container */
+    .boardWrap{
+      align-self: stretch;
+      display: grid;
+      justify-items: center;
+    }
+    .board{
+      touch-action: none; /* Anti-derrapes */
+      width: var(--boardMaxW);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: 1fr;
+      gap: var(--gap);
+      perspective: 1000px;
+    }
+
+    /* Card */
+    .card{
+      position: relative;
+      aspect-ratio: var(--cardAspect);
+      border: none; background: none; padding: 0;
+      cursor: pointer;
+      outline: none;
+      transform: translateZ(0);
+    }
+    .card:focus-visible .face{
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.5) inset, 0 0 0 2px #fff;
+    }
+    .card.disabled{ pointer-events: none; }
+    .cardInner{
+      position: absolute; inset: 0;
+      transform-style: preserve-3d;
+      transition: transform 420ms cubic-bezier(.2,.65,.18,1.1);
+    }
+    .card.flipped .cardInner{ transform: rotateY(180deg); }
+    .face{
+      position: absolute; inset: 0;
+      display: grid; place-items: center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      border: 1px solid var(--glass-border);
+      border-radius: var(--cardRadius);
+      backface-visibility: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+    .front{
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+    }
+    .back{
+      transform: rotateY(180deg);
+      background: linear-gradient(180deg, rgba(53,255,181,0.2), rgba(53,255,181,0.06));
+      border-color: rgba(53,255,181,0.6);
+    }
+    .label{
+      padding: 10px;
+      text-align: center;
+      font-weight: 800;
+      font-size: clamp(14px, 3.9vw, 16px);
+      color: #FFFFFF;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      max-width: 96%;
+    }
+    .card.matched .back{
+      outline: 2px solid var(--accent);
+      box-shadow: 0 0 0 3px rgba(53,255,181,0.35), var(--shadow-soft);
+      animation: glow 900ms ease forwards;
+    }
+    @keyframes glow{
+      0%{ box-shadow: 0 0 0 0 rgba(53,255,181,0.0), var(--shadow-soft); }
+      100%{ box-shadow: 0 0 0 6px rgba(53,255,181,0.22), var(--shadow-soft); }
+    }
+    .shake{ animation: shake 240ms linear; }
+    @keyframes shake{
+      0%,100%{ transform: translateX(0); }
+      25%{ transform: translateX(-4px); }
+      75%{ transform: translateX(4px); }
+    }
+
+    /* Footer tips */
+    .miniTip{
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      column-gap: 10px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+    .miniText{
+      font-size: clamp(12px, 3.6vw, 13px);
+      color: var(--txt-dim);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .btn{
+      padding: 10px 14px;
+      min-height: 44px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+      color: #fff; font-weight: 800; letter-spacing: .3px;
+      box-shadow: var(--shadow-soft);
+      cursor: pointer;
+      font-size: clamp(14px, 4vw, 16px);
+    }
+    .btn:focus-visible{ outline: 3px solid #fff; outline-offset: 2px; }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(53,255,181,0.35), rgba(53,255,181,0.12));
+      border-color: rgba(53,255,181,0.7);
+      color: #021C15;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .btn.ghost{
+      background: transparent;
+      border-color: rgba(255,255,255,0.28);
+      color: var(--txt);
+    }
+
+    /* Intro modal */
+    .modal{
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: linear-gradient(180deg, rgba(6,10,30,0.72), rgba(6,10,30,0.55));
+      backdrop-filter: blur(6px);
+    }
+    .modalCard{
+      width: min(520px, 92vw);
+      max-height: 90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .modalHead{
+      display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center;
+      padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.2);
+    }
+    .modalTitle{
+      font-weight: 800; font-size: clamp(18px, 5vw, 22px);
+    }
+    .modalBody{
+      padding: 14px; overflow-y: auto;
+    }
+    .modalBody p{
+      margin: 10px 0;
+      color: var(--txt);
+      font-size: clamp(14px, 4vw, 16px);
+    }
+    .modalBody .small{
+      color: var(--txt-dim);
+      font-size: clamp(12px, 3.6vw, 13px);
+    }
+    .modalActions{
+      position: sticky; bottom: 0; z-index: 1;
+      display: grid; grid-template-columns: 1fr; gap: 10px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.35));
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+
+    /* Results modal */
+    .resultsList{ display: grid; gap: 10px; margin: 10px 0; }
+    .resItem{
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 12px;
+    }
+    .resPair{
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px;
+      font-weight: 800; color: #fff; font-size: clamp(13px, 3.8vw, 15px);
+    }
+    .resPair .arrow{ opacity: 0.6; }
+    .resExp{
+      margin-top: 6px; color: var(--txt-dim); font-size: clamp(12px, 3.6vw, 13px);
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .scoreRow{
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 2px;
+    }
+    .scoreBox{
+      text-align: center; padding: 10px;
+      border-radius: 12px; background: rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22);
+      font-weight: 800;
+    }
+    .tipBox{
+      margin-top: 10px; padding: 10px 12px;
+      border-radius: 12px; background: linear-gradient(180deg, rgba(255,209,102,0.22), rgba(255,209,102,0.10));
+      border: 1px solid rgba(255,209,102,0.5);
+      color:#1D1400;
+    }
+    .warn{
+      font-size: 12px; color: #ffe; opacity: 0.8; text-align: center;
+    }
+
+    /* Compact mode to free space if needed */
+    .scene.compact .hud{ height: 66px; padding: 8px; }
+    .scene.compact .logo{ width: 44px; height: 44px; }
+    .scene.compact .title{ font-size: clamp(14px,4vw,18px); }
+    .scene.compact .subtitle{ display: none; }
+    .scene.compact .pill{ padding: 6px 8px; font-size: 12px; }
+    .scene.compact .board{ gap: 8px; }
+    .scene.compact .label{ font-size: clamp(12px,3.6vw,14px); }
+    .scene.compact .miniTip{ padding: 8px 10px; }
+    .scene.compact .btn{ min-height: 42px; }
+
+    /* Utility */
+    .hidden{ display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <div class="bg" aria-hidden="true">
+      <img class="avatar" alt="" loading="lazy" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png">
+    </div>
+
+    <div class="stage" id="stage">
+      <!-- HUD -->
+      <header class="hud" role="banner">
+        <div class="logo" aria-hidden="true">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        </div>
+        <div class="titleWrap">
+          <div class="title">Memopares: Electricidad Segura ⚡</div>
+          <div class="subtitle">Empareja concepto y acción para intervenir sin riesgos.</div>
+        </div>
+        <div class="stats">
+          <div class="pill" id="attemptsPill" aria-live="polite" aria-atomic="true">Intentos: <span id="attempts">0</span>/12</div>
+          <div class="pill" title="Completa en 12 intentos o menos">
+            <span class="star" id="starIcon">★</span> Precisión
+          </div>
+        </div>
+      </header>
+
+      <!-- Board -->
+      <main class="boardWrap" role="main">
+        <section class="board" id="board" aria-label="Tablero de Memopares de 8 cartas">
+          <!-- Cards injected by JS -->
+        </section>
+      </main>
+
+      <!-- Footer tip -->
+      <footer class="miniTip" role="contentinfo">
+        <div class="miniText" id="tipText">Desafío extra: termina en 12 intentos para ganar la estrella.</div>
+        <button class="btn ghost" id="restartBtn" aria-label="Reiniciar partida">Reiniciar</button>
+      </footer>
+    </div>
+
+    <!-- Intro modal -->
+    <div class="modal" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+      <div class="modalCard">
+        <div class="modalHead">
+          <div class="logo" aria-hidden="true" style="width:48px;height:48px;">
+            <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          </div>
+          <h2 class="modalTitle" id="introTitle">Memopares: Electricidad Segura ⚡</h2>
+        </div>
+        <div class="modalBody" id="introBody">
+          <p>Estás en tu primera práctica de instalaciones domésticas; un enchufe dispara el diferencial y debes actuar con seguridad.</p>
+          <p class="small">Gira 2 cartas y empareja concepto con su definición/acción. Completa el tablero en 12 intentos o menos para ganar la estrella de precisión.</p>
+        </div>
+        <div class="modalActions">
+          <button class="btn primary" id="startBtn" aria-label="Comenzar el reto">¡Jugar!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results modal -->
+    <div class="modal hidden" id="resultsModal" role="dialog" aria-modal="true" aria-labelledby="resultsTitle">
+      <div class="modalCard">
+        <div class="modalHead">
+          <div class="logo" aria-hidden="true" style="width:48px;height:48px;">
+            <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          </div>
+          <h2 class="modalTitle" id="resultsTitle">¡Bien hecho! Resumen de la intervención</h2>
+        </div>
+        <div class="modalBody" id="resultsBody">
+          <div class="scoreRow">
+            <div class="scoreBox">Intentos: <span id="resAttempts">0</span></div>
+            <div class="scoreBox">Precisión: <span id="resStar">★</span></div>
+          </div>
+          <div class="resultsList" id="resultsList">
+            <!-- Pair explanations injected by JS -->
+          </div>
+          <div class="tipBox">
+            Consejo de memorización: usa la regla 3C — Cortar, Comprobar, Colocar EPI. Piensa “3C” antes de tocar.
+          </div>
+        </div>
+        <div class="modalActions">
+          <button class="btn ghost" id="againBtn" aria-label="Jugar de nuevo">Reintentar</button>
+          <a class="btn primary" id="ctaReward" href="#" role="button" aria-label="Ver mi recompensa">Ver mi recompensa</a>
+          <div class="warn hidden" id="warnInit">Aviso: initData no detectado; la recompensa podría no mostrarse.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ---------------------------
+    // Utility: clamp and truncate text lengths to protect layout
+    // ---------------------------
+    const MAX_CARD_CHARS = 48;
+    const MAX_EXPL_CHARS = 180;
+
+    function clampText(str, max) {
+      if (!str) return "";
+      const s = String(str);
+      return s.length <= max ? s : s.slice(0, Math.max(0, max - 1)).trimEnd() + "…";
+    }
+
+    // ---------------------------
+    // Init Data handling (preserve on redirect)
+    // ---------------------------
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get("initData") || "";
+    const rewardBase = "https://kampe-game-phaser.onrender.com/daily_streak";
+    const ctaReward = document.getElementById("ctaReward");
+    const warnInit = document.getElementById("warnInit");
+    function updateRewardLink() {
+      const href = initData ? `${rewardBase}?initData=${encodeURIComponent(initData)}` : `${rewardBase}?initData=`;
+      ctaReward.setAttribute("href", href);
+      if (!initData) warnInit.classList.remove("hidden");
+    }
+
+    // ---------------------------
+    // Game Data
+    // ---------------------------
+    const PAIRS = [
+      {
+        id: "epi",
+        a: "EPI",
+        b: "Guantes dieléctricos",
+        exp: "El EPI adecuado protege frente a descargas. Los guantes dieléctricos aíslan tus manos en trabajos de baja tensión."
+      },
+      {
+        id: "multi",
+        a: "Multímetro",
+        b: "Medir tensión",
+        exp: "Antes de intervenir, verifica si hay tensión y el rango correcto con el multímetro. Nunca supongas 0 V."
+      },
+      {
+        id: "cut",
+        a: "Cortar corriente",
+        b: "Bajar interruptor general",
+        exp: "Aísla el circuito actuando sobre el IGA o el diferencial para eliminar el riesgo eléctrico antes de cualquier manipulación."
+      },
+      {
+        id: "vat",
+        a: "Comprobar ausencia de tensión",
+        b: "Antes de tocar",
+        exp: "Nunca toques conductores sin confirmar 0 V con un instrumento verificado. Primero verifica, luego actúa."
+      }
+    ].map(p => ({
+      ...p,
+      a: clampText(p.a, MAX_CARD_CHARS),
+      b: clampText(p.b, MAX_CARD_CHARS),
+      exp: clampText(p.exp, MAX_EXPL_CHARS)
+    }));
+
+    const MAX_ATTEMPTS = 12;
+    let shuffledCards = [];
+    let flipped = [];
+    let matchedIds = new Set();
+    let attempts = 0;
+    let lockBoard = false;
+
+    const scene = document.getElementById("scene");
+    const board = document.getElementById("board");
+    const attemptsEl = document.getElementById("attempts");
+    const starIcon = document.getElementById("starIcon");
+    const restartBtn = document.getElementById("restartBtn");
+    const tipText = document.getElementById("tipText");
+
+    const introModal = document.getElementById("introModal");
+    const startBtn = document.getElementById("startBtn");
+    const resultsModal = document.getElementById("resultsModal");
+    const resAttempts = document.getElementById("resAttempts");
+    const resStar = document.getElementById("resStar");
+    const resultsList = document.getElementById("resultsList");
+    const againBtn = document.getElementById("againBtn");
+
+    // ---------------------------
+    // Shuffle + Build Deck
+    // ---------------------------
+    function shuffle(array){
+      const arr = array.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function buildDeck(){
+      const cards = [];
+      PAIRS.forEach(p => {
+        cards.push({ id: p.id, label: p.a });
+        cards.push({ id: p.id, label: p.b });
+      });
+      return shuffle(cards);
+    }
+
+    function cardTemplate(card, index){
+      const id = `c${index}`;
+      const label = clampText(card.label, MAX_CARD_CHARS);
+      // Button for accessibility
+      return `
+        <button class="card" data-id="${card.id}" data-idx="${index}" id="${id}" aria-label="Carta ${index+1}" aria-pressed="false">
+          <div class="cardInner">
+            <div class="face front" aria-hidden="true">
+              <div class="label">?</div>
+            </div>
+            <div class="face back">
+              <div class="label">${label}</div>
+            </div>
+          </div>
+        </button>
+      `;
+    }
+
+    function renderBoard(){
+      shuffledCards = buildDeck();
+      board.innerHTML = shuffledCards.map(cardTemplate).join("");
+      // Attach events
+      board.querySelectorAll(".card").forEach(btn => {
+        btn.addEventListener("click", onCardClick, {passive: true});
+        btn.addEventListener("keydown", (e)=>{
+          if(e.key === "Enter" || e.key === " "){ e.preventDefault(); btn.click(); }
+        });
+      });
+    }
+
+    // ---------------------------
+    // Game Logic
+    // ---------------------------
+    function resetGame(){
+      attempts = 0;
+      matchedIds.clear();
+      flipped = [];
+      lockBoard = false;
+      attemptsEl.textContent = "0";
+      tipText.textContent = "Desafío extra: termina en 12 intentos para ganar la estrella.";
+      starIcon.classList.remove("off");
+      renderBoard();
+      ensureFits(); // adjust layout each time we render
+    }
+
+    function onCardClick(e){
+      const btn = e.currentTarget;
+      if (lockBoard) return;
+      if (btn.classList.contains("matched")) return;
+      // avoid selecting same card twice in the same turn
+      if (flipped.length === 1 && flipped[0] === btn) return;
+
+      flipCard(btn);
+
+      flipped.push(btn);
+      btn.setAttribute("aria-pressed","true");
+
+      if (flipped.length === 2){
+        lockBoard = true;
+        attempts++;
+        attemptsEl.textContent = attempts;
+        checkMatch();
+      }
+    }
+
+    function flipCard(btn){
+      btn.classList.add("flipped");
+    }
+    function unflipCard(btn){
+      btn.classList.remove("flipped");
+      btn.setAttribute("aria-pressed","false");
+    }
+
+    function checkMatch(){
+      const [c1, c2] = flipped;
+      const id1 = c1.getAttribute("data-id");
+      const id2 = c2.getAttribute("data-id");
+      const isMatch = id1 === id2;
+
+      if (isMatch){
+        matchedIds.add(id1);
+        c1.classList.add("matched");
+        c2.classList.add("matched");
+        // Lock them
+        c1.classList.add("disabled");
+        c2.classList.add("disabled");
+        c1.setAttribute("aria-disabled","true");
+        c2.setAttribute("aria-disabled","true");
+        highlightMatch(c1, c2);
+        nextTurn();
+        // If finished all 4 pairs
+        if (matchedIds.size === PAIRS.length){
+          setTimeout(showResults, 450);
+        }
+      } else {
+        // mismatch
+        board.classList.add("shake");
+        setTimeout(()=> board.classList.remove("shake"), 260);
+        setTimeout(()=>{
+          unflipCard(c1);
+          unflipCard(c2);
+          nextTurn();
+        }, 900); // 1s approx (slightly less due to transition)
+      }
+
+      // Star challenge feedback
+      if (attempts > MAX_ATTEMPTS){
+        starIcon.classList.add("off");
+      }
+    }
+
+    function highlightMatch(a, b){
+      a.classList.add("matched");
+      b.classList.add("matched");
+    }
+
+    function nextTurn(){
+      flipped = [];
+      lockBoard = false;
+    }
+
+    // ---------------------------
+    // Results
+    // ---------------------------
+    function pairById(id){
+      return PAIRS.find(p => p.id === id);
+    }
+
+    function buildResults(){
+      resAttempts.textContent = attempts;
+      resStar.textContent = attempts <= MAX_ATTEMPTS ? "★ (Lograda)" : "☆ (No lograda)";
+      const items = [];
+      // Ensure every pair appears (even if not matched due to future variants)
+      PAIRS.forEach(p => {
+        const left = clampText(p.a, MAX_CARD_CHARS);
+        const right = clampText(p.b, MAX_CARD_CHARS);
+        const exp = clampText(p.exp, MAX_EXPL_CHARS);
+        items.push(`
+          <div class="resItem">
+            <div class="resPair"><span>${left}</span><span class="arrow">↔</span><span>${right}</span></div>
+            <div class="resExp">${exp}</div>
+          </div>
+        `);
+      });
+      resultsList.innerHTML = items.join("");
+    }
+
+    function showResults(){
+      buildResults();
+      resultsModal.classList.remove("hidden");
+      // Allow scroll only in results modal's body (already overflow-y: auto)
+      // Keep global scroll disabled.
+      updateRewardLink();
+    }
+
+    // ---------------------------
+    // Intro + Controls
+    // ---------------------------
+    startBtn.addEventListener("click", ()=>{
+      introModal.classList.add("hidden");
+      resetGame();
+    });
+    restartBtn.addEventListener("click", ()=> resetGame());
+    againBtn.addEventListener("click", ()=>{
+      resultsModal.classList.add("hidden");
+      resetGame();
+    });
+
+    // ---------------------------
+    // Fit-to-viewport system
+    // ---------------------------
+    function assertNoOverflow(){
+      // check the full scene
+      const ok = scene.scrollHeight <= scene.clientHeight;
+      return ok;
+    }
+
+    function applyCompactMode(enable=true){
+      if (enable){ scene.classList.add("compact"); }
+      else{ scene.classList.remove("compact"); }
+    }
+
+    function fitBoardToViewport(){
+      // Try to reduce card height by increasing aspect ratio
+      // Start from 0.8 -> try 1.0
+      document.documentElement.style.setProperty('--cardAspect', '1'); // squares
+    }
+
+    function autoscaleUI(){
+      // As last resort, apply scale down to the stage
+      const h = scene.clientHeight;
+      const sH = scene.scrollHeight;
+      if (sH > h){
+        const ratio = h / sH;
+        const scale = Math.max(0.88, Math.min(1, ratio));
+        document.documentElement.style.setProperty('--ui-scale', String(scale));
+      }
+    }
+
+    function ensureFits(){
+      // Reset changes
+      applyCompactMode(false);
+      document.documentElement.style.setProperty('--cardAspect', '0.8');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      // Wait a frame to measure after DOM updates
+      requestAnimationFrame(()=>{
+        if (assertNoOverflow()) return;
+        // 1) compact
+        applyCompactMode(true);
+        requestAnimationFrame(()=>{
+          if (assertNoOverflow()) return;
+          // 2) tweak board dimensions
+          fitBoardToViewport();
+          requestAnimationFrame(()=>{
+            if (assertNoOverflow()) return;
+            // 3) autoscale
+            autoscaleUI();
+          });
+        });
+      });
+    }
+
+    window.addEventListener("resize", ensureFits);
+    window.addEventListener("orientationchange", ensureFits);
+
+    // ---------------------------
+    // Boot
+    // ---------------------------
+    renderBoard();       // Pre-render (behind intro)
+    ensureFits();        // Ensure it fits even before starting
+    updateRewardLink();  // Prepare CTA link
+
+    // Accessibility: prevent TAB focus behind modals
+    // Not fully trapping for simplicity, but hide gameplay when modal is open
+    // Cards already behind overlay
+
+  </script>
+</body>
+</html>
