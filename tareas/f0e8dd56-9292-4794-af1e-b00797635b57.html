@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Secuencia Pro: Taller Seguro ⚙️ | Kämpe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset + base */
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --bg1: #0b5fff;
+      --bg2: #1a7bff;
+      --bg3: #56b2ff;
+      --glass: rgba(255,255,255,0.14);
+      --glass-strong: rgba(255,255,255,0.22);
+      --border: rgba(255,255,255,0.28);
+      --cardH: 64px;
+      --gap: 8px;
+      --radius: 16px;
+      --ui-scale: 1;
+      --shadow: 0 10px 26px rgba(0,0,0,0.26);
+      --accent: #7ef9ff;
+      --good: #1dd1a1;
+      --bad: #ff6b6b;
+      --warn: #ffc857;
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.75);
+      --safe-pad: env(safe-area-inset-bottom, 0px);
+      --safe-pad-top: env(safe-area-inset-top, 0px);
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 85% -10%, #8fd3ff33, transparent 60%),
+                  linear-gradient(160deg, var(--bg1), var(--bg2) 55%, var(--bg3));
+      overflow: hidden; /* locked during gameplay */
+      overscroll-behavior: none;
+    }
+
+    /* Scene sizing with 100svh fallback chain */
+    .scene {
+      width: 100%;
+      position: relative;
+      padding: 0;
+    }
+    @supports (height: 100svh) {
+      .scene { height: 100svh; }
+    }
+    @supports not (height: 100svh) {
+      @supports (height: 100dvh) {
+        .scene { height: 100dvh; }
+      }
+      @supports not (height: 100dvh) {
+        .scene { height: 100vh; }
+      }
+    }
+
+    .scene-inner {
+      position: relative;
+      height: 100%;
+      width: 100%;
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      display: grid;
+      grid-template-rows: auto 1fr auto; /* HUD, board, CTA */
+      padding: calc(8px + var(--safe-pad-top)) 12px calc(10px + var(--safe-pad));
+      gap: 8px;
+    }
+
+    /* Avatar decorative */
+    .avatar {
+      position: absolute;
+      right: -8px;
+      bottom: 56px;
+      opacity: 0.22;
+      width: min(44%, 280px);
+      max-width: 320px;
+      pointer-events: none;
+      filter: drop-shadow(0 12px 28px rgba(0,0,0,0.35));
+      user-select: none;
+    }
+
+    /* HUD */
+    .hud {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.06));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      min-height: 56px;
+    }
+    .hud .logo {
+      height: 28px;
+      width: auto;
+      display: block;
+    }
+    .title-wrap {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+    .title {
+      font-weight: 800;
+      font-size: clamp(16px, 3.5vw, 20px);
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0.2px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    }
+    .progress {
+      display: grid;
+      align-items: center;
+      justify-items: start;
+      gap: 3px;
+    }
+    .progress .label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .bar {
+      position: relative;
+      width: 96px;
+      height: 8px;
+      background: rgba(255,255,255,0.16);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.22);
+    }
+    .bar .fill {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, #7ef9ff, #6ef3b8);
+      border-radius: inherit;
+      box-shadow: 0 0 10px #7ef9ff88;
+      transition: width .25s ease;
+    }
+
+    /* Board */
+    .board {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 8px;
+      z-index: 1;
+      touch-action: none; /* anti-derrapes */
+    }
+    .desc {
+      font-size: 13px;
+      color: var(--muted);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.06));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+    .cards {
+      display: grid;
+      grid-auto-rows: var(--cardH);
+      grid-template-columns: 1fr;
+      gap: var(--gap);
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      position: relative;
+    }
+    .card {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.10));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 8px;
+      gap: 6px;
+      user-select: none;
+      transition: transform .18s ease, background .2s ease, border-color .2s ease;
+    }
+    .card:focus-within {
+      outline: 2px solid #fff;
+      outline-offset: 0;
+    }
+    .label {
+      line-height: 1.1;
+      font-weight: 600;
+      font-size: clamp(14px, 3.8vw, 16px);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .controls {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 44px;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-weight: 800;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.10));
+      border-radius: 10px;
+      height: 44px;
+      min-width: 44px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.22), inset 0 0 0 1px rgba(255,255,255,0.06);
+      transition: transform .06s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+    }
+    .btn:active { transform: translateY(1px) scale(.98); }
+    .btn[disabled] {
+      opacity: .5;
+      cursor: not-allowed;
+      filter: grayscale(0.3);
+    }
+    .btn.primary {
+      background: linear-gradient(180deg, #27ffe6, #1dd1a1);
+      color: #002e2b;
+      border-color: rgba(255,255,255,0.0);
+      box-shadow: 0 10px 28px rgba(29,209,161,0.45), inset 0 -2px 0 rgba(0,0,0,0.10);
+    }
+    .btn.ghost {
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+    }
+    .btn.warn {
+      background: linear-gradient(180deg, #ffd166, #ffb703);
+      color: #3b2f00;
+      border-color: rgba(255,255,255,0.0);
+    }
+    .btn .icon {
+      font-size: 18px;
+      line-height: 0;
+    }
+    .index-badge {
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, rgba(126,249,255,0.95), rgba(110,243,184,0.95));
+      color: #003530;
+      font-weight: 900;
+      font-size: 13px;
+      display: grid; place-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+
+    /* CTA bar */
+    .cta-bar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+    .cta-bar .hint {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* Number picker popover */
+    .num-pop {
+      position: fixed;
+      z-index: 10;
+      background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.10));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.42);
+      padding: 8px;
+      display: grid;
+      grid-auto-flow: column;
+      gap: 6px;
+      max-width: 90svh; /* does not trigger global scroll */
+      backdrop-filter: blur(8px);
+    }
+    .chip {
+      min-width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: #003530;
+      background: linear-gradient(180deg, #7ef9ff, #6ef3b8);
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.78);
+    }
+    .chip:active { transform: translateY(1px) scale(.98); }
+
+    /* Modal / overlays */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(1000px 500px at 20% -10%, #9fe8ff33, transparent 60%),
+                  rgba(2,12,36,0.6);
+      display: none;
+      place-items: center;
+      z-index: 50;
+      padding: 16px;
+    }
+    .overlay.show { display: grid; }
+    .modal {
+      width: min(680px, 92vw);
+      max-height: 90svh;
+      overflow-y: auto;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.12));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.45);
+      backdrop-filter: blur(10px);
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    .modal .head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+    .modal h3 {
+      margin: 0;
+      font-size: clamp(18px, 3.6vw, 22px);
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    .modal p { margin: 0; font-size: 14px; color: var(--text); opacity: .9; }
+    .modal .sub { color: var(--muted); font-size: 13px; }
+    .modal .list {
+      display: grid; gap: 8px;
+      border: 1px dashed rgba(255,255,255,0.26);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(0,0,0,0.08);
+    }
+    .modal .row {
+      display: grid; grid-template-columns: 16px 1fr;
+      gap: 8px; font-size: 14px; align-items: center;
+    }
+    .tag {
+      display: inline-grid;
+      place-items: center;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-weight: 800;
+      font-size: 12px;
+      color: #003530;
+      background: linear-gradient(180deg, #7ef9ff, #6ef3b8);
+      margin-right: 6px;
+    }
+    .tips {
+      display: grid; gap: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .footer-actions {
+      display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+      position: sticky; bottom: 0; background: transparent; padding-top: 4px;
+    }
+    .muted { color: var(--muted); }
+
+    /* Confirm bump microinteraction */
+    .confirm-bump { animation: bump .18s ease; }
+    @keyframes bump {
+      0% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(1px) scale(0.98); }
+      100% { transform: translateY(0) scale(1); }
+    }
+    /* Shake for warning */
+    .shake { animation: shake .24s ease both; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+
+    /* Accessibility focus */
+    :focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+      border-radius: 10px;
+    }
+
+    /* Compact mode for tiny screens or overflows */
+    .compact .hud { min-height: 48px; padding: 6px 8px; }
+    .compact .title { font-size: clamp(15px, 3.3vw, 18px); }
+    .compact .bar { width: 80px; height: 6px; }
+    .compact .cards { gap: 6px; }
+    .compact .cta-bar { padding: 6px; }
+    .compact .btn { height: 40px; min-width: 40px; border-radius: 9px; }
+    .compact .card { border-radius: 12px; padding: 6px; }
+    .compact .label { font-size: clamp(13px, 3.4vw, 15px); }
+    .compact { --cardH: 56px; }
+
+    /* Utility */
+    .sr-only {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden; clip: rect(1px,1px,1px,1px);
+      white-space: nowrap; border: 0; padding: 0; margin: -1px;
+    }
+
+    /* Results-mode: allow page scroll only in final view */
+    body.allow-scroll { overflow-y: auto; overscroll-behavior: contain; }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <div class="scene-inner ui-root">
+      <header class="hud" role="banner">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" class="logo" />
+        <div class="title-wrap">
+          <div class="title" aria-live="polite">Secuencia Pro: Taller Seguro ⚙️</div>
+          <div class="desc small" style="display:none;"></div>
+        </div>
+        <div class="progress" aria-label="Progreso de retos">
+          <div class="label" id="progressLabel">Reto 1/3</div>
+          <div class="bar" aria-hidden="true"><div class="fill" id="progressFill" style="width:0%"></div></div>
+        </div>
+      </header>
+
+      <main class="board" role="region" aria-label="Ordena los pasos">
+        <div class="desc" id="boardDesc">
+          Escenario: ordena pasos seguros y confirma.
+        </div>
+        <ol class="cards" id="cards" aria-live="polite">
+          <!-- Cards injected here -->
+        </ol>
+      </main>
+
+      <footer class="cta-bar" role="contentinfo">
+        <div class="hint" id="ctaHint">
+          Usa ▲/▼ o el botón 123 para asignar orden.
+        </div>
+        <button id="confirmBtn" class="btn primary" aria-label="Confirmar orden">
+          Confirmar orden
+        </button>
+      </footer>
+
+      <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" aria-hidden="true" loading="eager" />
+    </div>
+  </div>
+
+  <!-- Intro Modal -->
+  <div class="overlay show" id="introOverlay" aria-modal="true" role="dialog" aria-labelledby="introTitle">
+    <div class="modal" tabindex="-1">
+      <div class="head">
+        <h3 id="introTitle">Secuencia Pro: Taller Seguro ⚙️</h3>
+      </div>
+      <p>Es tu primer día como aprendiz. Reordena pasos básicos de seguridad y calidad y confirma para avanzar.</p>
+      <p class="sub">Usa flechas o asigna números. 3 retos cortos, sube nivel en seguridad.</p>
+      <div class="footer-actions">
+        <div class="muted">Listo para demostrar procedimientos seguros.</div>
+        <button id="startBtn" class="btn primary" aria-label="Empezar">Empezar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Modal (per challenge) -->
+  <div class="overlay" id="resultOverlay" aria-modal="true" role="dialog" aria-labelledby="resultTitle">
+    <div class="modal" tabindex="-1">
+      <div class="head">
+        <h3 id="resultTitle">Resultado del reto</h3>
+        <button class="btn ghost" id="closeResult" aria-label="Cerrar resultado">✕</button>
+      </div>
+      <p class="sub" id="scoreLine"></p>
+
+      <div class="list">
+        <div class="row"><span class="tag">Tu orden</span><span id="yourOrder"></span></div>
+        <div class="row"><span class="tag">Correcto</span><span id="correctOrder"></span></div>
+      </div>
+
+      <div class="tips">
+        <strong>Por qué este orden:</strong>
+        <div id="whyList" class="sub"></div>
+      </div>
+
+      <div class="tips" id="mistakesBox" style="display:none;">
+        <strong>Patrones de error detectados:</strong>
+        <ul id="mistakesList" class="sub" style="margin:6px 0 0 16px; padding:0;"></ul>
+      </div>
+
+      <div class="tips">
+        <strong>Consejo:</strong>
+        <p class="sub" id="tipLine"></p>
+      </div>
+
+      <div class="footer-actions">
+        <div class="muted" id="nextHint">Sigue el flujo seguro. ¡A por el siguiente!</div>
+        <button id="nextBtn" class="btn primary" aria-label="Siguiente reto">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Final Screen -->
+  <div class="overlay" id="finalOverlay" aria-modal="true" role="dialog" aria-labelledby="finalTitle">
+    <div class="modal" tabindex="-1">
+      <div class="head">
+        <h3 id="finalTitle">Sesión completada 🎉</h3>
+      </div>
+      <p class="sub">Has practicado procedimientos básicos en electricidad, fontanería y climatización.</p>
+
+      <div class="list" id="sessionSummary">
+        <!-- Filled with per-challenge summary -->
+      </div>
+
+      <div class="tips">
+        <strong>Consejos clave que te llevas:</strong>
+        <ul class="sub" style="margin:6px 0 0 16px; padding:0;" id="finalTips"></ul>
+      </div>
+
+      <div class="footer-actions">
+        <div class="muted" id="initDataWarn" style="display:none;">Falta initData: podrás ver la recompensa igualmente.</div>
+        <a id="rewardBtn" class="btn primary" role="button" href="#" aria-label="Ver mi recompensa">Ver mi recompensa</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Number picker popover -->
+  <div class="num-pop" id="numPop" role="dialog" aria-label="Selecciona la posición" style="display:none;"></div>
+
+  <div class="sr-only" aria-live="polite" id="liveRegion"></div>
+
+  <script>
+    // Utilities
+    const qs = (s, el=document) => el.querySelector(s);
+    const qsa = (s, el=document) => [...el.querySelectorAll(s)];
+    const clampText = (txt, max=48) => (txt.length > max ? (txt.slice(0, max - 1) + "…") : txt);
+
+    // Parse initData from URL
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+
+    // Data: 3 sequences
+    const sequences = [
+      {
+        id: 'elec',
+        title: 'Electricidad: cambio de enchufe',
+        steps: [
+          { id: 'avisar', text: 'Avisar al cliente', why: 'Evita interrupciones y garantiza autorización.' },
+          { id: 'cortar', text: 'Cortar corriente en el magneto', why: 'Elimina el riesgo de electrocución.' },
+          { id: 'verificar', text: 'Verificar ausencia de tensión con multímetro', why: 'Confirma que no hay energía residual.' },
+          { id: 'cambiar', text: 'Cambiar el enchufe', why: 'Realiza la tarea con seguridad.' },
+          { id: 'rearmar', text: 'Rearmar y probar', why: 'Restaura el servicio y valida el trabajo.' }
+        ],
+        tip: 'Usa EPI y bloquea/etiqueta el circuito si procede.',
+        detectMistakes(orderMap) {
+          const issues = [];
+          const idx = (k) => orderMap[k] ?? 999;
+          if (idx('verificar') > idx('cambiar')) issues.push('No verificar tensión antes de tocar.');
+          if (idx('rearmar') < idx('cambiar')) issues.push('Rearmar antes de terminar el cambio.');
+          if (idx('avisar') !== 0) issues.push('No avisar al cliente al inicio.');
+          return issues;
+        }
+      },
+      {
+        id: 'plumb',
+        title: 'Fontanería: latiguillo de lavabo',
+        steps: [
+          { id: 'cerrar', text: 'Cerrar llave de paso', why: 'Evita fugas y posibles inundaciones.' },
+          { id: 'purgar', text: 'Abrir grifo para purgar', why: 'Descarga presión y agua residual.' },
+          { id: 'aflojar', text: 'Aflojar latiguillo viejo', why: 'Permite retirarlo sin esfuerzo.' },
+          { id: 'colocar', text: 'Colocar nuevo con teflón', why: 'Asegura estanqueidad en la rosca.' },
+          { id: 'abrir', text: 'Abrir llave y comprobar fugas', why: 'Valida el trabajo sin pérdidas.' }
+        ],
+        tip: 'Usa la llave adecuada y no aprietes en exceso.',
+        detectMistakes(orderMap) {
+          const issues = [];
+          const idx = (k) => orderMap[k] ?? 999;
+          if (idx('purgar') < idx('cerrar')) issues.push('Purgar sin cerrar la llave primero.');
+          if (idx('aflojar') < idx('purgar')) issues.push('Aflojar con presión en la línea.');
+          if (idx('abrir') < idx('colocar')) issues.push('Abrir la llave antes de montar el nuevo.');
+          return issues;
+        }
+      },
+      {
+        id: 'clima',
+        title: 'Climatización: filtros de split',
+        steps: [
+          { id: 'cortar', text: 'Cortar corriente del equipo', why: 'Evita riesgos eléctricos.' },
+          { id: 'retirar', text: 'Retirar filtros y limpiar', why: 'Elimina polvo y mejora el flujo.' },
+          { id: 'colocar', text: 'Volver a colocar filtros', why: 'Prepara el equipo para operar.' },
+          { id: 'encender', text: 'Encender y comprobar caudal y ruido', why: 'Verifica rendimiento y montaje.' }
+        ],
+        tip: 'Limpia con agua tibia y seca bien antes de montar.',
+        detectMistakes(orderMap) {
+          const issues = [];
+          const idx = (k) => orderMap[k] ?? 999;
+          if (idx('retirar') < idx('cortar')) issues.push('Manipular filtros sin cortar corriente.');
+          if (idx('encender') < idx('colocar')) issues.push('Encender antes de colocar los filtros.');
+          return issues;
+        }
+      }
+    ];
+
+    // State
+    let current = 0;
+    let currentOrder = [];
+    const results = []; // per challenge: {correct: number, total: number, your: [], correctOrder: [], title, tip, mistakes: []}
+
+    // Elements
+    const cardsEl = qs('#cards');
+    const progressLabel = qs('#progressLabel');
+    const progressFill = qs('#progressFill');
+    const confirmBtn = qs('#confirmBtn');
+    const boardDesc = qs('#boardDesc');
+    const liveRegion = qs('#liveRegion');
+    const numPop = qs('#numPop');
+
+    // Intro / Result / Final overlay elements
+    const introOverlay = qs('#introOverlay');
+    const startBtn = qs('#startBtn');
+
+    const resultOverlay = qs('#resultOverlay');
+    const resultTitle = qs('#resultTitle');
+    const closeResult = qs('#closeResult');
+    const scoreLine = qs('#scoreLine');
+    const yourOrder = qs('#yourOrder');
+    const correctOrderEl = qs('#correctOrder');
+    const whyList = qs('#whyList');
+    const mistakesBox = qs('#mistakesBox');
+    const mistakesList = qs('#mistakesList');
+    const nextBtn = qs('#nextBtn');
+    const nextHint = qs('#nextHint');
+
+    const finalOverlay = qs('#finalOverlay');
+    const rewardBtn = qs('#rewardBtn');
+    const initDataWarn = qs('#initDataWarn');
+    const sessionSummary = qs('#sessionSummary');
+    const finalTips = qs('#finalTips');
+
+    // Fit / compact system
+    function assertNoOverflow() {
+      const scene = qs('.scene');
+      return scene.scrollHeight <= scene.clientHeight + 1;
+    }
+    function applyCompactMode() {
+      if (!document.body.classList.contains('compact')) {
+        document.body.classList.add('compact');
+      }
+      return assertNoOverflow();
+    }
+    // progressively reduce card height and gaps
+    let fitStep = 0;
+    function fitBoardToViewport() {
+      const root = document.documentElement;
+      fitStep++;
+      if (fitStep === 1) {
+        root.style.setProperty('--cardH', '58px');
+        root.style.setProperty('--gap', '6px');
+      } else if (fitStep === 2) {
+        root.style.setProperty('--cardH', '54px');
+        root.style.setProperty('--gap', '6px');
+      } else if (fitStep >= 3) {
+        root.style.setProperty('--cardH', '50px');
+        root.style.setProperty('--gap', '4px');
+      }
+      return assertNoOverflow();
+    }
+    function autoscaleUI() {
+      const scene = qs('.scene');
+      const ratio = Math.max(0.88, Math.min(1, scene.clientHeight / scene.scrollHeight));
+      document.documentElement.style.setProperty('--ui-scale', ratio.toFixed(3));
+      return assertNoOverflow();
+    }
+    function ensureFits() {
+      // Reset scales for recalculation
+      document.body.classList.remove('compact');
+      document.documentElement.style.setProperty('--cardH', '64px');
+      document.documentElement.style.setProperty('--gap', '8px');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      fitStep = 0;
+
+      if (assertNoOverflow()) return;
+
+      if (!applyCompactMode() && !fitBoardToViewport() && !autoscaleUI()) {
+        // nothing else to do, keep autoscaled state
+      }
+    }
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+    // Gameplay helpers
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function currentSeq() { return sequences[current]; }
+    function stepById(seq, id) { return seq.steps.find(s => s.id === id); }
+
+    function updateProgress() {
+      progressLabel.textContent = `Reto ${current + 1}/${sequences.length}`;
+      const perc = Math.round((current) / sequences.length * 100);
+      progressFill.style.width = `${perc}%`;
+    }
+
+    function renderChallenge(init=false) {
+      const seq = currentSeq();
+      document.title = `Secuencia Pro: Taller Seguro ⚙️ | ${seq.title}`;
+      updateProgress();
+      boardDesc.textContent = clampText(seq.title, 48);
+
+      // Initialize order for the first render of each challenge
+      if (init || currentOrder.length === 0) {
+        currentOrder = shuffle(seq.steps.map(s => s.id));
+      }
+
+      // FLIP: capture positions
+      const prevPos = {};
+      qsa('.card', cardsEl).forEach(el => { prevPos[el.dataset.id] = el.getBoundingClientRect(); });
+
+      // Render
+      cardsEl.innerHTML = '';
+      const frag = document.createDocumentFragment();
+      currentOrder.forEach((id, index) => {
+        const step = stepById(seq, id);
+        const li = document.createElement('li');
+        li.className = 'card';
+        li.dataset.id = step.id;
+        li.setAttribute('role', 'listitem');
+
+        const badge = document.createElement('div');
+        badge.className = 'index-badge';
+        badge.textContent = index + 1;
+        li.appendChild(badge);
+
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.title = step.text;
+        label.textContent = clampText(step.text, 48);
+        li.appendChild(label);
+
+        const controls = document.createElement('div');
+        controls.className = 'controls';
+
+        const upBtn = document.createElement('button');
+        upBtn.className = 'btn ghost';
+        upBtn.innerHTML = '<span class="icon">▲</span>';
+        upBtn.setAttribute('aria-label', `Mover "${step.text}" arriba`);
+        upBtn.disabled = (index === 0);
+        upBtn.addEventListener('click', () => moveStep(step.id, index - 1));
+        controls.appendChild(upBtn);
+
+        const numBtn = document.createElement('button');
+        numBtn.className = 'btn ghost';
+        numBtn.innerHTML = '<span class="icon">123</span>';
+        numBtn.setAttribute('aria-label', `Seleccionar orden para "${step.text}"`);
+        numBtn.addEventListener('click', (e) => openNumberPicker(e.currentTarget, step.id));
+        controls.appendChild(numBtn);
+
+        const downBtn = document.createElement('button');
+        downBtn.className = 'btn ghost';
+        downBtn.innerHTML = '<span class="icon">▼</span>';
+        downBtn.setAttribute('aria-label', `Mover "${step.text}" abajo`);
+        downBtn.disabled = (index === currentOrder.length - 1);
+        downBtn.addEventListener('click', () => moveStep(step.id, index + 1));
+        controls.appendChild(downBtn);
+
+        li.appendChild(controls);
+        frag.appendChild(li);
+      });
+      cardsEl.appendChild(frag);
+
+      // FLIP animate
+      qsa('.card', cardsEl).forEach(el => {
+        const id = el.dataset.id;
+        const old = prevPos[id];
+        if (!old) return;
+        const now = el.getBoundingClientRect();
+        const dx = old.left - now.left;
+        const dy = old.top - now.top;
+        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+          el.style.transform = `translate(${dx}px, ${dy}px)`;
+          el.style.transition = 'transform 0s';
+          requestAnimationFrame(() => {
+            el.style.transition = 'transform .18s ease';
+            el.style.transform = 'translate(0,0)';
+          });
+        }
+      });
+
+      ensureFits();
+    }
+
+    function moveStep(stepId, newIndex) {
+      const oldIndex = currentOrder.indexOf(stepId);
+      if (newIndex < 0 || newIndex >= currentOrder.length || oldIndex === -1) return;
+      // Reorder
+      const arr = currentOrder.slice();
+      arr.splice(oldIndex, 1);
+      arr.splice(newIndex, 0, stepId);
+      currentOrder = arr;
+      announce(`Movido a posición ${newIndex + 1}.`);
+      renderChallenge(false);
+    }
+
+    function openNumberPicker(anchorBtn, stepId) {
+      const seq = currentSeq();
+      // Build chips 1..n
+      numPop.innerHTML = '';
+      const total = seq.steps.length;
+      for (let i = 1; i <= total; i++) {
+        const c = document.createElement('button');
+        c.className = 'chip';
+        c.textContent = i;
+        c.setAttribute('aria-label', `Colocar en posición ${i}`);
+        c.addEventListener('click', () => {
+          const targetIdx = i - 1;
+          moveStep(stepId, targetIdx);
+          hideNumberPicker();
+        });
+        numPop.appendChild(c);
+      }
+      // Position near anchor
+      const rect = anchorBtn.getBoundingClientRect();
+      numPop.style.display = 'grid';
+      const pad = 8;
+      let left = rect.left + (rect.width / 2) - (numPop.offsetWidth / 2);
+      let top = rect.top - numPop.offsetHeight - pad;
+      if (left < 8) left = 8;
+      if (left + numPop.offsetWidth > window.innerWidth - 8) left = window.innerWidth - numPop.offsetWidth - 8;
+      if (top < 8) top = rect.bottom + pad;
+      numPop.style.left = `${left}px`;
+      numPop.style.top = `${top}px`;
+
+      const onOutside = (e) => {
+        if (!numPop.contains(e.target)) hideNumberPicker();
+      };
+      setTimeout(() => document.addEventListener('pointerdown', onOutside, { once: true }), 0);
+    }
+    function hideNumberPicker() {
+      numPop.style.display = 'none';
+    }
+
+    // Confirm flow
+    confirmBtn.addEventListener('click', () => {
+      // visual + device vibrate
+      confirmBtn.classList.add('confirm-bump');
+      setTimeout(() => confirmBtn.classList.remove('confirm-bump'), 220);
+      if (navigator.vibrate) { try { navigator.vibrate(15); } catch {} }
+
+      showResult();
+    });
+
+    function showResult() {
+      const seq = currentSeq();
+      const correctOrder = seq.steps.map(s => s.id);
+      const total = correctOrder.length;
+      const correctPositions = currentOrder.filter((id, i) => id === correctOrder[i]).length;
+      const orderMap = {};
+      currentOrder.forEach((id, idx) => orderMap[id] = idx);
+      const mistakes = (typeof seq.detectMistakes === 'function') ? seq.detectMistakes(orderMap) : [];
+
+      // Fill modal
+      resultTitle.textContent = `Resultado — ${seq.title}`;
+      scoreLine.textContent = `Coincidencias en posición: ${correctPositions}/${total}`;
+
+      yourOrder.textContent = currentOrder.map((id, i) => `${i+1}. ${stepById(seq, id).text}`).join('  |  ');
+      correctOrderEl.textContent = correctOrder.map((id, i) => `${i+1}. ${stepById(seq, id).text}`).join('  |  ');
+
+      // Why list
+      whyList.innerHTML = seq.steps.map((s, i) =>
+        `<div class="row"><strong>${i+1}.</strong><span>${clampText(s.why, 180)}</span></div>`
+      ).join('');
+
+      // Tips
+      qs('#tipLine').textContent = seq.tip;
+
+      // Mistakes detected
+      if (mistakes.length) {
+        mistakesBox.style.display = '';
+        mistakesList.innerHTML = mistakes.map(m => `<li>${m}</li>`).join('');
+      } else {
+        mistakesBox.style.display = 'none';
+        mistakesList.innerHTML = '';
+      }
+
+      // Next button label
+      if (current < sequences.length - 1) {
+        nextBtn.textContent = 'Siguiente';
+        nextHint.textContent = 'Sigue el flujo seguro. ¡A por el siguiente!';
+      } else {
+        nextBtn.textContent = 'Ver resumen';
+        nextHint.textContent = 'Has llegado al final. Mira tu resumen.';
+      }
+
+      // Save this result
+      results[current] = {
+        title: seq.title,
+        correct: correctPositions,
+        total,
+        your: currentOrder.slice(),
+        correctOrder: correctOrder.slice(),
+        tip: seq.tip,
+        mistakes
+      };
+
+      resultOverlay.classList.add('show');
+      ensureFits(); // overlay uses max-height: 90svh; no global scroll
+    }
+
+    closeResult.addEventListener('click', () => {
+      resultOverlay.classList.remove('show');
+    });
+
+    nextBtn.addEventListener('click', () => {
+      resultOverlay.classList.remove('show');
+      if (current < sequences.length - 1) {
+        current++;
+        currentOrder = []; // reset order for next challenge
+        renderChallenge(true);
+      } else {
+        showFinal();
+      }
+    });
+
+    function showFinal() {
+      // Progress to full
+      progressFill.style.width = '100%';
+      progressLabel.textContent = `Reto 3/3`;
+      // Build session summary
+      sessionSummary.innerHTML = results.map((r, idx) => {
+        const seq = sequences[idx];
+        const your = r.your.map((id, i) => `${i+1}. ${stepById(seq, id).text}`).join('  |  ');
+        const corr = r.correctOrder.map((id, i) => `${i+1}. ${stepById(seq, id).text}`).join('  |  ');
+        const mistakes = r.mistakes.length ? ` • Errores: ${r.mistakes.join(' — ')}` : '';
+        return `
+          <div class="row">
+            <strong>${idx+1}.</strong>
+            <div>
+              <div><span class="tag">${r.correct}/${r.total}</span> ${seq.title}</div>
+              <div class="sub">Tu orden: ${your}</div>
+              <div class="sub">Correcto: ${corr}</div>
+              <div class="sub">${mistakes}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Final tips (unique)
+      const keyTips = [
+        'Verifica ausencia de tensión antes de tocar.',
+        'Purgar presión evita sorpresas y fugas.',
+        'No enciendas equipos sin montar piezas.'
+      ];
+      finalTips.innerHTML = keyTips.map(t => `<li>${t}</li>`).join('');
+
+      // Reward button link
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      rewardBtn.href = url;
+      initDataWarn.style.display = initData ? 'none' : '';
+
+      finalOverlay.classList.add('show');
+      // Allow page scroll in final screen only
+      document.body.classList.add('allow-scroll');
+    }
+
+    function announce(msg) {
+      liveRegion.textContent = msg;
+    }
+
+    // Start button
+    startBtn.addEventListener('click', () => {
+      introOverlay.classList.remove('show');
+      renderChallenge(true);
+    });
+
+    // Initial render (cards empty until start)
+    updateProgress();
+    ensureFits();
+
+    // Close popover on orientation/resize
+    window.addEventListener('resize', hideNumberPicker);
+
+    // Guard: clamp labels pre-emptively if external content changes (not used here)
+    function sanitizeLabels() {
+      qsa('.label').forEach(el => {
+        el.textContent = clampText(el.textContent, 48);
+      });
+    }
+
+    // Safety: Ensure CTAs always visible, check overflow after DOMLoaded
+    window.addEventListener('DOMContentLoaded', () => {
+      ensureFits();
+      sanitizeLabels();
+    });
+  </script>
+</body>
+</html>
