@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | Swipes de PRL Eléctrica ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* =======================
+       RESET + BASE
+    ======================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol';
+      color: #eaf2ff;
+      background: #0d47ff;
+      overflow: hidden;             /* gameplay: no scroll */
+      overscroll-behavior: none;    /* anti pull-to-refresh */
+    }
+    :root{
+      --blue-900: #0c2d8a;
+      --blue-800: #0d47ff;
+      --blue-700: #1d5bff;
+      --blue-600: #2c66ff;
+      --cyan-400: #00e8ff;
+      --green-400:#35f18a;
+      --red-400:#ff5b7a;
+      --glass-bg: rgba(255,255,255,0.12);
+      --glass-bd: rgba(255,255,255,0.22);
+      --shadow-strong: 0 18px 40px rgba(0,0,0,.35);
+      --shadow-card: 0 10px 24px rgba(0,0,0,.28);
+      --pad: 12px;
+      --radius: 16px;
+      --hudH: 64px;
+      --footerH: 96px;
+      --btnH: 56px;
+      --ui-scale: 1;
+      --ui-density: 1;
+      --cellH: 1;     /* for API compliance in ensureFits */
+      --cellAR: 1;    /* for API compliance in ensureFits */
+    }
+
+    /* Fortnite-like radiant background */
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(1250px 700px at 80% -10%, rgba(0,213,255,.45), transparent 55%),
+        radial-gradient(880px 520px at -10% 20%, rgba(64,115,255,.38), transparent 60%),
+        linear-gradient(160deg, #0b2a88 0%, #0d47ff 48%, #1a58ff 100%);
+      z-index: -3;
+    }
+    /* Avatar background */
+    body::after{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background: url("https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png") right -10% bottom -10% / 60% no-repeat;
+      opacity: .10;
+      filter: saturate(1.2) drop-shadow(0 0 0 rgba(0,0,0,0));
+      pointer-events: none;
+      z-index: -2;
+    }
+
+    /* =======================
+       SCENE LAYOUT
+    ======================== */
+    .scene{
+      position: relative;
+      width: 100%;
+      height: 100vh; /* fallback */
+      padding:
+        calc(env(safe-area-inset-top, 0px) + var(--pad))
+        calc(env(safe-area-inset-right, 0px) + var(--pad))
+        calc(env(safe-area-inset-bottom, 0px) + var(--pad))
+        calc(env(safe-area-inset-left, 0px) + var(--pad));
+      display: grid;
+      grid-template-rows: minmax(56px, var(--hudH)) 1fr minmax(84px, var(--footerH));
+      gap: 8px;
+      transform-origin: top center;
+      touch-action: none; /* anti-derrapes on gameplay area */
+    }
+    @supports (height: 100svh) { .scene{ height: 100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene{ height: 100dvh; } }
+
+    .ui-scale{
+      width: 100%;
+      height: 100%;
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      display: contents; /* let grid sizing flow to children while scaling transforms */
+    }
+
+    .hud, .footer, .card-area, .modal{
+      backdrop-filter: blur(8px) saturate(1.2);
+      -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    }
+
+    .glass{
+      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.08));
+      border: 1px solid var(--glass-bd);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-strong);
+    }
+
+    /* =======================
+       HUD (header)
+    ======================== */
+    .hud{
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 10px;
+      min-height: 52px;
+    }
+    .brand{
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .brand img{
+      width: 40px; height: 40px; object-fit: contain;
+    }
+    .title{
+      font-weight: 800;
+      font-size: clamp(14px, 2.4vw, 18px);
+      text-shadow: 0 2px 12px rgba(0,0,0,.3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .progress{
+      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+      min-width: 120px;
+    }
+    .progress small{
+      font-size: 12px; opacity: .9;
+    }
+    .bar{
+      width: 120px; height: 6px; border-radius: 999px; background: rgba(255,255,255,.18);
+      overflow: hidden;
+    }
+    .bar > i{
+      display: block; height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--cyan-400), #6af3ff);
+      transition: width .25s ease;
+    }
+
+    /* =======================
+       CARD AREA
+    ======================== */
+    .card-area{
+      position: relative;
+      display: grid;
+      place-items: center;
+      padding: 10px;
+      overflow: hidden; /* keep within gameplay */
+    }
+    .stack{
+      position: relative;
+      width: min(460px, 96%);
+      height: min(360px, 64vh);
+      max-height: 64vh;
+    }
+    .card{
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      padding: 20px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.07));
+      border: 1px solid rgba(255,255,255,.22);
+      box-shadow: var(--shadow-card);
+      user-select: none;
+      cursor: grab;
+      touch-action: none;
+      will-change: transform;
+    }
+    .card:active{ cursor: grabbing; }
+    .card .q{
+      display: grid; place-items: center;
+      text-align: center;
+      padding: 8px;
+    }
+    .card .q p{
+      margin: 0;
+      font-size: clamp(18px, 4.6vw, 22px);
+      font-weight: 800;
+      line-height: 1.12;
+      text-shadow: 0 2px 12px rgba(0,0,0,.35);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      max-height: 2.2em;
+    }
+    .legend{
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      font-size: 12px; opacity: .85;
+    }
+    .legend span{
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2);
+      background: rgba(0,0,0,.15);
+      min-height: 28px;
+      white-space: nowrap;
+    }
+    .legend .left i{ width:10px; height:10px; background: var(--red-400); display:inline-block; border-radius: 50%; }
+    .legend .right i{ width:10px; height:10px; background: var(--green-400); display:inline-block; border-radius: 50%; }
+
+    /* Swipe indicators on card */
+    .flag{
+      position: absolute; top: 16px; padding: 8px 12px; border-radius: 12px;
+      font-weight: 800; letter-spacing: .2px;
+      border: 2px solid;
+      opacity: 0; transform: scale(.9);
+      transition: opacity .15s ease, transform .15s ease;
+      pointer-events: none;
+      text-shadow: 0 2px 6px rgba(0,0,0,.35);
+    }
+    .flag.left{
+      left: 16px; color: #ffd7e0; border-color: rgba(255,91,122,.65);
+      background: rgba(255,91,122,.18);
+    }
+    .flag.right{
+      right: 16px; color: #dcffef; border-color: rgba(53,241,138,.65);
+      background: rgba(53,241,138,.18);
+    }
+    .flag.show{ opacity: 1; transform: scale(1); }
+
+    /* =======================
+       FOOTER CONTROLS
+    ======================== */
+    .footer{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 10px;
+      align-items: center;
+    }
+    .btn{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      height: var(--btnH);
+      min-height: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.28);
+      color: #001;
+      font-weight: 800;
+      font-size: clamp(14px, 2.6vw, 16px);
+      text-transform: none;
+      letter-spacing: .2px;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0,0,0,.28);
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn:focus-visible{ outline: 3px solid rgba(255,255,255,.6); outline-offset: 2px; }
+    .btn i{
+      width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.25);
+      display: inline-block;
+      box-shadow: inset 0 0 0 999px rgba(255,255,255,.2);
+    }
+    .danger{
+      background: linear-gradient(180deg, rgba(255,91,122,.94), rgba(255,29,68,.94));
+      color: white;
+    }
+    .success{
+      background: linear-gradient(180deg, rgba(53,241,138,.96), rgba(10,191,98,.96));
+      color: #052a11;
+    }
+
+    /* =======================
+       MODALS (tutorial + results)
+    ======================== */
+    .modal{
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, rgba(2,10,42,.62), rgba(2,10,42,.72));
+      padding: 18px;
+      z-index: 50;
+    }
+    .panel{
+      width: min(700px, 96vw);
+      max-height: 90svh;
+      overflow-y: auto;
+      background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
+      border: 1px solid rgba(255,255,255,.26);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow-strong);
+    }
+    .panel h2{
+      margin: 6px 0 8px;
+      font-size: clamp(18px, 4.6vw, 24px);
+      line-height: 1.1;
+      font-weight: 900;
+    }
+    .panel p{
+      margin: 8px 0;
+      opacity: .95;
+      font-size: clamp(14px, 3.2vw, 16px);
+    }
+
+    .tutorial-cta{
+      display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 8px;
+    }
+
+    .pill{
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.24);
+      background: rgba(0,0,0,.18);
+      font-size: 13px;
+    }
+
+    /* Results list */
+    .results-list{
+      display: grid; gap: 10px; margin: 10px 0 76px; /* leave space for sticky CTA */
+    }
+    .result-item{
+      display: grid; gap: 4px;
+      padding: 10px; border-radius: 12px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    .result-head{
+      display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+    }
+    .tag{
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 999px; font-weight: 800; font-size: 12px;
+      border: 1px solid rgba(255,255,255,.28);
+    }
+    .tag.ok{ background: rgba(53,241,138,.16); color: #d9ffea; border-color: rgba(53,241,138,.45); }
+    .tag.bad{ background: rgba(255,91,122,.16); color: #ffe0e6; border-color: rgba(255,91,122,.45); }
+    .answer{
+      font-weight: 800; font-size: 13px;
+      opacity: .95;
+    }
+    .explain{
+      font-size: 13px; opacity: .95;
+    }
+    .sticky-cta{
+      position: sticky; bottom: 0;
+      background: linear-gradient(180deg, rgba(5,16,56,.0), rgba(5,16,56,.65) 40%, rgba(5,16,56,.9) 100%);
+      padding-top: 10px;
+      display: grid; gap: 8px;
+    }
+    .cta{
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%;
+      min-height: 48px; height: 56px;
+      border-radius: 14px; border: 1px solid rgba(255,255,255,.28);
+      background: linear-gradient(180deg, rgba(0,232,255,.95), rgba(0,176,255,.95));
+      color: #001b33; font-weight: 900; font-size: clamp(16px, 3.4vw, 18px);
+      text-decoration: none;
+      box-shadow: 0 10px 24px rgba(0,0,0,.32), 0 0 0 6px rgba(0,232,255,.15) inset;
+    }
+    .hint{
+      font-size: 12px; opacity: .85; text-align: center;
+    }
+
+    /* =======================
+       COMPACT MODE (auto-fit)
+    ======================== */
+    body.compact :root{ --ui-density: .92; }
+    body.compact .hud{ padding: 6px 8px; }
+    body.compact .brand img{ width: 34px; height: 34px; }
+    body.compact .title{ font-size: clamp(12px, 2.2vw, 16px); }
+    body.compact .footer{ padding: 8px; }
+    body.compact .btn{ height: 50px; }
+    body.compact .stack{ height: min(330px, 58vh); }
+
+    /* =======================
+       ACCESSIBILITY
+    ======================== */
+    .sr-only{ position: absolute; width: 1px; height: 1px; padding:0; margin:-1px; overflow:hidden; clip: rect(0,0,0,0); white-space: nowrap; border:0; }
+    :focus-visible{ outline: 3px solid rgba(0,232,255,.7); outline-offset: 2px; }
+
+    /* =======================
+       PREFERS REDUCED MOTION
+    ======================== */
+    @media (prefers-reduced-motion: reduce){
+      *{ animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene glass" id="scene" aria-live="polite">
+    <div class="ui-scale">
+      <!-- HUD -->
+      <header class="hud glass" aria-label="Encabezado del reto">
+        <div class="brand">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Logo Kämpe" width="40" height="40" />
+          <div class="title">Swipes de PRL Eléctrica ⚡</div>
+        </div>
+        <div class="pill" aria-hidden="true" style="justify-self:center;">
+          <span>Escenario: ayudante electricista</span>
+        </div>
+        <div class="progress" aria-label="Progreso">
+          <small id="progText">Pregunta 1 de 6</small>
+          <div class="bar" aria-hidden="true"><i id="progBar"></i></div>
+        </div>
+      </header>
+
+      <!-- CARD AREA -->
+      <main class="card-area glass" id="cardArea" aria-label="Zona de juego">
+        <div class="stack" id="stack">
+          <!-- Cards injected by JS -->
+        </div>
+      </main>
+
+      <!-- FOOTER CONTROLS -->
+      <footer class="footer glass" aria-label="Controles">
+        <button class="btn danger" id="btnLeft" aria-label="Elegir Riesgoso (izquierda)">
+          <i aria-hidden="true"></i> Riesgoso
+        </button>
+        <button class="btn success" id="btnRight" aria-label="Elegir Seguro (derecha)">
+          <i aria-hidden="true"></i> Seguro
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- TUTORIAL MODAL -->
+  <div class="modal" id="tutorial" role="dialog" aria-modal="true" aria-labelledby="tutTitle" aria-describedby="tutDesc">
+    <div class="panel">
+      <h2 id="tutTitle">Cómo jugar</h2>
+      <p id="tutDesc">Desliza a izquierda o derecha para responder. Cada dirección significa una respuesta distinta.</p>
+      <div class="tutorial-cta">
+        <div class="pill" aria-hidden="true">
+          <strong>Dinámica:</strong>&nbsp; izquierda = Riesgoso, derecha = Seguro
+        </div>
+        <p style="margin:0; opacity:.9;">Reto: decisiones rápidas de seguridad básica en una reforma doméstica. 6 cartas, textos cortos, sin scroll.</p>
+        <button class="btn success" id="startBtn" style="margin-top:6px;" aria-label="Empezar el reto">
+          ¡Empezar!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS MODAL -->
+  <div class="modal" id="results" role="dialog" aria-modal="true" aria-labelledby="resTitle" aria-describedby="resDesc" hidden>
+    <div class="panel" style="max-width:720px;">
+      <h2 id="resTitle">Resultados</h2>
+      <p id="resDesc">Aquí tienes tus elecciones. Verde = correcto, rojo = incorrecto. Aprende del feedback y aplica lo visto en la próxima práctica.</p>
+      <div id="scoreLine" class="pill" style="margin: 6px 0;"></div>
+      <div class="results-list" id="resultsList" aria-live="polite"></div>
+      <div class="sticky-cta">
+        <a id="rewardBtn" class="cta" href="#" aria-label="Ver mi recompensa">Ver mi recompensa</a>
+        <div id="initWarn" class="hint" hidden>Nota: no se detectó initData en la URL.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  ;(() => {
+    // =========================
+    // InitData preservation
+    // =========================
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || '';
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+    const rewardBase = 'https://kampe-game-phaser.onrender.com/daily_streak?initData=';
+    rewardBtn.href = rewardBase + encodeURIComponent(initData);
+    if(!initData){
+      initWarn.hidden = false;
+      initWarn.textContent = 'Nota: no se detectó initData en la URL.';
+    }
+
+    // =========================
+    // Data: Cards (<=48 chars each)
+    // Right = Correcto/Seguro ; Left = Incorrecto/Riesgoso
+    // =========================
+    const CARDS = [
+      {
+        id: 1,
+        text: "Cortar el general antes de abrir un enchufe.",
+        correct: "right",
+        explain: "Cortar la energía evita contactos y arcos eléctricos. Asegura que nadie reencienda el general mientras trabajas."
+      },
+      {
+        id: 2,
+        text: "Avisar al cliente antes de cortar la luz.",
+        correct: "right",
+        explain: "Informar evita sorpresas, pérdidas de datos y conflictos. Acordar el momento forma parte del buen servicio."
+      },
+      {
+        id: 3,
+        text: "Comprobar ausencia de tensión con multímetro.",
+        correct: "right",
+        explain: "Verifica con instrumento adecuado antes de tocar conductores. No confíes solo en interruptores o etiquetas."
+      },
+      {
+        id: 4,
+        text: "Tocar cables con las manos húmedas.",
+        correct: "left",
+        explain: "La humedad aumenta el riesgo de choque. Seca las manos y usa guantes aislantes si corresponde."
+      },
+      {
+        id: 5,
+        text: "Seguir usando un enchufe quemado.",
+        correct: "left",
+        explain: "Puede causar sobrecalentamiento e incendio. Desmonta y reemplaza el enchufe dañado de inmediato."
+      },
+      {
+        id: 6,
+        text: "EPI al taladrar cerca de cables.",
+        correct: "right",
+        explain: "Guantes y gafas protegen de rebabas y contactos. Señaliza y localiza canalizaciones antes de perforar."
+      }
+    ].map(c => ({...c, text: shrinkTo(c.text, 48)}));
+
+    // =========================
+    // State
+    // =========================
+    const state = {
+      index: 0,                 // current card index
+      answers: [],              // {id, choice: 'left'|'right', correct}
+      isDragging: false,
+      startX: 0, startY: 0,
+      currentDX: 0, currentDY: 0
+    };
+
+    // =========================
+    // Elements
+    // =========================
+    const scene = document.getElementById('scene');
+    const stack = document.getElementById('stack');
+    const progText = document.getElementById('progText');
+    const progBar = document.getElementById('progBar');
+    const cardArea = document.getElementById('cardArea');
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+
+    const tutorial = document.getElementById('tutorial');
+    const startBtn = document.getElementById('startBtn');
+    const results = document.getElementById('results');
+    const resultsList = document.getElementById('resultsList');
+    const scoreLine = document.getElementById('scoreLine');
+
+    // =========================
+    // Rendering
+    // =========================
+    function renderProgress(){
+      const total = CARDS.length;
+      const current = Math.min(state.index + 1, total);
+      progText.textContent = `Pregunta ${current} de ${total}`;
+      progBar.style.width = `${(state.index / total) * 100}%`;
+    }
+
+    function createCard(card){
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.setAttribute('role',"group");
+      el.setAttribute('aria-roledescription', 'carta');
+      el.setAttribute('aria-label', 'Carta de decisión de seguridad');
+      el.style.zIndex = 10;
+
+      // Content
+      el.innerHTML = `
+        <div class="q">
+          <p>${escapeHTML(card.text)}</p>
+        </div>
+        <div class="legend" aria-hidden="true">
+          <span class="left"><i></i> Izq: Riesgoso</span>
+          <span class="right"><i></i> Der: Seguro</span>
+        </div>
+        <div class="flag left">Riesgoso</div>
+        <div class="flag right">Seguro</div>
+      `;
+
+      // Drag handling
+      el.addEventListener('pointerdown', onDragStart);
+      return el;
+    }
+
+    function renderCard(){
+      stack.innerHTML = '';
+      const card = CARDS[state.index];
+      if(!card){ return; }
+      const el = createCard(card);
+      stack.appendChild(el);
+      renderProgress();
+      ensureFits();
+    }
+
+    // =========================
+    // Interactions: drag like Tinder
+    // =========================
+    function onDragStart(e){
+      const el = e.currentTarget;
+      state.isDragging = true;
+      state.startX = e.clientX;
+      state.startY = e.clientY;
+      state.currentDX = 0;
+      state.currentDY = 0;
+
+      el.setPointerCapture(e.pointerId);
+      el.addEventListener('pointermove', onDragMove);
+      el.addEventListener('pointerup', onDragEnd);
+      el.addEventListener('pointercancel', onDragEnd);
+    }
+
+    function onDragMove(e){
+      if(!state.isDragging) return;
+      const el = e.currentTarget;
+      state.currentDX = e.clientX - state.startX;
+      state.currentDY = e.clientY - state.startY;
+      const rot = clamp(state.currentDX / 20, -15, 15);
+
+      el.style.transform = `translate(${state.currentDX}px, ${state.currentDY}px) rotate(${rot}deg)`;
+
+      // Flags visibility
+      const leftFlag = el.querySelector('.flag.left');
+      const rightFlag = el.querySelector('.flag.right');
+      const t = Math.min(Math.abs(state.currentDX) / 80, 1);
+      if(state.currentDX < -20){
+        leftFlag.classList.add('show');
+        rightFlag.classList.remove('show');
+        leftFlag.style.opacity = t;
+      } else if(state.currentDX > 20){
+        rightFlag.classList.add('show');
+        leftFlag.classList.remove('show');
+        rightFlag.style.opacity = t;
+      } else {
+        leftFlag.classList.remove('show');
+        rightFlag.classList.remove('show');
+      }
+    }
+
+    function onDragEnd(e){
+      const el = e.currentTarget;
+      el.releasePointerCapture?.(e.pointerId);
+      el.removeEventListener('pointermove', onDragMove);
+      el.removeEventListener('pointerup', onDragEnd);
+      el.removeEventListener('pointercancel', onDragEnd);
+      state.isDragging = false;
+
+      const threshold = 80;
+      let handled = false;
+      if(state.currentDX <= -threshold){
+        handled = true;
+        commitChoice('left', el);
+      } else if(state.currentDX >= threshold){
+        handled = true;
+        commitChoice('right', el);
+      }
+
+      if(!handled){
+        // snap back
+        el.style.transition = 'transform .2s ease';
+        el.style.transform = 'translate(0px,0px) rotate(0deg)';
+        const leftFlag = el.querySelector('.flag.left');
+        const rightFlag = el.querySelector('.flag.right');
+        leftFlag.classList.remove('show');
+        rightFlag.classList.remove('show');
+        setTimeout(() => {
+          el.style.transition = '';
+        }, 220);
+      }
+    }
+
+    function commitChoice(dir, el=null){
+      const card = CARDS[state.index];
+      if(!card) return;
+      state.answers.push({
+        id: card.id,
+        text: card.text,
+        choice: dir,
+        correct: dir === card.correct,
+        explain: card.explain
+      });
+
+      // animate out
+      if(!el){ el = stack.querySelector('.card'); }
+      if(el){
+        const offX = dir === 'right' ? scene.clientWidth : -scene.clientWidth;
+        el.style.transition = 'transform .22s ease-out, opacity .22s ease-out';
+        el.style.transform = `translate(${offX}px, -20px) rotate(${dir==='right'? 15 : -15}deg)`;
+        el.style.opacity = 0;
+      }
+
+      // next after animation
+      setTimeout(() => {
+        state.index++;
+        if(state.index < CARDS.length){
+          renderCard();
+        } else {
+          showResults();
+        }
+      }, 240);
+    }
+
+    // Button handlers (desktop/touch)
+    btnLeft.addEventListener('click', () => commitChoice('left'));
+    btnRight.addEventListener('click', () => commitChoice('right'));
+
+    // Keyboard accessibility
+    window.addEventListener('keydown', (e) => {
+      if(results.hidden === false) return; // already finished
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); commitChoice('left'); }
+      if(e.key === 'ArrowRight'){ e.preventDefault(); commitChoice('right'); }
+    });
+
+    // =========================
+    // Tutorial
+    // =========================
+    startBtn.addEventListener('click', () => {
+      tutorial.style.display = 'none';
+      renderCard();
+      ensureFits();
+    });
+
+    // =========================
+    // Results
+    // =========================
+    function showResults(){
+      // enable scroll ONLY inside results panel
+      results.hidden = false;
+      // Build summary
+      resultsList.innerHTML = '';
+      const total = CARDS.length;
+      const correct = state.answers.filter(a => a.correct).length;
+      scoreLine.textContent = `Aciertos: ${correct}/${total} — ¡Sigue practicando y mejora tu criterio!`;
+
+      state.answers.forEach((a, idx) => {
+        const item = document.createElement('div');
+        item.className = 'result-item';
+        const userLabel = a.choice === 'right' ? 'Seguro' : 'Riesgoso';
+        const ok = a.correct;
+
+        // Ensure explanations short-ish (<= 180 chars)
+        const explain = shrinkTo(a.explain, 180);
+
+        item.innerHTML = `
+          <div class="result-head">
+            <div style="font-weight:800; line-height:1.2;">${idx+1}. ${escapeHTML(a.text)}</div>
+            <span class="tag ${ok ? 'ok' : 'bad'}">${ok ? 'Correcto' : 'Incorrecto'}</span>
+          </div>
+          <div class="answer">Tu elección: ${userLabel}</div>
+          <div class="explain">${escapeHTML(explain)}</div>
+        `;
+        resultsList.appendChild(item);
+      });
+
+      // Motivate
+      const lastMsg = document.createElement('p');
+      lastMsg.style.marginTop = '4px';
+      lastMsg.textContent = '¡Buen trabajo! Lleva estas prácticas a tu próxima intervención y prioriza siempre la seguridad.';
+      resultsList.appendChild(lastMsg);
+
+      // Progress bar full
+      progBar.style.width = '100%';
+      progText.textContent = `Completado 6 de 6`;
+
+      ensureFits();
+    }
+
+    // =========================
+    // Fit to viewport: ensureFits()
+    // 1) assertNoOverflow
+    // 2) compact mode
+    // 3) fit board vars (--cellH, --cellAR)
+    // 4) autoscale to min 0.88
+    // =========================
+    function assertNoOverflow(){
+      // By design the gameplay grid must fit into the scene without scrolling
+      const ok = scene.scrollHeight <= scene.clientHeight;
+      return ok;
+    }
+
+    function applyCompactMode(){
+      if(!document.body.classList.contains('compact')){
+        document.body.classList.add('compact');
+      }
+    }
+
+    function fitBoardToViewport(){
+      // As a middle step, tweak density variables
+      const root = document.documentElement;
+      // Lower density slightly to shrink some heights
+      root.style.setProperty('--ui-density', '0.94');
+      // Provide values for required API vars (even if not used)
+      root.style.setProperty('--cellH', '0.94');
+      root.style.setProperty('--cellAR', '0.94');
+      // Also reduce footer and hud slightly
+      root.style.setProperty('--hudH', '60px');
+      root.style.setProperty('--footerH', '90px');
+      root.style.setProperty('--btnH', '52px');
+    }
+
+    function autoscaleUI(){
+      const root = document.documentElement;
+      let scale = parseFloat(getComputedStyle(root).getPropertyValue('--ui-scale')) || 1;
+      let attempts = 0;
+      while(!assertNoOverflow() && scale > 0.88 && attempts < 6){
+        scale -= 0.02;
+        root.style.setProperty('--ui-scale', scale.toFixed(2));
+        attempts++;
+      }
+    }
+
+    function ensureFits(){
+      // reset any previous adjustments slightly
+      const root = document.documentElement;
+      root.style.setProperty('--ui-scale','1');
+      root.style.setProperty('--ui-density','1');
+      root.style.removeProperty('--hudH'); root.style.removeProperty('--footerH'); root.style.removeProperty('--btnH');
+
+      // pass 1: raw
+      if(assertNoOverflow()) return;
+
+      // pass 2: compact mode
+      applyCompactMode();
+      if(assertNoOverflow()) return;
+
+      // pass 3: density tweak / board recalculation
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+
+      // pass 4: autoscale
+      autoscaleUI();
+    }
+
+    window.addEventListener('resize', () => ensureFits());
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 120));
+
+    // Ensure we don't render gameplay behind tutorial
+    // (Card is rendered after clicking Empezar)
+    ensureFits();
+
+    // =========================
+    // Utilities
+    // =========================
+    function clamp(v, min, max){ return Math.min(Math.max(v, min), max); }
+    function escapeHTML(str){
+      return String(str)
+        .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+        .replaceAll('"','&quot;').replaceAll("'","&#39;");
+    }
+    function shrinkTo(str, max){
+      const s = String(str).trim();
+      return s.length > max ? s.slice(0, Math.max(0, max-1)).trimEnd() + '…' : s;
+    }
+
+    // =========================
+    // Accessibility: Focus to main buttons initially
+    // =========================
+    // When tutorial closes, focus right button for immediate keyboard use
+    startBtn.addEventListener('click', () => {
+      setTimeout(() => btnRight.focus(), 50);
+    });
+
+  })();
+  </script>
+</body>
+</html>
