@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Cable o Peligro: Clasifica y Protege ⚡</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ============ Reset + Base ============ */
+    :root{
+      --bg-1: #1029ff;
+      --bg-2: #1782ff;
+      --bg-3: #0a48ff;
+      --ink: #0b1221;
+      --ink-2: #e9f2ff;
+      --muted: #a9c3ff;
+      --accent: #67e8f9;
+      --good: #41e07c;
+      --bad: #ff6b6b;
+      --epi-grad: linear-gradient(135deg,#14f195 0%,#30d158 100%);
+      --tool-grad: linear-gradient(135deg,#ffb56b 0%,#ff7a00 100%);
+      --preven-grad: linear-gradient(135deg,#7aa9ff 0%,#5b7cff 100%);
+      --card: rgba(255,255,255,0.12);
+      --card-2: rgba(255,255,255,0.16);
+      --glass: blur(12px);
+      --radius: 16px;
+      --radius-sm: 12px;
+      --shadow-1: 0 8px 24px rgba(0,0,0,0.25);
+      --shadow-2: 0 10px 34px rgba(0,0,0,0.35);
+      --hudH: 72px;
+      --itemH: 132px;
+      --btnH: 60px;
+      --areaGap: 14px;
+      --ui-scale: 1;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%;
+      font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 20% 10%, #1a44ff 0%, #0b2ccf 45%, #071a78 100%) fixed;
+      color: var(--ink-2);
+      overflow: hidden; /* gameplay: no scroll */
+      overscroll-behavior: none;
+    }
+    /* Scene height with svh/dvh/vh fallback */
+    .scene {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      display: flex;
+      flex-direction: column;
+      justify-content: stretch;
+      gap: 10px;
+      touch-action: none; /* anti-derrapes general */
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { @supports (height: 100dvh) { .scene { height: 100dvh; } } }
+    @supports not (height: 100svh) { @supports not (height: 100dvh) { .scene { height: 100vh; } } }
+
+    /* Scalable inner UI container */
+    .ui {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transform-origin: top center;
+      will-change: transform;
+    }
+
+    /* Background flair */
+    .bg-flair {
+      position: absolute; inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bg-flair::before {
+      content: "";
+      position: absolute; inset: -20% -10% -10% -10%;
+      background:
+        radial-gradient(600px 300px at 70% 10%, rgba(255,255,255,0.12), transparent 60%),
+        radial-gradient(400px 200px at 10% 90%, rgba(103,232,249,0.18), transparent 60%),
+        radial-gradient(500px 300px at 110% 60%, rgba(91,124,255,0.22), transparent 60%);
+      filter: blur(4px);
+      opacity: 0.9;
+    }
+    .avatar {
+      position: absolute;
+      right: -8px; bottom: 8px;
+      width: 160px; height: auto;
+      opacity: 0.18; transform: scaleX(-1) rotate(-2deg);
+      pointer-events: none; z-index: 1;
+      filter: saturate(1.1) drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+    }
+
+    /* Header / HUD */
+    .hud {
+      position: relative;
+      z-index: 2;
+      height: var(--hudH);
+      min-height: var(--hudH);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      box-shadow: var(--shadow-1);
+      backdrop-filter: var(--glass);
+      -webkit-backdrop-filter: var(--glass);
+    }
+    .logo {
+      display: flex; align-items: center; gap: 8px;
+      min-width: 110px;
+    }
+    .logo img {
+      height: 28px; width: auto;
+      display: block;
+    }
+    .title {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+      overflow: hidden;
+    }
+    .title h1 {
+      margin: 0;
+      font-size: clamp(14px, 2.8vw, 18px);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .title p {
+      margin: 0;
+      font-size: clamp(11px, 2.6vw, 13px);
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .progress {
+      display: grid;
+      grid-auto-flow: row;
+      gap: 6px;
+      min-width: 120px;
+      justify-items: end;
+    }
+    .progress .count {
+      font-weight: 800;
+      font-size: clamp(12px, 2.8vw, 14px);
+    }
+    .bar {
+      width: 140px; height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.16);
+      overflow: hidden;
+    }
+    .bar > i {
+      display: block; height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #67e8f9, #5b7cff);
+      border-radius: inherit;
+      transition: width .28s ease;
+    }
+
+    /* Play area */
+    .playArea {
+      position: relative; z-index: 2;
+      flex: 1;
+      display: grid;
+      grid-template-rows: minmax(24px,auto) var(--itemH) auto;
+      align-content: center;
+      gap: var(--areaGap);
+      padding: 8px 4px 6px;
+      touch-action: none; /* anti-derrapes in interaction area */
+    }
+    .prompt {
+      font-size: clamp(12px, 3.2vw, 14px);
+      color: #d7e7ff;
+      text-align: center;
+      opacity: 0.9;
+      line-height: 1.2;
+      user-select: none;
+    }
+    .itemCard {
+      position: relative;
+      display: grid; place-items: center;
+      height: 100%;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.07));
+      box-shadow: var(--shadow-2);
+      backdrop-filter: var(--glass);
+      -webkit-backdrop-filter: var(--glass);
+      overflow: hidden;
+      padding: 10px;
+      isolation: isolate;
+    }
+    .itemCard .label {
+      font-weight: 800;
+      font-size: clamp(18px, 5.2vw, 24px);
+      text-align: center;
+      line-height: 1.1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      max-width: 92%;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+    .itemCard::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: radial-gradient(180px 60px at 50% -20%, rgba(255,255,255,0.3), transparent 70%);
+      opacity: 0.2;
+      pointer-events: none;
+    }
+    .sparkle {
+      position: absolute;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(103,232,249,0.8), rgba(91,124,255,0.4), transparent 70%);
+      filter: blur(10px);
+      opacity: 0; pointer-events: none;
+      transform: translate(-50%,-50%) scale(0.6);
+      left: 50%; top: 50%;
+    }
+    .sparkle.show { animation: sparkle .7s ease forwards; }
+    @keyframes sparkle {
+      0% { opacity: 0; transform: translate(-50%,-50%) scale(0.6); }
+      40% { opacity: .8; transform: translate(-50%,-50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%,-50%) scale(1.3); }
+    }
+
+    /* Categories */
+    .categories {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .catBtn {
+      position: relative;
+      height: var(--btnH);
+      min-height: 44px;
+      border: 0;
+      border-radius: 14px;
+      color: #061028;
+      font-weight: 900;
+      font-size: clamp(13px, 3.6vw, 16px);
+      letter-spacing: 0.2px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.3), inset 0 0 0 2px rgba(255,255,255,0.28);
+      cursor: pointer;
+      outline: none;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      user-select: none;
+      transition: transform .04s ease;
+    }
+    .catBtn:active { transform: translateY(1px) scale(0.99); }
+    .catBtn .txt {
+      padding: 0 6px;
+      text-align: center;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      max-width: 98%;
+    }
+    .cat-epi { background: var(--epi-grad); }
+    .cat-herr { background: var(--tool-grad); }
+    .cat-prev { background: var(--preven-grad); }
+    .catBtn.correct { box-shadow: 0 0 0 3px rgba(65,224,124,0.9) inset, 0 8px 20px rgba(65,224,124,0.4); }
+    .catBtn.wrong { box-shadow: 0 0 0 3px rgba(255,107,107,0.9) inset, 0 8px 20px rgba(255,107,107,0.35); }
+    .btnPulse::after {
+      content: "";
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.35), transparent 60%);
+      opacity: 0; transform: scale(0.6);
+      animation: pulse .5s ease forwards;
+      pointer-events: none;
+    }
+    @keyframes pulse {
+      0% { opacity: 0; transform: scale(0.6); }
+      40% { opacity: 0.8; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.4); }
+    }
+    .shake { animation: shake .32s ease; }
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      50% { transform: translateX(3px); }
+      75% { transform: translateX(-2px); }
+      100% { transform: translateX(0); }
+    }
+
+    /* Ghost drop */
+    .ghost {
+      position: fixed;
+      z-index: 50;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.07));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-2);
+      padding: 10px;
+      color: var(--ink-2);
+      font-weight: 800;
+      display: grid; place-items: center;
+      will-change: transform, opacity;
+    }
+
+    /* Modals */
+    .modalWrap {
+      position: fixed; inset: 0;
+      display: grid; place-items: center;
+      background: rgba(3,7,18,0.52);
+      z-index: 999;
+      padding: 18px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .modalWrap.show { opacity: 1; pointer-events: auto; }
+    .modal {
+      width: min(560px, 92vw);
+      max-height: 90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border-radius: 18px;
+      box-shadow: var(--shadow-2);
+      backdrop-filter: var(--glass);
+      -webkit-backdrop-filter: var(--glass);
+      padding: 16px;
+      overflow-y: auto; /* permitir scroll interno en modal */
+    }
+    .modal h2 {
+      margin: 0 0 8px 0;
+      font-size: clamp(18px, 5.5vw, 24px);
+      font-weight: 900;
+      letter-spacing: 0.2px;
+    }
+    .modal p {
+      margin: 6px 0 12px 0;
+      font-size: clamp(13px, 3.8vw, 15px);
+      color: #deebff;
+      opacity: 0.96;
+      line-height: 1.25;
+    }
+    .modal .ctaRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      position: sticky;
+      bottom: 0; background: linear-gradient(180deg, rgba(6,16,40,0), rgba(6,16,40,0.6));
+      padding-top: 8px;
+    }
+    .btn {
+      height: 48px; min-height: 44px;
+      display: grid; place-items: center;
+      border-radius: 14px;
+      font-weight: 900;
+      font-size: clamp(14px, 4.1vw, 16px);
+      border: 0;
+      cursor: pointer;
+      color: #061028;
+    }
+    .btnPrimary {
+      background: linear-gradient(135deg,#67e8f9 0%,#5b7cff 100%);
+      box-shadow: 0 10px 24px rgba(91,124,255,0.45), inset 0 0 0 2px rgba(255,255,255,0.28);
+    }
+    .btnGhost {
+      background: rgba(255,255,255,0.16);
+      color: #e6f0ff;
+      border: 1px solid rgba(255,255,255,0.26);
+      backdrop-filter: var(--glass);
+      -webkit-backdrop-filter: var(--glass);
+    }
+    .warn {
+      font-size: 12px; color: #ffd18f;
+      opacity: 0.95;
+    }
+    .scoreBadge {
+      display: inline-grid; place-items: center;
+      min-width: 80px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.24);
+      font-weight: 800; letter-spacing: .2px;
+      margin-bottom: 8px;
+    }
+
+    /* Results list */
+    .resultList {
+      display: grid;
+      gap: 10px;
+      margin: 12px 0;
+    }
+    .rItem {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .rHead {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .tag {
+      display: inline-block; padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px; font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.18);
+      color: #041028;
+    }
+    .t-epi { background: #14f195; }
+    .t-herr { background: #ffb56b; }
+    .t-prev { background: #7aa9ff; }
+    .t-wrong { background: #ff6b6b; color: white; }
+    .rExplain {
+      grid-column: 1 / -1;
+      font-size: 13px; color: #eaf2ff; opacity: 0.95;
+    }
+    .common {
+      font-size: 12px; color: #ffe08a;
+      opacity: 0.95;
+    }
+    .finalTip {
+      display: grid; gap: 8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      margin-top: 6px;
+      font-size: 13px;
+    }
+
+    /* Compact mode to free space */
+    .scene.compact { gap: 6px; }
+    .scene.compact .hud { height: 58px; min-height: 58px; padding: 6px 8px; }
+    .scene.compact .logo img { height: 24px; }
+    .scene.compact .title h1 { font-size: clamp(12px, 2.4vw, 15px); }
+    .scene.compact .title p { display: none; }
+    .scene.compact .bar { width: 120px; height: 7px; }
+    .scene.compact .playArea { grid-template-rows: minmax(20px,auto) 110px auto; gap: 10px; padding: 6px 2px 4px; }
+    .scene.compact .catBtn { height: 54px; }
+    .scene.compact .itemCard .label { font-size: clamp(16px, 4.8vw, 20px); }
+
+    /* Focus visibility */
+    :focus-visible { outline: 3px solid #67e8f9; outline-offset: 2px; border-radius: 10px; }
+
+    /* Screen reader only */
+    .sr-only {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" role="application" aria-label="Reto diario Kämpe: Clasificación rápida">
+    <div class="bg-flair"></div>
+    <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy" />
+    <div class="ui">
+      <!-- HUD -->
+      <header class="hud" aria-live="polite">
+        <div class="logo">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        </div>
+        <div class="title">
+          <h1>Cable o Peligro: Clasifica y Protege ⚡</h1>
+          <p>Clasifica cada ítem: EPI / Herramienta / Acción preventiva</p>
+        </div>
+        <div class="progress" aria-label="Progreso">
+          <div class="count"><span id="countTxt">1</span>/<span id="totalTxt">9</span></div>
+          <div class="bar" aria-hidden="true"><i id="barFill" style="width:0%"></i></div>
+        </div>
+      </header>
+
+      <!-- Gameplay -->
+      <main class="playArea" id="playArea">
+        <div class="prompt">¿A qué categoría pertenece este elemento?</div>
+        <section class="itemCard" id="itemCard" aria-live="polite">
+          <div class="label clamp-2" id="itemLabel">—</div>
+          <div class="sparkle" id="sparkle"></div>
+        </section>
+        <nav class="categories" aria-label="Categorías">
+          <button class="catBtn cat-epi" id="btnEPI" aria-label="Elegir EPI" data-cat="EPI">
+            <span class="txt">EPI</span>
+          </button>
+          <button class="catBtn cat-herr" id="btnHerr" aria-label="Elegir Herramienta" data-cat="Herramienta">
+            <span class="txt">Herramienta</span>
+          </button>
+          <button class="catBtn cat-prev" id="btnPrev" aria-label="Elegir Acción preventiva" data-cat="Acción preventiva">
+            <span class="txt">Acción preventiva</span>
+          </button>
+        </nav>
+      </main>
+      <div class="sr-only" aria-live="polite" id="ariaFeedback"></div>
+    </div>
+  </div>
+
+  <!-- Intro Modal -->
+  <div class="modalWrap" id="introModal" aria-modal="true" role="dialog" aria-labelledby="introTitle">
+    <div class="modal">
+      <h2 id="introTitle">Cable o Peligro: Clasifica y Protege ⚡</h2>
+      <p>Escenario: cambias un interruptor y revisas un enchufe caliente en casa del cliente. Toca la categoría correcta para cada ítem. Avanza automáticamente.</p>
+      <p style="margin-top:0">Objetivo: distinguir rápido entre EPI, Herramienta y Acción preventiva de PRL.</p>
+      <div class="ctaRow">
+        <button class="btn btnPrimary" id="startBtn" aria-label="Empezar el reto">¡Empezar!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Modal -->
+  <div class="modalWrap" id="resultsModal" aria-modal="true" role="dialog" aria-labelledby="resultsTitle">
+    <div class="modal">
+      <div class="scoreBadge" id="scoreBadge">0/9 correctas</div>
+      <h2 id="resultsTitle">Resultados y claves</h2>
+      <div class="resultList" id="resultList"></div>
+      <div class="finalTip">
+        <strong>Regla mental rápida</strong>
+        <div>¿Me protege? = EPI</div>
+        <div>¿Mide o actúa sobre la instalación? = Herramienta</div>
+        <div>¿Reduce el riesgo antes de tocar? = Acción preventiva</div>
+      </div>
+      <div class="ctaRow" style="margin-top:10px">
+        <button class="btn btnPrimary" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        <button class="btn btnGhost" id="retryBtn" aria-label="Repetir con nuevos ítems">Repetir con nuevos ítems</button>
+        <div class="warn" id="warnInit" style="display:none">Aviso: initData no encontrado. Podrías necesitar iniciar sesión para guardar tu racha.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ================== Data & Setup ==================
+    const CATS = [
+      { id: 'EPI', label: 'EPI', tagClass: 't-epi' },
+      { id: 'Herramienta', label: 'Herramienta', tagClass: 't-herr' },
+      { id: 'Acción preventiva', label: 'Acción preventiva', tagClass: 't-prev' }
+    ];
+
+    const ITEMS_SOURCE = [
+      {
+        key: "guantes",
+        label: "Guantes dieléctricos",
+        correct: "EPI",
+        explain: "Protegen tus manos frente a descargas al aislar el contacto eléctrico. No actúan sobre la instalación: no son herramienta.",
+        commonConf: "Herramienta"
+      },
+      {
+        key: "multimetro",
+        label: "Multímetro",
+        correct: "Herramienta",
+        explain: "Mide tensión, continuidad y corriente para diagnosticar. Es una herramienta de medida, no una acción preventiva por sí sola.",
+        commonConf: "Acción preventiva"
+      },
+      {
+        key: "loto",
+        label: "Bloqueo/etiquetado (LOTO)",
+        correct: "Acción preventiva",
+        explain: "Bloquea y etiqueta el circuito para evitar reenergizaciones accidentales. Paso formal de PRL antes de tocar la instalación.",
+        commonConf: "Herramienta"
+      },
+      {
+        key: "ausencia",
+        label: "Probar ausencia de tensión",
+        correct: "Acción preventiva",
+        explain: "Verifica con instrumento homologado que no hay energía antes de tocar. Reduce el riesgo tras seccionar y señalizar.",
+        commonConf: "Herramienta"
+      },
+      {
+        key: "destornillador",
+        label: "Destornillador aislado",
+        correct: "Herramienta",
+        explain: "Permite atornillar con aislamiento hasta cierto voltaje. Su función principal es actuar sobre la instalación.",
+        commonConf: "EPI"
+      },
+      {
+        key: "gafas",
+        label: "Gafas de seguridad",
+        correct: "EPI",
+        explain: "Protegen tus ojos de chispas y proyecciones al pelar cables o cortar. No intervienen en la instalación.",
+        commonConf: "Herramienta"
+      },
+      {
+        key: "alfombra",
+        label: "Alfombra aislante",
+        correct: "EPI",
+        explain: "Aísla al operario del suelo y reduce el riesgo de paso de corriente. Se usa de forma personal como protección complementaria.",
+        commonConf: "Acción preventiva"
+      },
+      {
+        key: "senalizar",
+        label: "Avisar y señalizar zona de trabajo",
+        correct: "Acción preventiva",
+        explain: "Informar al cliente y delimitar la zona evita interferencias y reenergizaciones. Control del entorno antes de tocar.",
+        commonConf: "Herramienta"
+      },
+      {
+        key: "cinta",
+        label: "Cinta aislante",
+        correct: "Herramienta",
+        explain: "Material auxiliar para aislar empalmes y proteger terminaciones. Actúa sobre el cableado; no sustituye a una acción preventiva.",
+        commonConf: "EPI"
+      }
+    ];
+
+    // Parse initData from URL
+    const query = new URLSearchParams(location.search);
+    const initData = query.get('initData') || "";
+    // ================== State ==================
+    const state = {
+      items: [],
+      current: 0,
+      answers: [], // { key, label, correct, picked, isRight, explain, commonConf }
+      locked: false
+    };
+
+    // ================== DOM Refs ==================
+    const scene = document.querySelector('.scene');
+    const ui = document.querySelector('.ui');
+    const itemCard = document.getElementById('itemCard');
+    const itemLabel = document.getElementById('itemLabel');
+    const sparkle = document.getElementById('sparkle');
+    const countTxt = document.getElementById('countTxt');
+    const totalTxt = document.getElementById('totalTxt');
+    const barFill = document.getElementById('barFill');
+    const playArea = document.getElementById('playArea');
+    const ariaFeedback = document.getElementById('ariaFeedback');
+
+    const btnEPI = document.getElementById('btnEPI');
+    const btnHerr = document.getElementById('btnHerr');
+    const btnPrev = document.getElementById('btnPrev');
+
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+
+    const resultsModal = document.getElementById('resultsModal');
+    const resultList = document.getElementById('resultList');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const warnInit = document.getElementById('warnInit');
+
+    // ================== Utils ==================
+    const clampLabel = (str, max=48) => str.length > max ? (str.slice(0, max-1) + "…") : str;
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function catTagClass(cat) {
+      if (cat === 'EPI') return 't-epi';
+      if (cat === 'Herramienta') return 't-herr';
+      return 't-prev';
+    }
+
+    // Accessibility live message
+    function say(msg){ ariaFeedback.textContent = msg; }
+
+    // ================== Fit-to-viewport System ==================
+    function assertNoOverflow() {
+      return scene.scrollHeight <= scene.clientHeight + 1;
+    }
+    function applyCompactMode(on = true){
+      scene.classList.toggle('compact', on);
+    }
+    let fitStep = 0;
+    function fitBoardToViewport(){
+      // progressively reduce item/button heights if needed
+      const root = document.documentElement;
+      fitStep++;
+      if (fitStep === 1) {
+        root.style.setProperty('--itemH','120px');
+        root.style.setProperty('--btnH','56px');
+        root.style.setProperty('--hudH','64px');
+      } else if (fitStep === 2) {
+        root.style.setProperty('--itemH','108px');
+        root.style.setProperty('--btnH','52px');
+        root.style.setProperty('--hudH','60px');
+      } else if (fitStep >= 3) {
+        root.style.setProperty('--itemH','100px');
+        root.style.setProperty('--btnH','48px');
+        root.style.setProperty('--hudH','56px');
+      }
+    }
+    function autoscaleUI(){
+      const target = scene.clientHeight / scene.scrollHeight;
+      const scale = Math.max(0.88, Math.min(1, target));
+      ui.style.transform = `scale(${scale})`;
+      ui.style.setProperty('--ui-scale', scale);
+    }
+    function resetFit(){
+      // restore defaults
+      fitStep = 0;
+      document.documentElement.style.removeProperty('--itemH');
+      document.documentElement.style.removeProperty('--btnH');
+      document.documentElement.style.removeProperty('--hudH');
+      scene.classList.remove('compact');
+      ui.style.transform = 'scale(1)';
+      ui.style.setProperty('--ui-scale', 1);
+    }
+    function ensureFits(){
+      // Try baseline
+      if (assertNoOverflow()) return;
+      // 1) compact
+      applyCompactMode(true);
+      if (assertNoOverflow()) return;
+      // 2) shrink heights
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      // 3) shrink further if needed (one more time)
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      // 4) autoscale
+      autoscaleUI();
+    }
+    window.addEventListener('resize', () => requestAnimationFrame(ensureFits));
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 250));
+
+    // ================== Gameplay Flow ==================
+    function initGame() {
+      state.items = shuffle(ITEMS_SOURCE.map(it => ({...it, label: clampLabel(it.label, 48)})));
+      state.current = 0;
+      state.answers = [];
+      totalTxt.textContent = state.items.length.toString();
+      updateProgressUI();
+      renderItem();
+      resetFit();
+      requestAnimationFrame(ensureFits);
+    }
+
+    function updateProgressUI() {
+      const curr = Math.min(state.current + 1, state.items.length);
+      countTxt.textContent = curr.toString();
+      const pct = Math.round((state.current / state.items.length) * 100);
+      barFill.style.width = `${pct}%`;
+    }
+
+    function renderItem() {
+      const item = state.items[state.current];
+      itemLabel.textContent = item ? item.label : "—";
+      itemCard.classList.remove('shake');
+      [btnEPI, btnHerr, btnPrev].forEach(b => b.classList.remove('correct','wrong'));
+      updateProgressUI();
+    }
+
+    function onChoose(catId, btnEl) {
+      if (state.locked) return;
+      const item = state.items[state.current];
+      if (!item) return;
+      state.locked = true;
+
+      // Visual micro-interactions
+      btnEl.classList.add('btnPulse');
+      setTimeout(() => btnEl.classList.remove('btnPulse'), 500);
+
+      dropToButton(btnEl);
+
+      const isRight = (catId === item.correct);
+      if (isRight) {
+        btnEl.classList.add('correct');
+        sparkle.classList.remove('show');
+        void sparkle.offsetWidth; // reflow
+        sparkle.classList.add('show');
+        say(`Correcto: ${item.label} es ${item.correct}`);
+      } else {
+        btnEl.classList.add('wrong');
+        itemCard.classList.add('shake');
+        say(`Incorrecto: ${item.label} no es ${catId}`);
+      }
+
+      state.answers.push({
+        key: item.key,
+        label: item.label,
+        picked: catId,
+        correct: item.correct,
+        isRight,
+        explain: limitExplain(item.explain),
+        commonConf: item.commonConf
+      });
+
+      // Advance after short delay
+      setTimeout(() => {
+        state.current += 1;
+        if (state.current < state.items.length) {
+          renderItem();
+          state.locked = false;
+        } else {
+          finishGame();
+        }
+      }, 720);
+    }
+
+    function limitExplain(text) {
+      // ensure <= 180 chars / max 2 short sentences
+      const trimmed = text.trim();
+      if (trimmed.length <= 180) return trimmed;
+      return trimmed.slice(0, 179) + "…";
+    }
+
+    // Ghost drop animation from card to button
+    function dropToButton(btnEl) {
+      const rectFrom = itemCard.getBoundingClientRect();
+      const rectTo = btnEl.getBoundingClientRect();
+      const ghost = document.createElement('div');
+      ghost.className = 'ghost';
+      ghost.textContent = itemLabel.textContent;
+      document.body.appendChild(ghost);
+      ghost.style.left = rectFrom.left + 'px';
+      ghost.style.top = rectFrom.top + 'px';
+      ghost.style.width = rectFrom.width + 'px';
+      ghost.style.height = rectFrom.height + 'px';
+      ghost.style.display = 'grid';
+      // Center positions
+      const fromX = rectFrom.left + rectFrom.width/2;
+      const fromY = rectFrom.top + rectFrom.height/2;
+      const toX = rectTo.left + rectTo.width/2;
+      const toY = rectTo.top + rectTo.height/2;
+
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+
+      ghost.animate([
+        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.4)`, opacity: 0.1 }
+      ], { duration: 520, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+
+      setTimeout(() => ghost.remove(), 540);
+    }
+
+    function finishGame() {
+      // Fill results
+      const total = state.items.length;
+      const rights = state.answers.filter(a => a.isRight).length;
+      scoreBadge.textContent = `${rights}/${total} correctas`;
+
+      // Build list
+      resultList.innerHTML = '';
+      state.answers.forEach(a => {
+        const wrap = document.createElement('div');
+        wrap.className = 'rItem';
+
+        const head = document.createElement('div');
+        head.className = 'rHead';
+        head.innerHTML = `<span>${a.label}</span>`;
+
+        const tagCol = document.createElement('div');
+        tagCol.style.display = 'grid';
+        tagCol.style.justifyItems = 'end';
+        tagCol.style.alignContent = 'center';
+        tagCol.style.gap = '6px';
+
+        const picked = document.createElement('span');
+        picked.className = 'tag ' + (a.isRight ? catTagClass(a.picked) : 't-wrong');
+        picked.textContent = a.isRight ? `Tu elección: ${a.picked}` : `Tu elección: ${a.picked}`;
+        const correct = document.createElement('span');
+        correct.className = 'tag ' + catTagClass(a.correct);
+        correct.textContent = `Correcta: ${a.correct}`;
+
+        tagCol.appendChild(picked);
+        tagCol.appendChild(correct);
+
+        const explain = document.createElement('div');
+        explain.className = 'rExplain';
+        explain.textContent = a.explain;
+
+        wrap.appendChild(head);
+        wrap.appendChild(tagCol);
+        wrap.appendChild(explain);
+
+        if (!a.isRight) {
+          const comm = document.createElement('div');
+          comm.className = 'common';
+          comm.textContent = `Confusión común: se confunde con “${a.commonConf}”.`;
+          wrap.appendChild(comm);
+        }
+        resultList.appendChild(wrap);
+      });
+
+      if (!initData) {
+        warnInit.style.display = 'block';
+      } else {
+        warnInit.style.display = 'none';
+      }
+
+      // Show results modal
+      resultsModal.classList.add('show');
+      // keep global scroll locked; modal scrolls internally
+    }
+
+    // ================== Events ==================
+    btnEPI.addEventListener('click', () => onChoose('EPI', btnEPI));
+    btnHerr.addEventListener('click', () => onChoose('Herramienta', btnHerr));
+    btnPrev.addEventListener('click', () => onChoose('Acción preventiva', btnPrev));
+
+    startBtn.addEventListener('click', () => {
+      introModal.classList.remove('show');
+      // after intro closes ensure fit again
+      setTimeout(() => ensureFits(), 50);
+    });
+
+    retryBtn.addEventListener('click', () => {
+      resultsModal.classList.remove('show');
+      initGame();
+      setTimeout(() => ensureFits(), 40);
+    });
+
+    rewardBtn.addEventListener('click', () => {
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      window.location.href = url;
+    });
+
+    // ================== Boot ==================
+    window.addEventListener('load', () => {
+      initGame();
+      introModal.classList.add('show');
+      ensureFits();
+    });
+  </script>
+</body>
+</html>
