@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe — Herramientas en Acción ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1b6cff" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* =============== Root + Reset =============== */
+    :root{
+      --bg1: #0a1f44;
+      --bg2: #07255c;
+      --bg3: #0E5DF2;
+      --accent: #00E0FF;
+      --accent-2: #7affb3;
+      --danger: #ff5e7d;
+      --ok: #27e6a1;
+      --glass: rgba(255,255,255,0.08);
+      --glass-2: rgba(255,255,255,0.14);
+      --text: #F5F9FF;
+      --muted: #BFD3FF;
+      --ui-scale: 1;
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --title-size: clamp(18px, 4.8vw, 22px);
+      --phrase-size: clamp(16px, 5vw, 22px);
+      --chip-size: clamp(14px, 4.2vw, 18px);
+      --hud-h: 72px;
+    }
+    *{ box-sizing: border-box; }
+    html, body{
+      height: 100%;
+      margin: 0;
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--text);
+      background: radial-gradient(120% 120% at 70% 0%, #2a7bff 0%, #143875 45%, #081a3a 100%);
+      overscroll-behavior: none;
+      overflow: hidden; /* Block global scroll during gameplay */
+      -webkit-tap-highlight-color: transparent;
+    }
+    a, button{ font-family: inherit; }
+    img{ max-width: 100%; display: block; }
+    /* =============== Scene (full viewport, safe areas) =============== */
+    .scene{
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      touch-action: none;
+      isolation: isolate;
+    }
+    /* Viewport fallbacks */
+    @supports (height: 100svh) { .scene{ height: 100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene{ height: 100dvh; } }
+    @supports not (height: 100svh) and (not (height: 100dvh)) { .scene{ height: 100vh; } }
+
+    /* Scalable UI wrapper */
+    .ui{
+      width: min(480px, 96vw);
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      transition: transform 0.2s ease;
+      position: relative;
+    }
+
+    /* =============== HUD =============== */
+    .hud{
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--hud-h);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 10px 12px;
+      gap: 8px;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .hud .logo{
+      display: flex; align-items: center; gap: 8px;
+      pointer-events: auto;
+    }
+    .hud .logo img{ height: 28px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.45)); }
+    .hud .title{
+      justify-self: center;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.45);
+      font-size: var(--title-size);
+      text-align: center;
+      line-height: 1.1;
+      max-width: 65vw;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .hud .progress{
+      justify-self: end;
+      pointer-events: auto;
+      display: grid;
+      gap: 6px;
+      min-width: 120px;
+    }
+    .pbar{
+      height: 8px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    }
+    .pbar > span{
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #26ffd6);
+      box-shadow: 0 0 12px rgba(38,255,214,0.4);
+      transition: width 260ms ease;
+    }
+    .progress .txt{
+      font-size: 12px; color: var(--muted); text-align: right;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    /* =============== Board =============== */
+    .board{
+      position: relative;
+      width: 100%;
+      height: calc(100% - var(--hud-h));
+      margin-top: var(--hud-h);
+      display: grid;
+      align-items: center;
+      justify-items: stretch;
+      padding: 10px 12px 14px;
+      z-index: 1;
+    }
+
+    /* Decorative Avatar */
+    .avatar{
+      position: absolute;
+      inset: auto -8% -6% auto;
+      width: min(52vw, 260px);
+      opacity: 0.25;
+      filter: saturate(1.1) drop-shadow(0 12px 24px rgba(0,0,0,0.45));
+      z-index: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      animation: float 5.5s ease-in-out infinite;
+    }
+    @keyframes float{
+      0%{ transform: translateY(10px);}
+      50%{ transform: translateY(0px);}
+      100%{ transform: translateY(10px);}
+    }
+
+    /* Card Glass */
+    .glass{
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px) saturate(120%);
+      -webkit-backdrop-filter: blur(10px) saturate(120%);
+    }
+
+    /* Gameplay Card */
+    .card{
+      position: relative;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-height: 0;
+    }
+    .cloze-card{
+      padding: 14px;
+      gap: 10px;
+    }
+    .phrase{
+      font-size: var(--phrase-size);
+      line-height: 1.2;
+      font-weight: 700;
+      padding: 14px 12px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(9,26,58,0.6), rgba(6,24,49,0.4));
+      border: 1px solid rgba(255,255,255,0.14);
+      min-height: 74px;
+      display: grid;
+      align-items: center;
+      justify-items: center;
+      text-align: center;
+      text-wrap: balance;
+      user-select: none;
+    }
+    .phrase .inner{
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .blank{
+      display: inline-block;
+      padding: 0 6px 2px;
+      border-bottom: 3px solid var(--accent);
+      color: var(--accent);
+      min-width: 24px;
+      transition: color 200ms ease, background 200ms ease, border-color 200ms ease;
+      text-decoration: none;
+      text-shadow: 0 0 0 transparent;
+    }
+    .blank.filled{
+      color: #0a1840;
+      background: linear-gradient(90deg, var(--accent), #7af5ff);
+      border-color: transparent;
+      border-radius: 6px;
+      box-shadow: 0 0 0 3px rgba(0,224,255,0.18) inset, 0 6px 16px rgba(0,224,255,0.35);
+    }
+
+    /* Options */
+    .options{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 8px 2px 4px;
+    }
+    .chip{
+      min-height: 48px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: var(--chip-size);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.22);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.08s ease, background 0.2s ease, box-shadow 0.2s ease;
+      outline: none;
+      position: relative;
+    }
+    .chip:active{ transform: translateY(1px) scale(0.995); }
+    .chip:focus-visible{
+      box-shadow: 0 0 0 3px rgba(0,224,255,0.45), 0 6px 16px rgba(0,0,0,0.35);
+    }
+    .chip .label{
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      max-height: 2.7em;
+    }
+
+    /* Animations between clozes */
+    .fadeOut{ animation: fadeOut 200ms ease forwards; }
+    .fadeIn{ animation: fadeIn 220ms ease forwards; }
+    @keyframes fadeOut{
+      to{ transform: translateY(-6px); opacity: 0; }
+    }
+    @keyframes fadeIn{
+      from{ transform: translateY(6px); opacity: 0; }
+      to{ transform: translateY(0px); opacity: 1; }
+    }
+
+    /* =============== Modals (Intro / Results) =============== */
+    .overlay{
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(4,14,30,0.75), rgba(4,14,30,0.55));
+      display: grid;
+      place-items: center;
+      z-index: 5;
+      padding: 16px;
+    }
+    .modal{
+      width: min(520px, 92vw);
+      max-height: 90svh;
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      overflow-y: auto;
+    }
+    .modal .head{
+      display: grid; gap: 6px;
+    }
+    .modal h2{
+      font-size: clamp(18px, 4.8vw, 22px);
+      margin: 0; font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+    .modal p{
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(13px, 3.8vw, 15px);
+      line-height: 1.35;
+    }
+    .modal .cta-row{
+      margin-top: 6px;
+      display: grid;
+      grid-auto-flow: column;
+      gap: 10px;
+      justify-content: stretch;
+    }
+    .btn{
+      height: 48px;
+      border-radius: 12px;
+      border: 0;
+      font-weight: 800;
+      font-size: clamp(14px, 4vw, 16px);
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      color: #07152f;
+      background: linear-gradient(90deg, #6fffdb, #1ee0ff);
+      box-shadow: 0 8px 24px rgba(0,224,255,0.35);
+      outline: none;
+      transition: transform 0.08s ease;
+    }
+    .btn:active{ transform: translateY(1px) scale(0.995); }
+    .btn.ghost{
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.24);
+      box-shadow: none;
+    }
+    .note{
+      font-size: 12px; color: var(--muted);
+    }
+
+    /* Results content */
+    .results-body{
+      display: grid;
+      gap: 10px;
+    }
+    .score{
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+    .score .big{
+      font-size: 24px; font-weight: 800;
+    }
+    .score .sub{
+      font-size: 12px; color: var(--muted);
+    }
+    .rlist{
+      display: grid;
+      gap: 8px;
+    }
+    .ritem{
+      display: grid; gap: 6px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    .r-sentence{
+      font-weight: 700;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .r-ans{
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px;
+    }
+    .pill{
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 4px 8px; border-radius: 999px;
+      font-size: 12px; font-weight: 800;
+      letter-spacing: 0.2px;
+      color: #08243d;
+    }
+    .ok{ background: linear-gradient(90deg, #7df7c8, #36e8ff); }
+    .bad{ background: linear-gradient(90deg, #ff9cae, #ff6f91); }
+    .r-explain{
+      font-size: 12px; color: var(--muted);
+    }
+    .advice{
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      font-size: 13px;
+    }
+
+    /* =============== Compact Mode =============== */
+    .scene.compact{
+      --hud-h: 64px;
+      --title-size: clamp(16px, 4.2vw, 18px);
+      --phrase-size: clamp(15px, 4.6vw, 20px);
+      --chip-size: clamp(13px, 3.6vw, 16px);
+      --radius: 12px;
+    }
+    .scene.compact .avatar{ width: min(48vw, 220px); }
+
+    /* Accessibility: focus visible */
+    :focus-visible{
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Ensure buttons minimum size */
+    .chip, .btn{ min-height: 44px; }
+
+    /* Warning label */
+    .warn{
+      color: #ffd479;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene">
+    <div class="ui" id="ui-root" aria-live="polite">
+      <!-- HUD -->
+      <header class="hud">
+        <div class="logo">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" width="112" height="32" />
+        </div>
+        <div class="title">Herramientas en Acción ⚡</div>
+        <div class="progress" aria-label="Progreso">
+          <div class="pbar" aria-hidden="true"><span id="pbarFill"></span></div>
+          <div class="txt" id="pbarText">0/6</div>
+        </div>
+      </header>
+
+      <!-- Board -->
+      <main class="board" id="board" role="main">
+        <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" aria-hidden="true" loading="lazy">
+        <section class="glass card cloze-card" aria-label="Reto de cloze">
+          <div id="phrase" class="phrase">
+            <div class="inner">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+          <div class="options" id="options">
+            <!-- Filled by JS -->
+          </div>
+        </section>
+      </main>
+
+      <!-- Intro Modal -->
+      <div class="overlay" id="intro" aria-modal="true" role="dialog">
+        <div class="glass modal">
+          <div class="head">
+            <h2>Herramientas en Acción ⚡</h2>
+            <p>Escenario: aprendiz de electricista. Revisión básica antes de instalar una lámpara. Demuestra vocabulario y seguridad mínima.</p>
+            <p><strong>Cómo jugar:</strong> toca la opción correcta para completar el hueco; al elegir avanzas.</p>
+          </div>
+          <div class="cta-row">
+            <button class="btn" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+            <button class="btn ghost" id="howBtn" aria-label="Recordar objetivo">Objetivo</button>
+          </div>
+          <p class="note" id="howNote" hidden>Resuelve 6 frases con un hueco. Refuerza decisiones seguras sobre herramientas, mediciones y colores de conductores.</p>
+        </div>
+      </div>
+
+      <!-- Results Modal -->
+      <div class="overlay" id="results" aria-modal="true" role="dialog" hidden>
+        <div class="glass modal" id="resultsModal">
+          <div class="head">
+            <h2>Resultados del reto</h2>
+          </div>
+          <div class="results-body">
+            <div class="score">
+              <div class="big" id="scoreTxt">0/6</div>
+              <div>
+                <div class="sub">Aciertos sobre 6. Buen trabajo, ¡sigue puliendo técnica!</div>
+              </div>
+            </div>
+            <div class="rlist" id="rlist"></div>
+            <div class="advice" id="advice">
+              Consejos: tensión (V) no es lo mismo que corriente (A). Colores normalizados: neutro azul, tierra verde‑amarillo, fase marrón/negro. EPI básico: guantes, calzado dieléctrico y gafas.
+            </div>
+            <div class="cta-row">
+              <button class="btn ghost" id="retryBtn" aria-label="Reintentar el reto">Reintentar reto</button>
+              <button class="btn" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+            </div>
+            <div class="note" id="initWarn" hidden>
+              <span class="warn">Aviso: initData no detectado. Aún puedes continuar.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // =============== Data ===============
+  const ITEMS = [
+    {
+      id: 1,
+      text: "Para medir tensión en un enchufe uso el ___",
+      options: ["multímetro", "buscapolos"],
+      correct: "multímetro",
+      explains: {
+        "multímetro": "Mide tensión con valor numérico y mayor seguridad.",
+        "buscapolos": "Solo detecta fase; no mide V y puede ser poco fiable."
+      }
+    },
+    {
+      id: 2,
+      text: "Para cortar un conductor uso ___",
+      options: ["alicates de corte", "cúter"],
+      correct: "alicates de corte",
+      explains: {
+        "alicates de corte": "Corte limpio sin dañar el aislamiento adyacente.",
+        "cúter": "Riesgo de dañar el cobre/aislante y tus manos."
+      }
+    },
+    {
+      id: 3,
+      text: "Antes de tocar el cuadro, verifico ___",
+      options: ["ausencia de tensión", "aumento de potencia"],
+      correct: "ausencia de tensión",
+      explains: {
+        "ausencia de tensión": "Lo primero: seguridad. Confirmar 0 V.",
+        "aumento de potencia": "No es una comprobación de seguridad inmediata."
+      }
+    },
+    {
+      id: 4,
+      text: "El neutro en esquema es ___",
+      options: ["azul", "marrón"],
+      correct: "azul",
+      explains: {
+        "azul": "Color normalizado para el conductor neutro.",
+        "marrón": "Color típico de fase; no de neutro."
+      }
+    },
+    {
+      id: 5,
+      text: "Para apretar bornes uso destornillador ___",
+      options: ["aislado VDE", "de impacto"],
+      correct: "aislado VDE",
+      explains: {
+        "aislado VDE": "Aislamiento verificado para trabajos eléctricos.",
+        "de impacto": "Pensado para golpes; no para bornes ni seguridad eléctrica."
+      }
+    },
+    {
+      id: 6,
+      text: "Para medir corriente sin abrir circuito empleo ___",
+      options: ["pinza amperimétrica", "multímetro en serie"],
+      correct: "pinza amperimétrica",
+      explains: {
+        "pinza amperimétrica": "Mide corriente por inducción sin interrumpir el circuito.",
+        "multímetro en serie": "Obliga a abrir circuito; mayor riesgo y tiempo."
+      }
+    }
+  ];
+
+  // =============== State ===============
+  const state = {
+    idx: 0,
+    answers: [], // {id, chosen, correct}
+    initDataRaw: ""
+  };
+
+  // =============== Helpers ===============
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const truncate = (str, max=180) => (str.length > max) ? str.slice(0, max-1) + "…" : str;
+
+  // Preserve EXACT initData as it comes in URL (no decoding to avoid altering content)
+  function getRawInitData(){
+    const q = window.location.search || "";
+    if(!q.startsWith("?")) return "";
+    const parts = q.substring(1).split("&");
+    for(const p of parts){
+      if(p.startsWith("initData=")) return p.slice("initData=".length);
+    }
+    return "";
+  }
+
+  // =============== Rendering ===============
+  function render(){
+    const item = ITEMS[state.idx];
+    const phraseEl = $("#phrase .inner");
+    const optionsEl = $("#options");
+
+    // Reset animation classes
+    $("#phrase").classList.remove("fadeIn","fadeOut");
+    $("#options").classList.remove("fadeIn","fadeOut");
+
+    // Build phrase with blank
+    phraseEl.innerHTML = "";
+    const span = document.createElement("span");
+    span.textContent = item.text.replace("___", "");
+    // We'll split around ___ to insert blank element
+    const [before, after] = item.text.split("___");
+    const phraseFrag = document.createElement("span");
+
+    const beforeNode = document.createTextNode(before);
+    const blankNode = document.createElement("span");
+    blankNode.className = "blank";
+    blankNode.textContent = "___";
+    blankNode.setAttribute("aria-label", "Hueco a completar");
+    const afterNode = document.createTextNode(after || "");
+
+    phraseFrag.appendChild(beforeNode);
+    phraseFrag.appendChild(blankNode);
+    phraseFrag.appendChild(afterNode);
+
+    phraseEl.appendChild(phraseFrag);
+
+    // Build options (2 buttons)
+    optionsEl.innerHTML = "";
+    const opts = item.options.slice(0,2); // enforce max 2 visible
+    for(const opt of opts){
+      const btn = document.createElement("button");
+      btn.className = "chip";
+      btn.setAttribute("aria-label", `Elegir ${opt}`);
+      const lab = document.createElement("span");
+      lab.className = "label";
+      lab.textContent = opt.length > 48 ? opt.slice(0,47)+"…" : opt;
+      btn.appendChild(lab);
+      btn.addEventListener("click", () => onChoose(opt, blankNode));
+      optionsEl.appendChild(btn);
+    }
+
+    // Progress
+    updateProgress();
+
+    // Fit UI
+    ensureFits();
+  }
+
+  function onChoose(choice, blankEl){
+    const item = ITEMS[state.idx];
+    // Fill blank with micro interaction
+    blankEl.textContent = choice;
+    blankEl.classList.add("filled");
+
+    // Save answer
+    const isCorrect = (choice === item.correct);
+    state.answers[state.idx] = { id: item.id, chosen: choice, correct: isCorrect };
+
+    // Transition to next after short delay
+    setTimeout(() => {
+      if(state.idx < ITEMS.length - 1){
+        // Out animation
+        $("#phrase").classList.add("fadeOut");
+        $("#options").classList.add("fadeOut");
+        setTimeout(() => {
+          state.idx++;
+          $("#phrase").classList.remove("fadeOut");
+          $("#options").classList.remove("fadeOut");
+          render();
+          $("#phrase").classList.add("fadeIn");
+          $("#options").classList.add("fadeIn");
+          setTimeout(() => {
+            $("#phrase").classList.remove("fadeIn");
+            $("#options").classList.remove("fadeIn");
+          }, 220);
+        }, 210);
+      } else {
+        showResults();
+      }
+    }, 320);
+  }
+
+  function updateProgress(){
+    const total = ITEMS.length;
+    const current = state.idx + 1;
+    $("#pbarText").textContent = `${current}/${total}`;
+    $("#pbarFill").style.width = `${(current/total)*100}%`;
+  }
+
+  // =============== Results ===============
+  function buildResults(){
+    const list = $("#rlist");
+    list.innerHTML = "";
+
+    let correctCount = 0;
+
+    ITEMS.forEach((item, i) => {
+      const res = state.answers[i] || {chosen: "(sin respuesta)", correct: false};
+      if(res.correct) correctCount++;
+
+      const wrap = document.createElement("div");
+      wrap.className = "ritem";
+
+      // Sentence resolved with correct answer
+      const sentence = document.createElement("div");
+      sentence.className = "r-sentence";
+      const resolved = item.text.replace("___", item.correct);
+      sentence.textContent = resolved;
+
+      // Player answer
+      const ans = document.createElement("div");
+      ans.className = "r-ans";
+      const pill = document.createElement("span");
+      pill.className = "pill " + (res.correct ? "ok" : "bad");
+      pill.textContent = res.correct ? "Correcta" : "Incorrecta";
+      const ansTxt = document.createElement("span");
+      ansTxt.textContent = `Tu respuesta: ${res.chosen}`;
+      ans.appendChild(pill);
+      ans.appendChild(ansTxt);
+
+      // Explanation: why others not
+      // Collect other options != correct
+      const others = item.options.filter(o => o !== item.correct);
+      const reasons = others.map(o => item.explains[o]).filter(Boolean);
+      const explain = document.createElement("div");
+      explain.className = "r-explain";
+      const short = truncate(`Otras opciones: ${reasons.join(" • ")}`, 180);
+      explain.textContent = short;
+
+      wrap.appendChild(sentence);
+      wrap.appendChild(ans);
+      wrap.appendChild(explain);
+      list.appendChild(wrap);
+    });
+
+    $("#scoreTxt").textContent = `${correctCount}/${ITEMS.length}`;
+  }
+
+  function showResults(){
+    buildResults();
+    // Open modal
+    $("#results").hidden = false;
+    // Allow scroll INSIDE the modal only (handled by modal max-height/overflow-y)
+    ensureFits();
+  }
+
+  // =============== UX Safety: Fit to Screen ===============
+  function assertNoOverflow(){
+    const scene = $("#scene");
+    return scene.scrollHeight <= scene.clientHeight && scene.scrollWidth <= scene.clientWidth;
+  }
+
+  function applyCompactMode(){
+    const scene = $("#scene");
+    scene.classList.add("compact");
+  }
+
+  function fitBoardToViewport(){
+    // We can slightly tweak paddings by toggling a dense style if needed (already compact).
+    // Nothing dynamic required here beyond compact; hook reserved.
+  }
+
+  function autoscaleUI(){
+    const root = document.documentElement;
+    let scale = 1;
+    const scene = $("#scene");
+    const ui = $("#ui-root");
+
+    // Try downscaling progressively to a minimum of 0.88
+    while(!assertNoOverflow() && scale > 0.88){
+      scale -= 0.02;
+      root.style.setProperty("--ui-scale", scale.toFixed(2));
+    }
+  }
+
+  function ensureFits(){
+    const root = document.documentElement;
+    // Reset to defaults
+    root.style.setProperty("--ui-scale", "1");
+    $("#scene").classList.remove("compact");
+
+    if(assertNoOverflow()) return;
+    applyCompactMode();
+    if(assertNoOverflow()) return;
+    fitBoardToViewport();
+    if(assertNoOverflow()) return;
+    autoscaleUI();
+  }
+
+  // =============== Init & Events ===============
+  function init(){
+    state.initDataRaw = getRawInitData();
+    // Intro handlers
+    $("#startBtn").addEventListener("click", () => {
+      $("#intro").hidden = true;
+      render();
+    });
+    $("#howBtn").addEventListener("click", () => {
+      const note = $("#howNote");
+      note.hidden = !note.hidden;
+      ensureFits();
+    });
+
+    // Retry
+    $("#retryBtn").addEventListener("click", () => {
+      state.idx = 0;
+      state.answers = [];
+      $("#results").hidden = true;
+      render();
+    });
+
+    // Reward
+    $("#rewardBtn").addEventListener("click", () => {
+      const url = "https://kampe-game-phaser.onrender.com/daily_streak?initData=" + state.initDataRaw;
+      window.location.href = url;
+    });
+
+    // initData warning
+    if(!state.initDataRaw){
+      $("#initWarn").hidden = false;
+    }
+
+    // First paint (keep gameplay hidden behind intro)
+    render();
+    ensureFits();
+
+    // Resize handlers
+    window.addEventListener("resize", ensureFits);
+    window.addEventListener("orientationchange", () => {
+      // small delay to ensure viewport settled
+      setTimeout(ensureFits, 120);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
