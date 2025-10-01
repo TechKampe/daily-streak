@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <title>Kämpe | Herramientas en Acción ⚡</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset + base */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    body {
+      margin: 0;
+      font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      background: radial-gradient(120% 120% at 80% 20%, #2884ff 0%, #1b55c9 40%, #102d78 100%) fixed;
+      color: #f7fbff;
+      --glass: rgba(255,255,255,0.12);
+      --glass-2: rgba(255,255,255,0.18);
+      --border: rgba(255,255,255,0.18);
+      --shadow: 0 8px 30px rgba(0,0,0,0.35);
+      --radius: 16px;
+      --hudH: 68px;
+      --gap: 12px;
+      --ui-scale: 1;
+      --optH: 60px;
+      --titleFS: clamp(18px, 3.6vw, 24px);
+      --sentenceFS: clamp(16px, 3.4vw, 20px);
+      --btnFS: clamp(14px, 3.2vw, 18px);
+      --safeTop: env(safe-area-inset-top);
+      --safeBottom: env(safe-area-inset-bottom);
+      --focus: #58ffb8;
+    }
+    /* Scene height: 100svh with fallbacks */
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      padding-top: calc(var(--safeTop) + 8px);
+      padding-bottom: calc(var(--safeBottom) + 8px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
+      touch-action: none;
+      transform-origin: top center;
+    }
+    @supports (height: 100dvh) {
+      .scene { height: 100dvh; }
+    }
+    @supports (height: 100svh) {
+      .scene { height: 100svh; }
+    }
+
+    /* Header / HUD */
+    .hud {
+      height: var(--hudH);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      margin: 0 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) - 6px);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px) saturate(140%);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 8px;
+      min-width: 120px;
+    }
+    .brand img.logo {
+      width: 92px; height: auto; display: block;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+    }
+    .brand .challenge {
+      display: none;
+    }
+    .progress {
+      display: grid; gap: 4px;
+      align-items: center;
+    }
+    .progress .bar {
+      position: relative;
+      height: 10px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress .bar .fill {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, #3bffcf, #7eff7a);
+      box-shadow: inset 0 0 6px rgba(0,0,0,0.2);
+      transition: width 300ms ease;
+    }
+    .progress .label {
+      font-size: 12px; opacity: 0.9; letter-spacing: 0.2px;
+    }
+    .streak {
+      display: none;
+      font-size: 12px;
+      opacity: 0.85;
+    }
+
+    /* Main card */
+    #ui-root {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
+      padding: 0 12px;
+      transform: scale(var(--ui-scale));
+      transition: transform 200ms ease;
+    }
+    .card {
+      margin: 0 auto;
+      width: min(720px, 100%);
+      display: grid; gap: 12px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.10));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px) saturate(160%);
+      position: relative;
+      overflow: hidden;
+    }
+    .title {
+      display: flex; align-items: center; justify-content: space-between;
+      font-weight: 800;
+      font-size: var(--titleFS);
+      letter-spacing: 0.2px;
+    }
+    .subtitle {
+      font-size: 12px; opacity: 0.9; margin-top: -6px;
+    }
+    .avatar-wrap {
+      position: absolute; inset: -8px -8px auto auto;
+      pointer-events: none;
+      opacity: 0.08;
+      transform: translate(8px, -12px) scale(1.08);
+    }
+    .avatar-wrap img { width: 220px; height: auto; }
+
+    .play-area {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .cloze {
+      display: grid; align-content: center; justify-items: center;
+      text-align: center;
+      padding: 8px 6px;
+      min-height: 120px;
+    }
+    .sentence {
+      font-size: var(--sentenceFS);
+      line-height: 1.28;
+      font-weight: 700;
+      margin: 8px 0;
+      max-width: 26ch;
+    }
+    .sentence .blank {
+      display: inline-block;
+      min-width: 6ch;
+      border-bottom: 3px solid #88e1ff;
+      text-underline-offset: 4px;
+      padding: 0 4px 2px 4px;
+      color: #b8eaff;
+      transition: color 180ms ease, background 180ms ease, border-color 180ms ease;
+    }
+    .sentence .blank.filled {
+      border-color: transparent;
+      background: rgba(56, 221, 255, 0.12);
+      color: #fff;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.2);
+      border-radius: 6px;
+    }
+    .options {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .chip {
+      display: grid; place-items: center;
+      height: var(--optH);
+      padding: 0 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: #ffffff;
+      text-align: center;
+      font-weight: 800;
+      font-size: var(--btnFS);
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: var(--shadow);
+      transition: transform 80ms ease, background 120ms ease, border-color 120ms ease;
+      position: relative;
+    }
+    .chip:active { transform: translateY(1px) scale(0.98); }
+    .chip:hover { background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.12)); }
+    .chip:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+    .chip .label {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90%;
+    }
+
+    /* Footer small tip */
+    .foot {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px;
+    }
+    .tip {
+      font-size: 12px; opacity: 0.9;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Start modal */
+    .modal {
+      position: fixed; inset: 0;
+      display: grid; place-items: center;
+      background: linear-gradient(180deg, rgba(5,13,33,0.66), rgba(3,10,26,0.72));
+      padding: 16px;
+      z-index: 30;
+    }
+    .modal .panel {
+      width: min(560px, 92%);
+      max-height: 90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px) saturate(160%);
+      padding: 18px;
+      display: grid; gap: 12px;
+      text-align: left;
+      overflow-y: auto;
+    }
+    .modal h2 {
+      margin: 0; font-size: clamp(18px, 4vw, 22px); font-weight: 800;
+    }
+    .modal p {
+      margin: 0; opacity: 0.95; font-size: 14px;
+    }
+    .actions {
+      display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end;
+    }
+    .btn {
+      display: inline-grid; place-items: center;
+      min-height: 44px; min-width: 44px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.10));
+      color: #fff; font-weight: 800; font-size: var(--btnFS);
+      cursor: pointer; user-select: none;
+      text-decoration: none;
+      box-shadow: var(--shadow);
+      transition: transform 80ms ease, background 120ms ease;
+    }
+    .btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .btn:active { transform: translateY(1px) scale(0.98); }
+    .btn.primary {
+      background: linear-gradient(180deg, #22d3ee, #14b8a6);
+      color: #062b2a;
+      border: none;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .btn.secondary { background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.12)); }
+
+    /* Results overlay */
+    .results {
+      position: fixed; inset: 0;
+      display: none; /* shown when open */
+      z-index: 40;
+      background: linear-gradient(180deg, rgba(8, 18, 43, 0.72), rgba(5, 12, 31, 0.86));
+      padding: 16px;
+    }
+    .results .sheet {
+      margin: auto;
+      width: min(720px, 94%);
+      max-height: 90svh;
+      overflow-y: auto;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px) saturate(160%);
+      padding: 16px;
+      display: grid; gap: 12px;
+    }
+    .res-head {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .res-head h3 {
+      margin: 0; font-size: clamp(18px, 4vw, 22px); font-weight: 800;
+    }
+    .score-badge {
+      padding: 6px 10px; border-radius: 999px;
+      background: linear-gradient(180deg, #7eff7a, #3bffcf);
+      color: #05312f; font-weight: 900; font-size: 14px;
+    }
+    .res-list {
+      display: grid; gap: 10px;
+    }
+    .res-item {
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid; gap: 6px;
+    }
+    .res-item .phrase {
+      font-weight: 800; font-size: 15px;
+    }
+    .res-item .you {
+      font-size: 14px; opacity: 0.95;
+    }
+    .res-item .explain {
+      font-size: 13px; opacity: 0.9;
+    }
+    .good { color: #69ffb8; }
+    .bad { color: #ff9a9a; }
+    .final-tips {
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px;
+      font-size: 14px;
+    }
+    .cta-row {
+      display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    .warn {
+      font-size: 12px; opacity: 0.9;
+    }
+
+    /* Animations */
+    .fade-in { animation: fadeIn 260ms ease both; }
+    .slide-in { animation: slideIn 260ms ease both; }
+    .slide-out { animation: slideOut 260ms ease both; }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
+    @keyframes slideOut { from { opacity: 1; transform: translateY(0) } to { opacity: 0; transform: translateY(-12px) } }
+
+    /* COMPACT MODE to fit small screens */
+    .compact .hud { --hudH: 56px; }
+    .compact .brand img.logo { width: 74px; }
+    .compact .subtitle { display: none; }
+    .compact .title { font-size: clamp(16px, 3.6vw, 20px); }
+    .compact .sentence { font-size: clamp(15px, 3vw, 18px); max-width: 24ch; }
+    .compact .chip { height: 52px; font-size: clamp(13px, 3vw, 16px); }
+    .compact .avatar-wrap img { width: 180px; }
+
+    /* Focus ring visibility high contrast */
+    @media (prefers-contrast: more) {
+      .btn:focus-visible, .chip:focus-visible { outline-color: #00f0ff; }
+    }
+
+    /* Logos / decorative elements */
+    .corner-deco {
+      position: fixed; right: 8px; bottom: calc(8px + var(--safeBottom));
+      opacity: 0.3; font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <!-- SCENE -->
+  <div class="scene" id="scene" aria-live="polite">
+    <!-- HUD -->
+    <header class="hud" aria-label="Barra superior">
+      <div class="brand">
+        <img class="logo" alt="Kämpe" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" />
+        <span class="challenge" aria-hidden="true">Herramientas en Acción ⚡</span>
+      </div>
+      <div class="progress" aria-label="Progreso">
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0">
+          <div class="fill" id="progressFill"></div>
+        </div>
+        <div class="label" id="progressText">0 / 6</div>
+      </div>
+      <div class="streak" id="streak" aria-hidden="true">Reto diario</div>
+    </header>
+
+    <!-- MAIN UI -->
+    <main id="ui-root">
+      <section class="card" aria-label="Reto: Herramientas en Acción">
+        <div class="avatar-wrap"><img loading="lazy" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt=""></div>
+        <div class="title">Herramientas en Acción ⚡</div>
+        <div class="subtitle" id="subtitle">
+          Eres aprendiz de electricista: completa cada hueco.
+        </div>
+
+        <div class="play-area">
+          <div class="cloze">
+            <div class="sentence" id="sentence">...</div>
+          </div>
+          <div class="options" id="options" role="group" aria-label="Opciones"></div>
+        </div>
+
+        <div class="foot">
+          <div class="tip" id="tip">Selecciona una opción. El hueco se completa y avanzas.</div>
+          <button class="btn secondary" id="restartBtn" style="display:none;" aria-label="Reintentar">Reintentar</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer corner small text -->
+    <div class="corner-deco" aria-hidden="true">Kämpe · Edición oficios</div>
+  </div>
+
+  <!-- Start modal (brief tutorial) -->
+  <div class="modal" id="startModal" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+    <div class="panel">
+      <h2 id="startTitle">¿Listo, aprendiz?</h2>
+      <p>Resuelve 6 frases sobre herramientas y seguridad. Elige la opción que completa el hueco; avanzarás automáticamente.</p>
+      <div class="actions">
+        <button class="btn secondary" id="howBtn" aria-label="Ver contexto rápido">Contexto</button>
+        <button class="btn primary" id="startBtn" aria-label="Empezar">Empezar</button>
+      </div>
+      <div id="howBox" style="display:none; font-size:13px; opacity:0.95;">
+        Escenario: vas a revisar un piso antes de instalar una lámpara. Tu oficial quiere ver que dominas herramientas clave y colores correctos.
+      </div>
+    </div>
+  </div>
+
+  <!-- Results overlay -->
+  <div class="results" id="results" aria-live="polite">
+    <div class="sheet">
+      <div class="res-head">
+        <h3>Resultados · Herramientas en Acción ⚡</h3>
+        <span class="score-badge" id="scoreBadge">0/6</span>
+      </div>
+      <div class="res-list" id="resList"></div>
+      <div class="final-tips">
+        Consejo final:
+        - Tensión (V) ≠ corriente (A). Usa multímetro o pinza según mida valor o intensidad.
+        - Colores normalizados: fase (marrón/negro/gris), neutro (azul), protección (verde‑amarillo).
+        - EPI básico: guantes aislantes, gafas y herramientas VDE.
+      </div>
+      <div class="cta-row">
+        <div class="warn" id="initWarn" style="display:none;">⚠️ initData ausente. Puedes continuar, pero puede que tu recompensa no se registre.</div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn secondary" id="retryBtn">Reintentar</button>
+          <a class="btn primary" id="rewardBtn" href="#" rel="nofollow noopener">Ver mi recompensa</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ------------------------------
+    // Data and state
+    // ------------------------------
+    const params = new URLSearchParams(location.search);
+    const initData = params.get("initData") || "";
+    const questionBank = [
+      {
+        id: 1,
+        sentence: "Para medir tensión en un enchufe uso el ___",
+        options: ["multímetro", "buscapolos"],
+        correct: "multímetro",
+        why: {
+          correct: "Permite medir tensión en voltios con seguridad.",
+          wrong: {
+            "buscapolos": "Solo indica presencia de fase; no da un valor."
+          }
+        }
+      },
+      {
+        id: 2,
+        sentence: "Para cortar un conductor uso ___",
+        options: ["alicates de corte", "cúter"],
+        correct: "alicates de corte",
+        why: {
+          correct: "Corte limpio de cobre/aluminio sin dañar el conductor.",
+          wrong: {
+            "cúter": "Puede dañar el aislante y no corta bien el metal."
+          }
+        }
+      },
+      {
+        id: 3,
+        sentence: "Antes de tocar el cuadro, verifico ___",
+        options: ["ausencia de tensión", "aumento de potencia"],
+        correct: "ausencia de tensión",
+        why: {
+          correct: "Regla de oro: comprobar ausencia de tensión.",
+          wrong: {
+            "aumento de potencia": "Es un trámite; no garantiza seguridad inmediata."
+          }
+        }
+      },
+      {
+        id: 4,
+        sentence: "El neutro en esquema es ___",
+        options: ["azul", "marrón"],
+        correct: "azul",
+        why: {
+          correct: "El neutro está normalizado en color azul.",
+          wrong: {
+            "marrón": "Suele indicar fase, no neutro."
+          }
+        }
+      },
+      {
+        id: 5,
+        sentence: "Para apretar bornes uso destornillador ___",
+        options: ["aislado VDE", "magnético sin aislamiento"],
+        correct: "aislado VDE",
+        why: {
+          correct: "Aislamiento VDE reduce el riesgo eléctrico.",
+          wrong: {
+            "magnético sin aislamiento": "Exposición a contacto accidental con partes activas."
+          }
+        }
+      },
+      {
+        id: 6,
+        sentence: "Para medir corriente sin abrir circuito empleo ___",
+        options: ["pinza amperimétrica", "multímetro en serie"],
+        correct: "pinza amperimétrica",
+        why: {
+          correct: "Mide por el campo sin interrumpir el circuito.",
+          wrong: {
+            "multímetro en serie": "Exige abrir circuito; más invasivo y arriesgado."
+          }
+        }
+      }
+    ];
+
+    const state = {
+      step: 0,
+      total: questionBank.length,
+      answers: [] // {id, selected, correct}
+    };
+
+    // ------------------------------
+    // DOM refs
+    // ------------------------------
+    const scene = document.getElementById('scene');
+    const uiRoot = document.getElementById('ui-root');
+    const sentenceEl = document.getElementById('sentence');
+    const optionsEl = document.getElementById('options');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const restartBtn = document.getElementById('restartBtn');
+    const tipEl = document.getElementById('tip');
+
+    const startModal = document.getElementById('startModal');
+    const startBtn = document.getElementById('startBtn');
+    const howBtn = document.getElementById('howBtn');
+    const howBox = document.getElementById('howBox');
+
+    const results = document.getElementById('results');
+    const resList = document.getElementById('resList');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const retryBtn = document.getElementById('retryBtn');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+
+    // ------------------------------
+    // Rendering helpers
+    // ------------------------------
+    function renderStep() {
+      const q = questionBank[state.step];
+      if (!q) return;
+
+      // progress
+      progressFill.style.width = `${(state.step / state.total) * 100}%`;
+      progressFill.parentElement.setAttribute('aria-valuenow', String(state.step));
+      progressText.textContent = `${state.step} / ${state.total}`;
+
+      // sentence with blank
+      const parts = q.sentence.split("___");
+      const htmlSentence = `${escapeHTML(parts[0])}<span class="blank" aria-label="Hueco en la frase">___</span>${escapeHTML(parts[1] || "")}`;
+      sentenceEl.innerHTML = htmlSentence;
+      sentenceEl.parentElement.classList.remove('slide-out');
+      sentenceEl.parentElement.classList.add('slide-in');
+
+      // options
+      optionsEl.innerHTML = "";
+      q.options.slice(0,2).forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'chip';
+        btn.setAttribute('type', 'button');
+        btn.setAttribute('aria-label', `Opción ${opt}`);
+        btn.innerHTML = `<span class="label">${escapeHTML(clampLabel(opt))}</span>`;
+        btn.addEventListener('click', () => handleChoice(q, opt));
+        optionsEl.appendChild(btn);
+      });
+
+      ensureFits();
+    }
+
+    function handleChoice(q, selected) {
+      // Fill the blank with microinteraction
+      const blank = sentenceEl.querySelector('.blank');
+      if (blank) {
+        blank.textContent = selected;
+        blank.classList.add('filled');
+      }
+
+      const correct = selected === q.correct;
+      state.answers.push({ id: q.id, selected, correct });
+
+      // Advance with a gentle transition
+      sentenceEl.parentElement.classList.remove('slide-in');
+      sentenceEl.parentElement.classList.add('slide-out');
+
+      // Update progress preemptively for snappier feel
+      progressFill.style.width = `${((state.step + 1) / state.total) * 100}%`;
+      progressFill.parentElement.setAttribute('aria-valuenow', String(state.step + 1));
+      progressText.textContent = `${state.step + 1} / ${state.total}`;
+
+      setTimeout(() => {
+        state.step++;
+        if (state.step >= state.total) {
+          showResults();
+        } else {
+          renderStep();
+        }
+      }, 320);
+    }
+
+    function showResults() {
+      // Build results list
+      resList.innerHTML = "";
+      let score = 0;
+      questionBank.forEach((q, idx) => {
+        const ans = state.answers[idx];
+        const correct = ans?.selected === q.correct;
+        if (correct) score++;
+
+        const phraseResolved = q.sentence.replace("___", q.correct);
+        // Keep explanations concise
+        const wrongKey = q.options.find(o => o !== q.correct);
+        const explainCorrect = q.why.correct;
+        const explainWrong = q.why.wrong[wrongKey];
+
+        const item = document.createElement('div');
+        item.className = 'res-item';
+        item.innerHTML = `
+          <div class="phrase">${escapeHTML(phraseResolved)}</div>
+          <div class="you">Tu respuesta: <strong class="${correct ? 'good' : 'bad'}">${escapeHTML(ans?.selected || "—")}</strong></div>
+          <div class="explain"><span class="good">✔</span> ${escapeHTML(explainCorrect)}</div>
+          <div class="explain"><span class="bad">✖</span> ${escapeHTML(`${wrongKey}: ${explainWrong}`)}</div>
+        `;
+        resList.appendChild(item);
+      });
+      scoreBadge.textContent = `${score}/${state.total}`;
+
+      // Link reward with preserved initData
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      rewardBtn.href = url;
+      initWarn.style.display = initData ? 'none' : 'block';
+
+      // UI toggles
+      restartBtn.style.display = '';
+      results.style.display = 'grid';
+
+      // Allow scroll inside results panel (not global)
+      ensureFits();
+      setTimeout(() => {
+        // Focus for accessibility
+        rewardBtn.focus();
+      }, 50);
+    }
+
+    function restart() {
+      state.step = 0;
+      state.answers = [];
+      progressFill.style.width = `0%`;
+      progressText.textContent = `0 / ${state.total}`;
+      results.style.display = 'none';
+      renderStep();
+    }
+
+    // ------------------------------
+    // Utilities
+    // ------------------------------
+    function clampLabel(text) {
+      // ensure max 48 chars
+      if (!text) return "";
+      const t = text.trim();
+      return t.length > 48 ? t.slice(0, 45) + "..." : t;
+    }
+    function escapeHTML(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // ------------------------------
+    // Fit-to-viewport engine
+    // ------------------------------
+    function assertNoOverflow(container = scene) {
+      return container.scrollHeight <= container.clientHeight + 1; // tolerance
+    }
+
+    function applyCompactMode(enable) {
+      document.body.classList.toggle('compact', !!enable);
+    }
+
+    function fitBoardToViewport() {
+      // For this experience, reduce option height slightly and tighten gaps
+      document.body.style.setProperty('--optH', '54px');
+      document.body.style.setProperty('--gap', '10px');
+      // Simulate grid recalculation values to satisfy requirement
+      document.documentElement.style.setProperty('--cellH', '54px');
+      document.documentElement.style.setProperty('--cellAR', '2.2');
+    }
+
+    function autoscaleUI(root = uiRoot, minScale = 0.88) {
+      // Binary search-ish scaling down to fit
+      let scale = 1;
+      while (!assertNoOverflow(scene) && scale > minScale) {
+        scale -= 0.02;
+        root.style.setProperty('--ui-scale', String(scale));
+      }
+    }
+
+    function ensureFits() {
+      // Step 1: fresh
+      applyCompactMode(false);
+      uiRoot.style.setProperty('--ui-scale', '1');
+      // Step 2: check fit
+      if (assertNoOverflow(scene)) return;
+      // Step 3: compact mode
+      applyCompactMode(true);
+      if (assertNoOverflow(scene)) return;
+      // Step 4: adjust layout/grid variables
+      fitBoardToViewport();
+      if (assertNoOverflow(scene)) return;
+      // Step 5: autoscale
+      autoscaleUI(uiRoot, 0.88);
+    }
+
+    // ------------------------------
+    // Event wiring
+    // ------------------------------
+    startBtn.addEventListener('click', () => {
+      startModal.style.display = 'none';
+      renderStep();
+    });
+    howBtn.addEventListener('click', () => {
+      const visible = howBox.style.display !== 'none';
+      howBox.style.display = visible ? 'none' : 'block';
+      // Keep under 180 chars; text already short
+    });
+    restartBtn.addEventListener('click', restart);
+    retryBtn.addEventListener('click', () => {
+      results.style.display = 'none';
+      restart();
+    });
+
+    window.addEventListener('resize', () => ensureFits());
+    window.addEventListener('orientationchange', () => {
+      setTimeout(ensureFits, 50);
+    });
+
+    // Keyboard accessibility quick support
+    document.addEventListener('keydown', (e) => {
+      // Allow Enter to select first option or advance at start
+      if (e.key === 'Enter') {
+        if (startModal.style.display !== 'none') {
+          startBtn.click();
+        } else if (results.style.display !== 'none') {
+          rewardBtn.focus();
+        } else {
+          const first = optionsEl.querySelector('.chip');
+          if (first) first.click();
+        }
+      }
+    });
+
+    // Initial UI state
+    (function init() {
+      // Prepare progress
+      progressFill.style.width = '0%';
+      progressFill.parentElement.setAttribute('aria-valuenow', '0');
+      progressText.textContent = `0 / ${state.total}`;
+      // Reward link early (even if not visible)
+      rewardBtn.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      if (!initData) initWarn.style.display = 'block';
+      // First fit attempt
+      ensureFits();
+    })();
+  </script>
+</body>
+</html>
