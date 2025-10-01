@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Herramientas en Acción ⚡ | Kämpe</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* RESET + BASE */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; overscroll-behavior: none; }
+    body {
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 70% 10%, #4db8ff, transparent 60%),
+                  linear-gradient(180deg, #1b3aa5 0%, #0a2a74 60%, #091a4b 100%);
+      color: #eef3ff;
+      --ui-scale: 1;
+      --glass: rgba(255,255,255,0.12);
+      --glass-2: rgba(255,255,255,0.08);
+      --glass-3: rgba(255,255,255,0.18);
+      --ok: #19e28a;
+      --bad: #ff5c7a;
+      --accent: #5bc3ff;
+      --accent-2: #7cf5ff;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --focus: 0 0 0 3px rgba(124,245,255,0.5);
+    }
+    :focus-visible { outline: none; box-shadow: var(--focus); border-radius: 10px; }
+    img { max-width: 100%; display: block; }
+    .scale-root { transform-origin: 50% 50%; transform: scale(var(--ui-scale)); }
+
+    /* SCENE with safe viewport height and safe areas */
+    .scene {
+      width: 100%;
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: calc(12px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+      touch-action: none;
+      isolation: isolate;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene { height: 100dvh; } }
+    @supports not (height: 100svh) and not (height: 100dvh) { .scene { height: 100vh; } }
+
+    /* AVATAR decorative */
+    .avatar-bg {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: min(58vw, 360px);
+      height: auto;
+      opacity: 0.22;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 30px rgba(0,0,0,0.45));
+      z-index: 0;
+      user-select: none;
+    }
+
+    /* HUD */
+    .hud {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 12px;
+      z-index: 2;
+    }
+    .logo {
+      width: 92px;
+      height: auto;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+    }
+    .titleWrap {
+      display: grid;
+      gap: 8px;
+      align-items: center;
+    }
+    .title {
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: clamp(18px, 4.3vw, 22px);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .progressBox {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+    .progress {
+      position: relative;
+      height: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+    }
+    .progress .bar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      background: linear-gradient(90deg, #40e0ff, #7cf5ff, #19e28a);
+      transition: width 320ms ease;
+      border-radius: inherit;
+    }
+    .progressLabel {
+      font-size: 12px;
+      opacity: 0.9;
+      letter-spacing: 0.2px;
+    }
+
+    /* GAME AREA */
+    .game {
+      z-index: 2;
+      display: grid;
+      align-content: center;
+      justify-items: stretch;
+      gap: 12px;
+      min-height: 0;
+    }
+    .card {
+      background: linear-gradient(180deg, var(--glass), var(--glass-2));
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+      min-height: 0;
+      animation: popIn 280ms ease;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .cloze {
+      margin: 0;
+      font-weight: 700;
+      font-size: clamp(18px, 4.5vw, 22px);
+      line-height: 1.25;
+      text-wrap: balance;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .blank {
+      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      text-decoration-thickness: 2px;
+      text-decoration-color: rgba(255,255,255,0.55);
+      padding: 0 4px;
+      border-radius: 6px;
+      transition: all 200ms ease;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    }
+    .blank.filled.correct {
+      background: rgba(25,226,138,0.18);
+      text-decoration-color: rgba(25,226,138,0.9);
+    }
+    .blank.filled.wrong {
+      background: rgba(255,92,122,0.18);
+      text-decoration-color: rgba(255,92,122,0.9);
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      align-content: end;
+    }
+    .chip {
+      display: grid;
+      place-items: center;
+      min-height: 52px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: linear-gradient(180deg, rgba(67,148,255,0.18), rgba(255,255,255,0.06));
+      color: #eef3ff;
+      font-weight: 800;
+      font-size: clamp(15px, 4.2vw, 17px);
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 120ms ease, background 180ms ease, box-shadow 180ms ease;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.28);
+      text-align: center;
+      line-height: 1.2;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .chip:active { transform: translateY(1px) scale(0.99); }
+    .chip.secondary {
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+    }
+
+    /* FOOTER HINT */
+    .hint {
+      z-index: 2;
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      opacity: 0.9;
+      font-size: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      padding: 8px 10px;
+      box-shadow: var(--shadow);
+    }
+    .smallStat { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 10px var(--accent-2); }
+
+    /* INTRO / MODAL */
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, rgba(9, 26, 75, 0.7), rgba(9, 26, 75, 0.8));
+      z-index: 99;
+      padding: 16px;
+      transition: opacity 200ms ease, visibility 200ms ease;
+    }
+    .modal[hidden] { opacity: 0; visibility: hidden; }
+    .modal-card {
+      width: min(680px, 96vw);
+      max-height: 90svh;
+      background: linear-gradient(180deg, var(--glass-3), var(--glass-2));
+      border: 1px solid rgba(255,255,255,0.26);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      overflow-y: auto;
+    }
+    .modal-card h2 {
+      margin: 0;
+      font-size: clamp(18px, 4.5vw, 22px);
+      font-weight: 800;
+    }
+    .modal-card p {
+      margin: 0;
+      font-size: 14px;
+      opacity: 0.95;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .btn {
+      min-height: 48px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: linear-gradient(180deg, #41b3ff, #2b99ff);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      box-shadow: 0 10px 18px rgba(0,0,0,0.35);
+      transition: transform 100ms ease, filter 180ms ease;
+    }
+    .btn.secondary {
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+    }
+    .btn:active { transform: translateY(1px) scale(0.99); }
+
+    /* FINAL SCREEN */
+    .final {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+      padding: calc(12px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+      background: linear-gradient(180deg, rgba(9, 26, 75, 0.65), rgba(9, 26, 75, 0.9));
+      z-index: 98;
+    }
+    .final[hidden] { display: none; }
+    .final-header {
+      display: grid;
+      gap: 8px;
+    }
+    .score {
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: start;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: clamp(18px, 4.5vw, 21px);
+    }
+    .badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(25,226,138,0.25), rgba(25,226,138,0.12));
+      border: 1px solid rgba(25,226,138,0.6);
+      font-size: 12px;
+    }
+    .final-list {
+      background: linear-gradient(180deg, var(--glass), var(--glass-2));
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      padding: 12px;
+      overflow-y: auto;
+      max-height: 100%;
+      display: grid;
+      gap: 10px;
+    }
+    .fitem {
+      display: grid;
+      gap: 6px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .f-solved {
+      font-weight: 700;
+      line-height: 1.25;
+      font-size: clamp(14px, 4vw, 16px);
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.09);
+    }
+    .tag.ok { color: var(--ok); border-color: rgba(25,226,138,0.65); background: rgba(25,226,138,0.12); }
+    .tag.bad { color: var(--bad); border-color: rgba(255,92,122,0.6); background: rgba(255,92,122,0.12); }
+    .why {
+      font-size: 12px;
+      opacity: 0.95;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .tips {
+      display: grid;
+      gap: 6px;
+      background: linear-gradient(180deg, rgba(124,245,255,0.1), rgba(124,245,255,0.08));
+      border: 1px solid rgba(124,245,255,0.4);
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+    }
+    .final-actions {
+      position: sticky;
+      bottom: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      z-index: 3;
+    }
+    .cta-warning {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      opacity: 0.85;
+      display: none;
+    }
+    .cta-warning.show { display: block; }
+
+    /* COMPACT MODE to ensure fit */
+    .compact .title { font-size: clamp(16px, 4vw, 18px); }
+    .compact .cloze { font-size: clamp(16px, 4.2vw, 19px); -webkit-line-clamp: 2; line-clamp: 2; }
+    .compact .chip { min-height: 48px; font-size: clamp(14px, 4vw, 16px); }
+    .compact .logo { width: 80px; }
+    .compact .progress { height: 8px; }
+    .compact .hint { font-size: 11px; }
+    .compact .avatar-bg { width: min(54vw, 300px); }
+    .compact .card { padding: 12px; }
+
+    /* TRANSITIONS */
+    .fade-out { animation: out 180ms ease forwards; }
+    @keyframes out { to { opacity: 0; transform: translateY(4px); } }
+    .fade-in { animation: in 220ms ease forwards; }
+    @keyframes in { from { opacity: 0; transform: translateY(-4px) scale(0.995); } to { opacity: 1; transform: none; } }
+
+    /* REDUCED MOTION */
+    @media (prefers-reduced-motion: reduce) {
+      .chip, .card, .progress .bar, .modal { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene scale-root" id="scene" aria-label="Juego Herramientas en Acción">
+    <img class="avatar-bg" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy" />
+    <header class="hud">
+      <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+      <div class="titleWrap">
+        <h1 class="title">Herramientas en Acción ⚡</h1>
+        <div class="progressBox">
+          <div class="progress" aria-label="Progreso" role="progressbar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0">
+            <div class="bar" id="bar"></div>
+          </div>
+          <div class="progressLabel" id="pLabel">1/6</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="game" id="game" aria-live="polite">
+      <section class="card" id="card">
+        <p class="cloze" id="cloze">...</p>
+        <div class="options" id="options">
+          <!-- buttons injected -->
+        </div>
+      </section>
+    </main>
+
+    <footer class="hint" aria-hidden="true">
+      <div class="smallStat"><span class="dot"></span><span id="miniHint">Elige una opción para completar el hueco.</span></div>
+      <div class="smallStat">Sin scroll · 6 frases</div>
+    </footer>
+  </div>
+
+  <!-- INTRO MODAL (tutorial breve) -->
+  <div class="modal" id="intro">
+    <div class="modal-card" role="dialog" aria-labelledby="introTitle" aria-describedby="introDesc">
+      <h2 id="introTitle">Briefing</h2>
+      <p id="introDesc">Eres aprendiz de electricista. Tu oficial quiere ver si eliges bien herramientas y seguridad. Completa 6 frases eligiendo la opción correcta.</p>
+      <div class="modal-actions">
+        <button class="btn" id="startBtn" aria-label="Empezar reto">¡Empezar!</button>
+        <button class="btn secondary" id="howBtn" aria-label="Cómo jugar">¿Cómo se juega?</button>
+        <div class="tips" id="how" hidden>
+          <div>- Toca una opción para completar el hueco y pasar a la siguiente.</div>
+          <div>- Indica vocabulario clave de mediciones, colores y EPI.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL SCREEN -->
+  <section class="final" id="final" hidden>
+    <div class="final-header">
+      <div class="score" id="scoreLine">Tu resultado</div>
+      <div class="tips" id="endTips">
+        Consejo: tensión (V) es diferencia de potencial; corriente (A) es flujo. Colores normalizados: fase marrón/negro/gris, neutro azul, tierra verde-amarillo. Usa EPI: guantes dieléctricos, gafas y destornillador aislado VDE.
+      </div>
+    </div>
+    <div class="final-list" id="finalList" aria-label="Resumen de respuestas">
+      <!-- items injected -->
+    </div>
+    <div class="final-actions">
+      <button class="btn secondary" id="retryBtn" aria-label="Reintentar">Reintentar</button>
+      <button class="btn" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+      <div class="cta-warning" id="initWarn">Nota: falta initData; tu progreso puede no guardarse.</div>
+    </div>
+  </section>
+
+  <script>
+    // Data model: 6 cloze items, 2 opciones cada una (≤48 chars)
+    const ITEMS = [
+      {
+        text: "Para medir tensión en un enchufe uso el ___",
+        options: [
+          { label: "multímetro", correct: true, whyNot: "" },
+          { label: "buscapolos", correct: false, whyNot: "Solo detecta presencia de fase; no da valor." }
+        ],
+        explain: "La tensión se mide con el multímetro. El buscapolos no cuantifica V."
+      },
+      {
+        text: "Para cortar un conductor uso ___",
+        options: [
+          { label: "alicates de corte", correct: true, whyNot: "" },
+          { label: "cúter", correct: false, whyNot: "Puede dañar hilos y es inseguro." }
+        ],
+        explain: "Cortar conductores con alicates evita dañar el cobre y mejora seguridad."
+      },
+      {
+        text: "Antes de tocar el cuadro, verifico ___",
+        options: [
+          { label: "ausencia de tensión", correct: true, whyNot: "" },
+          { label: "aumento de potencia", correct: false, whyNot: "No asegura seguridad eléctrica inmediata." }
+        ],
+        explain: "Bloquear, señalizar y verificar ausencia de tensión es esencial."
+      },
+      {
+        text: "En los esquemas, el neutro es ___",
+        options: [
+          { label: "azul", correct: true, whyNot: "" },
+          { label: "marrón", correct: false, whyNot: "Suele ser fase en la UE/ES." }
+        ],
+        explain: "Neutro: azul. Tierra: verde-amarillo. Fase: marrón/negro/gris."
+      },
+      {
+        text: "Para apretar bornes uso destornillador ___",
+        options: [
+          { label: "aislado VDE", correct: true, whyNot: "" },
+          { label: "magnético sin aislamiento", correct: false, whyNot: "No apto para trabajos eléctricos seguros." }
+        ],
+        explain: "Herramienta VDE reduce riesgo eléctrico hasta 1000 V."
+      },
+      {
+        text: "Para medir corriente sin abrir circuito empleo ___",
+        options: [
+          { label: "pinza amperimétrica", correct: true, whyNot: "" },
+          { label: "multímetro en serie", correct: false, whyNot: "Obliga a abrir circuito y es más invasivo." }
+        ],
+        explain: "La pinza mide corriente por efecto del campo sin interrumpir."
+      }
+    ];
+
+    // State
+    const state = {
+      idx: 0,
+      answers: [], // {choice, correct, optionIndex}
+      started: false,
+      initData: ""
+    };
+
+    // Elements
+    const scene = document.getElementById('scene');
+    const bar = document.getElementById('bar');
+    const pLabel = document.getElementById('pLabel');
+    const cloze = document.getElementById('cloze');
+    const optionsEl = document.getElementById('options');
+    const card = document.getElementById('card');
+    const intro = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+    const howBtn = document.getElementById('howBtn');
+    const how = document.getElementById('how');
+    const finalScreen = document.getElementById('final');
+    const finalList = document.getElementById('finalList');
+    const scoreLine = document.getElementById('scoreLine');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const initWarn = document.getElementById('initWarn');
+
+    // INIT DATA (from URL)
+    function readInitData() {
+      const qs = new URLSearchParams(location.search);
+      state.initData = qs.get('initData') || "";
+      // Configure CTA link on click
+      rewardBtn.addEventListener('click', () => {
+        const url = "https://kampe-game-phaser.onrender.com/daily_streak?initData=" + encodeURIComponent(state.initData);
+        location.href = url;
+      });
+      if (!state.initData) initWarn.classList.add('show');
+    }
+
+    // Renderers
+    function renderProgress() {
+      const total = ITEMS.length;
+      const current = Math.min(state.idx + 1, total);
+      const pct = (state.idx / total) * 100;
+      bar.style.width = `${pct}%`;
+      pLabel.textContent = `${current}/${total}`;
+      const prog = document.querySelector('.progress');
+      prog.setAttribute('aria-valuenow', state.idx);
+    }
+
+    function renderQuestion() {
+      const item = ITEMS[state.idx];
+      // Cloze text with blank
+      cloze.innerHTML = escapeHTML(item.text) + " <span class='blank' id='blank'>___</span>.";
+      // Options
+      optionsEl.innerHTML = "";
+      item.options.slice(0, 2).forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'chip' + (i === 1 ? ' secondary' : '');
+        btn.textContent = truncate(opt.label, 48);
+        btn.setAttribute('aria-label', `Opción ${i+1}: ${opt.label}`);
+        btn.addEventListener('click', () => onChoose(i));
+        optionsEl.appendChild(btn);
+      });
+      renderProgress();
+      ensureFits();
+    }
+
+    function onChoose(optionIndex) {
+      const item = ITEMS[state.idx];
+      const opt = item.options[optionIndex];
+      // Save answer
+      state.answers[state.idx] = { choice: opt.label, correct: !!opt.correct, optionIndex };
+      // Fill blank with feedback
+      const blank = document.getElementById('blank');
+      if (blank) {
+        blank.textContent = opt.label;
+        blank.classList.add('filled', opt.correct ? 'correct' : 'wrong');
+      }
+      // Smooth transition and advance
+      setTimeout(() => {
+        card.classList.add('fade-out');
+        setTimeout(() => {
+          card.classList.remove('fade-out');
+          advance();
+          card.classList.add('fade-in');
+          setTimeout(() => card.classList.remove('fade-in'), 220);
+        }, 180);
+      }, 480);
+    }
+
+    function advance() {
+      state.idx++;
+      if (state.idx >= ITEMS.length) {
+        finish();
+      } else {
+        renderQuestion();
+      }
+    }
+
+    function finish() {
+      // Build final summary
+      const total = ITEMS.length;
+      const corrects = state.answers.filter(a => a && a.correct).length;
+      scoreLine.innerHTML = `Resultado: ${corrects}/${total} <span class="badge">${corrects === total ? "¡Perfecto!" : corrects >= 4 ? "¡Bien hecho!" : "Sigue practicando"}</span>`;
+      finalList.innerHTML = "";
+      ITEMS.forEach((item, i) => {
+        const ans = state.answers[i] || { choice: "—", correct: false, optionIndex: -1 };
+        const solved = item.text.replace("___", `<strong>${escapeHTML(item.options.find(o=>o.correct).label)}</strong>`);
+        const other = item.options.find((_, idx) => idx !== ans.optionIndex);
+        const whyShort = ans.correct 
+          ? `Correcto. ${item.explain}`
+          : `Lo correcto: ${item.options.find(o=>o.correct).label}. ${other ? other.whyNot : ""}`.trim();
+        const f = document.createElement('div');
+        f.className = 'fitem';
+        f.innerHTML = `
+          <div class="f-solved">${solved}.</div>
+          <div>
+            <span class="tag ${ans.correct ? 'ok' : 'bad'}">${ans.correct ? 'Acierto' : 'Error'}</span>
+            <span class="tag">Tu respuesta: ${escapeHTML(ans.choice)}</span>
+          </div>
+          <div class="why">${truncate(whyShort, 180)}</div>
+        `;
+        finalList.appendChild(f);
+      });
+
+      // Enable scrolling only now
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+      finalScreen.hidden = false;
+      ensureFits(); // not strictly necessary, but keep UI tidy
+    }
+
+    function resetGame() {
+      state.idx = 0;
+      state.answers = [];
+      finalScreen.hidden = true;
+      // Disable global scroll again for gameplay
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      renderQuestion();
+      ensureFits();
+    }
+
+    // Helpers
+    function escapeHTML(str) {
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    }
+    function truncate(str, max = 48) {
+      str = String(str);
+      return str.length > max ? (str.slice(0, max - 1) + '…') : str;
+    }
+
+    // UX: intro
+    startBtn.addEventListener('click', () => {
+      intro.hidden = true;
+      state.started = true;
+      resetGame();
+    });
+    howBtn.addEventListener('click', () => {
+      how.hidden = !how.hidden;
+      ensureFits();
+    });
+
+    retryBtn.addEventListener('click', () => resetGame());
+
+    // Fit/Scale System
+    function assertNoOverflow() {
+      const fits = scene.scrollHeight <= scene.clientHeight && scene.scrollWidth <= scene.clientWidth;
+      return fits;
+    }
+    function applyCompactMode() {
+      document.body.classList.add('compact');
+    }
+    function fitBoardToViewport() {
+      // Could tweak paddings/margins if needed; minimal for now.
+      // We already have compact mode; we slightly reduce avatar footprint.
+      const avatar = document.querySelector('.avatar-bg');
+      if (avatar) avatar.style.width = 'min(50vw, 280px)';
+    }
+    function autoscaleUI(scale = 1) {
+      scale = Math.max(0.88, Math.min(1, scale));
+      document.body.style.setProperty('--ui-scale', scale);
+    }
+    function ensureFits() {
+      // Reset adjustments
+      document.body.classList.remove('compact');
+      const avatar = document.querySelector('.avatar-bg');
+      if (avatar) avatar.style.width = '';
+      autoscaleUI(1);
+
+      if (assertNoOverflow()) return;
+
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+
+      // Progressive autoscale
+      const steps = [0.96, 0.94, 0.92, 0.90, 0.88];
+      for (const s of steps) {
+        autoscaleUI(s);
+        if (assertNoOverflow()) break;
+      }
+    }
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+    // Kickoff
+    readInitData();
+    // Do not render gameplay until user presses start (keeps tutorial brief)
+
+    // Accessibility nicety: announce changes
+    const miniHint = document.getElementById('miniHint');
+    const observer = new MutationObserver(() => {});
+    observer.observe(document.body, { childList: false });
+
+    // Prevent accidental back swipe on iOS within gameplay area
+    document.addEventListener('touchmove', (e) => {
+      if (!finalScreen.hidden) return; // allow in results via container scroll
+      // Prevent vertical swipe scroll
+      e.preventDefault();
+    }, { passive: false });
+
+  </script>
+</body>
+</html>
