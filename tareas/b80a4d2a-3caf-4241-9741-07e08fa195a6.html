@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Parejas PRL Eléctrica ⚡ | Kämpe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ============ RESET + BASE ============ */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #ECF2FF; background: #0e1a38;
+      overflow: hidden; /* lock scroll during gameplay */
+      overscroll-behavior: none;
+    }
+    :root{
+      --fortnite-blue-1:#101c4b;
+      --fortnite-blue-2:#0e88ff;
+      --fortnite-blue-3:#2d9cff;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --glass-stroke: rgba(255,255,255,0.28);
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --primary:#51f6ff;
+      --accent:#65ff8f;
+      --danger:#ff6476;
+      --warning:#ffd059;
+      --text:#ecf2ff;
+
+      --ui-scale: 1;
+      --cardAR: 0.72;             /* width / height */
+      --board-gap: 10px;
+      --hudH: 84px;
+      --btnH: 52px;
+      --boardPad: 10px;
+      --focus: 0 0 0 3px rgba(255,255,255,0.5), 0 0 0 6px rgba(14,136,255,0.7);
+    }
+    /* Compact mode reduces vertical footprint */
+    .compact :root, body.compact{
+      --hudH: 68px;
+      --btnH: 48px;
+      --board-gap: 8px;
+      --boardPad: 8px;
+      --cardAR: 0.86; /* slimmer */
+    }
+    /* Scene height using svh fallback chain */
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100vh; /* fallback */
+      padding: 10px;
+      padding-left: calc(10px + env(safe-area-inset-left));
+      padding-right: calc(10px + env(safe-area-inset-right));
+      padding-top: calc(8px + env(safe-area-inset-top));
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-rows: var(--hudH) 1fr var(--btnH);
+      gap: 8px;
+      touch-action: none; /* anti-derrapes in gameplay area */
+      background:
+        radial-gradient(1200px 60% at 85% -10%, rgba(81,246,255,0.22), transparent 60%),
+        radial-gradient(900px 50% at 10% 0%, rgba(45,156,255,0.18), transparent 70%),
+        linear-gradient(180deg, #0b1738 0%, #0e1a38 100%);
+      overflow: hidden;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene { height: 100dvh; } }
+    /* Background avatar */
+    .avatar-bg {
+      position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      background: url('https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png') right bottom/auto 70% no-repeat;
+      opacity: 0.18; filter: saturate(1.2);
+    }
+    /* Header HUD */
+    .hud {
+      position: relative; z-index: 2;
+      display: grid; grid-template-columns: 1fr auto; align-items: center;
+      gap: 10px;
+    }
+    .brand {
+      display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 14px; padding: 8px 10px; height: 100%;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .logo {
+      width: 42px; height: 42px; border-radius: 10px; background: rgba(255,255,255,0.08);
+      display: grid; place-items: center; overflow: hidden;
+    }
+    .logo img { width: 36px; height: auto; display: block; }
+    .title-wrap { min-width: 0; }
+    .title {
+      margin: 0; font-weight: 800;
+      font-size: clamp(16px, 3.8vw, 20px);
+      letter-spacing: 0.2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .subtitle {
+      margin: 0; opacity: 0.8; font-size: clamp(11px, 2.7vw, 12px); line-height: 1.15;
+    }
+    .stats {
+      display: grid; grid-auto-flow: column; gap: 8px; align-items: center;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 14px; padding: 8px 10px; height: 100%;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .stat {
+      display: grid; place-items: center; min-width: 64px; padding: 4px 8px;
+      border-radius: 10px; background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: clamp(12px, 3.1vw, 14px);
+    }
+    .stat b { display:block; font-size: clamp(14px, 3.4vw, 16px); }
+    body.compact .subtitle { display: none; }
+    body.compact .stat.secondary { display: none; }
+
+    /* Board */
+    .board-wrap {
+      position: relative; z-index: 1;
+      display: grid; place-items: center;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      transition: transform 0.18s ease;
+    }
+    .board {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: 1fr;
+      gap: var(--board-gap);
+      padding: var(--boardPad);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.16);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    @media (max-width: 360px) {
+      .board { gap: 8px; }
+    }
+    /* Card */
+    .card {
+      position: relative;
+      user-select: none;
+      perspective: 900px;
+      border-radius: 14px;
+      outline: none;
+    }
+    .card .inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      aspect-ratio: var(--cardAR);
+      transform-style: preserve-3d;
+      transition: transform 0.32s cubic-bezier(.2,.8,.25,1);
+    }
+    .card.flipped .inner { transform: rotateY(180deg); }
+    .face {
+      position: absolute; inset: 0;
+      display: grid; place-items: center;
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.18);
+      backface-visibility: hidden;
+      overflow: hidden;
+    }
+    .face.front {
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+    }
+    .face.back {
+      transform: rotateY(180deg);
+      background: linear-gradient(180deg, rgba(14,136,255,0.25), rgba(81,246,255,0.12));
+      box-shadow: inset 0 0 0 2px rgba(81,246,255,0.25);
+    }
+    .label {
+      text-align: center;
+      font-weight: 800;
+      font-size: clamp(12px, 3.4vw, 15px);
+      line-height: 1.15;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 2px 4px;
+    }
+    .card.term .back { background: linear-gradient(180deg, rgba(86,207,255,0.26), rgba(12,88,255,0.18)); }
+    .card.meaning .back { background: linear-gradient(180deg, rgba(101,255,143,0.26), rgba(12,177,94,0.18)); }
+    .card:focus-visible { box-shadow: var(--focus); }
+    .card.disabled { pointer-events: none; }
+    .card.matched .face.back {
+      animation: matchPulse 900ms ease-out both;
+      box-shadow: 0 0 0 2px rgba(101,255,143,0.8), 0 0 18px rgba(101,255,143,0.55);
+    }
+    @keyframes matchPulse {
+      0% { filter: saturate(1) brightness(1); }
+      50% { filter: saturate(1.4) brightness(1.2); }
+      100% { filter: saturate(1) brightness(1); }
+    }
+    .shake { animation: shake 280ms ease-in-out; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    /* Controls footer */
+    .controls {
+      position: relative; z-index: 2;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .btn {
+      height: var(--btnH);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      color: var(--text);
+      font-weight: 800; letter-spacing: 0.2px;
+      font-size: clamp(14px, 3.6vw, 16px);
+      display: grid; place-items: center;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      outline: none;
+    }
+    .btn:focus-visible { box-shadow: var(--focus); }
+    .btn.primary { background: linear-gradient(135deg, rgba(45,156,255,0.9), rgba(14,136,255,0.85)); }
+    .btn.warning { background: linear-gradient(135deg, rgba(255,208,89,0.95), rgba(255,169,0,0.9)); color: #081226; }
+    .btn.ghost  { background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04)); }
+
+    /* Modals (intro/results) */
+    .modal-backdrop {
+      position: absolute; inset: 0; z-index: 5;
+      background: rgba(4,10,28,0.55); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center; padding: 14px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      width: 100%; max-width: 520px;
+      max-height: 90svh; overflow-y: auto;
+      border-radius: 18px; padding: 14px;
+      background: linear-gradient(160deg, rgba(19,37,91,0.9), rgba(18,28,64,0.92));
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .modal header {
+      display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center;
+      margin-bottom: 6px;
+    }
+    .modal h2 {
+      margin: 0; font-weight: 900; font-size: clamp(18px, 4.6vw, 22px);
+    }
+    .modal p { font-size: clamp(13px, 3.6vw, 14px); line-height: 1.25; margin: 6px 0; opacity: 0.95; }
+    .modal .actions {
+      position: sticky; bottom: 0; background: linear-gradient(180deg, transparent, rgba(18,28,64,1) 45%);
+      padding-top: 10px; margin-top: 8px; display: grid; gap: 8px;
+    }
+    .badge {
+      display: inline-grid; place-items: center; padding: 4px 8px; border-radius: 999px;
+      background: rgba(81,246,255,0.2); border: 1px solid rgba(81,246,255,0.5);
+      font-size: 12px; font-weight: 800; color: #c8f8ff;
+    }
+    .pair-explain {
+      margin: 10px 0; padding: 10px; border-radius: 12px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    }
+    .pair-explain h4 { margin: 0 0 6px 0; font-size: 14px; }
+    .pair-explain p { margin: 0; font-size: 13px; opacity: 0.95; }
+    .muted { opacity: 0.75; font-size: 12px; }
+    .warning-msg { color: #ffea94; font-weight: 700; }
+    .ok { color: #8affb0; }
+    .err { color: #ff9aaa; }
+
+    /* Accessibility helpers */
+    .sr { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div class="scene" aria-label="Juego de memoria sobre PRL eléctrica">
+    <div class="avatar-bg" aria-hidden="true"></div>
+
+    <!-- HUD -->
+    <header class="hud">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        </div>
+        <div class="title-wrap">
+          <h1 class="title">Parejas PRL Eléctrica ⚡</h1>
+          <p class="subtitle">Escenario: primer día como ayudante; tu oficial comprueba lo básico.</p>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat" id="attemptsStat" aria-live="polite"><b id="attemptsLeft">12</b> intentos</div>
+        <div class="stat secondary" id="matchesStat"><b id="matchesCount">0/4</b> parejas</div>
+        <button class="btn ghost" id="helpBtn" aria-label="Cómo jugar">¿?</button>
+      </div>
+    </header>
+
+    <!-- Gameplay board -->
+    <div class="board-wrap" id="boardWrap">
+      <div class="board" id="board" role="grid" aria-label="Tablero de cartas"></div>
+    </div>
+
+    <!-- Controls -->
+    <nav class="controls">
+      <button id="resetBtn" class="btn warning" aria-label="Reiniciar partida">Reiniciar</button>
+      <button id="giveUpBtn" class="btn" aria-label="Rendirse y ver resultados">Rendirse</button>
+    </nav>
+
+    <!-- Intro modal -->
+    <div class="modal-backdrop" id="introBackdrop" aria-modal="true" role="dialog" aria-labelledby="introTitle">
+      <div class="modal" id="introModal">
+        <header>
+          <div class="logo" aria-hidden="true" style="width:46px;height:46px;">
+            <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="" />
+          </div>
+          <h2 id="introTitle">Parejas PRL Eléctrica ⚡</h2>
+        </header>
+        <p><span class="badge">Objetivo</span> Asocia equipo/procedimiento con su utilidad esencial para intervenir con seguridad.</p>
+        <p>Tutorial: Voltea 2 cartas por turno. Si son pareja, quedan fijas; si no, se tapan tras 1 s. Tienes 12 intentos.</p>
+        <div class="actions">
+          <button class="btn primary" id="startBtn">Empezar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results modal -->
+    <div class="modal-backdrop" id="resultsBackdrop" aria-modal="true" role="dialog" aria-labelledby="resultsTitle">
+      <div class="modal" id="resultsModal">
+        <header>
+          <div class="logo" aria-hidden="true" style="width:46px;height:46px;">
+            <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="" />
+          </div>
+          <h2 id="resultsTitle">Resultados</h2>
+        </header>
+        <p id="resultSummary"></p>
+        <div id="pairsExplain"></div>
+        <div class="pair-explain">
+          <h4>Consejo de memorización</h4>
+          <p><b>Desconectar – Bloquear – Verificar</b>. Repite este orden antes de tocar cables.</p>
+        </div>
+        <p class="muted">Recordatorio: 3 acciones previas a tocar cables: <b>Desconectar</b>, <b>Bloquear</b>, <b>Verificar</b>.</p>
+        <div class="actions">
+          <div id="initDataWarn" class="muted" hidden>Advertencia: initData no detectado. Podrás continuar igualmente.</div>
+          <button class="btn primary" id="rewardBtn">Ver mi recompensa</button>
+          <button class="btn" id="retryBtn">Jugar de nuevo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =====================================================
+       Kämpe | Daily Challenge - Memory (Parejas PRL Eléctrica)
+       - Gameplay sin scroll (bloqueado)
+       - 8 cartas (4 parejas), 12 intentos
+       - Flip animation, match highlight, final feedback
+       - ensureFits(): auto-ajuste UI para caber en 320x640
+       - initData preserved for reward redirect
+       ===================================================== */
+
+    // ------------ URL initData handling ------------
+    const params = new URLSearchParams(location.search);
+    const initData = params.get("initData") || "";
+    const rewardBtn = document.getElementById("rewardBtn");
+    const initDataWarn = document.getElementById("initDataWarn");
+    if (!initData) { initDataWarn.hidden = false; }
+    rewardBtn.addEventListener('click', () => {
+      const target = "https://kampe-game-phaser.onrender.com/daily_streak?initData=" + encodeURIComponent(initData);
+      location.href = target;
+    });
+
+    // ------------ Content (4 pairs) ------------
+    const PAIRS = [
+      {
+        id: "g",
+        term: "Guantes dieléctricos",
+        meaning: "Evitar contacto con partes vivas",
+        explain: "Aíslan tus manos ante partes con tensión. Úsalos antes de abrir cuadros. Error típico: usarlos dañados o mojados."
+      },
+      {
+        id: "m",
+        term: "Multímetro",
+        meaning: "Verificar ausencia de tensión",
+        explain: "Confirma que no hay energía antes de tocar. Mide en bornes y carcasa. Error: escala/función incorrecta."
+      },
+      {
+        id: "be",
+        term: "Bloqueo y etiquetado",
+        meaning: "Impedir reenergizar el circuito",
+        explain: "Coloca candado y tarjeta. Aplica antes y durante la intervención. Error: retirar candado ajeno."
+      },
+      {
+        id: "s3",
+        term: "Calzado S3",
+        meaning: "Suela aislante y puntera de protección",
+        explain: "Protege ante pisadas y golpes. Úsalo en obra y salas técnicas. Error: calzado gastado o sin norma."
+      }
+    ];
+
+    // ------------ State ------------
+    const MAX_ATTEMPTS = 12;
+    let cards = [];          // shuffled list
+    let flipped = [];        // currently flipped [{el, id}]
+    let matchedIds = new Set();
+    let attempts = MAX_ATTEMPTS;
+    let usedAttempts = 0;
+    let lockBoard = false;
+
+    // ------------ DOM refs ------------
+    const board = document.getElementById("board");
+    const attemptsLeftEl = document.getElementById("attemptsLeft");
+    const matchesCountEl = document.getElementById("matchesCount");
+    const introBackdrop = document.getElementById("introBackdrop");
+    const resultsBackdrop = document.getElementById("resultsBackdrop");
+    const resultSummary = document.getElementById("resultSummary");
+    const pairsExplain = document.getElementById("pairsExplain");
+
+    // Buttons
+    document.getElementById("startBtn").addEventListener("click", () => { closeIntro(); });
+    document.getElementById("helpBtn").addEventListener("click", () => { openIntro(); });
+    document.getElementById("resetBtn").addEventListener("click", resetGame);
+    document.getElementById("giveUpBtn").addEventListener("click", () => endGame(true));
+    document.getElementById("retryBtn").addEventListener("click", () => { resultsBackdrop.classList.remove('open'); resetGame(); });
+
+    // ------------ Utils ------------
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+    function truncate48(str) {
+      if (!str) return "";
+      const clean = str.trim();
+      return clean.length > 48 ? clean.slice(0, 45).trim() + "…" : clean;
+    }
+
+    // ------------ Build deck ------------
+    function buildCards() {
+      const raw = [];
+      for (const p of PAIRS) {
+        raw.push({ id: p.id, kind: "term", text: p.term });
+        raw.push({ id: p.id, kind: "meaning", text: p.meaning });
+      }
+      return shuffle(raw);
+    }
+
+    // ------------ Render ------------
+    function renderBoard() {
+      board.innerHTML = "";
+      cards.forEach((c, idx) => {
+        const card = document.createElement("button");
+        card.className = `card ${c.kind}`;
+        card.setAttribute("role", "gridcell");
+        card.setAttribute("aria-label", `${c.kind === 'term' ? 'Término' : 'Utilidad'}: ${c.text}`);
+        card.dataset.id = c.id;
+        card.dataset.kind = c.kind;
+        card.dataset.index = idx;
+
+        const inner = document.createElement("div");
+        inner.className = "inner";
+
+        const front = document.createElement("div");
+        front.className = "face front";
+        front.innerHTML = `<div class="label">?</div>`;
+
+        const back = document.createElement("div");
+        back.className = "face back";
+        const labelText = truncate48(c.text);
+        back.innerHTML = `<div class="label" title="${c.text}">${labelText}</div>`;
+
+        inner.appendChild(front); inner.appendChild(back);
+        card.appendChild(inner);
+
+        card.addEventListener("click", () => onCardClick(card));
+
+        board.appendChild(card);
+      });
+      // Fit UI after render
+      requestAnimationFrame(() => ensureFits());
+    }
+
+    // ------------ Game flow ------------
+    function updateHUD() {
+      attemptsLeftEl.textContent = attempts;
+      matchesCountEl.textContent = `${matchedIds.size}/${PAIRS.length}`;
+    }
+
+    function onCardClick(el) {
+      if (lockBoard) return;
+      if (el.classList.contains("flipped")) return;
+      if (el.classList.contains("matched")) return;
+
+      flip(el);
+
+      flipped.push({ el, id: el.dataset.id });
+
+      if (flipped.length === 2) {
+        lockBoard = true;
+        usedAttempts++;
+        attempts = Math.max(0, MAX_ATTEMPTS - usedAttempts);
+        updateHUD();
+
+        const [a, b] = flipped;
+        if (a.id === b.id && a.el !== b.el) {
+          // Match
+          setTimeout(() => {
+            a.el.classList.add("matched", "disabled");
+            b.el.classList.add("matched", "disabled");
+            matchedIds.add(a.id);
+            announceMatch(a.id);
+            resetTurn();
+            if (matchedIds.size === PAIRS.length) endGame(false);
+          }, 260);
+        } else {
+          // Not a match
+          setTimeout(() => {
+            a.el.querySelector('.inner').classList.add('shake');
+            b.el.querySelector('.inner').classList.add('shake');
+            setTimeout(() => {
+              unflip(a.el); unflip(b.el);
+              a.el.querySelector('.inner').classList.remove('shake');
+              b.el.querySelector('.inner').classList.remove('shake');
+              resetTurn();
+              if (attempts === 0) endGame(true);
+            }, 300);
+          }, 800);
+        }
+      }
+    }
+
+    function flip(el) { el.classList.add("flipped"); }
+    function unflip(el) { el.classList.remove("flipped"); }
+    function resetTurn() { flipped = []; lockBoard = false; }
+
+    function announceMatch(id) {
+      // Simple highlight already handled by CSS
+    }
+
+    function endGame(forced) {
+      // Disable all cards
+      board.querySelectorAll(".card").forEach(c => c.classList.add("disabled"));
+
+      // Build feedback
+      const totalPairs = PAIRS.length;
+      const found = matchedIds.size;
+      const missed = totalPairs - found;
+      const attemptsUsed = usedAttempts;
+      const cause = forced ? "Has finalizado antes de tiempo." : (missed === 0 ? "¡Perfecto!" : "Actividad completada.");
+      resultSummary.innerHTML =
+        `${cause} Parejas encontradas: <b class="${missed===0?'ok':''}">${found}/${totalPairs}</b>. Intentos usados: <b>${attemptsUsed}/${MAX_ATTEMPTS}</b>.`;
+
+      // Explanations list
+      pairsExplain.innerHTML = "";
+      PAIRS.forEach(p => {
+        const ok = matchedIds.has(p.id);
+        const box = document.createElement("div");
+        box.className = "pair-explain";
+        const status = ok ? '<span class="ok">✓</span>' : '<span class="err">•</span>';
+        // 2 short sentences (<=180 chars)
+        const why = p.explain.length > 180 ? (p.explain.slice(0, 176) + "…") : p.explain;
+        box.innerHTML = `
+          <h4>${status} ${p.term} ↔ ${p.meaning}</h4>
+          <p>${why}</p>
+        `;
+        pairsExplain.appendChild(box);
+      });
+
+      // Open modal
+      openResults();
+    }
+
+    function resetGame() {
+      // Reset state
+      matchedIds = new Set();
+      attempts = MAX_ATTEMPTS; usedAttempts = 0; flipped = []; lockBoard = false;
+      // Build deck and render
+      cards = buildCards();
+      renderBoard();
+      updateHUD();
+      // Enable interactions
+      board.querySelectorAll(".card").forEach(c => c.classList.remove("disabled","matched","flipped"));
+    }
+
+    // ------------ Intro / Results ------------
+    function openIntro() {
+      introBackdrop.classList.add("open");
+      // Keep global scroll locked in intro
+      document.documentElement.classList.remove('results-scroll');
+      document.body.classList.remove('results-scroll');
+    }
+    function closeIntro() {
+      introBackdrop.classList.remove("open");
+      // Lock scroll (gameplay)
+      document.documentElement.classList.remove('results-scroll');
+      document.body.classList.remove('results-scroll');
+    }
+    function openResults() {
+      resultsBackdrop.classList.add("open");
+      // Enable scroll only in results view (also modal is scrollable)
+      document.documentElement.classList.add('results-scroll');
+      document.body.classList.add('results-scroll');
+    }
+
+    // ------------ Fit-to-viewport system ------------
+    function assertNoOverflow() {
+      const scene = document.querySelector(".scene");
+      return scene.scrollHeight <= scene.clientHeight + 1;
+    }
+    function applyCompactMode() {
+      if (!document.body.classList.contains("compact")) {
+        document.body.classList.add("compact");
+      }
+    }
+    function fitBoardToViewport() {
+      const scene = document.querySelector(".scene");
+      const hud = document.querySelector(".hud");
+      const controls = document.querySelector(".controls");
+      const boardWrap = document.getElementById("boardWrap");
+      const boardEl = document.getElementById("board");
+
+      // Available height for board wrap
+      const paddings = 0;
+      const available = scene.clientHeight - hud.offsetHeight - controls.offsetHeight - 8 - 8 - paddings;
+      boardWrap.style.maxHeight = available + "px";
+
+      // Compute aspect ratio needed for cards to fit in 2 rows x 4 columns
+      const gap = parseFloat(getComputedStyle(boardEl).gap || "10");
+      const pad = parseFloat(getComputedStyle(boardEl).paddingLeft || "10") * 2;
+
+      const cols = 4;
+      const rows = 2;
+      const boardW = boardEl.clientWidth;
+      const boardH = available;
+
+      const perCardW = (boardW - pad - (cols - 1) * gap) / cols;
+      const targetCardH = (boardH - (rows - 1) * gap - (parseFloat(getComputedStyle(boardEl).paddingTop||"10")*2)) / rows;
+      // aspect-ratio = width / height
+      let newAR = perCardW / Math.max(1, targetCardH);
+      // clamp to reasonable to keep legibility
+      newAR = Math.min(1.5, Math.max(0.68, newAR));
+      document.documentElement.style.setProperty("--cardAR", newAR.toFixed(3));
+    }
+    function autoscaleUI() {
+      const scene = document.querySelector(".scene");
+      const contentHeight = scene.scrollHeight;
+      const viewport = scene.clientHeight;
+      if (contentHeight <= viewport) {
+        document.documentElement.style.setProperty("--ui-scale", "1");
+        return;
+      }
+      const scale = Math.max(0.88, Math.min(1, viewport / contentHeight));
+      document.documentElement.style.setProperty("--ui-scale", scale.toFixed(3));
+    }
+    function ensureFits() {
+      // Step 1: normal check
+      if (assertNoOverflow()) return;
+      // Step 2: apply compact HUD
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+      // Step 3: adjust board geometry
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      // Step 4: autoscale
+      autoscaleUI();
+      // No further action. Scale ensures it fits.
+    }
+    window.addEventListener("resize", ensureFits);
+    window.addEventListener("orientationchange", () => setTimeout(ensureFits, 80));
+
+    // ------------ Accessibility: keyboard flip ------------
+    board.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        const target = e.target.closest(".card");
+        if (target) { e.preventDefault(); onCardClick(target); }
+      }
+    });
+
+    // ------------ Initialize ------------
+    function init() {
+      cards = buildCards();
+      renderBoard();
+      updateHUD();
+      openIntro(); // show short tutorial
+    }
+
+    // Start
+    init();
+
+  </script>
+</body>
+</html>
