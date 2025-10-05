@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Chispa Segura ⚡ — Kämpe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg1:#0f63ff;
+      --bg2:#1a2cff;
+      --glass: rgba(255,255,255,0.14);
+      --glass-strong: rgba(255,255,255,0.22);
+      --border: rgba(255,255,255,0.28);
+      --text: #fff;
+      --muted: rgba(255,255,255,0.75);
+      --accent:#9effff;
+      --accent2:#b983ff;
+      --good:#32d583;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+
+      --hudH: 64px;
+      --choicesH: 200px;
+      --gap: 10px;
+      --radius: 14px;
+      --ui-scale: 1;
+      --btnH: 56px;
+      --btnFS: clamp(14px, 3.2vw, 18px);
+      --titleFS: clamp(16px, 3.6vw, 20px);
+      --progressFS: clamp(12px, 2.8vw, 14px);
+      --bubbleFS: clamp(14px, 3.2vw, 17px);
+      --nameFS: clamp(11px, 2.8vw, 12px);
+    }
+
+    /* Global reset and safe gameplay constraints */
+    *{box-sizing:border-box}
+    html,body{
+      margin:0; padding:0;
+      background: radial-gradient(120% 120% at 80% -10%, var(--bg2), var(--bg1));
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      overflow: hidden; /* locked during gameplay */
+      overscroll-behavior: none;
+    }
+
+    /* Scene full height with safe fallbacks */
+    .scene{
+      position: relative;
+      width: 100%;
+      height: 100vh; /* fallback */
+      display: flex;
+      flex-direction: column;
+      touch-action: none; /* anti-derrapes */
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      background:
+        radial-gradient(120% 120% at 10% -20%, #306aff88, transparent 60%),
+        radial-gradient(120% 120% at 110% 0%, #6f3bff66, transparent 60%),
+        radial-gradient(120% 120% at 50% 120%, #00ffe066, transparent 60%);
+      isolation: isolate;
+    }
+    @supports (height: 100svh) {.scene{height: 100svh;}}
+    @supports not (height: 100svh) and (height: 100dvh) {.scene{height: 100dvh;}}
+
+    .scene-inner{
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      height: 100%;
+      display:flex; flex-direction: column;
+    }
+
+    /* HUD */
+    .hud{
+      height: var(--hudH);
+      min-height: var(--hudH);
+      display:flex; align-items:center; gap:12px;
+      padding: 8px 12px;
+      padding-top: calc(8px + env(safe-area-inset-top));
+      background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo{
+      height: 28px; width:auto; flex:0 0 auto;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+    }
+    .title{
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: var(--titleFS);
+      text-shadow: 0 1px 0 rgba(0,0,0,0.2);
+      display:flex; align-items:center; gap:8px;
+    }
+    .title small{
+      font-size: 0.8em;
+      opacity: .85;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .spacer{flex:1}
+    .progress{
+      font-weight: 700; font-size: var(--progressFS);
+      background: linear-gradient(135deg, #91f3ff, #c7a0ff);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-shadow: 0 0 14px rgba(145, 243, 255, 0.35);
+    }
+
+    /* Chat area */
+    .chat-wrap{
+      flex:1; min-height:0; position:relative;
+      padding: 10px 10px;
+    }
+    .chat{
+      position:absolute; inset:0;
+      display:flex; flex-direction: column; gap:10px;
+      padding: 6px 8px 8px;
+      overflow: hidden; /* no scroll in gameplay */
+    }
+    .bubble{
+      max-width: 88%;
+      padding: 10px 12px;
+      background: linear-gradient( to bottom right, rgba(255,255,255,0.18), rgba(255,255,255,0.08) );
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      display:flex; gap:8px; align-items:flex-start;
+      font-size: var(--bubbleFS);
+    }
+    .bubble.right{
+      margin-left: auto;
+      background: linear-gradient( to bottom right, rgba(0,255,224,0.2), rgba(132,89,255,0.18) );
+      border-color: rgba(255,255,255,0.4);
+    }
+    .avatar{
+      width:32px; height:32px; border-radius:50%; flex:0 0 auto;
+      border: 1px solid rgba(255,255,255,0.4);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      object-fit: cover;
+      background:#0b1a4a;
+    }
+    .msg{
+      min-width:0; display:flex; flex-direction:column; gap:2px;
+    }
+    .name{
+      font-size: var(--nameFS);
+      color: var(--accent);
+      letter-spacing: 0.2px;
+    }
+    .text{
+      color:#f7faff;
+      display:-webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* Choices */
+    .choices{
+      position: sticky; bottom: 0;
+      padding: 10px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      display:grid; grid-template-columns: 1fr; gap:10px;
+      background: linear-gradient(0deg, rgba(0,0,0,0.35), rgba(0,0,0,0.0));
+      min-height: var(--choicesH);
+    }
+    .choice{
+      display:flex; align-items:center; justify-content:center;
+      min-height: var(--btnH);
+      border-radius: 12px;
+      font-weight: 800; letter-spacing: 0.2px;
+      border: 1px solid rgba(255,255,255,0.35);
+      color: #00152b;
+      background: linear-gradient(135deg, #9efcff, #caa6ff);
+      cursor: pointer;
+      user-select:none;
+      font-size: var(--btnFS);
+      padding: 10px 14px;
+      text-align:center;
+      transition: transform .06s ease, filter .12s ease;
+      outline: none;
+    }
+    .choice:active{ transform: scale(0.98); filter: brightness(0.96); }
+    .choice:focus-visible{
+      outline: 3px solid #fff; outline-offset: 2px;
+      box-shadow: 0 0 0 4px rgba(0,0,0,0.3);
+    }
+    .choice .label{
+      display:-webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+      -webkit-box-orient: vertical; overflow:hidden;
+      max-width: 100%;
+    }
+
+    /* Modals (intro/results) */
+    .modal{
+      position: fixed; inset: 0; z-index: 50;
+      display:flex; align-items:center; justify-content:center;
+      padding: 16px;
+      background: linear-gradient(180deg, rgba(3,7,18,0.65), rgba(3,7,18,0.85));
+    }
+    .card{
+      width: min(560px, 92vw);
+      max-height: 90svh;
+      background: linear-gradient( to bottom right, rgba(255,255,255,0.2), rgba(255,255,255,0.08) );
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      color: var(--text);
+      padding: 16px;
+      display:flex; flex-direction:column; gap:12px;
+      overflow-y: auto;
+    }
+    .card h1{
+      margin:0; font-size: clamp(18px, 4.8vw, 26px); font-weight: 800;
+    }
+    .card p{
+      margin:0; color: var(--muted); line-height:1.35;
+      display:-webkit-box; -webkit-line-clamp: 3; line-clamp: 3;
+      -webkit-box-orient: vertical; overflow: hidden; 
+      max-width: 100%;
+    }
+    .micro{ font-size: 12px; color:#e9f9ff; opacity: .9; }
+    .cta{
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      height:48px; padding: 0 16px; border-radius:12px;
+      border:1px solid rgba(255,255,255,0.4);
+      background: linear-gradient(135deg, #b6fffd, #d6b4ff);
+      color:#041122; font-weight: 800; cursor:pointer;
+      text-decoration:none;
+      outline:none;
+    }
+    .btn.alt{
+      background: transparent; color: #e9f9ff; border-color: rgba(255,255,255,0.4);
+    }
+    .btn:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
+
+    .hidden{ display:none !important; }
+
+    /* Compact mode to ensure fit */
+    .compact{
+      --hudH: 54px;
+      --choicesH: 170px;
+      --btnH: 50px;
+      --titleFS: clamp(15px, 3.2vw, 18px);
+      --bubbleFS: clamp(13px, 3vw, 15px);
+      --nameFS: clamp(10px, 2.6vw, 11px);
+      --progressFS: clamp(11px, 2.6vw, 13px);
+      --gap: 8px;
+      --radius: 12px;
+    }
+    .compact .bubble{ padding:8px 10px; }
+    .compact .avatar{ width:28px; height:28px; }
+
+    /* Results styles */
+    .results{
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px; font-weight:700;
+      border:1px solid rgba(255,255,255,0.35);
+      width:max-content;
+      background: rgba(255,255,255,0.12);
+    }
+    .pill.good{ color:#00331a; background: linear-gradient(135deg,#adffd6,#aaffef); border-color: rgba(255,255,255,0.6); }
+    .pill.warn{ color:#3a2500; background: linear-gradient(135deg,#ffd79a,#ffe4ba); border-color: rgba(255,255,255,0.6); }
+    .pill.bad{  color:#3f0000; background: linear-gradient(135deg,#ffc1c1,#ffdfdf); border-color: rgba(255,255,255,0.6); }
+
+    .decision{
+      display:flex; flex-direction:column; gap:6px;
+      background: rgba(255,255,255,0.12);
+      border:1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .decision h4{
+      margin:0; font-size: 14px; font-weight:800; letter-spacing:0.2px;
+    }
+    .decision p{ margin:0; font-size: 13px; color:#eef7ff; opacity:.94; }
+    .small-note{ font-size:12px; color:#e9f9ff; opacity:.85; }
+
+    /* Ambient avatar backdrop (left) */
+    .back-avatar{
+      position:absolute; right:-24px; bottom:8svh;
+      width: 210px; height:auto; opacity:0.10; pointer-events:none;
+      filter: drop-shadow(0 6px 18px rgba(0,0,0,0.4));
+      transform: rotate(5deg);
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-label="Escena de chat Chispa Segura">
+    <div class="scene-inner" id="sceneInner">
+      <!-- HUD -->
+      <div class="hud">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title">Chispa Segura ⚡ <small>Reto diario</small></div>
+        <div class="spacer"></div>
+        <div class="progress" id="progress" aria-live="polite">1/6</div>
+      </div>
+
+      <!-- Chat -->
+      <div class="chat-wrap">
+        <div class="chat" id="chat" aria-live="polite" aria-label="Conversación estilo chat">
+          <!-- Burbujas en JS -->
+        </div>
+        <img class="back-avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy" />
+      </div>
+
+      <!-- Choices -->
+      <div class="choices" id="choices" aria-label="Opciones del turno">
+        <!-- Botones en JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Intro Modal -->
+  <div class="modal" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="card">
+      <h1 id="introTitle">Chispa Segura ⚡</h1>
+      <p>Escenario: En una vivienda, un enchufe chispea y el cliente está inquieto; conversas por chat con tu mentora mientras realizas tu primera visita como aprendiz electricista.</p>
+      <p>Objetivo: Practicar seguridad básica, diagnóstico inicial y trato con cliente en una intervención doméstica.</p>
+      <div class="pill">Tutorial</div>
+      <p>Responde cada turno eligiendo 1 opción. Sin scroll; las respuestas son corta/parcial/incorrecta según tu decisión.</p>
+      <div class="cta">
+        <button class="btn" id="startBtn" aria-label="Comenzar el reto">Empezar</button>
+        <button class="btn alt" id="howBtn" aria-label="Cómo jugar">¿Cómo juego?</button>
+      </div>
+      <p class="micro">Dura 2–4 min. Rejugable. Personajes: Mentora Nora, Aprendiz Toni (tú), Cliente Ana.</p>
+    </div>
+  </div>
+
+  <!-- Results Modal -->
+  <div class="modal hidden" id="resultsModal" role="dialog" aria-modal="true" aria-labelledby="resultsTitle">
+    <div class="card">
+      <h1 id="resultsTitle">Resultados — Chispa Segura ⚡</h1>
+      <div class="results" id="resultsSummary">
+        <!-- JS fill -->
+      </div>
+      <div class="cta">
+        <a class="btn" id="rewardBtn" href="#" aria-label="Ver mi recompensa">Ver mi recompensa</a>
+        <span class="small-note" id="initHint" aria-live="polite"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* -------------------------
+       Kämpe Visual-Chat Engine
+       ------------------------- */
+
+    // InitData handling
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || "";
+    const resultsHint = document.getElementById('initHint');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const rewardBase = "https://kampe-game-phaser.onrender.com/daily_streak?initData=";
+
+    // Avatars mapping (1: Mentora Nora, 2: Aprendiz Toni, 4: Cliente Ana)
+    const avatars = {
+      nora: {
+        name: "Mentora Nora",
+        img: "https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png"
+      },
+      toni: {
+        name: "Aprendiz Toni",
+        img: "https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png"
+      },
+      ana: {
+        name: "Cliente Ana",
+        img: "https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png"
+      }
+    };
+
+    // Gameplay state
+    const chatEl = document.getElementById('chat');
+    const choicesEl = document.getElementById('choices');
+    const progressEl = document.getElementById('progress');
+    const scene = document.getElementById('scene');
+    const sceneInner = document.getElementById('sceneInner');
+
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+    const howBtn = document.getElementById('howBtn');
+    const resultsModal = document.getElementById('resultsModal');
+    const resultsSummary = document.getElementById('resultsSummary');
+
+    let currentTurn = 0; // 0..4 (5 turns)
+    let decisions = [];
+    let score = 0;
+    const MAX_TURNS = 5; // 5 turns -> progress 1/6..5/6
+
+    // Data: 5 turns, each with 1–2 messages and options
+    const turns = [
+      {
+        id: 1,
+        messages: [
+          { speaker:"ana", text:"Toni, el enchufe del salón chispea. Me asusta." },
+          { speaker:"nora", text:"Respira. Primer paso, ¿qué haces?" }
+        ],
+        options: [
+          {
+            text: "Aviso a Ana y corto luz en el cuadro",
+            type: "correct",
+            react: { speaker:"nora", text:"Perfecto. Seguridad primero; comunícaselo." },
+            explain: "Cortar y señalizar el circuito elimina el riesgo inmediato y demuestra control con la clienta."
+          },
+          {
+            text: "Le aviso, me acerco sin tocar aún",
+            type: "partial",
+            react: { speaker:"nora", text:"Bien avisar, pero corta antes de acercarte." },
+            explain: "Informar reduce ansiedad, pero sin cortar la alimentación sigues expuesto al riesgo."
+          },
+          {
+            text: "Toco la placa para ver si quema",
+            type: "incorrect",
+            react: { speaker:"nora", text:"¡No! Riesgo de choque y quemaduras." },
+            explain: "Nunca evalúes temperatura o tensión con la mano. Prioriza cortar alimentación."
+          }
+        ]
+      },
+      {
+        id: 2,
+        messages: [
+          { speaker:"nora", text:"Con la luz cortada, ¿cómo confirmas que no hay tensión?" }
+        ],
+        options: [
+          {
+            text: "Bloqueo y verifico ausencia de tensión",
+            type: "correct",
+            react: { speaker:"nora", text:"Muy bien. Comprobador/multímetro y etiqueta." },
+            explain: "Verificar ausencia de tensión (VAT) y bloqueo/etiquetado previenen reenergización accidental."
+          },
+          {
+            text: "Pregunto si bajó el automático",
+            type: "partial",
+            react: { speaker:"nora", text:"Pregunta sirve, pero verifica tú, no asumas." },
+            explain: "La confirmación verbal no sustituye la medición con instrumento homologado."
+          },
+          {
+            text: "Asumo que ya no hay tensión",
+            type: "incorrect",
+            react: { speaker:"nora", text:"Peligroso. Siempre confirma con equipo." },
+            explain: "Asumir puede costar una descarga. Verifica siempre con probador."
+          }
+        ]
+      },
+      {
+        id: 3,
+        messages: [
+          { speaker:"ana", text:"El rodapié estaba un poco húmedo..." },
+          { speaker:"nora", text:"EPI y entorno primero. ¿Qué haces?" }
+        ],
+        options: [
+          {
+            text: "Guantes dieléctricos y pregunto humedad/olor",
+            type: "correct",
+            react: { speaker:"nora", text:"Excelente. EPI + preguntas clave." },
+            explain: "Guantes adecuados y preguntas sobre humedad/olor a quemado afinan el diagnóstico y seguridad."
+          },
+          {
+            text: "Solo guantes de obra, sin preguntas",
+            type: "partial",
+            react: { speaker:"nora", text:"Mejor dieléctricos y recopila contexto." },
+            explain: "Los guantes de obra no aíslan igual; conocer humedad/olores anticipa riesgos."
+          },
+          {
+            text: "Desmonto la tapa sin EPI",
+            type: "incorrect",
+            react: { speaker:"nora", text:"Sin EPI no. Orden: EPI → entorno → intervención." },
+            explain: "Intervenir sin protección mínima aumenta probabilidad de lesión."
+          }
+        ]
+      },
+      {
+        id: 4,
+        messages: [
+          { speaker:"nora", text:"Ya sin tensión. Haz diagnóstico inicial sin riesgos." }
+        ],
+        options: [
+          {
+            text: "Sin tocar metal: inspección y comprobador",
+            type: "correct",
+            react: { speaker:"nora", text:"Correcto. Busca terminal flojo/carbonizado." },
+            explain: "Evitar contacto metálico y usar comprobador reduce errores y detecta daños visibles."
+          },
+          {
+            text: "Toco el borne con destornillador",
+            type: "partial",
+            react: { speaker:"nora", text:"Evita tocar metal en primera pasada." },
+            explain: "Mejor inspección visual y comprobación segura antes de manipular bornes."
+          },
+          {
+            text: "Energizo para ver dónde chispea",
+            type: "incorrect",
+            react: { speaker:"nora", text:"Nunca energices con la falla presente." },
+            explain: "Reenergizar aumenta el riesgo de arco eléctrico y daños materiales."
+          }
+        ]
+      },
+      {
+        id: 5,
+        messages: [
+          { speaker:"ana", text:"¿Qué propones y cuánto tardas/cuesta?" },
+          { speaker:"nora", text:"Comunica claro y realista." }
+        ],
+        options: [
+          {
+            text: "Propongo toma nueva con tierra (20–30 min)",
+            type: "correct",
+            react: { speaker:"ana", text:"Bien, suena razonable. Adelante." },
+            explain: "Reemplazar la toma dañada con una con tierra es seguro; indica tiempo estimado y coste aproximado."
+          },
+          {
+            text: "Ajusto tornillos y pruebo temporal",
+            type: "partial",
+            react: { speaker:"nora", text:"Temporal solo si explicas riesgo y seguimiento." },
+            explain: "Apretar bornes puede no resolver la causa; mejor plan de sustitución y aviso al cliente."
+          },
+          {
+            text: "Prometo arreglar gratis en 5 min",
+            type: "incorrect",
+            react: { speaker:"nora", text:"Promesa poco realista y arriesgada." },
+            explain: "Expectativas falsas dañan la confianza y la seguridad del servicio."
+          }
+        ]
+      }
+    ];
+
+    // Utility: create bubble element
+    function addBubble({speaker, text, side="left"}) {
+      const b = document.createElement('div');
+      b.className = `bubble ${side === "right" ? "right" : ""}`;
+      const av = document.createElement('img');
+      av.className = "avatar";
+      av.loading = "lazy";
+      av.src = avatars[speaker]?.img || avatars.toni.img;
+      av.alt = avatars[speaker]?.name || "Avatar";
+      const msg = document.createElement('div');
+      msg.className = "msg";
+      const nm = document.createElement('div');
+      nm.className = "name";
+      nm.textContent = avatars[speaker]?.name || "Desconocido";
+      const tx = document.createElement('div');
+      tx.className = "text";
+      tx.textContent = text;
+      msg.appendChild(nm);
+      msg.appendChild(tx);
+      b.appendChild(av);
+      b.appendChild(msg);
+      chatEl.appendChild(b);
+    }
+
+    // Render turn messages and options
+    function renderTurn() {
+      const t = turns[currentTurn];
+      // Append current turn messages (1–2)
+      t.messages.forEach(m => addBubble({speaker: m.speaker, text: m.text, side: "left"}));
+      // Render options
+      choicesEl.innerHTML = "";
+      t.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = "choice";
+        btn.setAttribute("aria-label", `Opción ${i+1}`);
+        const lbl = document.createElement('span');
+        lbl.className = "label";
+        lbl.textContent = clampText(opt.text, 48);
+        btn.appendChild(lbl);
+        btn.addEventListener('click', ()=> handleChoice(opt));
+        choicesEl.appendChild(btn);
+      });
+      updateProgress();
+      ensureFits();
+    }
+
+    // Handle choice selection
+    function handleChoice(opt) {
+      // Show player's chosen message (Toni)
+      addBubble({speaker:"toni", text: opt.text, side:"right"});
+      // Show reaction from character
+      setTimeout(() => {
+        addBubble({speaker: opt.react.speaker, text: opt.react.text, side:"left"});
+        // Save decision
+        const delta = opt.type === "correct" ? 2 : (opt.type === "partial" ? 1 : 0);
+        score += delta;
+        decisions.push({
+          turn: currentTurn+1,
+          picked: opt.text,
+          type: opt.type,
+          explanation: opt.explain
+        });
+        // Move to next
+        setTimeout(nextTurn, 400);
+        ensureFits();
+      }, 250);
+      ensureFits();
+    }
+
+    // Progress
+    function updateProgress(){
+      // Show 1/6 ... 5/6 during gameplay; results will show 6/6
+      progressEl.textContent = `${Math.min(currentTurn+1, MAX_TURNS)}/6`;
+    }
+
+    // Next turn or results
+    function nextTurn(){
+      currentTurn++;
+      if(currentTurn >= MAX_TURNS){
+        showResults();
+      }else{
+        renderTurn();
+      }
+    }
+
+    // Clamp helper for labels (<=48 chars)
+    function clampText(str, max){
+      if(!str) return "";
+      if(str.length <= max) return str;
+      return str.slice(0, max-1) + "…";
+    }
+
+    // Results rendering
+    function showResults(){
+      // Update HUD progress to 6/6
+      progressEl.textContent = `6/6`;
+
+      // Build summary
+      const total = MAX_TURNS * 2;
+      const good = decisions.filter(d=>d.type==="correct").length;
+      const partial = decisions.filter(d=>d.type==="partial").length;
+      const bad = decisions.filter(d=>d.type==="incorrect").length;
+
+      resultsSummary.innerHTML = "";
+
+      const topRow = document.createElement('div');
+      topRow.style.display = "flex";
+      topRow.style.gap = "8px";
+      topRow.style.flexWrap = "wrap";
+
+      const pillGood = pill(`Aciertos: ${good}`, "good");
+      const pillWarn = pill(`Parciales: ${partial}`, "warn");
+      const pillBad  = pill(`Errores: ${bad}`, "bad");
+      const pillScore= pill(`Puntuación: ${score}/${total}`, score>=total*0.75? "good": (score>=total*0.4?"warn":"bad"));
+
+      topRow.appendChild(pillGood); topRow.appendChild(pillWarn);
+      topRow.appendChild(pillBad); topRow.appendChild(pillScore);
+      resultsSummary.appendChild(topRow);
+
+      // Decisions detail
+      decisions.forEach(d => {
+        const box = document.createElement('div');
+        box.className = "decision";
+        const h = document.createElement('h4');
+        h.textContent = `Turno ${d.turn} — ${labelType(d.type)}`;
+        const p1 = document.createElement('p');
+        p1.textContent = `Tu decisión: ${d.picked}`;
+        const p2 = document.createElement('p');
+        p2.textContent = clampExplain(d.explanation);
+        box.appendChild(h); box.appendChild(p1); box.appendChild(p2);
+        resultsSummary.appendChild(box);
+      });
+
+      // Practical tip
+      const tip = document.createElement('div');
+      tip.className = "decision";
+      const hTip = document.createElement('h4');
+      hTip.textContent = "Consejo aplicable (mini-checklist de llegada)";
+      const pTip = document.createElement('p');
+      pTip.textContent = "1) Anuncia y corta el circuito en el cuadro. 2) Verifica ausencia de tensión. 3) Ponte EPI básico. 4) Pregunta por humedad/olor. 5) Evita tocar metal en el diagnóstico. 6) Explica a la clienta el plan, tiempo y coste estimado.";
+      tip.appendChild(hTip); tip.appendChild(pTip);
+      resultsSummary.appendChild(tip);
+
+      // Reward button
+      rewardBtn.href = rewardBase + encodeURIComponent(initData);
+      if(!initData){
+        resultsHint.textContent = "Aviso: initData no presente. Tu recompensa se abrirá igualmente.";
+      } else {
+        resultsHint.textContent = "";
+      }
+
+      // Show results modal (with its own scroll)
+      resultsModal.classList.remove('hidden');
+
+      // Keep global scroll locked; modal has its own scroll
+    }
+
+    function pill(text, mode){
+      const el = document.createElement('div');
+      el.className = `pill ${mode}`;
+      el.textContent = text;
+      return el;
+    }
+    function labelType(t){
+      if(t==="correct") return "Correcta";
+      if(t==="partial") return "Parcial";
+      return "Incorrecta";
+    }
+    function clampExplain(s){
+      // max 180 chars / 2 frases
+      const max = 180;
+      if(s.length <= max) return s;
+      return s.slice(0, max-1) + "…";
+    }
+
+    // Intro controls
+    startBtn.addEventListener('click', () => {
+      introModal.classList.add('hidden');
+      // Seed first screen: short intro message in chat to set context?
+      addBubble({speaker:"nora", text:"Bienvenido, Toni. Vamos paso a paso.", side:"left"});
+      renderTurn();
+    });
+    howBtn.addEventListener('click', () => {
+      alert("Elige una opción por turno. La conversación se acumula como chat. Sin scroll durante el juego. Al final verás tus decisiones y explicación breve.");
+    });
+
+    // Accessibility: ensure there is always a focusable option
+    function ensureFocusable() {
+      const any = choicesEl.querySelector('.choice');
+      if(any) any.focus({preventScroll:true});
+    }
+
+    // Fit system
+    function assertNoOverflow(){
+      const ok = scene.scrollHeight <= scene.clientHeight;
+      return ok;
+    }
+    function applyCompactMode(on){
+      if(on){ document.body.classList.add('compact'); }
+      else{ document.body.classList.remove('compact'); }
+    }
+    function fitBoardToViewport(){
+      // Tweak some CSS vars to free space
+      const root = document.documentElement.style;
+      // Slightly shrink choices height and gaps
+      root.setProperty('--choicesH', '160px');
+      root.setProperty('--btnH', '48px');
+    }
+    function autoscaleUI(minScale = 0.88){
+      // Try to scale down gradually until fits or reach min
+      let scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      while(!assertNoOverflow() && scale > minScale){
+        scale -= 0.02;
+        document.documentElement.style.setProperty('--ui-scale', scale.toFixed(2));
+      }
+    }
+    function resetFitTweaks(){
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      // reset vars changed by fitBoardToViewport
+      document.documentElement.style.setProperty('--choicesH', '200px');
+      document.documentElement.style.setProperty('--btnH', '56px');
+      applyCompactMode(false);
+    }
+    function ensureFits(){
+      // Run the multi-step fitting
+      // 1) Reset
+      // Don't remove content; just attempt sizing
+      let iterations = 0;
+      function run(){
+        iterations++;
+        if(assertNoOverflow()) return;
+        // Step 2: compact
+        applyCompactMode(true);
+        if(assertNoOverflow()) return;
+        // Step 3: adjust grid/vars
+        fitBoardToViewport();
+        if(assertNoOverflow()) return;
+        // Step 4: autoscale
+        autoscaleUI(0.88);
+      }
+      // Reset first then run
+      resetFitTweaks();
+      run();
+      ensureFocusable();
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', ensureFits);
+
+    // Kickoff: preload avatars
+    ["nora","toni","ana"].forEach(k=>{
+      const i = new Image(); i.src = avatars[k].img; i.loading="eager";
+    });
+
+    // Reward link preserve initData
+    rewardBtn.addEventListener('click', (e) => {
+      // Just let the href work; initData already attached
+    });
+
+    // Prevent accidental global scroll on touch devices (already touch-action: none in scene)
+    document.addEventListener('gesturestart', e => e.preventDefault());
+
+  </script>
+</body>
+</html>
