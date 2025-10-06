@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Fuga exprés en baño 🚿 | Kämpe</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset + Base */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    body {
+      margin: 0;
+      font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #fff;
+      background: radial-gradient(1200px 600px at 30% 20%, #3ea9ff 0%, #1b58c1 45%, #0a2a72 100%);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    :root{
+      --ui-scale: 1;
+      --btnH: 56px;
+      --hudH: 64px;
+      --pad: 14px;
+      --radius: 14px;
+      --glass: rgba(255,255,255,0.14);
+      --glass-strong: rgba(255,255,255,0.22);
+      --blur: 12px;
+      --accent: #4CFA9A;
+      --accent2: #5BC0FF;
+      --danger: #ff6379;
+      --warning: #ffd761;
+      --shadow: 0 10px 24px rgba(0,0,0,0.25);
+      --focus: 0 0 0 3px rgba(76,250,154,0.6), 0 0 0 6px rgba(0,0,0,0.3);
+      --cellH: 56px;    /* used by ensureFits step 3 */
+      --cellAR: 7/1;    /* not truly needed for quiz, reserved for fit step */
+    }
+
+    /* Safe viewport scene */
+    .scene {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+      padding: calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 12px);
+      transform-origin: top center;
+      touch-action: none; /* anti-derrapes */
+      isolation: isolate;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    .ui-wrapper {
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      will-change: transform;
+    }
+
+    /* Decorative Avatar background */
+    .avatar-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+      opacity: 0.25;
+      mix-blend-mode: screen;
+    }
+    .avatar-bg img {
+      position: absolute;
+      right: -6%;
+      bottom: 0;
+      height: 85%;
+      filter: drop-shadow(0 30px 60px rgba(0,0,0,0.3));
+      user-select: none;
+    }
+
+    /* HUD */
+    .hud {
+      z-index: 1;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 10px;
+      height: var(--hudH);
+    }
+    .logo {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 32px;
+      width: auto;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    }
+    .title {
+      font-weight: 800;
+      letter-spacing: 0.1px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      font-size: clamp(16px, 4.2vw, 22px);
+      line-height: 1.15;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .progress {
+      justify-self: end;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      backdrop-filter: blur(8px);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: clamp(12px, 3.2vw, 14px);
+      box-shadow: var(--shadow);
+      min-width: 64px; text-align: center;
+    }
+
+    /* Card (question area) */
+    .card {
+      z-index: 1;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08));
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: var(--pad);
+      backdrop-filter: blur(var(--blur));
+      min-height: 0;
+    }
+    .question {
+      font-weight: 800;
+      font-size: clamp(16px, 4.4vw, 20px);
+      line-height: 1.25;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      min-height: 44px;
+    }
+
+    .answers {
+      display: grid;
+      grid-auto-rows: minmax(var(--btnH), auto);
+      gap: 10px;
+      align-content: center;
+    }
+    .answer-btn {
+      position: relative;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: clamp(14px, 3.8vw, 17px);
+      font-weight: 700;
+      color: #07213c;
+      background: linear-gradient(180deg, #c7f7ff, #8fe7ff);
+      box-shadow: 0 8px 14px rgba(0,0,0,0.25), inset 0 -4px 0 rgba(0,0,0,0.12);
+      cursor: pointer;
+      outline: none;
+      min-height: 44px;
+      display: grid;
+      align-items: center;
+      justify-items: start;
+      text-align: left;
+      line-height: 1.2;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.2s ease;
+      will-change: transform;
+      touch-action: manipulation;
+    }
+    .answer-btn .label {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      word-break: break-word;
+    }
+    .answer-btn:hover { transform: translateY(-1px); }
+    .answer-btn:active { transform: translateY(1px) scale(0.98); }
+    .answer-btn:focus-visible { box-shadow: var(--focus); }
+
+    .answer-btn.correct.flash { background: linear-gradient(180deg, #b9ffd7, #70ffb0); }
+    .answer-btn.wrong.flash   { background: linear-gradient(180deg, #ffd5dd, #ff9bb0); }
+
+    /* Footer helpers */
+    .footer {
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 38px;
+      opacity: 0.9;
+    }
+    .hint {
+      font-size: clamp(11px, 3vw, 13px);
+      background: rgba(0,0,0,0.28);
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hint i { color: var(--warning); }
+
+    /* Intro & Results modals */
+    .modal {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(2px);
+    }
+    .modal-card {
+      width: min(560px, 92vw);
+      max-height: 90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+    .modal .content {
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .modal h1 {
+      margin: 0;
+      font-size: clamp(18px, 5.4vw, 24px);
+      font-weight: 800;
+    }
+    .modal p {
+      margin: 6px 0 0 0;
+      font-size: clamp(13px, 3.4vw, 15px);
+      opacity: 0.95;
+      line-height: 1.25;
+    }
+    .modal .actions {
+      display: grid; gap: 10px;
+      grid-auto-flow: row;
+    }
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: clamp(14px, 3.8vw, 17px);
+      font-weight: 800;
+      cursor: pointer;
+      min-height: 44px;
+      box-shadow: 0 8px 14px rgba(0,0,0,0.25), inset 0 -4px 0 rgba(0,0,0,0.12);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+      touch-action: manipulation;
+      outline: none;
+    }
+    .btn:focus-visible { box-shadow: var(--focus); }
+    .btn-primary {
+      color: #07213c;
+      background: linear-gradient(180deg, #b7ffde, #5cf0ad);
+    }
+    .btn-secondary {
+      color: #07213c;
+      background: linear-gradient(180deg, #dcebff, #a5c7ff);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px) scale(0.98); }
+
+    /* Results list */
+    .results-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .result-item {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .result-q {
+      font-weight: 800;
+      font-size: clamp(13px, 3.6vw, 16px);
+      margin-bottom: 6px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .result-a, .result-c, .result-ex {
+      font-size: clamp(12px, 3.2vw, 14px);
+      margin: 2px 0;
+      line-height: 1.3;
+    }
+    .result-a { color: #ffeff3; }
+    .result-c { color: #b7ffd8; }
+    .result-ex { color: #e6f3ff; opacity: 0.95; }
+
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #fff6b8, #ffd44d);
+      color: #2a2300;
+      font-weight: 900;
+      width: max-content;
+      box-shadow: var(--shadow);
+      margin: 4px 0;
+    }
+
+    .cta-row {
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.35));
+      padding-top: 8px;
+      padding-bottom: 6px;
+    }
+    .warn {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #ffe9a8;
+      display: none;
+    }
+    .warn.show { display: block; }
+
+    /* Animations */
+    .fade-in {
+      animation: fadeIn 220ms ease-out forwards;
+    }
+    .slide-in {
+      animation: slideIn 220ms ease-out forwards;
+    }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+
+    .swap-out {
+      animation: swapOut 180ms ease-in forwards;
+    }
+    @keyframes swapOut { from { opacity: 1; transform: scale(1) } to { opacity: 0; transform: scale(0.98) } }
+
+    /* Accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+
+    /* Compact mode for tight screens (applied by ensureFits) */
+    .scene.compact {
+      --btnH: 50px;
+      --hudH: 56px;
+      --pad: 10px;
+      --radius: 12px;
+      --blur: 10px;
+    }
+    .scene.compact .title { font-size: clamp(14px, 3.8vw, 18px); }
+    .scene.compact .question { font-size: clamp(15px, 4vw, 18px); }
+    .scene.compact .answers { gap: 8px; }
+
+    /* Ensure no content escapes boxes */
+    .answers, .question, .result-q, .label { overflow: hidden; }
+
+    /* Utility */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="scene ui-wrapper" id="scene" aria-live="polite" aria-atomic="true">
+    <!-- Decorative Avatar -->
+    <div class="avatar-bg" aria-hidden="true">
+      <img src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="eager">
+    </div>
+
+    <!-- HUD -->
+    <header class="hud">
+      <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" height="32" />
+      <div class="title" id="title">Fuga exprés en baño 🚿</div>
+      <div class="progress" id="progress">0/5</div>
+    </header>
+
+    <!-- Card gameplay -->
+    <main class="card" id="card" role="group" aria-label="Juego de preguntas">
+      <div class="question" id="question">...</div>
+      <div class="answers" id="answers"></div>
+    </main>
+
+    <!-- Footer hint -->
+    <div class="footer">
+      <div class="hint"><i>💡</i><span id="hintText">Toca una opción para avanzar.</span></div>
+      <div></div>
+    </div>
+
+    <!-- Intro modal -->
+    <section class="modal" id="introModal" aria-modal="true" role="dialog" aria-labelledby="introTitle">
+      <div class="modal-card slide-in">
+        <div>
+          <h1 id="introTitle">Fuga exprés en baño 🚿</h1>
+          <p>Escenario: primer servicio; agua bajo el lavabo y clienta nerviosa.</p>
+        </div>
+        <div class="content">
+          <p>Entrena seguridad básica, diagnóstico rápido y comunicación. Responde 5 preguntas cortas. Avanzas al tocar una opción.</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results modal -->
+    <section class="modal hidden" id="resultsModal" aria-modal="true" role="dialog" aria-labelledby="resultsTitle">
+      <div class="modal-card">
+        <div>
+          <h1 id="resultsTitle">Resultados</h1>
+          <div class="score-badge" id="scoreBadge">Puntos: 0/5 🛠️</div>
+          <p id="tip">Consejo: Antes de aflojar nada, corta el agua y comunica lo que harás.</p>
+        </div>
+        <div class="content">
+          <div class="results-list" id="resultsList"></div>
+        </div>
+        <div class="actions cta-row">
+          <button class="btn btn-primary" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+          <div class="warn" id="warnInit">Aviso: initData ausente. Puede que no se registre tu recompensa.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    /* --------------------------
+       Data & State
+    ---------------------------*/
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+
+    // Limit text length helper (auto-summarize if overflow)
+    function limitText(str, max = 48) {
+      if (!str) return "";
+      if (str.length <= max) return str;
+      return str.slice(0, max - 1).trimEnd() + "…";
+    }
+
+    // Quiz Questions (5 total, short labels <= 48 chars)
+    const QUESTIONS = [
+      {
+        id: 1,
+        q: "¿Qué cierras primero?",
+        options: [
+          { text: "Llave de paso del lavabo", correct: true },
+          { text: "Llave general de la vivienda", correct: false },
+          { text: "No cierro nada, busco la fuga", correct: false }
+        ],
+        explanation: "Primero corta en el punto más cercano para evitar afectar a toda la vivienda. La llave general solo si la del lavabo no funciona."
+      },
+      {
+        id: 2,
+        q: "EPI mínimo en suelo mojado:",
+        options: [
+          { text: "Guantes y calzado antideslizante", correct: true },
+          { text: "Casco y gafas", correct: false },
+          { text: "Solo guantes", correct: false }
+        ],
+        explanation: "Evita resbalones y cortes. Los guantes protegen manos y el calzado antideslizante da estabilidad en superficies mojadas."
+      },
+      {
+        id: 3,
+        q: "¿Cómo controlas el agua?",
+        options: [
+          { text: "Cubeta y trapo para contener", correct: true },
+          { text: "Que escurra al desagüe", correct: false },
+          { text: "Saco el sifón de inmediato", correct: false }
+        ],
+        explanation: "Contener primero con cubeta y trapo reduce el riesgo de caída y daños. Luego inspecciona conexiones con llave inglesa y teflón si procede."
+      },
+      {
+        id: 4,
+        q: "Antes de irte, ¿qué haces?",
+        options: [
+          { text: "Dejo zona seca y limpia", correct: true },
+          { text: "Me voy, ya está reparado", correct: false },
+          { text: "Lo dejo secar solo", correct: false }
+        ],
+        explanation: "Secar y limpiar confirma que no hay más goteos y deja el área segura para el cliente."
+      },
+      {
+        id: 5,
+        q: "¿Qué dices a la clienta al llegar?",
+        options: [
+          { text: "Corté el agua; revisaré 10–15 min", correct: true },
+          { text: "Está fatal; quizá horas", correct: false },
+          { text: "Veré sin cortar el agua", correct: false }
+        ],
+        explanation: "Comunicar que cortas el agua y el tiempo estimado reduce ansiedad y prepara a la clienta para el proceso."
+      }
+    ];
+
+    const EXPLAIN_MAX = 180; // brief explanations
+
+    let state = {
+      current: 0,
+      answers: [], // indexes
+      score: 0,
+    };
+
+    /* --------------------------
+       DOM refs
+    ---------------------------*/
+    const scene = document.getElementById('scene');
+    const titleEl = document.getElementById('title');
+    const progressEl = document.getElementById('progress');
+    const questionEl = document.getElementById('question');
+    const answersEl = document.getElementById('answers');
+    const hintText = document.getElementById('hintText');
+
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+
+    const resultsModal = document.getElementById('resultsModal');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const resultsList = document.getElementById('resultsList');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const warnInit = document.getElementById('warnInit');
+
+    /* --------------------------
+       Rendering
+    ---------------------------*/
+    function renderProgress() {
+      progressEl.textContent = `${Math.min(state.current + 1, QUESTIONS.length)}/${QUESTIONS.length}`;
+    }
+
+    function renderQuestion() {
+      const q = QUESTIONS[state.current];
+      questionEl.textContent = limitText(q.q);
+      answersEl.innerHTML = "";
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn fade-in';
+        btn.setAttribute('aria-label', `Opción ${idx + 1}: ${opt.text}`);
+        btn.style.minHeight = `calc(var(--cellH))`;
+
+        const span = document.createElement('span');
+        span.className = 'label';
+        span.textContent = limitText(opt.text, 48);
+
+        btn.appendChild(span);
+        btn.addEventListener('click', () => onAnswer(idx));
+        answersEl.appendChild(btn);
+      });
+
+      // Refresh accessibility/hints
+      hintText.textContent = "Toca una opción para avanzar.";
+
+      // Animations
+      questionEl.classList.remove('slide-in'); void questionEl.offsetWidth; questionEl.classList.add('slide-in');
+
+      renderProgress();
+      ensureFits();
+    }
+
+    function onAnswer(index) {
+      const q = QUESTIONS[state.current];
+      const correctIdx = q.options.findIndex(o => o.correct);
+      state.answers[state.current] = index;
+      if (index === correctIdx) state.score++;
+
+      // flash feedback
+      const btns = Array.from(answersEl.querySelectorAll('.answer-btn'));
+      const chooseBtn = btns[index];
+      chooseBtn.classList.add(index === correctIdx ? 'correct' : 'wrong', 'flash');
+
+      // quick transition to next
+      setTimeout(() => {
+        nextTurn();
+      }, 420);
+    }
+
+    function nextTurn() {
+      if (state.current < QUESTIONS.length - 1) {
+        // animate out
+        answersEl.classList.add('swap-out');
+        questionEl.classList.add('swap-out');
+        setTimeout(() => {
+          answersEl.classList.remove('swap-out');
+          questionEl.classList.remove('swap-out');
+          state.current++;
+          renderQuestion();
+        }, 160);
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      // Build results list
+      resultsList.innerHTML = "";
+      scoreBadge.textContent = `Puntos: ${state.score}/${QUESTIONS.length} 🛠️`;
+
+      QUESTIONS.forEach((q, i) => {
+        const item = document.createElement('div');
+        item.className = 'result-item';
+
+        const rq = document.createElement('div');
+        rq.className = 'result-q';
+        rq.textContent = q.q;
+
+        const userIdx = state.answers[i];
+        const correctIdx = q.options.findIndex(o => o.correct);
+
+        const ra = document.createElement('div');
+        ra.className = 'result-a';
+        ra.textContent = `Tu respuesta: ${q.options[userIdx]?.text ?? "—"}`;
+
+        const rc = document.createElement('div');
+        rc.className = 'result-c';
+        rc.textContent = `Correcta: ${q.options[correctIdx].text}`;
+
+        const rex = document.createElement('div');
+        rex.className = 'result-ex';
+        rex.textContent = (q.explanation.length > EXPLAIN_MAX)
+          ? q.explanation.slice(0, EXPLAIN_MAX - 1) + "…"
+          : q.explanation;
+
+        item.appendChild(rq);
+        item.appendChild(ra);
+        item.appendChild(rc);
+        item.appendChild(rex);
+        resultsList.appendChild(item);
+      });
+
+      // initData warning
+      if (!initData) {
+        warnInit.classList.add('show');
+      }
+
+      // Show modal
+      resultsModal.classList.remove('hidden');
+      resultsModal.querySelector('.modal-card').classList.add('fade-in');
+      // Allow scroll only inside modal content (already configured)
+      ensureFits(); // Re-check layout
+    }
+
+    /* --------------------------
+       UX Fit: ensureFits()
+    ---------------------------*/
+    function assertNoOverflow() {
+      const el = document.getElementById('scene');
+      return el.scrollHeight <= el.clientHeight;
+    }
+
+    function applyCompactMode() {
+      scene.classList.add('compact');
+    }
+
+    function fitBoardToViewport() {
+      // Reduce answer height further if needed
+      const root = document.documentElement;
+      const currentH = parseInt(getComputedStyle(root).getPropertyValue('--cellH')) || 56;
+      const nextH = Math.max(44, currentH - 6);
+      root.style.setProperty('--cellH', nextH + 'px');
+    }
+
+    function autoscaleUI() {
+      const el = document.getElementById('scene');
+      // approximate scale to fit
+      const ratio = el.clientHeight / el.scrollHeight;
+      const target = Math.max(0.88, Math.min(1, ratio));
+      document.documentElement.style.setProperty('--ui-scale', target.toFixed(3));
+    }
+
+    function resetFitTweaks() {
+      scene.classList.remove('compact');
+      document.documentElement.style.setProperty('--cellH', '56px');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+    }
+
+    function ensureFits() {
+      // Order: reset -> check -> compact -> check -> shrink cell -> check -> autoscale
+      resetFitTweaks();
+      if (assertNoOverflow()) return;
+
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+
+      // Up to 3 attempts to reduce cell height
+      for (let i = 0; i < 3; i++) {
+        fitBoardToViewport();
+        if (assertNoOverflow()) return;
+      }
+
+      autoscaleUI();
+      // Final check (no-op, goal is best effort)
+    }
+
+    /* --------------------------
+       Events
+    ---------------------------*/
+    startBtn.addEventListener('click', () => {
+      introModal.classList.add('hidden');
+      state.current = 0;
+      state.answers = [];
+      state.score = 0;
+      renderQuestion();
+    });
+
+    rewardBtn.addEventListener('click', () => {
+      const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      window.location.href = target;
+    });
+
+    window.addEventListener('resize', () => { ensureFits(); });
+    window.addEventListener('orientationchange', () => { setTimeout(ensureFits, 100); });
+
+    // Initial render (show intro modal, prepare UI)
+    document.addEventListener('DOMContentLoaded', () => {
+      titleEl.textContent = "Fuga exprés en baño 🚿";
+      progressEl.textContent = `0/${QUESTIONS.length}`;
+      ensureFits();
+    });
+  </script>
+</body>
+</html>
