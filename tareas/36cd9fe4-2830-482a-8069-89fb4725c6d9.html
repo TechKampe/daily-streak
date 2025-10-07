@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark">
+  <title>Paso a Paso: Taller Pro ⚙️ - Kämpe</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* RESET BÁSICO */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { padding: 0; margin: 0; height: 100%; }
+    button { font-family: inherit; cursor: pointer; background: none; border: none; }
+    img { display: block; max-width: 100%; }
+    :root{
+      --bg-from:#0d47ff;
+      --bg-to:#102267;
+      --glass: rgba(255,255,255,0.12);
+      --glass-2: rgba(255,255,255,0.22);
+      --text:#ffffff;
+      --muted:#c9d7ff;
+      --accent:#24e5ff;
+      --ok:#3ee07b;
+      --warn:#ffcc42;
+      --error:#ff6b6b;
+      --title: clamp(18px, 3.4vw, 24px);
+      --hudH: 72px;
+      --hudH-compact: 58px;
+      --ctaH: 72px;
+      --ctaH-compact: 60px;
+      --cardH: 74px; /* se ajusta en JS */
+      --gap: 10px;
+      --radius: 14px;
+      --ui-scale: 1;
+      --shadow: 0 10px 24px rgba(0,0,0,.25);
+      --blur: saturate(140%) blur(6px);
+    }
+    html, body { overflow: hidden; overscroll-behavior: none; background: #0a1b5e; color: var(--text); font-family: "Manrope", system-ui, Segoe UI, Roboto, Arial, sans-serif; }
+
+    /* ESCENA A PANTALLA COMPLETA CON FALLBACKS */
+    .scene { width: 100%; display: flex; flex-direction: column; position: relative; isolation: isolate; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); transform-origin: top center; transform: scale(var(--ui-scale)); }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    /* FONDO ESTILO FORTNITE */
+    .bg {
+      position: absolute; inset: 0; z-index: -2;
+      background: radial-gradient(120% 120% at 100% 0%, var(--bg-from) 0%, var(--bg-to) 60%, #091238 100%);
+      overflow: hidden;
+    }
+    .bg::before{
+      content:""; position:absolute; inset:-20%; background:
+      radial-gradient(400px 400px at 20% 20%, rgba(255,255,255,.12), transparent 60%),
+      radial-gradient(600px 600px at 80% 0%, rgba(36,229,255,.16), transparent 70%),
+      radial-gradient(500px 500px at 100% 50%, rgba(142,95,255,.15), transparent 65%);
+      filter: blur(2px);
+    }
+    /* AVATAR */
+    .avatar {
+      position: absolute; right: -12px; top: 14px; width: 150px; opacity: .35; z-index: -1; pointer-events: none; transform: rotate(-4deg);
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,.35));
+    }
+
+    /* HUD SUPERIOR */
+    .hud {
+      height: var(--hudH);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px;
+    }
+    .logoBox { display:flex; align-items:center; gap:10px; min-width: 0; }
+    .logoBox img { width: 34px; height: 34px; object-fit: contain; }
+    .titleWrap { display:flex; flex-direction:column; line-height:1.05; min-width: 0; }
+    .title {
+      font-size: var(--title); font-weight: 800; letter-spacing: .2px; text-shadow: 0 2px 10px rgba(0,0,0,.3);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .subtitle {
+      font-size: clamp(11px,2.3vw,13px); color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .progress {
+      display: flex; align-items: center; gap:10px; background: var(--glass);
+      padding: 8px 12px; border-radius: 100px; backdrop-filter: var(--blur); border: 1px solid rgba(255,255,255,.25);
+      box-shadow: var(--shadow);
+      font-weight: 700; font-size: clamp(12px,2.3vw,14px);
+    }
+    .pbar { width: 80px; height: 8px; background: rgba(255,255,255,.15); border-radius: 100px; overflow: hidden; }
+    .pbar .fill { height: 100%; width: 0%; background: linear-gradient(90deg,#2af598,#009efd); border-radius: 100px; transition: width .3s ease; }
+
+    /* BOARD / CARTAS */
+    .gamewrap {
+      display:flex; flex-direction: column; gap: 10px; padding: 8px 12px 12px;
+      flex: 1; min-height: 0;
+    }
+    .context {
+      background: var(--glass); border: 1px solid rgba(255,255,255,.25); border-radius: var(--radius);
+      backdrop-filter: var(--blur); padding: 8px 10px; box-shadow: var(--shadow);
+      display:flex; align-items: center; gap: 8px; min-height: 44px;
+      font-size: clamp(12px,2.5vw,14px);
+    }
+    .context b { color: #fff; }
+    .board {
+      position: relative;
+      flex: 1; min-height: 0;
+      display: grid; grid-auto-rows: var(--cardH); gap: var(--gap);
+      touch-action: none; /* anti-derrape */
+    }
+    .card {
+      position: relative;
+      display:flex; align-items: center; justify-content: space-between; gap:8px;
+      padding: 8px 8px; border-radius: calc(var(--radius) - 2px);
+      background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.12));
+      border: 1px solid rgba(255,255,255,.25); box-shadow: var(--shadow);
+      user-select: none; will-change: transform; transition: transform .18s ease, filter .18s ease, background .2s ease;
+    }
+    .card.movePulse { animation: pulse .22s ease; }
+    @keyframes pulse { 0%{ transform: scale(.98);} 100%{ transform: scale(1);} }
+    .card .left {
+      display:flex; align-items: center; gap:8px; min-width: 0; flex: 1;
+    }
+    .handle {
+      display:flex; flex-direction: column; gap:4px; align-items:center; justify-content:center;
+      background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.25); width: 44px; height: 58px; border-radius: 10px;
+    }
+    .arrowBtn {
+      width: 40px; height: 24px; color: #fff; border-radius: 8px; background: linear-gradient(180deg, rgba(36,229,255,.28), rgba(36,229,255,.14));
+      border: 1px solid rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size: 16px; font-weight: 800;
+    }
+    .arrowBtn[disabled]{ opacity:.4; }
+    .label {
+      flex: 1; min-width: 0; font-weight: 700; font-size: clamp(13px,2.6vw,15px);
+      display:-webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .orderBadge {
+      width: 36px; height: 36px; min-width:36px;
+      border-radius: 10px; background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.25); color:#fff; font-weight: 800;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .chipBtn {
+      width: 44px; height: 44px; min-width: 44px;
+      border-radius: 12px; background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.12));
+      border: 1px solid rgba(255,255,255,.3); display:flex; align-items:center; justify-content:center; font-weight: 800; color:#fff;
+    }
+    .chipBtn:active { transform: translateY(1px); }
+    .chipIcon { font-size: 14px; line-height: 1; opacity: .9; }
+
+    /* CTA FOOTER */
+    .ctaBar {
+      position: relative; height: var(--ctaH); display:flex; align-items:center; justify-content: space-between; gap: 10px;
+      padding: 10px 12px; z-index: 2;
+    }
+    .ctaBtn {
+      flex: 1; height: 52px; min-height: 52px; border-radius: 14px; font-weight: 900; font-size: clamp(15px,3.4vw,18px); letter-spacing: .2px; color: #0b1840;
+      background: linear-gradient(180deg, #2af598, #00e0a4);
+      border: 0; box-shadow: 0 14px 28px rgba(0, 224, 164, .35);
+    }
+    .ctaBtn.secondary {
+      flex: 0 0 auto; padding: 0 14px; width: auto; background: linear-gradient(180deg, #ffd86f, #ffb64c);
+      box-shadow: 0 14px 28px rgba(255, 184, 76, .35);
+    }
+    .ctaBtn:active { transform: translateY(1px); }
+    .toast {
+      position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(100% - 6px);
+      background: rgba(0,0,0,.55); color: #fff; padding: 8px 12px; border-radius: 12px; font-size: 12px; opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, -4px); }
+
+    /* MODALES */
+    .modal {
+      position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.45);
+      padding: 16px; z-index: 50;
+    }
+    .modal.active { display: flex; }
+    .modalCard {
+      width: 100%; max-width: 520px; max-height: 90svh; overflow-y: auto;
+      background: linear-gradient(180deg, rgba(255,255,255,.25), rgba(255,255,255,.12));
+      border: 1px solid rgba(255,255,255,.3); border-radius: 16px; box-shadow: var(--shadow);
+      backdrop-filter: var(--blur);
+      padding: 16px;
+    }
+    .modalHeader {
+      display:flex; align-items:center; gap:10px; margin-bottom: 8px;
+    }
+    .modalHeader img { width: 32px; height: 32px; }
+    .modalTitle { font-weight: 900; font-size: clamp(18px, 4vw, 22px); }
+    .modalText { font-size: 14px; color: var(--muted); }
+    .modalFooter { display:flex; gap: 10px; margin-top: 12px; }
+    .closeBtn { height: 48px; border-radius: 12px; background: linear-gradient(180deg,#2af598,#00e0a4); color:#08304c; font-weight:900; flex:1; }
+    .ghostBtn { height: 48px; border-radius: 12px; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3); color:#fff; font-weight:800; flex:1; }
+
+    /* POPOVER DE CHIPS */
+    .chipPopover {
+      position: fixed; z-index: 60; display: none; flex-wrap: wrap; gap: 8px; padding: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.25), rgba(255,255,255,.12));
+      border: 1px solid rgba(255,255,255,.3); border-radius: 14px; box-shadow: var(--shadow);
+      backdrop-filter: var(--blur);
+    }
+    .chipPopover.active { display: flex; }
+    .chip { width: 44px; height: 44px; border-radius: 12px; background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.3); color:#fff; font-weight: 900; display:flex; align-items:center; justify-content:center; }
+    .chip.cancel { width: auto; padding: 0 12px; background: rgba(255,255,255,.16); }
+
+    /* RESULTADOS */
+    .resultItem {
+      margin: 10px 0; padding: 10px; border-radius: 12px; background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.22);
+    }
+    .resHead { display:flex; align-items:center; justify-content: space-between; gap: 10px; }
+    .resTitle { font-weight: 900; }
+    .resGrid { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .resCol { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); border-radius: 10px; padding: 8px; }
+    .resCol h4 { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+    .resCol ol { margin: 0; padding-left: 18px; font-size: 13px; }
+    .tip { margin-top: 6px; font-size: 13px; color: var(--muted); }
+    .finalBar { display:flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+    .warning { font-size: 12px; color: var(--warn); display:flex; align-items:center; gap: 6px; }
+
+    /* COMPACT MODE */
+    .compact :root {}
+    .compact .hud { height: var(--hudH-compact); }
+    .compact .ctaBar { height: var(--ctaH-compact); }
+    .compact .title { font-size: clamp(16px,3vw,20px); }
+    .compact .subtitle { font-size: clamp(10px,2vw,12px); }
+    .compact .progress { padding: 6px 10px; }
+    .compact .orderBadge { width: 32px; height: 32px; }
+    .compact .handle { width: 40px; height: 52px; }
+    .compact .arrowBtn { width: 36px; height: 22px; }
+    .compact .chipBtn { width: 40px; height: 40px; }
+    .compact .card { padding: 6px 8px; }
+    .compact .label { font-size: clamp(12px,2.4vw,14px); }
+
+    /* FOCOS Y ACCESIBILIDAD */
+    :focus-visible { outline: 3px solid #00e0a4; outline-offset: 2px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <div class="bg"></div>
+    <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="eager" />
+    <!-- HUD -->
+    <header class="hud">
+      <div class="logoBox">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="titleWrap">
+          <div class="title">Paso a Paso: Taller Pro ⚙️</div>
+          <div class="subtitle">Escenario: primera práctica en taller</div>
+        </div>
+      </div>
+      <div class="progress" aria-label="Progreso">
+        <span id="progressText">Reto 1/3</span>
+        <div class="pbar" aria-hidden="true"><div class="fill" id="pbarFill"></div></div>
+      </div>
+    </header>
+
+    <!-- GAME WRAP -->
+    <main class="gamewrap">
+      <div class="context" id="context">
+        Dinámica: ordena con ↑/↓ o asigna 1–N y confirma.
+      </div>
+      <section class="board" id="board" aria-label="Lista de pasos" role="list"></section>
+    </main>
+
+    <!-- CTA FOOTER -->
+    <footer class="ctaBar">
+      <button class="ctaBtn secondary" id="helpBtn" aria-label="Ayuda">?</button>
+      <button class="ctaBtn" id="confirmBtn" aria-label="Confirmar orden">Confirmar orden</button>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </footer>
+  </div>
+
+  <!-- MODAL INTRO -->
+  <div class="modal active" id="introModal" aria-modal="true" role="dialog" aria-labelledby="introTitle">
+    <div class="modalCard">
+      <div class="modalHeader">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="modalTitle" id="introTitle">Paso a Paso: Taller Pro ⚙️</div>
+      </div>
+      <div class="modalText">
+        Ordena los pasos de cada tarea. Usa ↑/↓ o asigna un número a cada tarjeta. 3 retos rápidos, foco en seguridad y buenas prácticas.
+      </div>
+      <div class="modalFooter">
+        <button class="ghostBtn" id="howBtn">¿Cómo jugar?</button>
+        <button class="closeBtn" id="startBtn">¡Vamos!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL AYUDA -->
+  <div class="modal" id="helpModal" aria-modal="true" role="dialog" aria-labelledby="helpTitle">
+    <div class="modalCard">
+      <div class="modalHeader">
+        <div class="modalTitle" id="helpTitle">Ayuda rápida</div>
+      </div>
+      <div class="modalText">
+        Mueve las tarjetas con ↑/↓. Alternativamente, toca “123” para asignar 1–N a un paso. Confirma para avanzar. Sin scroll: todo cabe en pantalla.
+      </div>
+      <div class="modalFooter">
+        <button class="closeBtn" id="closeHelp">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL RESULTADOS -->
+  <div class="modal" id="resultsModal" aria-modal="true" role="dialog" aria-labelledby="resultsTitle">
+    <div class="modalCard" id="resultsCard">
+      <div class="modalHeader">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="modalTitle" id="resultsTitle">Resultados de la sesión</div>
+      </div>
+      <div class="modalText" id="resultsIntro">
+        Así quedó tu orden frente al correcto, con una breve explicación y un consejo por reto.
+      </div>
+      <div id="resultsContent"></div>
+      <div class="finalBar">
+        <a id="rewardBtn" class="ctaBtn" style="text-decoration:none; display:flex; align-items:center; justify-content:center;">Ver mi recompensa</a>
+        <div class="warning" id="warnInit" style="display:none;">¡Aviso! No llegó initData; podrás reclamar, pero quizá no se guarde tu progreso.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPOVER CHIPS -->
+  <div class="chipPopover" id="chipPopover" role="dialog" aria-label="Elegir posición"></div>
+
+  <script>
+    // Datos de secuencias (máx 48 chars por etiqueta)
+    const sequences = [
+      {
+        id: 'elec',
+        tag: 'Electricidad · cambiar un enchufe',
+        steps: [
+          'Cortar corriente en el cuadro',
+          'Verificar ausencia de tensión',
+          'Desmontar el enchufe',
+          'Conectar los cables',
+          'Cerrar tapa y probar'
+        ],
+        why: 'Primero se aísla y se confirma que no hay tensión. Luego se interviene y al final se cierra y prueba para validar.',
+        tip: 'Usa comprobador homologado y, si aplica, bloquea el cuadro.'
+      },
+      {
+        id: 'fonta',
+        tag: 'Fontanería · pequeña fuga en sifón',
+        steps: [
+          'Cerrar llave general de agua',
+          'Abrir un grifo para purgar',
+          'Colocar cubeta y soltar sifón',
+          'Ajustar o sustituir el sifón',
+          'Abrir llave y revisar fugas/limpiar'
+        ],
+        why: 'Cerrar y purgar evita derrames. Se trabaja con cubeta y al final se abre y revisa para asegurar estanqueidad.',
+        tip: 'Usa guantes y ten trapo o papel a mano para secar.'
+      },
+      {
+        id: 'soft',
+        tag: 'Soft skills · avisar retraso al cliente',
+        steps: [
+          'Saludar y presentarte',
+          'Avisar retraso y disculparte',
+          'Proponer nueva hora y tiempos',
+          'Confirmar acuerdo y siguiente paso'
+        ],
+        why: 'La claridad y el respeto generan confianza. Informa, ofrece alternativa concreta y confirma para evitar malentendidos.',
+        tip: 'Si el retraso supera 15 min, llama antes de la hora.'
+      }
+    ];
+
+    // Estado global en memoria
+    let initData = '';
+    let currentIdx = 0;
+    let currentOrder = []; // índices del array original (mezclados)
+    const playerAnswers = []; // por reto: {id, orderIdx, orderLabels}
+    let uiScale = 1;
+
+    // Utilidades de texto
+    function shortenLabel(s, max=48){
+      const clean = (s || '').trim();
+      if (clean.length <= max) return clean;
+      return clean.slice(0, max - 1).trim() + '…';
+    }
+
+    // Elementos
+    const scene = document.getElementById('scene');
+    const board = document.getElementById('board');
+    const contextEl = document.getElementById('context');
+    const progressText = document.getElementById('progressText');
+    const pbarFill = document.getElementById('pbarFill');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const helpBtn = document.getElementById('helpBtn');
+    const toast = document.getElementById('toast');
+
+    const introModal = document.getElementById('introModal');
+    const helpModal = document.getElementById('helpModal');
+    const resultsModal = document.getElementById('resultsModal');
+    const resultsContent = document.getElementById('resultsContent');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const warnInit = document.getElementById('warnInit');
+    const chipPopover = document.getElementById('chipPopover');
+
+    // Inicio
+    (function init(){
+      // Lee initData de URL
+      const params = new URLSearchParams(location.search);
+      initData = params.get('initData') || '';
+      // Configura CTA final
+      rewardBtn.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      if(!initData){ warnInit.style.display = 'flex'; }
+
+      // Render primer reto
+      loadChallenge(0);
+      ensureFits();
+
+      // Listeners
+      document.getElementById('startBtn').addEventListener('click', () => { closeModal(introModal); });
+      document.getElementById('howBtn').addEventListener('click', () => { openModal(helpModal); });
+      document.getElementById('closeHelp').addEventListener('click', () => { closeModal(helpModal); });
+      helpBtn.addEventListener('click', () => openModal(helpModal));
+      confirmBtn.addEventListener('click', onConfirm);
+
+      // Ajustes en resize/orientación
+      window.addEventListener('resize', ensureFits);
+      window.addEventListener('orientationchange', () => setTimeout(ensureFits, 300));
+
+      // Cerrar popover al tocar fuera
+      document.addEventListener('click', (e)=> {
+        if(chipPopover.classList.contains('active')){
+          if(!chipPopover.contains(e.target) && !e.target.closest('.chipBtn')) hideChipPopover();
+        }
+      }, {capture:true});
+    })();
+
+    /* --------- RENDERIZACIÓN DEL RETO --------- */
+    function loadChallenge(idx){
+      currentIdx = idx;
+      const seq = sequences[idx];
+      // Mezcla inicial
+      const n = seq.steps.length;
+      const indices = [...Array(n).keys()];
+      currentOrder = shuffle(indices);
+      // UI
+      contextEl.innerHTML = `<b>Reto ${idx+1}/3:</b> ${shortenLabel(seq.tag, 48)}`;
+      progressText.textContent = `Reto ${idx+1}/3`;
+      pbarFill.style.width = `${Math.round(((idx)/sequences.length)*100)}%`;
+      renderBoard(seq, currentOrder);
+    }
+
+    function renderBoard(seq, order){
+      board.innerHTML = '';
+      order.forEach((stepIdx, pos) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.setAttribute('role','listitem');
+        card.setAttribute('aria-label', `Paso ${pos+1}: ${seq.steps[stepIdx]}`);
+
+        const left = document.createElement('div');
+        left.className = 'left';
+
+        // Mando ↑/↓
+        const handle = document.createElement('div');
+        handle.className = 'handle';
+        const up = document.createElement('button');
+        up.className = 'arrowBtn'; up.setAttribute('aria-label', 'Mover arriba'); up.textContent = '↑';
+        const down = document.createElement('button');
+        down.className = 'arrowBtn'; down.setAttribute('aria-label', 'Mover abajo'); down.textContent = '↓';
+        if(pos === 0) up.disabled = true;
+        if(pos === order.length - 1) down.disabled = true;
+        up.addEventListener('click', () => moveCard(stepIdx, -1));
+        down.addEventListener('click', () => moveCard(stepIdx, 1));
+        handle.appendChild(up); handle.appendChild(down);
+
+        const badge = document.createElement('div');
+        badge.className = 'orderBadge'; badge.textContent = pos+1;
+
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = shortenLabel(seq.steps[stepIdx]);
+
+        left.appendChild(handle);
+        left.appendChild(badge);
+        left.appendChild(label);
+
+        const chip = document.createElement('button');
+        chip.className = 'chipBtn'; chip.setAttribute('aria-label', 'Asignar orden (1–N)');
+        chip.innerHTML = '<span class="chipIcon">123</span>';
+        chip.addEventListener('click', (ev) => openChipPopover(ev.currentTarget, pos, order.length, (targetPos)=> assignPosition(stepIdx, targetPos)));
+
+        card.appendChild(left);
+        card.appendChild(chip);
+        board.appendChild(card);
+      });
+      setTimeout(ensureFits, 0);
+    }
+
+    // Mover con flechas
+    function moveCard(stepIdx, delta){
+      const from = currentOrder.indexOf(stepIdx);
+      const to = from + delta;
+      if(to < 0 || to >= currentOrder.length) return;
+      currentOrder.splice(to, 0, currentOrder.splice(from, 1)[0]);
+      renderBoard(sequences[currentIdx], currentOrder);
+      microPulse(from, to);
+      vibrate(8);
+    }
+
+    // Asignar posición via chips
+    function assignPosition(stepIdx, targetPos){
+      const from = currentOrder.indexOf(stepIdx);
+      if (from === targetPos) { hideChipPopover(); return; }
+      currentOrder.splice(targetPos, 0, currentOrder.splice(from, 1)[0]);
+      hideChipPopover();
+      renderBoard(sequences[currentIdx], currentOrder);
+      microPulse(from, targetPos);
+      vibrate(10);
+    }
+
+    function microPulse(from, to){
+      const cards = [...document.querySelectorAll('.card')];
+      const idx = to;
+      if(cards[idx]) {
+        cards[idx].classList.add('movePulse');
+        setTimeout(()=>cards[idx]?.classList.remove('movePulse'), 220);
+      }
+    }
+
+    /* --------- CONFIRMAR --------- */
+    function onConfirm(){
+      const seq = sequences[currentIdx];
+      const correct = [...Array(seq.steps.length).keys()];
+      const isCorrect = arraysEqual(currentOrder, correct);
+
+      // Guarda respuesta
+      playerAnswers[currentIdx] = {
+        id: seq.id,
+        tag: seq.tag,
+        orderIdx: [...currentOrder],
+        orderLabels: currentOrder.map(i => seq.steps[i]),
+        correctIdx: correct,
+        correctLabels: correct.map(i => seq.steps[i]),
+        why: seq.why,
+        tip: seq.tip
+      };
+
+      navigator?.vibrate?.(isCorrect ? 18 : 36);
+      showToast(isCorrect ? '¡Perfecto! Avanza al siguiente.' : 'Buen intento. Lo clave es el orden seguro.');
+      // Avanza o muestra resultados
+      if(currentIdx < sequences.length - 1){
+        setTimeout(()=> {
+          loadChallenge(currentIdx + 1);
+          pbarFill.style.width = `${Math.round(((currentIdx)/sequences.length)*100)}%`;
+          ensureFits();
+        }, 320);
+      }else{
+        // Sesión finalizada
+        setTimeout(()=> {
+          showResults();
+        }, 350);
+      }
+    }
+
+    /* --------- RESULTADOS --------- */
+    function showResults(){
+      // Activa modal de resultados (con scroll interno max 90svh)
+      const frag = document.createDocumentFragment();
+      playerAnswers.forEach((res, i) => {
+        const item = document.createElement('div');
+        item.className = 'resultItem';
+        const head = document.createElement('div');
+        head.className = 'resHead';
+        const title = document.createElement('div');
+        title.className = 'resTitle';
+        title.textContent = `Reto ${i+1}: ${res.tag}`;
+        const badge = document.createElement('div');
+        const ok = arraysEqual(res.orderIdx, res.correctIdx);
+        badge.textContent = ok ? '✔️' : '➜';
+        head.appendChild(title); head.appendChild(badge);
+        const grid = document.createElement('div');
+        grid.className = 'resGrid';
+        const col1 = document.createElement('div'); col1.className = 'resCol';
+        const col2 = document.createElement('div'); col2.className = 'resCol';
+        col1.innerHTML = '<h4>Tu orden</h4>';
+        col2.innerHTML = '<h4>Orden correcto</h4>';
+        const ol1 = document.createElement('ol');
+        const ol2 = document.createElement('ol');
+        res.orderLabels.forEach(s => {
+          const li = document.createElement('li'); li.textContent = s; ol1.appendChild(li);
+        });
+        res.correctLabels.forEach(s => {
+          const li = document.createElement('li'); li.textContent = s; ol2.appendChild(li);
+        });
+        col1.appendChild(ol1); col2.appendChild(ol2);
+        grid.appendChild(col1); grid.appendChild(col2);
+        const why = document.createElement('div'); why.className = 'tip'; why.innerHTML = `<b>Por qué:</b> ${res.why}`;
+        const tip = document.createElement('div'); tip.className = 'tip'; tip.innerHTML = `<b>Consejo:</b> ${res.tip}`;
+        item.appendChild(head); item.appendChild(grid); item.appendChild(why); item.appendChild(tip);
+        frag.appendChild(item);
+      });
+      resultsContent.innerHTML = '';
+      resultsContent.appendChild(frag);
+
+      // Activar modal y permitir scroll interno
+      openModal(resultsModal);
+      // Barra de progreso completa
+      pbarFill.style.width = '100%';
+    }
+
+    /* --------- CHIPS POPOVER --------- */
+    function openChipPopover(anchorBtn, currentPos, total, onPick){
+      const rect = anchorBtn.getBoundingClientRect();
+      chipPopover.innerHTML = '';
+      for(let i=0; i<total; i++){
+        const b = document.createElement('button');
+        b.className = 'chip';
+        b.textContent = (i+1);
+        if(i === currentPos){
+          b.style.background = 'linear-gradient(180deg,#2af598,#00e0a4)';
+          b.style.color = '#0b1840';
+        }
+        b.addEventListener('click', () => onPick(i));
+        chipPopover.appendChild(b);
+      }
+      const cancel = document.createElement('button');
+      cancel.className = 'chip cancel';
+      cancel.textContent = 'Cerrar';
+      cancel.addEventListener('click', hideChipPopover);
+      chipPopover.appendChild(cancel);
+
+      // Posicionamiento (evita salir de pantalla)
+      const pad = 8;
+      let x = rect.left + (rect.width/2) - (Math.min(total*52 + 70, window.innerWidth - pad*2))/2;
+      let y = rect.top - 60;
+      const widthEstimate = Math.min(total*52 + 70, window.innerWidth - pad*2);
+      if(x < pad) x = pad;
+      if(x + widthEstimate > window.innerWidth - pad) x = window.innerWidth - widthEstimate - pad;
+      if(y < pad) y = rect.bottom + 8;
+      chipPopover.style.left = x + 'px';
+      chipPopover.style.top = y + 'px';
+      chipPopover.classList.add('active');
+    }
+    function hideChipPopover(){ chipPopover.classList.remove('active'); }
+
+    /* --------- MODALES --------- */
+    function openModal(el){ el.classList.add('active'); }
+    function closeModal(el){ el.classList.remove('active'); }
+
+    /* --------- UTILIDADES UX --------- */
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 1200);
+    }
+    function vibrate(ms){ try{ navigator?.vibrate?.(ms); }catch(e){} }
+
+    function shuffle(arr){
+      const a = [...arr];
+      for(let i=a.length-1; i>0; i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      // Evita coincidir 100% con orden correcto (poco probable, pero garantizamos variedad)
+      const isSorted = a.every((v,i)=>v===i);
+      if(isSorted && a.length>1) [a[0], a[1]] = [a[1], a[0]];
+      return a;
+    }
+    function arraysEqual(a,b){
+      if(a.length !== b.length) return false;
+      for(let i=0;i<a.length;i++){ if(a[i]!==b[i]) return false; }
+      return true;
+    }
+
+    /* --------- AJUSTES DE LAYOUT: ensureFits() --------- */
+    function assertNoOverflow(){
+      return scene.scrollHeight <= scene.clientHeight;
+    }
+
+    function applyCompactMode(enable=true){
+      const root = document.documentElement;
+      if(enable) document.body.classList.add('compact'); else document.body.classList.remove('compact');
+    }
+
+    function fitBoardToViewport(){
+      // Calcula alto disponible para la board y ajusta --cardH
+      const hud = document.querySelector('.hud');
+      const cta = document.querySelector('.ctaBar');
+      const wrap = document.querySelector('.gamewrap');
+      const sceneH = scene.clientHeight;
+      const hudH = hud.getBoundingClientRect().height;
+      const ctaH = cta.getBoundingClientRect().height;
+      const wrapPad = 8 + 12 + 12; // aproximado suma de paddings y gaps
+      const available = Math.max(140, sceneH - hudH - ctaH - wrapPad);
+      const cardsCount = board.children.length || 4;
+      const gap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--gap')) || 10;
+      // Deja algo de respiro
+      const targetH = Math.max(60, Math.min(86, Math.floor((available - (gap*(cardsCount-1))) / cardsCount)));
+      document.documentElement.style.setProperty('--cardH', targetH + 'px');
+    }
+
+    function autoscaleUI(){
+      // Como último recurso, escala hasta mínimo 0.88
+      const minScale = 0.88;
+      let scale = uiScale;
+      if(assertNoOverflow()) return;
+      scale = Math.max(minScale, scale - 0.02);
+      uiScale = scale;
+      document.documentElement.style.setProperty('--ui-scale', uiScale);
+    }
+
+    function ensureFits(){
+      // Orden: reset -> check -> compact -> fit board -> autoscale (loop limitado)
+      document.body.classList.remove('compact');
+      document.documentElement.style.setProperty('--ui-scale', 1);
+      uiScale = 1;
+
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+
+      applyCompactMode(true);
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+
+      let guard = 0;
+      while(!assertNoOverflow() && guard < 8){
+        autoscaleUI();
+        guard++;
+      }
+    }
+
+    // Exponer por requisito
+    window.assertNoOverflow = assertNoOverflow;
+    window.applyCompactMode = applyCompactMode;
+    window.fitBoardToViewport = fitBoardToViewport;
+    window.autoscaleUI = autoscaleUI;
+    window.ensureFits = ensureFits;
+  </script>
+</body>
+</html>
