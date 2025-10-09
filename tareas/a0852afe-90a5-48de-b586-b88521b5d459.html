@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Paso a Paso: Modo Aprendiz ⚙️</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset + base */
+    :root{
+      --bg1:#1b5cff;
+      --bg2:#0d2b6b;
+      --glass: rgba(255,255,255,.14);
+      --glassStrong: rgba(255,255,255,.2);
+      --text: #f7fbff;
+      --muted: #cbd8ff;
+      --accent:#36e1ff;
+      --good:#3adb7e;
+      --bad:#ff6b6b;
+      --warn:#ffd166;
+      --btnH:56px;
+      --cardH:64px;
+      --cardGap:10px;
+      --radius:14px;
+      --ui-scale:1;
+      --focus: 0 0 0 3px rgba(54,225,255,.65);
+    }
+    *{box-sizing:border-box}
+    html, body { height: 100%; }
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    body{
+      margin:0;
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(120% 120% at 0% 0%, #3a76ff 0%, #1b48c7 35%, #0b3699 100%) no-repeat fixed;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    }
+
+    /* Scene container with safe-area padding */
+    .scene{
+      position: relative;
+      width: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+      padding: 10px;
+      padding-top: calc(10px + env(safe-area-inset-top));
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      padding-left: calc(12px + env(safe-area-inset-left));
+      padding-right: calc(12px + env(safe-area-inset-right));
+      transform-origin: top center;
+      touch-action: none;
+    }
+    @supports (height: 100svh) { .scene{ height:100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene{ height:100dvh; } }
+    @supports not (height: 100svh) and (height: 100vh) { .scene{ height:100vh; } }
+
+    /* Background avatar and glow */
+    .bg-deco{
+      position:absolute; inset:0; pointer-events:none; overflow:hidden;
+    }
+    .bg-deco .glow{
+      position:absolute; width:120vmax; height:120vmax; left:50%; top:60%;
+      transform: translate(-50%,-50%); filter: blur(60px); opacity:.35;
+      background: radial-gradient(circle at 50% 50%, rgba(88,193,255,.45), rgba(17,44,174,.1) 50%, transparent 70%);
+    }
+    .bg-deco img.avatar{
+      position:absolute; right:-6%; bottom:-6%; width: 68vmin; opacity:.22; transform: rotate(-6deg);
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,.35));
+      user-select:none; -webkit-user-drag:none;
+    }
+
+    /* HUD */
+    .hud{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.06));
+      padding:6px 10px; border-radius: 999px; border:1px solid rgba(255,255,255,.28);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 4px 14px rgba(0,0,0,.25);
+    }
+    .brand img{ height:22px; width:auto; display:block }
+    .brand b{ font-size: clamp(12px, 2.7vw, 14px); letter-spacing:.4px }
+    .progress{
+      min-width: 120px; flex:1; display:flex; align-items:center; justify-content:flex-end; gap:10px;
+    }
+    .p-label{ font-weight:700; font-size: clamp(12px, 2.8vw, 14px); color: var(--muted) }
+    .p-bar{ width:110px; height:9px; background: rgba(255,255,255,.18); border-radius:999px; position:relative; overflow:hidden; outline:1px solid rgba(255,255,255,.22) }
+    .p-fill{ position:absolute; left:0; top:0; height:100%; width: 33%; background: linear-gradient(90deg, #3cf7ff, #36e1ff); border-radius:999px; box-shadow: 0 0 8px rgba(54,225,255,.7) inset }
+    
+    /* Header copy */
+    .hero{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:10px 12px; border-radius:14px; background: backdrop-filter( blur(6px) ); background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.04));
+      border: 1px solid rgba(255,255,255,.24);
+      box-shadow: 0 10px 32px rgba(0,0,0,.25), inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    .h-left{ display:flex; gap:10px; align-items:center }
+    .title{ font-weight: 800; font-size: clamp(15px, 4.2vw, 18px); letter-spacing:.2px }
+    .desc{ font-size: clamp(11px, 3vw, 13px); color: var(--muted); line-height:1.2 }
+    .hero small{ display:block; max-width: 70vw }
+    .h-avatar{
+      width:38px; height:38px; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,.3); background: rgba(0,0,0,.2)
+    }
+    .h-avatar img{width:100%;height:100%;object-fit:cover}
+
+    /* Board */
+    .board{
+      display:grid; grid-template-rows: auto 1fr; gap:10px; min-height:0; /* to flex in grid */
+    }
+    .instruction{ font-weight:600; font-size: clamp(12px, 3.2vw, 14px); color: #eaf3ff; opacity:.96 }
+    .cards{
+      display:grid; grid-template-rows: repeat(4, var(--cardH)); gap: var(--cardGap);
+      min-height:0; /* allow to shrink */
+    }
+    .card{
+      display:grid; grid-template-columns: 40px 1fr 84px;
+      align-items:center; gap:10px; height: var(--cardH);
+      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.28); border-radius: var(--radius);
+      padding: 8px; position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,.22), inset 0 0 0 1px rgba(255,255,255,.08);
+      transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+      will-change: transform;
+    }
+    .card.bump{ animation: bump .22s ease; }
+    @keyframes bump{ 50%{ transform: scale(1.02) } }
+    .pos{
+      width:28px; height:28px; display:grid; place-items:center; font-weight:800;
+      background: rgba(0,0,0,.28); border-radius:9px; border:1px solid rgba(255,255,255,.24);
+      color:#fff; font-size:14px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    .label{
+      font-weight:700; font-size: clamp(12px, 3.3vw, 14px); color:#fff;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .controls{
+      display:grid; grid-template-columns: 30px 30px 1fr; gap:6px; align-items:center; justify-items:center;
+    }
+    .btn{
+      height:30px; min-width:30px; padding:0 8px; border-radius:8px; border:1px solid rgba(255,255,255,.3);
+      background: rgba(0,0,0,.22); color:#fff; font-weight:800; cursor:pointer; user-select:none;
+      display:inline-grid; place-items:center;
+      box-shadow: 0 4px 10px rgba(0,0,0,.25), inset 0 0 0 1px rgba(255,255,255,.08);
+      transition: transform .12s ease, background .2s ease, box-shadow .2s ease;
+      font-size:14px;
+    }
+    .btn:hover, .btn:focus-visible{ outline:none; box-shadow: var(--focus); }
+    .btn:active{ transform: translateY(1px) scale(.98); }
+    .btn[disabled]{ opacity:.5; pointer-events:none }
+    .chev{ font-size:16px; line-height:1; }
+    .chips{
+      display:flex; gap:4px; align-items:center; justify-content:flex-end;
+      width:100%;
+    }
+    .chip{
+      width:26px; height:26px; border-radius:999px; display:grid; place-items:center;
+      font-size:12px; font-weight:800; cursor:pointer; user-select:none;
+      background: rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.3);
+      box-shadow: 0 2px 8px rgba(0,0,0,.2), inset 0 0 0 1px rgba(255,255,255,.06);
+      transition: transform .12s ease, background .2s ease, box-shadow .2s ease;
+      color:#fff;
+    }
+    .chip.active{ background: linear-gradient(180deg, rgba(60,247,255,.9), rgba(32,193,249,.9)); color:#002b49; border-color: rgba(255,255,255,.7); }
+    .chip:active{ transform: translateY(1px) scale(.97) }
+    
+    /* Footer CTA */
+    .footer{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .cta{
+      flex:1; height: var(--btnH); border-radius: 14px; font-weight:800; font-size: clamp(15px, 4.2vw, 17px);
+      border:1px solid rgba(255,255,255,.4); color:#002b49; 
+      background: linear-gradient(180deg, #3cf7ff, #1bc9f0);
+      box-shadow: 0 10px 22px rgba(0,0,0,.28), 0 0 0 3px rgba(54,225,255,.25) inset;
+      cursor:pointer;
+    }
+    .cta:disabled{ opacity:.6; cursor:default }
+    .mini-hint{
+      font-size:11px; color: var(--muted); font-weight:600; text-align:right; max-width:40%;
+      display:none;
+    }
+
+    /* Tutorial modal */
+    .modal{
+      position: fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background: rgba(4,16,43,.56);
+      z-index: 10; padding: 14px;
+    }
+    .modal.show{ display:flex; }
+    .modal-card{
+      width: 100%; max-width: 480px;
+      max-height: 90svh; overflow-y:auto;
+      background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.3); border-radius: 16px;
+      padding: 16px; box-shadow: 0 10px 32px rgba(0,0,0,.5);
+      backdrop-filter: blur(8px);
+    }
+    .modal h3{ margin:6px 0 6px; font-size: clamp(16px, 5vw, 20px); }
+    .modal p{ margin:0 0 12px; color:#eaf3ff; font-size: clamp(12px, 3.4vw, 14px) }
+    .modal .row{ display:flex; gap:10px; align-items:center; }
+    .modal .row .btn{ padding:10px 14px; height:auto }
+    .modal .cta{ height:48px }
+
+    /* Results view */
+    .results{
+      padding: 14px; display:none; flex-direction:column; gap:12px;
+      position: fixed; inset:0; z-index:12;
+      background: linear-gradient(180deg, rgba(7,27,76,.86), rgba(5,20,58,.86));
+      overflow-y:auto;
+    }
+    .results header{
+      display:flex; align-items:center; gap:12px; justify-content:space-between;
+      position: sticky; top:0; background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,0));
+      padding: 8px 4px; backdrop-filter: blur(6px); z-index:2;
+    }
+    .results h2{ margin:0; font-size: clamp(18px, 5vw, 22px) }
+    .res-section{
+      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.28); border-radius:16px; padding:12px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    .res-section h4{ margin:4px 0 8px; font-size: clamp(14px, 4.2vw, 16px) }
+    .rows{ display:grid; grid-template-columns: 1fr; gap:8px }
+    .order-cols{ display:grid; grid-template-columns: 1fr 1fr; gap:8px }
+    .order{
+      background: rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.24);
+      border-radius:12px; padding:8px;
+    }
+    .order b{ display:block; font-size:12px; color:#d6e6ff; margin-bottom:6px }
+    .order ol{ margin:0; padding-left: 18px }
+    .order ol li{ margin:0 0 4px; font-size: 13px; line-height:1.25 }
+    .ok{ color: var(--good) }
+    .bad{ color: var(--bad) }
+    .tip{
+      background: rgba(20,130,255,.18); border:1px dashed rgba(255,255,255,.4);
+      border-radius:12px; padding:10px; color:#eaf3ff; font-size:13px
+    }
+    .final-cta{
+      display:flex; gap:10px; position: sticky; bottom: 6px; align-items:center;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+      padding:8px 0; backdrop-filter: blur(6px);
+    }
+    .link-reward{
+      flex:1; display:inline-flex; align-items:center; justify-content:center;
+      height:54px; border-radius:14px; border:1px solid rgba(255,255,255,.4);
+      background: linear-gradient(180deg, #3cf7ff, #1bc9f0);
+      color:#002b49; font-weight:800; text-decoration:none; font-size: clamp(15px, 4.4vw, 18px);
+      box-shadow: 0 10px 22px rgba(0,0,0,.28), 0 0 0 3px rgba(54,225,255,.25) inset;
+    }
+    .note{ font-size:12px; color:#ffeaa7; font-weight:700; display:none }
+
+    /* Visual vibration on confirm */
+    .shake{ animation: shake .25s linear; }
+    @keyframes shake{
+      20%{ transform: translateX(-2px) }
+      40%{ transform: translateX(2px) }
+      60%{ transform: translateX(-2px) }
+      80%{ transform: translateX(2px) }
+    }
+
+    /* Compact mode for tiny screens */
+    .compact{
+      --btnH:50px;
+      --cardH:58px;
+      --cardGap:8px;
+      --radius:12px;
+      transform-origin: top center;
+    }
+    .compact .brand b{ display:none }
+    .compact .p-bar{ width:90px }
+    .compact .hero{ padding:8px 10px }
+    .compact .pos{ width:24px; height:24px; font-size:12px }
+    .compact .chips .chip{ width:24px; height:24px; font-size:11px }
+    .compact .btn{ height:28px; min-width:28px; font-size:13px }
+    .compact .mini-hint{ display:block } /* Show hint only in compact space to reassure button always visible */
+
+    /* Scaling container for last-resort fitting */
+    .scaleWrap{ transform: scale(var(--ui-scale)); transform-origin: top center; }
+
+    /* Focus visibility */
+    .btn:focus-visible, .chip:focus-visible, .cta:focus-visible, .link-reward:focus-visible{ outline: none; box-shadow: var(--focus); }
+
+    /* Accessibility contrast helpers (not visible) */
+    .sr-only{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden }
+  </style>
+</head>
+<body>
+  <div class="bg-deco" aria-hidden="true">
+    <div class="glow"></div>
+    <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+  </div>
+
+  <div class="scene scaleWrap" id="scene">
+    <!-- HUD -->
+    <div class="hud">
+      <div class="brand">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <b>Kämpe</b>
+      </div>
+      <div class="progress">
+        <span class="p-label" id="progressLabel">Reto 1/3</span>
+        <div class="p-bar" aria-hidden="true"><div class="p-fill" id="pFill" style="width:33%"></div></div>
+      </div>
+    </div>
+
+    <!-- Header copy -->
+    <div class="hero">
+      <div class="h-left">
+        <div class="h-avatar"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png" alt="" loading="lazy"></div>
+        <div>
+          <div class="title">Paso a Paso: Modo Aprendiz ⚙️</div>
+          <small class="desc">Primera semana en instalaciones domésticas. Ordena los pasos antes de actuar, sin prisas y con cabeza.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Board -->
+    <div class="board" id="boardWrap">
+      <div class="instruction" id="instruction">Usa ↑/↓ o asigna 1–4 a cada tarjeta. Luego confirma.</div>
+      <div class="cards" id="cards"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <button class="cta" id="confirmBtn" aria-label="Confirmar orden">Confirmar orden</button>
+      <div class="mini-hint" id="miniHint">Consejo: también puedes tocar los chips 1–4.</div>
+    </div>
+  </div>
+
+  <!-- Tutorial modal -->
+  <div class="modal" id="tutorial">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tutTitle">
+      <h3 id="tutTitle">Cómo jugar (rápido):</h3>
+      <p>Reordena 4 pasos con ↑/↓ o tocando 1–4 en cada tarjeta. Pulsa “Confirmar orden”. Tienes 3 retos.</p>
+      <div class="row">
+        <button class="btn" id="tutClose" aria-label="Empezar">¡Entendido!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results overlay -->
+  <div class="results" id="results" aria-live="polite">
+    <header>
+      <h2>Resultados: Modo Aprendiz</h2>
+      <div class="brand" style="padding:4px 8px"><img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" /></div>
+    </header>
+    <div id="resultsContent" class="content" style="display:flex; flex-direction:column; gap:12px"></div>
+    <div class="final-cta">
+      <a class="link-reward" id="rewardLink" href="#" rel="noopener">Ver mi recompensa</a>
+      <span class="note" id="initNote">Aviso: faltó initData en la URL.</span>
+    </div>
+  </div>
+
+  <script>
+    // Data and state
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || "";
+    const hasInitData = !!urlParams.get('initData');
+
+    const sequences = [
+      {
+        id: 'A',
+        name: 'Preparar una escalera de mano',
+        steps: [
+          { text: 'inspeccionar la escalera', why: 'Detectar daños antes de usarla evita caídas.' },
+          { text: 'comprobar suelo y zona', why: 'Base firme y zona despejada reducen riesgos.' },
+          { text: 'ajustar ángulo 75° y bloquear', why: 'Ángulo correcto da apoyo y evita deslizamientos.' },
+          { text: 'verificar estabilidad antes de subir', why: 'Última comprobación antes de cargar peso.' },
+        ],
+        tip: 'Nunca uses la escalera sobre superficies resbaladizas y mantén 3 puntos de apoyo.'
+      },
+      {
+        id: 'B',
+        name: 'Cambio de enchufe (fase previa)',
+        steps: [
+          { text: 'identificar el circuito', why: 'Saber qué línea trabajas evita cortes erróneos.' },
+          { text: 'desconectar en el cuadro', why: 'Quita la energía antes de tocar el enchufe.' },
+          { text: 'verificar ausencia de tensión', why: 'Comprueba con el polímetro: seguridad ante todo.' },
+          { text: 'retirar tapa con destornillador aislado', why: 'Herramienta adecuada reduce riesgo de choque.' },
+        ],
+        tip: 'Si hay más gente, bloquea y etiqueta el circuito para evitar reconexiones accidentales.'
+      },
+      {
+        id: 'C',
+        name: 'Saludo al cliente',
+        steps: [
+          { text: 'presentarte', why: 'Genera confianza desde el inicio.' },
+          { text: 'explicar qué harás y el tiempo estimado', why: 'Alinea expectativas y evita malentendidos.' },
+          { text: 'acordar zona y dudas', why: 'Asegura accesos y resuelve preguntas previas.' },
+          { text: 'agradecer e iniciar', why: 'Cierre cordial y comienzo ordenado.' },
+        ],
+        tip: 'Comunica cambios y tiempos. La transparencia mantiene la confianza.'
+      }
+    ];
+
+    const MAX_LABEL = 48; // cards max length
+    const MAX_MODAL_TEXT = 180; // explanations text limit
+
+    function clampText(t, max) {
+      if (!t) return '';
+      let s = t.trim();
+      if (s.length <= max) return s;
+      return s.slice(0, max - 1).trim() + '…';
+    }
+
+    // Shuffle helper
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // Runtime state
+    let current = 0;
+    const session = sequences.map(seq => {
+      const correct = seq.steps.map(s => ({text: clampText(s.text, MAX_LABEL), why: clampText(s.why, MAX_MODAL_TEXT)}));
+      const scrambled = shuffle(correct);
+      return {
+        id: seq.id,
+        name: seq.name,
+        tip: clampText(seq.tip || "", MAX_MODAL_TEXT),
+        correct: correct,
+        order: scrambled.slice(), // current working order
+        finalPlayer: null, // to capture submitted
+      }
+    });
+
+    // DOM refs
+    const scene = document.getElementById('scene');
+    const cardsEl = document.getElementById('cards');
+    const progressLabel = document.getElementById('progressLabel');
+    const pFill = document.getElementById('pFill');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const instructionEl = document.getElementById('instruction');
+    const tutorial = document.getElementById('tutorial');
+    const tutClose = document.getElementById('tutClose');
+    const results = document.getElementById('results');
+    const resultsContent = document.getElementById('resultsContent');
+    const rewardLink = document.getElementById('rewardLink');
+    const initNote = document.getElementById('initNote');
+    const miniHint = document.getElementById('miniHint');
+
+    // Rendering the current challenge
+    function renderChallenge() {
+      const data = session[current];
+      // HUD
+      progressLabel.textContent = `Reto ${current+1}/3`;
+      pFill.style.width = `${((current+1)/3)*100|0}%`;
+
+      // Instruction
+      instructionEl.textContent = `Reordena: ${data.name}`;
+
+      // Cards
+      cardsEl.innerHTML = '';
+      data.order.forEach((step, idx) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.setAttribute('role', 'group');
+        card.setAttribute('aria-label', `Paso ${idx+1}: ${step.text}`);
+
+        const pos = document.createElement('div');
+        pos.className = 'pos';
+        pos.textContent = idx+1;
+
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = step.text;
+
+        const controls = document.createElement('div');
+        controls.className = 'controls';
+
+        const upBtn = document.createElement('button');
+        upBtn.className = 'btn';
+        upBtn.setAttribute('aria-label', `Mover paso ${idx+1} arriba`);
+        upBtn.innerHTML = '<span class="chev">↑</span>';
+        if (idx === 0) upBtn.disabled = true;
+        upBtn.addEventListener('click', () => moveCard(idx, -1));
+
+        const downBtn = document.createElement('button');
+        downBtn.className = 'btn';
+        downBtn.setAttribute('aria-label', `Mover paso ${idx+1} abajo`);
+        downBtn.innerHTML = '<span class="chev">↓</span>';
+        if (idx === data.order.length - 1) downBtn.disabled = true;
+        downBtn.addEventListener('click', () => moveCard(idx, +1));
+
+        const chips = document.createElement('div');
+        chips.className = 'chips';
+        for (let n=1;n<=4;n++){
+          const chip = document.createElement('button');
+          chip.className = 'chip' + (n===idx+1 ? ' active' : '');
+          chip.setAttribute('aria-label', `Colocar este paso en la posición ${n}`);
+          chip.textContent = n;
+          chip.addEventListener('click', () => setCardPosition(idx, n-1));
+          chips.appendChild(chip);
+        }
+
+        controls.appendChild(upBtn);
+        controls.appendChild(downBtn);
+        controls.appendChild(chips);
+
+        card.appendChild(pos);
+        card.appendChild(label);
+        card.appendChild(controls);
+
+        cardsEl.appendChild(card);
+      });
+
+      ensureFits(); // Make sure everything fits
+    }
+
+    function moveCard(index, delta) {
+      const data = session[current];
+      const newIndex = index + delta;
+      if (newIndex < 0 || newIndex >= data.order.length) return;
+      [data.order[index], data.order[newIndex]] = [data.order[newIndex], data.order[index]];
+      // Microinteraction
+      bounceCard(newIndex);
+      renderChallenge();
+    }
+
+    function setCardPosition(index, targetIndex) {
+      const data = session[current];
+      const item = data.order.splice(index,1)[0];
+      data.order.splice(targetIndex, 0, item);
+      bounceCard(targetIndex);
+      renderChallenge();
+    }
+
+    function bounceCard(idx){
+      requestAnimationFrame(()=>{
+        const c = cardsEl.children[idx];
+        if (!c) return;
+        c.classList.remove('bump'); // restart
+        void c.offsetWidth;
+        c.classList.add('bump');
+      });
+    }
+
+    function checkIfCorrect(order, correct){
+      // compare arrays of text
+      return order.every((s, i) => s.text === correct[i].text);
+    }
+
+    function nextStep() {
+      // Visual vibration
+      scene.classList.add('shake');
+      if (navigator.vibrate) { try { navigator.vibrate(20); } catch(e){} }
+      setTimeout(()=>scene.classList.remove('shake'), 260);
+
+      // Save player's order and advance
+      const data = session[current];
+      data.finalPlayer = data.order.slice(); // deep enough (objects are fine)
+      if (current < session.length - 1){
+        current++;
+        renderChallenge();
+      } else {
+        showResults();
+      }
+    }
+
+    // Results screen
+    function showResults(){
+      // Build content
+      resultsContent.innerHTML = '';
+      let totalCorrect = 0;
+      session.forEach((seq, idx) => {
+        const section = document.createElement('section');
+        section.className = 'res-section';
+        
+        const title = document.createElement('h4');
+        title.textContent = `Reto ${idx+1}/3 · ${seq.name}`;
+        section.appendChild(title);
+
+        const cols = document.createElement('div');
+        cols.className = 'order-cols';
+
+        // Player order
+        const orderPlayer = document.createElement('div');
+        orderPlayer.className = 'order';
+        const labelP = document.createElement('b');
+        const correctCount = seq.finalPlayer.reduce((acc, s, i)=> acc + (s.text===seq.correct[i].text ? 1:0), 0);
+        totalCorrect += correctCount;
+        labelP.innerHTML = `Tu orden <span class="${correctCount===4 ? 'ok':'bad'}">(${correctCount}/4)</span>`;
+        orderPlayer.appendChild(labelP);
+        const olP = document.createElement('ol');
+        seq.finalPlayer.forEach(s=>{
+          const li = document.createElement('li');
+          li.textContent = s.text;
+          olP.appendChild(li);
+        });
+        orderPlayer.appendChild(olP);
+
+        // Correct order
+        const orderC = document.createElement('div');
+        orderC.className = 'order';
+        const labelC = document.createElement('b');
+        labelC.textContent = 'Orden correcto';
+        orderC.appendChild(labelC);
+        const olC = document.createElement('ol');
+        seq.correct.forEach(s=>{
+          const li = document.createElement('li');
+          li.textContent = s.text;
+          olC.appendChild(li);
+        });
+        orderC.appendChild(olC);
+
+        cols.appendChild(orderPlayer);
+        cols.appendChild(orderC);
+        section.appendChild(cols);
+
+        // Explanations list
+        const expl = document.createElement('div');
+        expl.className = 'rows';
+        const box = document.createElement('div');
+        box.className = 'order';
+        const b = document.createElement('b');
+        b.textContent = '¿Por qué este orden?';
+        box.appendChild(b);
+        const olWhy = document.createElement('ol');
+        seq.correct.forEach(s=>{
+          const li = document.createElement('li');
+          li.textContent = s.why;
+          olWhy.appendChild(li);
+        });
+        box.appendChild(olWhy);
+        expl.appendChild(box);
+        section.appendChild(expl);
+
+        // Safety tip
+        const tip = document.createElement('div');
+        tip.className = 'tip';
+        tip.textContent = `Consejo: ${seq.tip}`;
+        section.appendChild(tip);
+
+        resultsContent.appendChild(section);
+      });
+
+      // Show reward link with initData
+      const baseHref = 'https://kampe-game-phaser.onrender.com/daily_streak?initData=';
+      rewardLink.href = baseHref + encodeURIComponent(initData);
+      initNote.style.display = hasInitData ? 'none' : 'inline';
+
+      // Update header to show summary
+      const summary = document.createElement('div');
+      summary.className = 'res-section';
+      summary.style.background = 'linear-gradient(180deg, rgba(60,247,255,.15), rgba(255,255,255,.06))';
+      summary.innerHTML = `<b>Resumen</b><div style="margin-top:6px;font-size:14px">Pasos correctos: <span class="${totalCorrect===12?'ok':'bad'}">${totalCorrect}/12</span>. ¡Buen trabajo! Sigue practicando el orden y la seguridad.</div>`;
+      resultsContent.prepend(summary);
+
+      // Toggle scroll ON only for results
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+
+      // Reveal results
+      results.style.display = 'flex';
+    }
+
+    // Ensure UI fits within viewport
+    function assertNoOverflow(){
+      const ok = scene.scrollHeight <= scene.clientHeight;
+      return ok;
+    }
+    function applyCompactMode(){
+      if (!scene.classList.contains('compact')){
+        scene.classList.add('compact');
+      }
+    }
+    function fitBoardToViewport(){
+      // Try to reduce card height a bit within sane range
+      const cs = getComputedStyle(document.documentElement);
+      const currH = parseInt(cs.getPropertyValue('--cardH')) || 64;
+      if (currH > 56){
+        document.documentElement.style.setProperty('--cardH', (currH - 4) + 'px');
+      }
+    }
+    function autoscaleUI(){
+      const cs = getComputedStyle(document.documentElement);
+      let scale = parseFloat(cs.getPropertyValue('--ui-scale')) || 1;
+      scale = Math.max(0.88, scale - 0.02);
+      document.documentElement.style.setProperty('--ui-scale', scale.toFixed(2));
+    }
+    function ensureFits(){
+      // reset dynamic vars before measuring
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      document.documentElement.style.setProperty('--cardH', '64px');
+      scene.classList.remove('compact');
+
+      // Run steps with attempts
+      if (assertNoOverflow()) return;
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+      // iterate few times reducing card height
+      for (let i=0;i<4;i++){
+        fitBoardToViewport();
+        if (assertNoOverflow()) return;
+      }
+      // last resort: scale down
+      for (let i=0;i<8;i++){
+        autoscaleUI();
+        if (assertNoOverflow()) return;
+      }
+      // If still not, we still keep UI usable at min scale.
+    }
+
+    // Init flow
+    function init(){
+      // Tutorial modal
+      tutorial.classList.add('show');
+      tutClose.addEventListener('click', ()=>{
+        tutorial.classList.remove('show');
+      }, {once:true});
+
+      // Confirm button
+      confirmBtn.addEventListener('click', nextStep);
+
+      // Accessibility keyboard support for arrows (optional)
+      document.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter' && tutorial.classList.contains('show')) {
+          tutorial.classList.remove('show');
+        }
+      });
+
+      // First render
+      renderChallenge();
+
+      // Responsive checks
+      window.addEventListener('resize', ensureFits);
+      window.addEventListener('orientationchange', ()=>{
+        setTimeout(ensureFits, 120);
+      });
+    }
+
+    // Start
+    init();
+
+    // Prevent accidental global scroll (handled already), but keep taps working
+    document.addEventListener('touchmove', function(e){
+      // Allow scroll only inside results overlay
+      if (results.style.display === 'flex') return;
+      e.preventDefault();
+    }, {passive:false});
+  </script>
+</body>
+</html>
