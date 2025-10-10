@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Fuga en cocina: primer cliente 🛠️ | Kämpe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ========== Reset & Base ========== */
+    :root{
+      --ui-scale: 1;
+      --hudH: 64px;
+      --gap: 10px;
+      --radius: 14px;
+      --glass: saturate(1.4) contrast(1.03) blur(12px);
+      --shadow: 0 8px 24px rgba(0,0,0,.25);
+      --brand: #7be0ff;
+      --accent: #4be38d;
+      --danger: #ff5b6b;
+      --warn: #ffb020;
+      --text: #eaf6ff;
+      --text-dim: #b7d4ff;
+      --bubble-me: #2a65ff;
+      --bubble-npc: rgba(255,255,255,.12);
+      --btnH: 56px;
+      --chatMaxLines: 5;
+      --choiceMaxLines: 2;
+      --compactScale: .94;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%; margin:0; padding:0; overflow:hidden; overscroll-behavior:none; font-family:Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:var(--text); background:#0c1f52;}
+    body{
+      background:
+        radial-gradient(1200px 600px at 70% -10%, rgba(90,180,255,.25), transparent 60%),
+        radial-gradient(1000px 500px at 10% 10%, rgba(55,120,255,.25), transparent 55%),
+        linear-gradient(180deg, #0e2b7a 0%, #0c1f52 60%, #091639 100%);
+    }
+    img{max-width:100%; display:block}
+    a{color:inherit}
+    button{font:inherit}
+    /* ========== Scene (viewport-locked) ========== */
+    .scene{
+      position:relative;
+      width:100%;
+      height:100vh; /* fallback */
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom)) env(safe-area-inset-left);
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+    }
+    @supports (height:100dvh){ .scene{ height:100dvh; } }
+    @supports (height:100svh){ .scene{ height:100svh; } }
+
+    .scene-inner{
+      position:relative;
+      display:grid;
+      grid-template-rows: var(--hudH) 1fr auto;
+      gap: var(--gap);
+      width:100%;
+      height:100%;
+      padding:12px;
+    }
+    .scene.compact .scene-inner{ gap:6px; }
+    .scene.compact{ --hudH: 54px; }
+    /* ========== HUD ========== */
+    .hud{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:8px 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      backdrop-filter: var(--glass);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      min-height: var(--hudH);
+    }
+    .hud-left{display:flex; align-items:center; gap:10px;}
+    .logo{
+      width:112px; height:auto; object-fit:contain;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,.35));
+    }
+    .title{
+      font-weight:800;
+      font-size: clamp(14px, 2.8vw, 18px);
+      line-height:1.1;
+      letter-spacing:.2px;
+      color:#ffffff;
+      text-shadow:0 1px 0 rgba(0,0,0,.45);
+      display:none; /* keep HUD slim on small */
+    }
+    .scene:not(.compact) .title{ display:block; }
+    .hud-right{
+      display:flex; align-items:center; gap:8px;
+    }
+    .progress-pill{
+      display:flex; align-items:center; justify-content:center;
+      min-width:66px; height:32px; padding:0 10px;
+      border-radius:999px;
+      background:linear-gradient(180deg, rgba(75,227,141,.25), rgba(75,227,141,.12));
+      border:1px solid rgba(75,227,141,.45);
+      color:#d7ffe8; font-weight:700; font-size:14px;
+      text-shadow: 0 1px 0 rgba(0,0,0,.6);
+    }
+    /* ========== Chat ========== */
+    .chat{
+      position:relative;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      backdrop-filter: var(--glass);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:flex; flex-direction:column;
+    }
+    .chatScroll{
+      flex:1 1 auto;
+      overflow-y:auto;
+      padding:10px;
+      scroll-behavior:smooth;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+    }
+    .chatScroll::-webkit-scrollbar{ width:6px; }
+    .chatScroll::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.25); border-radius:6px; }
+    .bubble{
+      display:grid; grid-template-columns: 36px 1fr; gap:8px;
+      margin:8px 0;
+      align-items: start;
+      max-width:100%;
+    }
+    .bubble.me{ grid-template-columns: 1fr 36px; }
+    .bubble.me .avatar{ grid-column:2; }
+    .bubble.me .content{ grid-column:1; justify-self:end; }
+    .avatar{
+      width:36px; height:36px; border-radius:50%;
+      border:1px solid rgba(255,255,255,.35);
+      overflow:hidden; background:rgba(255,255,255,.15);
+    }
+    .content{
+      display:flex; flex-direction:column; gap:4px; min-width:0;
+    }
+    .name{
+      font-weight:700; font-size:12px; color:var(--text-dim);
+      letter-spacing:.2px;
+      text-transform:uppercase;
+    }
+    .text{
+      padding:10px 12px;
+      border-radius: 12px;
+      background: var(--bubble-npc);
+      color: var(--text);
+      font-size: 14px; line-height:1.2;
+      max-width: 88%;
+      word-break: break-word;
+      display: -webkit-box;
+      -webkit-line-clamp: var(--chatMaxLines);
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+    }
+    .bubble.me .text{
+      background: linear-gradient(180deg, rgba(42,101,255,.95), rgba(42,101,255,.8));
+      border:1px solid rgba(255,255,255,.18);
+    }
+    .meta{
+      font-size:11px; opacity:.72;
+    }
+    /* ========== Choices (sticky inside scene) ========== */
+    .choices{
+      position:sticky; bottom:0;
+      display:grid; grid-template-columns: 1fr; gap:8px;
+      padding:8px;
+      background: linear-gradient(180deg, rgba(7,17,44,.0), rgba(7,17,44,.55) 50%, rgba(7,17,44,.65));
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.15);
+      backdrop-filter: blur(10px);
+    }
+    .choiceBtn{
+      min-height: var(--btnH);
+      padding: 12px 14px;
+      border-radius:12px; border:1px solid rgba(255,255,255,.2);
+      background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08));
+      color:#fff; font-weight:800; letter-spacing:.2px;
+      box-shadow: 0 6px 16px rgba(0,0,0,.25);
+      cursor:pointer; outline:none;
+      display:flex; align-items:center; justify-content:center; text-align:center;
+      user-select:none; -webkit-user-select:none;
+      transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .choiceBtn[data-type="correct"]{ border-color: rgba(75,227,141,.7); }
+    .choiceBtn[data-type="partial"]{ border-color: rgba(255,176,32,.7); }
+    .choiceBtn[data-type="wrong"]{ border-color: rgba(255,91,107,.7); }
+    .choiceBtn:hover, .choiceBtn:focus{ transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,0,0,.28); }
+    .choiceBtn:active{ transform: translateY(0); }
+    .choiceLabel{
+      display:-webkit-box; -webkit-line-clamp: var(--choiceMaxLines); -webkit-box-orient: vertical; overflow:hidden;
+      font-size: clamp(14px, 3.6vw, 16px);
+    }
+    .choices.disabled .choiceBtn{ opacity:.6; pointer-events:none; }
+
+    /* ========== Modals (Intro & Results) ========== */
+    .modal{
+      position:fixed; inset:0; z-index:50;
+      background: linear-gradient(180deg, rgba(8,15,36,.85), rgba(6,12,28,.85));
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+    }
+    .modal-card{
+      width:min(720px, 96vw);
+      max-height:90svh;
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:18px; padding:16px; overflow-y:auto;
+      backdrop-filter: var(--glass);
+      box-shadow: var(--shadow);
+    }
+    .modal-card header{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom:8px;
+    }
+    .modal h1{
+      font-size: clamp(18px, 5.2vw, 28px);
+      margin:0; line-height:1.1;
+    }
+    .modal p{
+      margin:.35rem 0; color:var(--text); opacity:.9;
+      display:-webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow:hidden;
+      font-size: clamp(14px, 3.6vw, 16px);
+    }
+    .modal .subtle{ color:var(--text-dim); font-size:13px; }
+    .modal .actions{
+      display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .btn{
+      height:44px; min-width:140px; padding:0 16px; border-radius:12px;
+      display:inline-flex; align-items:center; justify-content:center;
+      border:1px solid rgba(255,255,255,.2); cursor:pointer;
+      font-weight:800; letter-spacing:.2px; color:#fff;
+      background:linear-gradient(180deg, rgba(42,101,255,.95), rgba(42,101,255,.8));
+      box-shadow: 0 6px 18px rgba(0,0,0,.28);
+    }
+    .btn.secondary{
+      background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08));
+    }
+    .notice{
+      display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px;
+      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+      color:#fff; font-size:13px;
+    }
+    .warning{ border-color: rgba(255,176,32,.6); }
+    /* Accessibility focus */
+    :focus-visible{ outline:2px solid #fff; outline-offset:2px; border-radius:10px;}
+    /* ========== Avatar background (decorative) ========== */
+    .hero-avatar{
+      position:absolute; right:-4%; bottom:8%; width:180px; opacity:.14; pointer-events:none;
+      transform: rotate(-6deg);
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,.35));
+    }
+    @media (max-width:380px){
+      .hero-avatar{ display:none; }
+    }
+    /* ========== Compact Mode Tweaks ========== */
+    .scene.compact{ --btnH: 52px; }
+    .scene.compact .logo{ width:96px; }
+    .scene.compact .progress-pill{ height:28px; min-width:58px; font-size:12px; }
+    .scene.compact .bubble .text{ font-size:13px; }
+    .scene.compact .choiceLabel{ font-size:14px; }
+    /* Autoscale fallback container */
+    .autoscale{ transform: scale(var(--ui-scale)); transform-origin: top center; }
+
+    /* Disable gestures on gameplay; allow only chat to scroll */
+    .scene{ touch-action: none; }
+    .chatScroll{ touch-action: pan-y; }
+
+  </style>
+</head>
+<body>
+  <div class="scene autoscale" id="scene">
+    <div class="scene-inner">
+      <header class="hud" aria-label="Barra superior">
+        <div class="hud-left">
+          <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          <div class="title">Fuga en cocina: primer cliente 🛠️</div>
+        </div>
+        <div class="hud-right">
+          <div class="progress-pill" id="progress">—/6</div>
+        </div>
+      </header>
+
+      <section class="chat" aria-live="polite" aria-label="Conversación">
+        <div class="chatScroll" id="chatScroll"></div>
+        <img class="hero-avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" aria-hidden="true" loading="eager">
+      </section>
+
+      <nav class="choices" id="choices" aria-label="Opciones">
+        <!-- Botones generados por JS -->
+      </nav>
+    </div>
+  </div>
+
+  <!-- Intro Modal -->
+  <div class="modal" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="modal-card">
+      <header>
+        <h1 id="introTitle">Fuga en cocina: primer cliente 🛠️</h1>
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="" class="logo" style="width:120px;height:auto;">
+      </header>
+      <p><strong>Escenario:</strong> primera salida como aprendiz de fontanería. Un cliente reporta fuga bajo el fregadero y agua en el suelo. Urgencia por evitar daños.</p>
+      <p class="subtle">Tutorial: Elige entre 2–3 opciones por turno. Busca seguridad (PRL), diagnóstico claro y buena comunicación. Dura 2–4 min.</p>
+      <div class="actions">
+        <button class="btn" id="startBtn" aria-label="Comenzar el reto">Empezar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Modal -->
+  <div class="modal" id="resultsModal" role="dialog" aria-modal="true" aria-labelledby="resTitle" hidden>
+    <div class="modal-card">
+      <header>
+        <h1 id="resTitle">Resultados del reto</h1>
+        <div class="progress-pill" id="progressEnd">6/6</div>
+      </header>
+      <div id="resultsBody">
+        <!-- Rellenado por JS -->
+      </div>
+      <div class="actions">
+        <span id="initDataWarning" class="notice warning" hidden>initData ausente. Puedes continuar, pero tu recompensa puede no registrarse.</span>
+        <button class="btn secondary" id="retryBtn" aria-label="Reintentar">Reintentar</button>
+        <button class="btn" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== Utility: Clamp text to keep layout stable ==========
+    function clampText(str, max=48){
+      if(!str) return '';
+      const s = str.trim();
+      return (s.length <= max) ? s : s.slice(0, max-1) + '…';
+    }
+
+    // ========== InitData handling ==========
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || '';
+
+    // ========== Characters ==========
+    const CHAR = {
+      mentor: { name: 'Mentor', avatar: 'https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png' },
+      me:     { name: 'Tú (Aprendiz)', avatar: 'https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png' },
+      cliente:{ name: 'Cliente', avatar: 'https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png' }
+    };
+
+    // ========== Turns Definition (5) ==========
+    // Each turn: messages (1–2), choices (correct/partial/wrong), reaction actor
+    const TURNS = [
+      {
+        id: 1,
+        messages: [
+          { who:'cliente', text:'¡Ayuda! Hay agua bajo mi fregadero; el suelo se está mojando.' },
+          { who:'mentor', text:'Primero, protege a la persona y la casa. ¿Qué dices?' }
+        ],
+        reactBy: 'mentor',
+        choices: [
+          {
+            text: 'Cierra la llave de paso y corta electricidad.',
+            type: 'correct',
+            explain: 'Cortar agua y energía reduce daños y riesgos eléctricos.'
+          },
+          {
+            text: 'Pon toallas y espera a que llegue.',
+            type: 'wrong',
+            explain: 'No elimina la causa; el agua puede dañar y electrificar.'
+          },
+          {
+            text: 'Cierra solo el grifo; voy en camino.',
+            type: 'partial',
+            explain: 'Incompleto. Puede seguir saliendo agua o haber tensión cerca.'
+          }
+        ],
+        reactions: {
+          correct: '¡Bien! Seguridad primero. 👍',
+          partial: 'Incompleto: puede quedar energía cerca.',
+          wrong: 'Riesgo: agua + electricidad es peligroso.'
+        }
+      },
+      {
+        id: 2,
+        messages: [
+          { who:'cliente', text:'Ya cerré la llave. ¿Qué más hago?' },
+          { who:'mentor', text:'Pide algo que te ayude a diagnosticar.' }
+        ],
+        reactBy: 'mentor',
+        choices: [
+          {
+            text: 'Foto del sifón y tubos bajo fregadero.',
+            type: 'correct',
+            explain: 'Con una foto ves sifón, juntas y posibles fugas.'
+          },
+          {
+            text: 'Un video largo de la cocina.',
+            type: 'partial',
+            explain: 'Útil pero pesado y menos específico que una foto clara.'
+          },
+          {
+            text: 'Nada, voy sin datos.',
+            type: 'wrong',
+            explain: 'Ir a ciegas retrasa el arreglo y puede faltar material.'
+          }
+        ],
+        reactions: {
+          correct: 'Perfecto, así planeamos repuestos. 📸',
+          partial: 'Vale, pero un video pesa y distrae.',
+          wrong: 'Ir sin datos empeora tiempos y coste.'
+        }
+      },
+      {
+        id: 3,
+        messages: [
+          { who:'cliente', text:'Al abrir el grifo, gotea del codo del sifón.' },
+          { who:'mentor', text:'Con esa pista, ¿qué crees que es?' }
+        ],
+        reactBy: 'mentor',
+        choices: [
+          {
+            text: 'Desagüe: sifón/tuerca. No uses fregadero.',
+            type: 'correct',
+            explain: 'La fuga aparece al desaguar: típico del sifón o su junta.'
+          },
+          {
+            text: 'Alimentación: cierra grifos de escuadra.',
+            type: 'wrong',
+            explain: 'Si gotea al desaguar, no es alimentación presurizada.'
+          },
+          {
+            text: 'No sé; llevo de todo y ya vemos.',
+            type: 'partial',
+            explain: 'Prudente, pero debes proponer hipótesis y prevención.'
+          }
+        ],
+        reactions: {
+          correct: 'Buen ojo: parece desagüe. 🔧',
+          partial: 'Ok, pero da una hipótesis para preparar material.',
+          wrong: 'No cuadra: el goteo va con el desagüe, no con la entrada.'
+        }
+      },
+      {
+        id: 4,
+        messages: [
+          { who:'mentor', text:'Antes de salir, ¿qué harás en PRL al llegar?' }
+        ],
+        reactBy: 'mentor',
+        choices: [
+          {
+            text: 'EPI guantes y gafas; señalizo y corto.',
+            type: 'correct',
+            explain: 'EPI, señalización y control de energía reducen accidentes.'
+          },
+          {
+            text: 'Solo guantes, rápido y sin señales.',
+            type: 'partial',
+            explain: 'Mejor que nada, pero falta señalización y control de riesgos.'
+          },
+          {
+            text: 'Nada, es solo agua.',
+            type: 'wrong',
+            explain: 'Minimizas el riesgo; resbalones y choques eléctricos existen.'
+          }
+        ],
+        reactions: {
+          correct: 'Top PRL. Menos accidentes. 🛡️',
+          partial: 'Falta señalizar y controlar energía.',
+          wrong: 'Mala práctica; te expones tú y el cliente.'
+        }
+      },
+      {
+        id: 5,
+        messages: [
+          { who:'cliente', text:'¿Cuándo vienes y cuánto costará?' },
+          { who:'mentor', text:'Responde claro y honesto.' }
+        ],
+        reactBy: 'cliente',
+        choices: [
+          {
+            text: 'Llego 60–90 min; MO+mat. 40–80€ aprox',
+            type: 'correct',
+            explain: 'Das ventana realista y rango según diagnósticos habituales.'
+          },
+          {
+            text: 'Hoy cuando pueda; será barato.',
+            type: 'partial',
+            explain: 'Vago y poco concreto; genera desconfianza.'
+          },
+          {
+            text: 'Precio exacto ahora: 30€ cerrado.',
+            type: 'wrong',
+            explain: 'Promesa irreal sin ver la avería; arriesga tu credibilidad.'
+          }
+        ],
+        reactions: {
+          correct: 'Gracias, me vale el rango y la ventana. ⏱️💶',
+          partial: 'Preferiría algo más concreto.',
+          wrong: 'Eso suena poco serio…'
+        }
+      }
+    ];
+
+    // ========== State ==========
+    let currentTurn = 0; // 0..(TURNS.length-1)
+    const decisions = []; // {turnId, text, type, explain}
+    const progressEl = document.getElementById('progress');
+    const chatScroll = document.getElementById('chatScroll');
+    const choicesEl = document.getElementById('choices');
+    const sceneEl = document.getElementById('scene');
+
+    // ========== Rendering helpers ==========
+    function setProgress(stepIndex){
+      // stepIndex is 0-based for TURNS; show 1..6 where 6=Resultados
+      const shown = Math.min(stepIndex+1, 6);
+      progressEl.textContent = `${shown}/6`;
+      document.getElementById('progressEnd').textContent = '6/6';
+    }
+
+    function addBubble(whoKey, text, alignRight=false){
+      const who = CHAR[whoKey];
+      const wrap = document.createElement('div');
+      wrap.className = 'bubble' + (alignRight ? ' me':'');
+      wrap.setAttribute('role', 'group');
+      wrap.setAttribute('aria-label', `${who.name} dice`);
+
+      const avatar = document.createElement('img');
+      avatar.className = 'avatar';
+      avatar.src = who.avatar;
+      avatar.alt = `${who.name}`;
+      avatar.loading = 'lazy';
+
+      const content = document.createElement('div');
+      content.className = 'content';
+
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = who.name;
+
+      const txt = document.createElement('div');
+      txt.className = 'text';
+      txt.textContent = text;
+
+      content.appendChild(name);
+      content.appendChild(txt);
+
+      if(alignRight){
+        content.style.maxWidth = '88%';
+      }
+      wrap.appendChild(avatar);
+      wrap.appendChild(content);
+      chatScroll.appendChild(wrap);
+      // Scroll to bottom smoothly
+      chatScroll.scrollTop = chatScroll.scrollHeight + 400;
+    }
+
+    function renderTurn(){
+      const t = TURNS[currentTurn];
+      setProgress(currentTurn);
+      // Render NPC messages (1–2)
+      t.messages.forEach((m, i)=> addBubble(m.who, m.text, false));
+      // Render choices
+      renderChoices(t.choices);
+      ensureFits();
+    }
+
+    function renderChoices(choices){
+      choicesEl.classList.remove('disabled');
+      choicesEl.innerHTML = '';
+      choices.forEach((ch, idx)=>{
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'choiceBtn';
+        btn.dataset.type = ch.type;
+        btn.setAttribute('aria-label', clampText(ch.text));
+        btn.addEventListener('click', ()=> onChoose(ch));
+        const span = document.createElement('span');
+        span.className = 'choiceLabel';
+        span.textContent = clampText(ch.text, 48);
+        btn.appendChild(span);
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function onChoose(choice){
+      choicesEl.classList.add('disabled');
+      // Player bubble
+      addBubble('me', choice.text, true);
+
+      // Reaction
+      const t = TURNS[currentTurn];
+      const reactText = t.reactions[choice.type] || '';
+      const reactBy = t.reactBy || 'mentor';
+      if(reactText){
+        setTimeout(()=> addBubble(reactBy, reactText, false), 120);
+      }
+
+      // Save decision
+      decisions.push({
+        turnId: t.id,
+        text: choice.text,
+        type: choice.type,
+        explain: choice.explain
+      });
+
+      // Advance to next turn
+      setTimeout(()=>{
+        currentTurn++;
+        if(currentTurn < TURNS.length){
+          renderTurn();
+        } else {
+          // Go to results
+          setProgress(5); // last turn index 4 -> shows 6/6 on modal header anyway
+          showResults();
+        }
+      }, 700);
+    }
+
+    // ========== Results ==========
+    function showResults(){
+      // Disable choices
+      choicesEl.innerHTML = '';
+      choicesEl.classList.add('disabled');
+
+      // Compute score
+      let score = 0;
+      decisions.forEach(d=>{
+        if(d.type==='correct') score += 2;
+        else if(d.type==='partial') score += 1;
+      });
+      const maxScore = TURNS.length * 2;
+      const pct = Math.round(100*score/maxScore);
+
+      // Build results
+      const body = document.getElementById('resultsBody');
+      body.innerHTML = '';
+
+      const summary = document.createElement('div');
+      summary.className = 'notice';
+      summary.innerHTML = `<strong>Puntuación:</strong> ${score}/${maxScore} (${pct}%)`;
+      body.appendChild(summary);
+
+      const ul = document.createElement('ol');
+      ul.style.margin = '12px 0';
+      ul.style.paddingInlineStart = '18px';
+
+      decisions.forEach((d, idx)=>{
+        const li = document.createElement('li');
+        li.style.margin = '8px 0 10px';
+        const badgeColor = d.type==='correct' ? 'var(--accent)' : d.type==='partial' ? 'var(--warn)' : 'var(--danger)';
+        li.innerHTML = `
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;min-width:22px;border-radius:999px;padding:0 8px;background:${badgeColor};color:#041024;font-weight:800;font-size:12px;text-transform:uppercase">${d.type}</span>
+            <strong style="font-weight:800">Turno ${idx+1}:</strong>
+            <span>${d.text}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-dim);margin-top:4px">${d.explain}</div>
+        `;
+        ul.appendChild(li);
+      });
+      body.appendChild(ul);
+
+      const learn = document.createElement('div');
+      learn.className = 'notice';
+      learn.innerHTML = `
+        <div>
+          <strong>Aprendizajes clave:</strong>
+          <div style="font-size:13px;margin-top:6px;opacity:.95">
+            • PRL primero: cortar agua y energía evita daños.<br/>
+            • Pide evidencias (foto del sifón) para preparar repuestos.<br/>
+            • Diferencia alimentación vs desagüe por cuándo gotea.<br/>
+            • Comunica ventana de llegada y rango honesto de coste.
+          </div>
+        </div>`;
+      body.appendChild(learn);
+
+      const tip = document.createElement('p');
+      tip.style.marginTop = '12px';
+      tip.innerHTML = `<strong>Consejo práctico:</strong> lleva kit básico: sifón universal 1½", juntas, teflón, cubeta y toallas. Señaliza la zona y prueba con agua al finalizar para verificar estanqueidad.`;
+      body.appendChild(tip);
+
+      // initData notice
+      const warn = document.getElementById('initDataWarning');
+      warn.hidden = !!initData;
+
+      // Show modal
+      const res = document.getElementById('resultsModal');
+      res.hidden = false;
+
+      ensureFits(); // still ensure layout
+    }
+
+    // ========== Intro ==========
+    document.getElementById('startBtn').addEventListener('click', ()=>{
+      document.getElementById('introModal').style.display = 'none';
+      startGame();
+    });
+
+    function startGame(){
+      // Reset state
+      currentTurn = 0;
+      decisions.length = 0;
+      chatScroll.innerHTML = '';
+      choicesEl.innerHTML = '';
+      document.getElementById('resultsModal').hidden = true;
+
+      renderTurn();
+    }
+
+    // Retry
+    document.getElementById('retryBtn').addEventListener('click', ()=>{
+      document.getElementById('resultsModal').hidden = true;
+      startGame();
+    });
+
+    // Reward CTA
+    document.getElementById('rewardBtn').addEventListener('click', ()=>{
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      window.location.href = url;
+    });
+
+    // ========== Fit & Compact mechanics ==========
+    function assertNoOverflow(){
+      const sh = sceneEl.scrollHeight, ch = sceneEl.clientHeight;
+      return sh <= ch + 1;
+    }
+    function applyCompactMode(){
+      sceneEl.classList.add('compact');
+    }
+    function removeCompactMode(){
+      sceneEl.classList.remove('compact');
+    }
+    function fitBoardToViewport(){
+      // Could tune CSS vars; we already reduce HUD/btn in .compact.
+      // Additional nuanced tweaks could go here.
+    }
+    function autoscaleUI(){
+      // Scale down slightly if still overflowing (min 0.88)
+      let scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      const maxDown = 0.88;
+      let attempts = 0;
+      while(!assertNoOverflow() && scale > maxDown && attempts < 6){
+        scale -= 0.02;
+        document.documentElement.style.setProperty('--ui-scale', scale.toFixed(2));
+        attempts++;
+      }
+    }
+    function ensureFits(){
+      // Reset first
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      removeCompactMode();
+
+      if(!assertNoOverflow()){
+        applyCompactMode();
+      }
+      if(!assertNoOverflow()){
+        fitBoardToViewport();
+      }
+      if(!assertNoOverflow()){
+        autoscaleUI();
+      }
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', ()=> setTimeout(ensureFits, 200));
+
+    // Run ensureFits after initial paint (intro modal visible)
+    window.addEventListener('load', ensureFits);
+
+    // Accessibility: allow keyboard focus flow
+    // Ensure choices always have focus after render
+    const observer = new MutationObserver(()=>{
+      const btn = choicesEl.querySelector('.choiceBtn');
+      if(btn){ btn.focus({preventScroll:true}); }
+    });
+    observer.observe(choicesEl, {childList:true});
+
+  </script>
+</body>
+</html>
