@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Swipe PRL: Enchufe Seguro ⚡ | Kämpe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ========== RESET / BASE ========== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;            /* Bloquea scroll global durante gameplay */
+      overscroll-behavior: none;   /* Anti rubber-band */
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #f7fbff;
+      background: radial-gradient(1200px 600px at 30% -10%, #2b9cff44, #0a3d85 60%), linear-gradient(180deg, #114aa7, #0b2d68 60%, #0a234f);
+      background-attachment: fixed;
+    }
+    :root{
+      --ui-scale: 1;
+      --hudH: clamp(44px, 7.2svh, 64px);
+      --controlsH: clamp(64px, 10.5svh, 92px);
+      --gap: clamp(10px, 1.6svh, 14px);
+      --radius: 16px;
+      --glass: rgba(255,255,255,0.12);
+      --glass-2: rgba(255,255,255,0.08);
+      --stroke: rgba(255,255,255,0.20);
+      --ok: #2fd181;
+      --bad: #ff5c6e;
+      --ok-2: #25b86e;
+      --bad-2: #d74353;
+      --txtDim: #d7e6ff;
+      --shadow: 0 12px 30px rgba(0,0,0,0.28);
+      --chip: rgba(0,0,0,0.28);
+      --cardTilt: 16deg;
+
+      /* Variables "rejilla" pedidas (adaptadas al card) */
+      --cellH: 54; /* altura objetivo en svh */
+      --cellAR: 0.68; /* width/height */
+    }
+    @supports (height: 100svh) {
+      .scene { height: 100svh; }
+    }
+    @supports not (height: 100svh) {
+      @supports (height: 100dvh) {
+        .scene { height: 100dvh; }
+      }
+      @supports not (height: 100dvh) {
+        .scene { height: 100vh; }
+      }
+    }
+
+    /* Compact mode: reduce HUD, fuentes, márgenes para que quepa todo */
+    .compact {
+      --hudH: clamp(40px, 6.4svh, 56px);
+      --controlsH: clamp(56px, 9svh, 80px);
+      --gap: clamp(8px, 1.2svh, 12px);
+      --radius: 14px;
+      --cellH: 50;
+    }
+
+    /* ========== LAYOUT ========== */
+    .scene {
+      position: relative;
+      width: 100%;
+      margin: 0;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      display: grid;
+      grid-template-rows: var(--hudH) 1fr var(--controlsH);
+      gap: var(--gap);
+      container-type: inline-size;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .inner {
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      will-change: transform;
+      height: 100%;
+      width: 100%;
+      display: contents; /* keep grid layout from .scene */
+    }
+
+    /* ========== HUD ========== */
+    .hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 12px;
+    }
+    .brand {
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .brand img {
+      height: clamp(22px, 3.5svh, 30px);
+      width: auto;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+    }
+    .titleWrap {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-width: 0; /* ellipsis */
+      flex: 1;
+    }
+    .title {
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: clamp(15px, 1.7rem, 22px);
+      text-align: center;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .subtitle {
+      margin: 0; margin-top: 2px;
+      font-size: clamp(11px, 1.2rem, 12px);
+      color: var(--txtDim);
+      opacity: 0.9;
+    }
+    .progress {
+      font-weight: 700;
+      font-size: clamp(12px, 1.2rem, 14px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      border: 1px solid var(--stroke);
+      padding: 6px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+
+    /* ========== BOARD / CARDS ========== */
+    .board {
+      position: relative;
+      padding: 6px 12px 4px 12px;
+      display: grid;
+      grid-template-rows: 1fr;
+      align-items: center;
+      justify-items: center;
+      isolation: isolate;
+      touch-action: none; /* Anti-derrapes en el área interactiva */
+    }
+    .avatar-bg {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.15;
+      filter: saturate(1.1) drop-shadow(0 16px 36px rgba(0,0,0,0.45));
+      mix-blend-mode: screen;
+    }
+    .avatar-bg img {
+      width: 70%;
+      max-width: 560px;
+      height: auto;
+      object-fit: contain;
+      user-select: none;
+    }
+
+    .deck {
+      position: relative;
+      width: min(92vw, 480px);
+      height: calc((var(--cellH) * 1svh) - 2px);
+      max-height: 72svh;
+      display: grid;
+      place-items: center;
+    }
+    @supports not (height: 100svh) {
+      .deck { height: calc((var(--cellH) * 1dvh) - 2px); }
+    }
+
+    .card {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+      border: 1px solid var(--stroke);
+      border-radius: calc(var(--radius) + 6px);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px) saturate(1.1);
+      -webkit-backdrop-filter: blur(10px) saturate(1.1);
+      touch-action: none;
+      user-select: none;
+      will-change: transform, opacity;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      overflow: hidden;
+    }
+    .card:not(.top) { transform: scale(0.96) translateY(8px); opacity: 0.9; }
+    .card.top { z-index: 4; }
+
+    .cardHeader {
+      padding: 14px 16px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      position: relative;
+    }
+    .cardTitle {
+      font-size: clamp(16px, 4.4vw, 20px);
+      font-weight: 800;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      line-height: 1.15;
+      margin: 0;
+      word-break: break-word;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      max-height: 3.2em;
+      padding: 0 2px;
+    }
+
+    .chips {
+      position: absolute;
+      inset: 10px 10px auto auto;
+      display: flex;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .chip {
+      font-weight: 800;
+      font-size: clamp(11px, 3.4vw, 13px);
+      padding: 6px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+      border: 1px solid rgba(255,255,255,0.24);
+      background: rgba(0,0,0,0.25);
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity .18s ease, transform .18s ease;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+    .chip.ok { background: linear-gradient(180deg, #2fd181, #1f9b62); border-color: rgba(255,255,255,0.34); }
+    .chip.bad { background: linear-gradient(180deg, #ff5c6e, #d74353); border-color: rgba(255,255,255,0.34); }
+
+    .drag-hints {
+      position: absolute;
+      inset: auto 12px 12px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      color: #fff;
+      opacity: 0.75;
+      font-size: clamp(11px, 3.2vw, 13px);
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .drag-hints .L, .drag-hints .R {
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: var(--glass-2);
+      border: 1px solid var(--stroke);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+
+    .cardFooter {
+      padding: 12px;
+      display: grid;
+      place-items: center;
+    }
+    .hint {
+      font-size: clamp(11px, 3.2vw, 13px);
+      color: var(--txtDim);
+      opacity: 0.9;
+    }
+
+    /* Drag states: show chips */
+    .card.show-ok .chip.ok { opacity: 1; transform: translateY(0); }
+    .card.show-bad .chip.bad { opacity: 1; transform: translateY(0); }
+
+    /* Swipe animations */
+    .swipe-left { animation: swipeLeft .28s ease-out forwards; }
+    .swipe-right { animation: swipeRight .28s ease-out forwards; }
+    @keyframes swipeLeft {
+      to { transform: translateX(-120%) rotate(-14deg); opacity: 0; }
+    }
+    @keyframes swipeRight {
+      to { transform: translateX(120%) rotate(14deg); opacity: 0; }
+    }
+
+    /* ========== CONTROLS ========== */
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 8px 12px 12px 12px;
+      align-items: center;
+    }
+    .btn {
+      min-height: 44px;
+      height: clamp(44px, 6.6svh, 56px);
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: var(--shadow);
+      transition: transform .08s ease, filter .2s ease;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+    .btn:active { transform: translateY(1px) scale(0.99); }
+    .btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .btn .icon { font-size: 18px; line-height: 1; }
+    .btn.bad { background: linear-gradient(180deg, #ff5c6e, #d74353); }
+    .btn.ok { background: linear-gradient(180deg, #2fd181, #1f9b62); }
+
+    /* ========== MODALS (TUTORIAL / RESULTADOS) ========== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(7, 26, 66, 0.55), rgba(6, 24, 59, 0.75));
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .modalCard {
+      width: min(680px, 92vw);
+      max-height: 90svh;
+      overflow-y: auto;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .modalHeader {
+      display: flex; align-items: center; gap: 10px; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .modalTitle {
+      margin: 0; font-weight: 800; font-size: clamp(16px, 4.6vw, 22px);
+    }
+    .modalDesc {
+      margin: 6px 0 12px 0;
+      color: #e9f3ff;
+      opacity: 0.95;
+      font-size: clamp(13px, 3.8vw, 14px);
+    }
+    .modalActions {
+      display: flex; gap: 10px; justify-content: center;
+      margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.25);
+      position: sticky; bottom: 0; background: linear-gradient(180deg, rgba(0,0,0,0), rgba(10, 29, 70, 0.35));
+      padding-bottom: 6px;
+    }
+    .modal .btnPrimary {
+      background: linear-gradient(180deg, #76B9FF, #4A8DF2);
+      border: 1px solid rgba(255,255,255,0.28);
+    }
+
+    /* Tutorial specifics */
+    .tutorialList {
+      display: grid; gap: 6px; margin: 6px 0 2px 0;
+      font-size: clamp(13px, 3.8vw, 14px);
+      color: var(--txtDim);
+    }
+    .tRow { display:flex; align-items:center; gap:8px; }
+    .tChip { padding: 4px 8px; border-radius: 999px; font-weight: 800; }
+    .tChip.bad { background: linear-gradient(180deg, #ff5c6e, #d74353); }
+    .tChip.ok { background: linear-gradient(180deg, #2fd181, #1f9b62); }
+
+    /* Result list */
+    .resultsList { display: grid; gap: 10px; margin-top: 10px; }
+    .resItem {
+      display: grid; grid-template-columns: 1fr auto; gap: 8px;
+      padding: 10px; border-radius: 14px;
+      background: var(--glass);
+      border: 1px solid var(--stroke);
+    }
+    .resQ {
+      font-weight: 800; margin: 0 0 4px 0;
+      display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .resMeta { font-size: 12px; color: var(--txtDim); }
+    .resExplain { font-size: 13px; color: #e9f3ff; margin-top: 6px; }
+    .resBadge {
+      align-self: start; padding: 6px 8px; border-radius: 10px; font-weight: 800; font-size: 12px;
+      border: 1px solid rgba(255,255,255,0.34);
+    }
+    .resBadge.ok { background: linear-gradient(180deg, #2fd181, #1f9b62); }
+    .resBadge.bad { background: linear-gradient(180deg, #ff5c6e, #d74353); }
+
+    .finalMessage {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 14px;
+      background: var(--glass-2);
+      border: 1px dashed var(--stroke);
+      color: #eef6ff;
+      font-weight: 700;
+      text-align: center;
+    }
+    .warning {
+      color: #ffe18a;
+      font-size: 12px;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    /* Accessibility helpers */
+    .visually-hidden {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden;
+      clip: rect(1px,1px,1px,1px);
+      white-space: nowrap; clip-path: inset(50%); border: 0; padding: 0; margin: -1px;
+    }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce) {
+      .card, .btn, .chip { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <div class="inner" id="inner">
+      <!-- HUD -->
+      <header class="hud">
+        <div class="brand" aria-label="Kämpe">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        </div>
+        <div class="titleWrap">
+          <h1 class="title">Swipe PRL: Enchufe Seguro ⚡</h1>
+          <p class="subtitle">Clasifica: Segura → derecha | Insegura → izquierda</p>
+        </div>
+        <div class="progress" id="progress">Carta 1 de 6</div>
+      </header>
+
+      <!-- BOARD -->
+      <main class="board" id="board" role="application" aria-label="Cartas deslizables: izquierda Insegura, derecha Segura">
+        <div class="avatar-bg" aria-hidden="true">
+          <img src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy" />
+        </div>
+        <div class="deck" id="deck" aria-live="polite"></div>
+      </main>
+
+      <!-- CONTROLS -->
+      <footer class="controls">
+        <button id="btnLeft" class="btn bad" aria-label="Elegir Insegura">
+          <span class="icon">⟵</span> Insegura
+        </button>
+        <button id="btnRight" class="btn ok" aria-label="Elegir Segura">
+          Segura <span class="icon">⟶</span>
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- TUTORIAL MODAL -->
+  <section class="modal" id="modalIntro" role="dialog" aria-modal="true" aria-labelledby="introTitle" style="display:grid">
+    <div class="modalCard" tabindex="-1">
+      <div class="modalHeader">
+        <h2 id="introTitle" class="modalTitle">¿Listo para el reto?</h2>
+      </div>
+      <p class="modalDesc">
+        Desliza a izquierda (Insegura) o derecha (Segura). También puedes usar los botones. Decide rápido, siempre priorizando la seguridad.
+      </p>
+      <div class="tutorialList">
+        <div class="tRow"><span class="tChip bad">Izq: Insegura</span> Evita riesgos: humedad, buscapolos, empalmes malos…</div>
+        <div class="tRow"><span class="tChip ok">Der: Segura</span> Desenergiza, verifica tensión y usa EPI.</div>
+      </div>
+      <div class="modalActions">
+        <button class="btn btnPrimary" id="btnStart" aria-label="Empezar">¡Empezar!</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS MODAL -->
+  <section class="modal" id="modalResults" role="dialog" aria-modal="true" aria-labelledby="resTitle" style="display:none">
+    <div class="modalCard">
+      <div class="modalHeader">
+        <h2 id="resTitle" class="modalTitle">Resultados</h2>
+        <div id="scoreBadge" class="resBadge ok" aria-live="polite">0/6</div>
+      </div>
+      <div id="resultsContainer" class="resultsList" aria-live="polite"></div>
+      <div class="finalMessage" id="finalMsg">
+        ¡Buen trabajo! PRL primero: parar, pensar y actuar seguro. Estas decisiones marcan la diferencia en obra y en tu empleabilidad.
+      </div>
+      <div class="modalActions">
+        <a id="ctaReward" class="btn btnPrimary" href="#" aria-label="Ver mi recompensa">Ver mi recompensa</a>
+      </div>
+      <div class="warning" id="initDataWarn" style="display:none">Aviso: jugando en modo local (initData vacío).</div>
+    </div>
+  </section>
+
+  <script>
+    // ========== DATA Y ESTADO ==========
+    const url = new URL(location.href);
+    const initData = url.searchParams.get('initData') || "";
+
+    const CARDS = [
+      {
+        text: "Cortar magnetotérmico antes de intervenir",
+        isSafe: true,
+        explanation: "Desenergiza la línea y evita contacto con tensión. Paso previo indispensable antes de abrir el enchufe."
+      },
+      {
+        text: "Comprobar tensión solo con buscapolos",
+        isSafe: false,
+        explanation: "El buscapolos no es suficiente ni fiable. Verifica ausencia de tensión con un comprobador homologado (prueba antes y después)."
+      },
+      {
+        text: "Usar guantes dieléctricos y calzado S3",
+        isSafe: true,
+        explanation: "EPI que aísla y reduce el riesgo de choque y cortes. Úsalos en trabajos en baja tensión."
+      },
+      {
+        text: "Trabajar con manos húmedas",
+        isSafe: false,
+        explanation: "La humedad aumenta la conductividad del cuerpo. Seca manos y zona antes, o pospone la tarea."
+      },
+      {
+        text: "Señalizar área y ordenar cables",
+        isSafe: true,
+        explanation: "Evita tropiezos y entradas de terceros. Mantén el puesto limpio y con señalización visible."
+      },
+      {
+        text: "Empalmar cables con cinta sin regleta",
+        isSafe: false,
+        explanation: "Empalmes solo con cinta se aflojan y calientan. Usa regletas o bornes homologados y apriete correcto."
+      }
+    ].map(c => ({...c, text: clampLabel(c.text)}));
+
+    const state = {
+      idx: 0,
+      answers: [] // {index, choice: 'left'|'right', correct: boolean}
+    };
+
+    // ========== UTILIDADES ==========
+    function clampLabel(s) {
+      const MAX = 48;
+      if (!s) return "";
+      s = s.trim();
+      return s.length > MAX ? s.slice(0, MAX - 1).trimEnd() + "…" : s;
+    }
+
+    // ========== RENDER ==========
+    const deckEl = document.getElementById('deck');
+    const boardEl = document.getElementById('board');
+    const progressEl = document.getElementById('progress');
+    const modalIntro = document.getElementById('modalIntro');
+    const modalResults = document.getElementById('modalResults');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const btnStart = document.getElementById('btnStart');
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const ctaReward = document.getElementById('ctaReward');
+    const initDataWarn = document.getElementById('initDataWarn');
+    const scene = document.getElementById('scene');
+    const inner = document.getElementById('inner');
+
+    function updateProgress() {
+      const n = CARDS.length;
+      const k = Math.min(state.idx + 1, n);
+      progressEl.textContent = `Carta ${k} de ${n}`;
+    }
+
+    function createCardEl(card, index) {
+      const el = document.createElement('article');
+      el.className = 'card';
+      el.setAttribute('role', 'group');
+      el.setAttribute('aria-roledescription', 'carta');
+      el.setAttribute('aria-label', card.text);
+      el.dataset.index = index;
+
+      el.innerHTML = `
+        <div class="cardHeader">
+          <div class="chips" aria-hidden="true">
+            <div class="chip bad">Insegura</div>
+            <div class="chip ok">Segura</div>
+          </div>
+          <h3 class="cardTitle">${card.text}</h3>
+          <div class="drag-hints" aria-hidden="true">
+            <span class="L">⟵ Insegura</span>
+            <span class="R">Segura ⟶</span>
+          </div>
+        </div>
+        <div class="cardFooter">
+          <div class="hint">Desliza o pulsa los botones</div>
+        </div>
+      `;
+
+      return el;
+    }
+
+    function renderDeck() {
+      deckEl.innerHTML = '';
+      // Apilar: última al fondo, primera arriba
+      for (let i = CARDS.length - 1; i >= state.idx; i--) {
+        const el = createCardEl(CARDS[i], i);
+        deckEl.appendChild(el);
+      }
+      markTopCard();
+      attachTopCardDrag();
+      updateProgress();
+      requestAnimationFrame(ensureFits);
+    }
+
+    function markTopCard() {
+      const cards = [...deckEl.querySelectorAll('.card')];
+      cards.forEach(c => c.classList.remove('top'));
+      if (cards.length) cards[0].classList.add('top');
+    }
+
+    // ========== INTERACCIÓN (DRAG / SWIPE) ==========
+    let drag = null;
+    function attachTopCardDrag() {
+      const top = deckEl.querySelector('.card.top');
+      if (!top) return;
+      const threshold = Math.max(deckEl.clientWidth * 0.22, 80);
+
+      const onPointerDown = (e) => {
+        e.preventDefault();
+        top.setPointerCapture(e.pointerId);
+        drag = {
+          startX: e.clientX,
+          startY: e.clientY,
+          x: 0, y: 0,
+          active: true
+        };
+      };
+      const onPointerMove = (e) => {
+        if (!drag?.active) return;
+        drag.x = e.clientX - drag.startX;
+        drag.y = e.clientY - drag.startY;
+        const r = Math.max(-1, Math.min(1, drag.x / (deckEl.clientWidth * 0.8)));
+        const rot = r * 12;
+        top.style.transform = `translate(${drag.x}px, ${drag.y}px) rotate(${rot}deg)`;
+        // Show chips
+        if (drag.x > 12) {
+          top.classList.add('show-ok'); top.classList.remove('show-bad');
+        } else if (drag.x < -12) {
+          top.classList.add('show-bad'); top.classList.remove('show-ok');
+        } else {
+          top.classList.remove('show-bad', 'show-ok');
+        }
+      };
+      const onPointerUp = (e) => {
+        if (!drag?.active) return;
+        top.releasePointerCapture(e.pointerId);
+        const finalX = drag.x;
+        drag = null;
+        if (Math.abs(finalX) > threshold) {
+          if (finalX > 0) swipeChoice('right');
+          else swipeChoice('left');
+        } else {
+          // Snap back
+          top.style.transition = 'transform .18s ease';
+          top.style.transform = 'translate(0px, 0px) rotate(0deg)';
+          top.addEventListener('transitionend', () => {
+            top.style.transition = '';
+            top.classList.remove('show-bad', 'show-ok');
+          }, { once: true });
+        }
+      };
+
+      top.addEventListener('pointerdown', onPointerDown, { passive: false });
+      top.addEventListener('pointermove', onPointerMove, { passive: false });
+      top.addEventListener('pointerup', onPointerUp, { passive: false });
+      top.addEventListener('pointercancel', onPointerUp, { passive: false });
+    }
+
+    function swipeChoice(side) {
+      // side: 'left' => Insegura, 'right' => Segura
+      const top = deckEl.querySelector('.card.top');
+      if (!top) return;
+      const index = parseInt(top.dataset.index, 10);
+      const card = CARDS[index];
+      const choiceIsSafe = side === 'right';
+      const isCorrect = (choiceIsSafe === card.isSafe);
+
+      // Animar y registrar
+      top.classList.add(side === 'right' ? 'swipe-right' : 'swipe-left');
+      state.answers.push({ index, choice: side, correct: isCorrect });
+
+      // Al terminar animación retiramos y avanzamos
+      top.addEventListener('animationend', () => {
+        top.remove();
+        state.idx++;
+        if (state.idx >= CARDS.length) {
+          showResults();
+        } else {
+          markTopCard();
+          attachTopCardDrag();
+          updateProgress();
+          ensureFits();
+        }
+      }, { once: true });
+    }
+
+    // Botones (accesible desktop)
+    btnLeft.addEventListener('click', () => swipeChoice('left'));
+    btnRight.addEventListener('click', () => swipeChoice('right'));
+
+    // Teclado
+    window.addEventListener('keydown', (e) => {
+      if (modalIntro.style.display !== 'none' || modalResults.style.display !== 'none') return;
+      if (e.key === 'ArrowLeft') swipeChoice('left');
+      if (e.key === 'ArrowRight') swipeChoice('right');
+    });
+
+    // ========== RESULTADOS ==========
+    function showResults() {
+      // Construir listado
+      const byIndex = (a, b) => a.index - b.index;
+      state.answers.sort(byIndex);
+
+      const total = CARDS.length;
+      const hits = state.answers.filter(a => a.correct).length;
+      scoreBadge.textContent = `${hits}/${total}`;
+      scoreBadge.className = `resBadge ${hits >= Math.ceil(total*0.66) ? 'ok' : 'bad'}`;
+
+      resultsContainer.innerHTML = '';
+      state.answers.forEach(ans => {
+        const c = CARDS[ans.index];
+        const userLabel = ans.choice === 'right' ? 'Segura' : 'Insegura';
+        const badgeClass = ans.correct ? 'ok' : 'bad';
+        const item = document.createElement('div');
+        item.className = 'resItem';
+        item.innerHTML = `
+          <div>
+            <div class="resQ">${c.text}</div>
+            <div class="resMeta">Elegiste: <strong>${userLabel}</strong> · Correcto: <strong>${c.isSafe ? 'Segura' : 'Insegura'}</strong></div>
+            <div class="resExplain">${c.explanation}</div>
+          </div>
+          <div class="resBadge ${badgeClass}" aria-label="${ans.correct ? 'Respuesta correcta' : 'Respuesta incorrecta'}">${ans.correct ? '✔' : '✖'}</div>
+        `;
+        resultsContainer.appendChild(item);
+      });
+
+      // Preparar CTA Recompensa
+      const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      ctaReward.href = target;
+      initDataWarn.style.display = initData ? 'none' : 'block';
+
+      // Mostrar modal resultados
+      modalResults.style.display = 'grid';
+
+      // Permitir scroll interno del modal (no global)
+      // Nota: mantenemos html/body overflow hidden; el modal usa overflow-y: auto
+      try { document.activeElement.blur(); } catch {}
+      modalResults.querySelector('.modalCard').focus();
+
+      // Finalmente, asegurar ajuste visual
+      ensureFits();
+    }
+
+    // ========== INTRO ==========
+    btnStart.addEventListener('click', () => {
+      modalIntro.style.display = 'none';
+      ensureFits();
+    });
+
+    // ========== FIT: asegurar que todo cabe ==========
+    function assertNoOverflow() {
+      const sh = scene.scrollHeight;
+      const ch = scene.clientHeight;
+      return sh <= ch + 1; // +1 para margen por redondeo
+    }
+
+    function applyCompactMode() {
+      if (!document.body.classList.contains('compact')) {
+        document.body.classList.add('compact');
+      }
+    }
+
+    function fitBoardToViewport() {
+      // Reducir ligeramente la "rejilla" (--cellH) si aún no cabe
+      // sin pasar de un mínimo razonable
+      const minH = 44;
+      let cellH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cellH')) || 54;
+      let safety = 0;
+      while (!assertNoOverflow() && cellH > minH && safety < 10) {
+        cellH -= 2;
+        document.documentElement.style.setProperty('--cellH', String(cellH));
+        safety++;
+      }
+    }
+
+    function autoscaleUI() {
+      // Como último recurso, escalado del UI completo hasta 0.88
+      const minScale = 0.88;
+      let scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      let guard = 0;
+      while (!assertNoOverflow() && scale > minScale && guard < 10) {
+        scale -= 0.02;
+        document.documentElement.style.setProperty('--ui-scale', String(scale.toFixed(2)));
+        guard++;
+      }
+    }
+
+    function ensureFits() {
+      // Paso 1: comprobar overflow
+      if (assertNoOverflow()) return;
+
+      // Paso 2: modo compacto
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+
+      // Paso 3: ajustar rejilla/cartas
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+
+      // Paso 4: autoscale
+      autoscaleUI();
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(ensureFits, 120);
+    });
+
+    // ========== INIT ==========
+    function init() {
+      renderDeck();
+      // set CTA link now (even before finishing)
+      const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      ctaReward.href = target;
+      initDataWarn.style.display = initData ? 'none' : 'block';
+      ensureFits();
+    }
+
+    // Boot
+    init();
+  </script>
+</body>
+</html>
