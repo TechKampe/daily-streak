@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | Corte Seguro: Enchufe en Problemas ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg1:#1e3cff;
+      --bg2:#0a1645;
+      --glass: rgba(255,255,255,.12);
+      --glass-strong: rgba(255,255,255,.22);
+      --text:#f4f8ff;
+      --muted:#cfe0ffcc;
+      --accent:#2ee7ff;
+      --ok:#39e58c;
+      --warn:#ffd057;
+      --bad:#ff6b6b;
+      --shadow: 0 8px 28px rgba(0,0,0,.35);
+      --ui-scale: 1;
+      --radius: 16px;
+      --radius-sm: 12px;
+      --btnH: 56px;
+      --gap: 10px;
+      --headerH: 64px;
+      --font-h: clamp(18px, 3.2vw, 24px);
+      --font-p: clamp(14px, 2.8vw, 16px);
+      --font-btn: clamp(14px, 2.8vw, 16px);
+    }
+
+    /* Global reset + no scroll in gameplay */
+    *{ box-sizing: border-box; }
+    html, body{
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+      background: radial-gradient(120% 140% at 70% 10%, var(--bg1) 0%, #254bff 30%, var(--bg2) 90%);
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--text);
+    }
+    body.final{
+      overflow-y: auto; /* solo en resultados */
+    }
+    a{ color: var(--accent); text-decoration: none; }
+
+    /* Scene sizing: 100svh with fallbacks */
+    .scene{
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      display: grid;
+      place-items: stretch;
+      touch-action: none;
+    }
+    @supports (height: 100svh){
+      .scene{ height: 100svh; }
+    }
+    @supports not (height: 100svh){
+      @supports (height: 100dvh){
+        .scene{ height: 100dvh; }
+      }
+    }
+
+    /* UI container scaled if needed */
+    .ui{
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      display: grid;
+      grid-template-rows: var(--headerH) 1fr auto;
+      gap: var(--gap);
+      width: 100%;
+      height: 100%;
+      padding: 10px 12px 12px;
+    }
+
+    /* Header */
+    .hud{
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.08));
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      box-shadow: var(--shadow);
+      min-height: var(--headerH);
+    }
+    .brand{
+      display: flex; align-items:center; gap:8px;
+      min-width: 120px;
+    }
+    .brand img{
+      height: 28px; width: auto; display:block;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,.35));
+    }
+    .title{
+      font-weight: 800;
+      font-size: var(--font-h);
+      line-height: 1.1;
+      letter-spacing: .2px;
+      text-shadow: 0 2px 10px rgba(0,0,0,.25);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .progress{
+      display: flex; align-items:center; gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .progress .pill{
+      padding: 6px 10px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .6px;
+    }
+
+    /* Chat area */
+    .chat-wrap{
+      position: relative;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: clip;
+      display: grid;
+      grid-template-rows: 1fr;
+    }
+    .chat{
+      overflow-y: auto;
+      padding: 12px 8px;
+      gap: 8px;
+      display: flex;
+      flex-direction: column;
+      scroll-behavior: smooth;
+      touch-action: pan-y;
+    }
+    .msg{
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: start;
+      gap: 8px;
+      max-width: 94%;
+    }
+    .msg.right{
+      margin-left: auto;
+      grid-template-columns: 1fr auto;
+    }
+    .avatar{
+      width: 36px; height: 36px; border-radius: 10px;
+      overflow: hidden; flex: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,.35);
+    }
+    .avatar img{
+      width: 100%; height: 100%; object-fit: cover; display:block;
+      opacity: .95;
+    }
+    .bubble{
+      position: relative;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.14);
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0,0,0,.35);
+      font-size: var(--font-p);
+      line-height: 1.25;
+      word-wrap: break-word;
+    }
+    .bubble .name{
+      font-weight: 800; font-size: 12px; letter-spacing:.3px; opacity:.9; margin-bottom: 4px;
+      display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .bubble .text{
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .msg.right .bubble{
+      background: linear-gradient(180deg, rgba(46,231,255,.25), rgba(46,231,255,.18));
+      border-color: rgba(46,231,255,.45);
+    }
+
+    /* Choices */
+    .choices{
+      position: relative;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr;
+      align-content: start;
+      padding: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.10));
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .choice{
+      display: flex; align-items: center; gap: 10px;
+      justify-content: center;
+      min-height: var(--btnH);
+      border-radius: 14px;
+      background: rgba(14,18,58,.6);
+      border: 2px solid rgba(255,255,255,.18);
+      color: #fff;
+      font-weight: 800;
+      font-size: var(--font-btn);
+      letter-spacing: .2px;
+      padding: 10px 14px;
+      cursor: pointer;
+      user-select: none;
+      outline: none;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
+      box-shadow: 0 10px 18px rgba(0,0,0,.28);
+    }
+    .choice span{
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .choice:active{ transform: translateY(1px) scale(.99); }
+    .choice.correct{ border-color: rgba(57,229,140,.8); }
+    .choice.partial{ border-color: rgba(255,208,87,.8); }
+    .choice.wrong{ border-color: rgba(255,107,107,.8); }
+    .choice[disabled]{ opacity: .7; pointer-events: none; }
+
+    /* Intro and Results Modals */
+    .modal{
+      position: fixed; inset: 0;
+      display: grid; place-items: center;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(10,12,40,.65), rgba(10,12,40,.75));
+      z-index: 20;
+    }
+    .card{
+      width: min(760px, 100%);
+      max-height: 90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.08));
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .card-header{
+      display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center;
+    }
+    .card-header img{ height: 30px; }
+    .card-body{
+      overflow-y: auto; padding-right: 6px;
+    }
+    .card h1{
+      margin: 6px 0 2px; font-size: clamp(20px, 4.2vw, 28px); font-weight: 800;
+    }
+    .card p{
+      margin: 6px 0; color: var(--muted);
+      display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .cta{
+      display: grid; grid-template-columns: 1fr; gap: 10px;
+    }
+    .btn{
+      min-height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(46,231,255,.28), rgba(46,231,255,.18));
+      border: 2px solid rgba(46,231,255,.55);
+      color: #001330;
+      font-weight: 900; letter-spacing:.3px;
+      text-align: center;
+      padding: 10px 14px;
+      cursor: pointer;
+      user-select: none;
+      outline: none;
+      transition: transform .06s ease;
+    }
+    .btn:active{ transform: translateY(1px) scale(.99); }
+    .btn.secondary{
+      background: rgba(255,255,255,.12);
+      border-color: rgba(255,255,255,.22);
+      color: var(--text);
+      font-weight: 800;
+    }
+    .hint{
+      font-size: 12px; color: var(--muted);
+      text-align: center;
+    }
+
+    /* Results specific */
+    .results{
+      display: none;
+      position: fixed; inset: 0; z-index: 25;
+      overflow: auto;
+      background: radial-gradient(100% 140% at 80% 0%, #2643ff 0%, #0a1645 70%);
+      padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+    }
+    .results .wrap{
+      width: min(760px, 100%);
+      margin: 0 auto;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.08));
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: grid; gap: 12px;
+    }
+    .summary{
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      text-align: center;
+    }
+    .summary .pill{
+      padding: 8px 10px; border-radius: 12px; font-weight: 900;
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
+    }
+    .list{
+      display: grid; gap: 8px; max-height: none;
+    }
+    .row{
+      display: grid; gap: 6px;
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+    .row .top{
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      font-weight: 800;
+    }
+    .row .q{ color:#fff; }
+    .row .badge{
+      padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 900; letter-spacing:.3px;
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    .row .badge.ok{ background: rgba(57,229,140,.2); color:#e7fff2; border-color: rgba(57,229,140,.5); }
+    .row .badge.mid{ background: rgba(255,208,87,.2); color:#fff7e0; border-color: rgba(255,208,87,.5); }
+    .row .badge.no{ background: rgba(255,107,107,.2); color:#ffecec; border-color: rgba(255,107,107,.5); }
+    .row .explain{ color: var(--muted); font-size: 14px; }
+
+    /* Compact mode */
+    .scene.compact .hud{ min-height: 52px; }
+    .scene.compact .title{ font-size: clamp(16px, 2.6vw, 18px); }
+    .scene.compact .progress{ font-size: 12px; }
+    .scene.compact .avatar{ width: 32px; height: 32px; }
+    .scene.compact .bubble{ font-size: 14px; padding: 8px 10px; }
+    .scene.compact .choice{ min-height: 50px; font-size: 14px; }
+    .scene.compact .ui{ gap: 6px; }
+    .scene.compact .choices{ padding: 6px; }
+
+    /* Focus visible accessibility */
+    .choice:focus-visible, .btn:focus-visible{
+      outline: 3px solid #fff; outline-offset: 2px;
+      box-shadow: 0 0 0 4px rgba(46,231,255,.35);
+    }
+
+    /* Hidden utility */
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body>
+  <!-- Intro Modal -->
+  <div class="modal" id="intro" aria-modal="true" role="dialog">
+    <div class="card" role="document">
+      <div class="card-header">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title">Reto Diario Kämpe</div>
+      </div>
+      <div class="card-body">
+        <h1>Corte Seguro: Enchufe en Problemas ⚡</h1>
+        <p>
+          En una vivienda, un cliente reporta chispas en un enchufe y que el diferencial se dispara.
+          Llegas al lugar y chateas con tu mentora mientras tranquilizas a la Sra. Vega.
+        </p>
+        <div style="margin-top:12px; padding:10px; border-radius:12px; background: rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.14);">
+          <strong>Cómo jugar</strong>
+          <p style="margin:.4rem 0 0; -webkit-line-clamp:3;">
+            Lee el chat y elige tu respuesta. Tras cada elección verás la reacción y avanzarás al siguiente paso.
+          </p>
+        </div>
+      </div>
+      <div class="cta">
+        <button id="startBtn" class="btn" aria-label="Empezar el reto">Empezar</button>
+        <div class="hint">Duración: 2–4 minutos. Sin scroll fuera del chat.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gameplay Scene -->
+  <main class="scene" id="scene" aria-live="polite">
+    <div class="ui" id="ui">
+      <header class="hud" aria-label="Barra superior">
+        <div class="brand">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        </div>
+        <div class="title" id="hudTitle">Corte Seguro: Enchufe en Problemas ⚡</div>
+        <div class="progress"><span class="pill" id="progressPill">1/5</span></div>
+      </header>
+
+      <section class="chat-wrap" aria-label="Conversación">
+        <div class="chat" id="chat" aria-live="polite"></div>
+      </section>
+
+      <nav class="choices" id="choices" aria-label="Opciones de respuesta">
+        <!-- buttons injected -->
+      </nav>
+    </div>
+  </main>
+
+  <!-- Results -->
+  <section class="results" id="results" aria-live="polite">
+    <div class="wrap">
+      <div class="card-header">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title">Resultados del reto</div>
+      </div>
+      <div class="summary" id="summary">
+        <div class="pill" id="sumOk">Aciertos: 0</div>
+        <div class="pill" id="sumMid">Parciales: 0</div>
+        <div class="pill" id="sumNo">Errores: 0</div>
+      </div>
+      <div class="list" id="decisionsList"></div>
+      <div class="row">
+        <div class="top">
+          <div class="q">Consejo aplicable</div>
+        </div>
+        <div class="explain">
+          Usa el checklist: Cortar–Bloquear–Verificar–Comunicar. Asegura EPI, etiqueta el circuito y documenta antes de intervenir.
+        </div>
+      </div>
+      <div class="cta">
+        <button class="btn" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        <button class="btn secondary" id="retryBtn" aria-label="Jugar de nuevo">Jugar de nuevo</button>
+        <div class="hint" id="initDataHint"></div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // State and data ------------------------------------------
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+    const elements = {
+      intro: document.getElementById('intro'),
+      scene: document.getElementById('scene'),
+      ui: document.getElementById('ui'),
+      chat: document.getElementById('chat'),
+      choices: document.getElementById('choices'),
+      progressPill: document.getElementById('progressPill'),
+      results: document.getElementById('results'),
+      decisionsList: document.getElementById('decisionsList'),
+      sumOk: document.getElementById('sumOk'),
+      sumMid: document.getElementById('sumMid'),
+      sumNo: document.getElementById('sumNo'),
+      rewardBtn: document.getElementById('rewardBtn'),
+      retryBtn: document.getElementById('retryBtn'),
+      initDataHint: document.getElementById('initDataHint'),
+      startBtn: document.getElementById('startBtn'),
+    };
+
+    const avatars = {
+      nora: "https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png",
+      alex: "https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png",
+      recruiter: "https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png",
+      vega: "https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png"
+    };
+
+    const turns = [
+      {
+        id: 1,
+        messages: [
+          { who: "vega", name: "Sra. Vega", text: "Salieron chispas del enchufe del salón y saltó el diferencial. ¿Es peligroso?", side: "left" },
+          { who: "nora", name: "Nora (Mentora)", text: "Alex, prioridad: seguridad. ¿Qué haces primero?", side: "left" }
+        ],
+        options: [
+          {
+            label: "Aviso, uso EPI y corto la energía general",
+            quality: "correct",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Bien ✅. Cortar y avisar evita contacto y arcos ⚡.", side: "left" },
+              { who: "vega", name: "Sra. Vega", text: "Gracias por avisar. Me quedo tranquila.", side: "left" }
+            ],
+            explanation: "Cortar y avisar reduce riesgo de choque y arco. El EPI te protege ante contactos involuntarios."
+          },
+          {
+            label: "Pregunto qué estaba enchufado y observo",
+            quality: "partial",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Útil, pero primero corta y protégete.", side: "left" }
+            ],
+            explanation: "Recabar info ayuda, pero antes va el corte y el uso de EPI para eliminar peligro inmediato."
+          },
+          {
+            label: "Toco el enchufe para notar calor",
+            quality: "wrong",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "¡No! Nunca toques antes de cortar y verificar ⚠️.", side: "left" },
+              { who: "vega", name: "Sra. Vega", text: "Uy, mejor con cuidado por favor…", side: "left" }
+            ],
+            explanation: "Tocar sin corte ni verificación expone a choque eléctrico y quemaduras por arco."
+          }
+        ]
+      },
+      {
+        id: 2,
+        messages: [
+          { who: "nora", name: "Nora (Mentora)", text: "Con energía cortada, revisa el tablero. ¿Cómo aseguras el circuito?", side: "left" }
+        ],
+        options: [
+          {
+            label: "Bajo el magneto y etiqueto el circuito: NO USAR",
+            quality: "correct",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Perfecto. Y documenta con una foto antes de tocar.", side: "left" }
+            ],
+            explanation: "Bloquear y etiquetar evita reenergizar por error. Foto previa deja rastro para diagnóstico."
+          },
+          {
+            label: "Solo bajo el diferencial principal",
+            quality: "partial",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Funciona, pero mejor aislar el circuito exacto y etiquetar.", side: "left" }
+            ],
+            explanation: "Cortar todo restaura seguridad, pero aislar el circuito específico y etiquetar es más seguro y ordenado."
+          },
+          {
+            label: "Subo todo para probar dónde falla",
+            quality: "wrong",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Riesgoso. No reenergices para “ver”. Aísla primero.", side: "left" }
+            ],
+            explanation: "Reenergizar sin control puede agravar el daño y pone en riesgo a las personas."
+          }
+        ]
+      },
+      {
+        id: 3,
+        messages: [
+          { who: "nora", name: "Nora (Mentora)", text: "Con el circuito aislado, valida ausencia de tensión en la toma.", side: "left" }
+        ],
+        options: [
+          {
+            label: "Verifico ausencia en el enchufe con multímetro",
+            quality: "correct",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Bien. Punto de prueba correcto y equipo adecuado.", side: "left" }
+            ],
+            explanation: "La verificación con multímetro confirma ausencia de tensión en el punto de trabajo."
+          },
+          {
+            label: "Solo uso buscapolos",
+            quality: "partial",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Insuficiente. El buscapolos no es fiable; usa multímetro.", side: "left" }
+            ],
+            explanation: "El buscapolos no garantiza ausencia de tensión. Usa instrumentos de medida adecuados."
+          },
+          {
+            label: "Con el térmico abajo ya es seguro",
+            quality: "wrong",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Nunca asumas. Verifica ausencia de tensión siempre.", side: "left" }
+            ],
+            explanation: "Bajar el térmico no basta; la verificación es obligatoria antes de tocar conductores."
+          }
+        ]
+      },
+      {
+        id: 4,
+        messages: [
+          { who: "vega", name: "Sra. Vega", text: "¿Podré usar ese enchufe hoy? Necesito la cafetera ☕.", side: "left" }
+        ],
+        options: [
+          {
+            label: "Ofrezco: reparar o aislar con cinta homologada",
+            quality: "correct",
+            react: [
+              { who: "vega", name: "Sra. Vega", text: "Gracias por explicarlo. Prefiero seguro aunque tarde.", side: "left" },
+              { who: "nora", name: "Nora (Mentora)", text: "Incluye cartel de aviso y deja el circuito fuera de uso.", side: "left" }
+            ],
+            explanation: "Informar opciones: reparar la toma o aislar temporal con material homologado y señalización."
+          },
+          {
+            label: "Propongo aislar y reactivar pronto",
+            quality: "partial",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Solo si verificaste y señalizas. Mejor dejar fuera de uso.", side: "left" }
+            ],
+            explanation: "Puede mitigar, pero solo tras verificar y señalizar claramente. Prioriza dejar fuera de servicio."
+          },
+          {
+            label: "Dejarlo funcionando, ya no salta el diferencial",
+            quality: "wrong",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "No. Sin reparación o aislamiento, no se habilita.", side: "left" }
+            ],
+            explanation: "Habilitar sin corregir la causa reexpone a riesgo de choque y posible incendio."
+          }
+        ]
+      },
+      {
+        id: 5,
+        messages: [
+          { who: "nora", name: "Nora (Mentora)", text: "Cierre: orden, limpieza y próximos pasos con la clienta.", side: "left" }
+        ],
+        options: [
+          {
+            label: "Recojo, fotos de estado y planifico reparación",
+            quality: "correct",
+            react: [
+              { who: "vega", name: "Sra. Vega", text: "Se ve todo ordenado. Espero su presupuesto.", side: "left" }
+            ],
+            explanation: "Dejar la zona limpia, documentar y acordar reparación mantiene seguridad y confianza."
+          },
+          {
+            label: "Recojo y aviso por mensaje luego",
+            quality: "partial",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Ok, pero documenta y deja señalización visible.", side: "left" }
+            ],
+            explanation: "Falta documentación inmediata y señalización; puede generar dudas y riesgos."
+          },
+          {
+            label: "Activo todo y me voy sin avisar",
+            quality: "wrong",
+            react: [
+              { who: "nora", name: "Nora (Mentora)", text: "Nunca reenergices sin cerrar con la clienta.", side: "left" }
+            ],
+            explanation: "Reactivar sin informar rompe seguridad y comunicación con la clienta."
+          }
+        ]
+      }
+    ];
+
+    const state = {
+      turnIndex: 0,
+      history: [],
+      decisions: [],
+      score: { ok:0, mid:0, no:0 }
+    };
+
+    // Rendering ------------------------------------------------
+    function avatarImg(who){ return avatars[who] || avatars.alex; }
+
+    function appendMessage({who, name, text, side="left"}){
+      const wrap = document.createElement('div');
+      wrap.className = `msg ${side === "right" ? "right" : ""}`;
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      const img = document.createElement('img');
+      img.src = avatarImg(who);
+      img.alt = name;
+      img.loading = "lazy";
+      avatar.appendChild(img);
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      const nm = document.createElement('div');
+      nm.className = 'name';
+      nm.textContent = name;
+      const tx = document.createElement('div');
+      tx.className = 'text';
+      tx.textContent = text;
+      bubble.appendChild(nm);
+      bubble.appendChild(tx);
+
+      if(side === "right"){
+        wrap.appendChild(bubble);
+        wrap.appendChild(avatar);
+      } else {
+        wrap.appendChild(avatar);
+        wrap.appendChild(bubble);
+      }
+      elements.chat.appendChild(wrap);
+    }
+
+    function renderTurn(){
+      const t = turns[state.turnIndex];
+      elements.progressPill.textContent = `${t.id}/${turns.length}`;
+
+      // Pre messages for this turn
+      t.messages.forEach(m => appendMessage(m));
+      scrollChatToEnd();
+
+      // Options
+      elements.choices.innerHTML = "";
+      t.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `choice ${opt.quality}`;
+        btn.setAttribute('aria-label', `Opción ${idx+1}: ${opt.label}`);
+        const span = document.createElement('span');
+        span.textContent = opt.label;
+        btn.appendChild(span);
+        btn.addEventListener('click', () => handleChoice(opt));
+        elements.choices.appendChild(btn);
+      });
+
+      ensureFits();
+    }
+
+    function handleChoice(opt){
+      // Player message mirrors the selected option
+      appendMessage({ who: "alex", name: "Alex (Aprendiz)", text: opt.label, side: "right" });
+
+      // Record decision
+      state.decisions.push({
+        turn: turns[state.turnIndex].id,
+        choice: opt.label,
+        quality: opt.quality,
+        explanation: opt.explanation
+      });
+      if(opt.quality === "correct") state.score.ok++;
+      else if(opt.quality === "partial") state.score.mid++;
+      else state.score.no++;
+
+      // Lock choices while reacting
+      [...elements.choices.querySelectorAll('.choice')].forEach(b => b.setAttribute('disabled','true'));
+
+      // Show reactions
+      setTimeout(() => {
+        opt.react.forEach(r => appendMessage(r));
+        scrollChatToEnd();
+
+        // Next turn or results
+        setTimeout(() => {
+          state.turnIndex++;
+          if(state.turnIndex < turns.length){
+            renderTurn();
+          } else {
+            showResults();
+          }
+        }, 500);
+      }, 350);
+    }
+
+    function scrollChatToEnd(){
+      requestAnimationFrame(() => {
+        elements.chat.scrollTop = elements.chat.scrollHeight;
+      });
+    }
+
+    // Results --------------------------------------------------
+    function showResults(){
+      document.body.classList.add('final'); // allow scroll on results
+      elements.scene.classList.add('hidden');
+      elements.results.style.display = 'block';
+
+      // Summary
+      elements.sumOk.textContent = `Aciertos: ${state.score.ok}`;
+      elements.sumMid.textContent = `Parciales: ${state.score.mid}`;
+      elements.sumNo.textContent = `Errores: ${state.score.no}`;
+
+      // Decisions list
+      elements.decisionsList.innerHTML = "";
+      state.decisions.forEach(d => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const top = document.createElement('div');
+        top.className = 'top';
+        const q = document.createElement('div');
+        q.className = 'q';
+        q.textContent = `Turno ${d.turn}: ${d.choice}`;
+        const badge = document.createElement('div');
+        badge.className = 'badge ' + (d.quality === "correct" ? "ok" : d.quality === "partial" ? "mid" : "no");
+        badge.textContent = d.quality === "correct" ? "Correcta" : d.quality === "partial" ? "Parcial" : "Incorrecta";
+        top.appendChild(q); top.appendChild(badge);
+        const ex = document.createElement('div');
+        ex.className = 'explain';
+        ex.textContent = d.explanation;
+        row.appendChild(top);
+        row.appendChild(ex);
+        elements.decisionsList.appendChild(row);
+      });
+
+      // Reward button
+      elements.rewardBtn.addEventListener('click', () => {
+        const target = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+        window.location.href = target;
+      });
+
+      // InitData hint
+      elements.initDataHint.textContent = initData ? "Listo: tu progreso se vinculará a tu cuenta." : "Aviso: falta initData; la recompensa se abrirá sin identificar.";
+      ensureFits(); // not strictly needed here, but safe
+    }
+
+    function resetGame(){
+      // Reset state
+      state.turnIndex = 0;
+      state.history = [];
+      state.decisions = [];
+      state.score = { ok:0, mid:0, no:0 };
+
+      // Reset UI
+      elements.chat.innerHTML = "";
+      elements.choices.innerHTML = "";
+      elements.results.style.display = 'none';
+      document.body.classList.remove('final');
+      elements.scene.classList.remove('hidden');
+      renderTurn();
+    }
+
+    // Fit/Responsive Guards -----------------------------------
+    function assertNoOverflow(){
+      // Prefer bounding rect vs scroll metrics due to scaling
+      const sceneRect = elements.scene.getBoundingClientRect();
+      const uiRect = elements.ui.getBoundingClientRect();
+      return uiRect.height <= sceneRect.height + 1;
+    }
+    function applyCompactMode(){
+      elements.scene.classList.add('compact');
+    }
+    function fitBoardToViewport(){
+      // Could adjust CSS vars if needed; keep placeholder to comply
+      // Here we slightly reduce button height as a "grid re-fit"
+      document.documentElement.style.setProperty('--btnH', '52px');
+    }
+    function autoscaleUI(){
+      const sceneRect = elements.scene.getBoundingClientRect();
+      const ui = elements.ui;
+      let scale = 0.98;
+      let fits = false;
+      while(scale >= 0.88){
+        ui.style.setProperty('--ui-scale', scale.toFixed(2));
+        const uiRect = ui.getBoundingClientRect();
+        if(uiRect.height <= sceneRect.height + 0.5){
+          fits = true; break;
+        }
+        scale -= 0.02;
+      }
+      if(!fits){
+        // last resort: minor reduce gaps
+        document.documentElement.style.setProperty('--gap', '6px');
+      }
+    }
+    function ensureFits(){
+      // Reset scale and compact before checking
+      elements.scene.classList.remove('compact');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      document.documentElement.style.setProperty('--gap', '10px');
+      document.documentElement.style.setProperty('--btnH', '56px');
+
+      if(assertNoOverflow()) return;
+      applyCompactMode();
+      if(assertNoOverflow()) return;
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+      autoscaleUI();
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', ensureFits);
+
+    // Start / Retry -------------------------------------------
+    elements.startBtn.addEventListener('click', () => {
+      elements.intro.classList.add('hidden');
+      resetGame();
+    });
+    elements.retryBtn.addEventListener('click', () => {
+      // Keep initData as-is
+      resetGame();
+    });
+
+    // Accessibility: allow keyboard selection
+    document.addEventListener('keydown', (e) => {
+      if(document.body.classList.contains('final')) return;
+      const opts = Array.from(elements.choices.querySelectorAll('.choice'));
+      if(!opts.length) return;
+      if(e.key === '1' || e.key === 'a') opts[0].click();
+      if((e.key === '2' || e.key === 's') && opts[1]) opts[1].click();
+      if((e.key === '3' || e.key === 'd') && opts[2]) opts[2].click();
+    });
+
+    // Preload critical avatars (non-lazy to avoid pop-in for first messages)
+    ;(() => {
+      ['nora','alex','vega'].forEach(k => {
+        const i = new Image();
+        i.src = avatars[k];
+      });
+    })();
+  </script>
+</body>
+</html>
