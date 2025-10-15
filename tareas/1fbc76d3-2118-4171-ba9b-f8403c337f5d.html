@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Fuga bajo el fregadero 💧 - Kämpe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="color-scheme" content="light only" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ============ RESET + ROOT ============ */
+    :root{
+      --bg1:#1b4dda;
+      --bg2:#0a2abf;
+      --glass:rgba(255,255,255,0.14);
+      --glass-strong:rgba(255,255,255,0.22);
+      --text:#fff;
+      --muted:#cfe0ff;
+      --accent:#50e3c2;
+      --danger:#ff4d6d;
+      --warning:#ffd166;
+      --primary:#6ee7ff;
+      --btnGrad:linear-gradient(135deg,#46b2ff 0%,#7b66ff 100%);
+      --btnGradAlt:linear-gradient(135deg,#45f3c6 0%,#34d2ff 100%);
+      --dangerGrad:linear-gradient(135deg,#ff6a88 0%,#ff99ac 100%);
+      --hudH:64px;
+      --choicesH:212px; /* enough for 3 big buttons */
+      --radius:18px;
+      --ui-scale:1;
+      --shadow:0 10px 24px rgba(0,0,0,0.25);
+      --safeTop:env(safe-area-inset-top,0px);
+      --safeBot:env(safe-area-inset-bottom,0px);
+    }
+    *{box-sizing:border-box}
+    html,body{
+      height:100%;
+      margin:0;
+      background: radial-gradient(120% 100% at 20% 0%, var(--bg1) 0%, var(--bg2) 60%, #06155e 100%);
+      color:var(--text);
+      font-family:Manrope,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;
+      -webkit-tap-highlight-color:transparent;
+      overscroll-behavior:none;
+      overflow:hidden; /* locked during gameplay */
+    }
+    a,button{font-family:inherit}
+    img{max-width:100%; display:block}
+
+    /* ============ SCENE ============ */
+    .scene{
+      position:relative;
+      width:100%;
+      touch-action:none; /* anti-derrapes in gameplay */
+    }
+    @supports (height: 100svh){ .scene{ height:100svh; } }
+    @supports not (height: 100svh){ .scene{ height:100dvh; } }
+    @supports not (height: 100dvh){ .scene{ height:100vh; } }
+
+    .sceneInner{
+      position:absolute; inset:0;
+      transform-origin:top center;
+      transform:scale(var(--ui-scale));
+      display:flex; flex-direction:column;
+      padding-top:calc(var(--safeTop) + 6px);
+      padding-bottom:calc(var(--safeBot) + 6px);
+      gap:8px;
+    }
+
+    /* ============ HUD ============ */
+    .hud{
+      height:var(--hudH);
+      min-height:var(--hudH);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 12px;
+      margin:0 10px;
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      backdrop-filter: blur(10px);
+      box-shadow:var(--shadow);
+    }
+    .hud .left{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+    }
+    .logo{
+      width:36px; height:36px; border-radius:10px; object-fit:contain; background:rgba(255,255,255,0.1); padding:4px;
+    }
+    .titleWrap{
+      display:flex; flex-direction:column; min-width:0;
+    }
+    .title{
+      font-weight:800;
+      font-size: clamp(16px, 4vw, 20px);
+      line-height:1.1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .subtitle{
+      font-size: clamp(10px, 2.6vw, 12px);
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden; text-overflow:ellipsis;
+      opacity:.9;
+    }
+    .hud .right{
+      display:flex; align-items:center; gap:10px;
+    }
+    .progress{
+      display:flex; align-items:center; gap:8px; white-space:nowrap;
+      font-weight:700;
+    }
+    .bar{
+      width:84px; height:8px; border-radius:999px;
+      background:rgba(255,255,255,0.15);
+      overflow:hidden;
+    }
+    .bar > span{
+      display:block; height:100%;
+      width:0%; border-radius:999px;
+      background:linear-gradient(90deg,#46b2ff,#50e3c2);
+      transition:width .25s ease;
+    }
+
+    /* ============ CHAT ============ */
+    .chatWrap{
+      position:relative;
+      flex:1 1 auto;
+      margin:0 10px;
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      display:flex; flex-direction:column;
+    }
+    .chatHistory{
+      flex:1 1 auto;
+      overflow-y:auto; /* scroll ONLY here */
+      padding:12px;
+      gap:8px;
+      display:flex; flex-direction:column;
+      scroll-behavior:smooth;
+      touch-action:pan-y; /* allow scroll here */
+      overscroll-behavior:contain;
+    }
+    .msg{
+      display:flex; align-items:flex-end; gap:8px; max-width:88%;
+      animation:pop .12s ease-out;
+    }
+    @keyframes pop{ from{transform:translateY(6px); opacity:.0} to{transform:translateY(0); opacity:1}}
+    .msg.left{ align-self:flex-start; }
+    .msg.right{ align-self:flex-end; flex-direction:row-reverse; }
+    .msg .avatar{
+      width:36px; height:36px; border-radius:10px; object-fit:cover; filter:drop-shadow(0 3px 8px rgba(0,0,0,0.25));
+      background:rgba(255,255,255,0.15);
+    }
+    .bubble{
+      max-width:100%;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(255,255,255,0.16);
+      backdrop-filter: blur(6px);
+      border:1px solid rgba(255,255,255,0.18);
+    }
+    .right .bubble{
+      background:linear-gradient(180deg, rgba(100,255,233,0.3), rgba(100,200,255,0.25));
+      border-color: rgba(255,255,255,0.25);
+    }
+    .name{
+      font-size:11px; color:#e6f0ff; opacity:.9; margin-bottom:2px;
+      text-shadow:0 1px 0 rgba(0,0,0,0.3);
+    }
+    .text{
+      font-size: clamp(13px, 3.4vw, 14px);
+      line-height:1.25;
+      display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;
+    }
+
+    /* ============ CHOICES ============ */
+    .choices{
+      position:sticky; bottom:0;
+      height:var(--choicesH);
+      min-height:var(--choicesH);
+      margin:0 10px 8px 10px;
+      display:flex; flex-direction:column; gap:8px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.00), rgba(0,0,0,0.10));
+      padding:10px;
+      border-radius:18px;
+      backdrop-filter: blur(6px);
+    }
+    .choiceBtn{
+      flex:1;
+      min-height:48px;
+      border:none; color:#061230; font-weight:800;
+      background:var(--btnGrad);
+      border-radius:14px;
+      box-shadow:0 8px 18px rgba(0,0,0,0.25), inset 0 0 0 2px rgba(255,255,255,0.22);
+      cursor:pointer;
+      transition:transform .05s ease, filter .15s ease;
+      padding:10px 12px;
+      text-align:center;
+      outline:none;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .choiceBtn[data-type="correct"]{ background:var(--btnGradAlt); }
+    .choiceBtn[data-type="wrong"]{ background:var(--dangerGrad); color:#2b0b0b; }
+    .choiceBtn:active{ transform:translateY(1px) scale(0.99); }
+    .choiceLabel{
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+      width:100%;
+      font-size: clamp(14px, 4vw, 16px);
+    }
+    .choiceBtn:focus-visible{
+      outline:3px solid #fff; outline-offset:2px;
+      filter:drop-shadow(0 0 0 rgba(0,0,0,0)) saturate(110%);
+    }
+
+    /* ============ INTRO MODAL ============ */
+    .modal{
+      position:fixed; inset:0; background:rgba(3,16,54,0.55);
+      display:flex; align-items:center; justify-content:center;
+      z-index:30;
+      padding:20px;
+    }
+    .card{
+      width:min(680px, 92vw);
+      max-height:90svh;
+      overflow-y:auto;
+      background:linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.10));
+      border:1px solid rgba(255,255,255,0.22);
+      border-radius:20px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .introHead{
+      display:flex; align-items:center; gap:10px; margin-bottom:6px;
+    }
+    .introHead img{ width:42px; height:42px; border-radius:10px; }
+    .introTitle{ font-weight:800; font-size:clamp(18px,4.6vw,24px); }
+    .introDesc{
+      color:var(--muted); margin:8px 0 10px 0; font-size:clamp(13px,3.4vw,14px);
+      display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .tutorial{
+      background:rgba(0,0,0,0.25); border:1px dashed rgba(255,255,255,0.25);
+      border-radius:12px; padding:10px; margin-top:8px; color:#d6eeff;
+      font-size:13px;
+      display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .startBtn{
+      margin-top:12px; width:100%; min-height:50px; border:none; color:#061230; font-weight:800;
+      background:var(--btnGradAlt); border-radius:14px; box-shadow:var(--shadow);
+      font-size:clamp(15px,4.2vw,17px); cursor:pointer; padding:12px;
+    }
+
+    .hidden{ display:none !important; }
+
+    /* ============ RESULTS VIEW ============ */
+    .results{
+      position:fixed; inset:0; z-index:40; background:rgba(3,16,54,0.70);
+      display:flex; align-items:center; justify-content:center; padding:20px;
+      touch-action:auto;
+    }
+    .results .panel{
+      width:min(720px, 94vw);
+      max-height:90svh;
+      overflow-y:auto;
+      background:linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.12));
+      border:1px solid rgba(255,255,255,0.24);
+      border-radius:22px; padding:16px;
+      box-shadow:var(--shadow);
+    }
+    .resHeader{
+      display:flex; align-items:center; gap:12px; margin-bottom:6px;
+    }
+    .resHeader img{ width:40px; height:40px; border-radius:10px; }
+    .resTitle{ font-weight:800; font-size:clamp(18px,4.6vw,22px); }
+    .score{
+      margin:6px 0 10px 0; color:#dff8ff; font-weight:700;
+      font-size:clamp(14px,3.8vw,16px);
+    }
+    .decisions{
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .decisionItem{
+      background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.18);
+      border-radius:12px; padding:10px;
+    }
+    .dTop{
+      display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px;
+      font-weight:800; font-size:14px;
+    }
+    .tag{
+      padding:3px 8px; border-radius:999px; font-size:12px; font-weight:800;
+      color:#0b1022; background:#7dffcc;
+    }
+    .tag.partial{ background:#ffe877; }
+    .tag.wrong{ background:#ff8da1; }
+    .dExplain{
+      font-size:13px; color:#eaf6ff;
+      display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .tip{
+      margin-top:10px; background:rgba(80,227,194,0.2); border:1px solid rgba(80,227,194,0.4);
+      color:#071b18; border-radius:12px; padding:10px; font-weight:700;
+      font-size:13px;
+    }
+    .ctaWrap{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+    .cta{
+      flex:1 1 220px; min-height:50px; display:flex; align-items:center; justify-content:center;
+      border-radius:14px; border:none; font-weight:800; cursor:pointer; text-decoration:none; text-align:center;
+      color:#091325; background:var(--btnGradAlt); box-shadow:var(--shadow); padding:12px;
+      font-size:clamp(15px,4.2vw,17px);
+    }
+    .ghost{ background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.35); }
+    .warningInit{ font-size:12px; color:#ffe4a3; margin-top:4px; }
+
+    /* ============ COMPACT MODE ============ */
+    .compact .hud{ height:56px; min-height:56px; }
+    .compact :root, .compact{
+      --hudH:56px;
+      --choicesH:188px;
+    }
+    .compact .title{ font-size: clamp(15px, 4vw, 18px); }
+    .compact .subtitle{ display:none; } /* free space */
+    .compact .choiceBtn{ min-height:46px; }
+    .compact .msg .avatar{ width:32px; height:32px; }
+    .compact .bubble .text{ -webkit-line-clamp:3; }
+
+    /* ============ ACCESSIBILITY ============ */
+    .sr-only{ position:absolute!important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  </style>
+</head>
+<body>
+  <!-- INTRO MODAL -->
+  <div class="modal" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="card">
+      <div class="introHead">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" loading="eager">
+        <div class="introTitle" id="introTitle">Fuga bajo el fregadero 💧</div>
+      </div>
+      <div class="introDesc" id="introDesc">
+        Eres Aprendiz con tu Mentora en una reparación express: la Clienta reporta una fuga bajo el fregadero. Coordina por chat la llegada y la intervención.
+      </div>
+      <div class="tutorial" id="tutorial">
+        Toca una opción por turno. Elige con cabeza: seguridad primero. En juego no hay scroll; solo puedes deslizar el histórico del chat.
+      </div>
+      <button class="startBtn" id="startBtn" aria-label="Comenzar desafío">¡Comenzar!</button>
+    </div>
+  </div>
+
+  <!-- GAME SCENE -->
+  <div class="scene" id="scene" role="application" aria-label="Visual novel de fontanería">
+    <div class="sceneInner" id="sceneInner">
+      <header class="hud" aria-label="Cabecera">
+        <div class="left">
+          <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Logo Kämpe" loading="eager">
+          <div class="titleWrap">
+            <div class="title">Fuga bajo el fregadero 💧</div>
+            <div class="subtitle" id="subtitleClamp">Entrena seguridad y trato al cliente</div>
+          </div>
+        </div>
+        <div class="right">
+          <div class="progress" aria-label="Progreso">
+            <div class="bar" aria-hidden="true"><span id="barFill" style="width:0%"></span></div>
+            <div id="stepIndicator" aria-live="polite">1/6</div>
+          </div>
+        </div>
+      </header>
+
+      <main class="chatWrap" aria-label="Chat">
+        <div class="chatHistory" id="chatHistory" role="log" aria-live="polite" aria-relevant="additions text">
+          <!-- messages injected -->
+        </div>
+      </main>
+
+      <div class="choices" id="choices" role="group" aria-label="Opciones">
+        <!-- buttons injected -->
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS VIEW -->
+  <div class="results hidden" id="results" aria-live="polite">
+    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="resTitle">
+      <div class="resHeader">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe">
+        <div class="resTitle" id="resTitle">Resultados — Fuga bajo el fregadero 💧</div>
+      </div>
+      <div class="score" id="scoreText">Tu balance: 0/5 decisiones óptimas</div>
+      <div class="decisions" id="decisionsList"></div>
+      <div class="tip" id="tipText">
+        Consejo: Confirma tiempo y pide permiso para cerrar la llave. En vivienda: cubeta/señaliza, revisa enchufes, usa EPI y deja todo ordenado.
+      </div>
+      <div class="ctaWrap">
+        <a class="cta" id="rewardBtn" href="#" target="_self" rel="nofollow">Ver mi recompensa</a>
+        <button class="cta ghost" id="retryBtn" aria-label="Reintentar el reto">Reintentar</button>
+      </div>
+      <div class="warningInit" id="initWarn" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <script>
+  ;(() => {
+    // --------- INIT DATA ----------
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || '';
+    const hasInit = urlParams.has('initData');
+
+    // --------- DOM REFS ----------
+    const scene = document.getElementById('scene');
+    const sceneInner = document.getElementById('sceneInner');
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+    const chat = document.getElementById('chatHistory');
+    const choices = document.getElementById('choices');
+    const barFill = document.getElementById('barFill');
+    const stepIndicator = document.getElementById('stepIndicator');
+    const results = document.getElementById('results');
+    const decisionsList = document.getElementById('decisionsList');
+    const scoreText = document.getElementById('scoreText');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const initWarn = document.getElementById('initWarn');
+
+    // --------- CHARACTERS ----------
+    const CHAR = {
+      mentor: { id:'mentor', name:'Sofía (Mentora)', avatar:'https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png', side:'left' },
+      apprentice: { id:'apprentice', name:'Tú (Aprendiz)', avatar:'https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png', side:'right' },
+      recruiter: { id:'recruiter', name:'Reclutador', avatar:'https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png', side:'left' },
+      client: { id:'client', name:'Laura (Clienta)', avatar:'https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png', side:'left' }
+    };
+
+    // --------- GAME DATA ----------
+    // Helper to keep labels <=48 chars
+    const trimLabel = (s, max=48) => (s.length > max ? s.slice(0, max-1) + '…' : s);
+
+    const TOTAL_STEPS = 6; // intro implicit + 5 turns => show "1/6 ... 5/6". Results considered step 6/6.
+    const steps = [
+      {
+        key:'presentacion',
+        title:'Saludo y presentación',
+        systemMsgs:[
+          { speaker:'client', text:'Hola, tengo una fuga bajo el fregadero.' }
+        ],
+        options:[
+          {
+            text:'Hola, soy del equipo de Sofía. 15 min aprox.',
+            type:'correct',
+            react:{ speaker:'client', text:'Perfecto, os espero.' },
+            explain:'Te identificas y das un tiempo estimado: reduce ansiedad y genera confianza.'
+          },
+          {
+            text:'Vamos para allá.',
+            type:'partial',
+            react:{ speaker:'mentor', text:'Bien, faltó tu nombre y tiempo.' },
+            explain:'Correcto pero incompleto: al cliente le faltan datos para organizarse.'
+          },
+          {
+            text:'Te llamo luego, no prometo nada.',
+            type:'wrong',
+            react:{ speaker:'client', text:'¿Podéis venir ahora? Lo necesito...' },
+            explain:'Genera inseguridad y mala experiencia para el cliente.'
+          }
+        ]
+      },
+      {
+        key:'llave',
+        title:'Cortar agua con permiso',
+        systemMsgs:[
+          { speaker:'mentor', text:'Antes de tocar nada, piensa en la llave de paso.' }
+        ],
+        options:[
+          {
+            text:'¿Podemos cerrar la llave? ¿Dónde está?',
+            type:'correct',
+            react:{ speaker:'client', text:'Sí, junto al calentador.' },
+            explain:'Pedir permiso y ubicar la llave evita daños y hace partícipe a la clienta.'
+          },
+          {
+            text:'Voy cerrando la llave ya.',
+            type:'partial',
+            react:{ speaker:'mentor', text:'Mejor pide permiso primero.' },
+            explain:'Técnicamente bien, pero falta comunicación con la clienta.'
+          },
+          {
+            text:'Ignoro la llave, limpio primero.',
+            type:'wrong',
+            react:{ speaker:'mentor', text:'Riesgo de más agua. Prioriza el corte.' },
+            explain:'No cortar aumenta daños y riesgo eléctrico en la zona.'
+          }
+        ]
+      },
+      {
+        key:'zona_segura',
+        title:'Asegurar zona húmeda',
+        systemMsgs:[
+          { speaker:'client', text:'El suelo está mojado y hay un enchufe cerca.' }
+        ],
+        options:[
+          {
+            text:'Cubeta y trapo; aviso y desenchufo.',
+            type:'correct',
+            react:{ speaker:'mentor', text:'Bien: control y seguridad.' },
+            explain:'Contener agua, señalizar y cortar electricidad reduce caídas y choques.'
+          },
+          {
+            text:'Solo pongo cubeta y sigo.',
+            type:'partial',
+            react:{ speaker:'mentor', text:'Falta señalizar y revisar enchufe.' },
+            explain:'Contienes agua, pero mantienes riesgos eléctricos y de resbalón.'
+          },
+          {
+            text:'Enciendo la luz para ver mejor.',
+            type:'wrong',
+            react:{ speaker:'mentor', text:'No, peligro con humedad.' },
+            explain:'Más tensión con agua aumenta el riesgo de choque eléctrico.'
+          }
+        ]
+      },
+      {
+        key:'imprevisto',
+        title:'Imprevisto: tubo frágil',
+        systemMsgs:[
+          { speaker:'mentor', text:'El tubo está frágil y huele a humedad.' }
+        ],
+        options:[
+          {
+            text:'Aseguro zona, guantes y linterna; espero.',
+            type:'correct',
+            react:{ speaker:'mentor', text:'Excelente, sin forzar.' },
+            explain:'EPI y observación evitan roturas; esperar indicación es la vía segura.'
+          },
+          {
+            text:'Aprieto un poco, con cuidado.',
+            type:'partial',
+            react:{ speaker:'mentor', text:'Podrías romperlo. Valora antes.' },
+            explain:'Intención buena, pero puedes causar una rotura mayor.'
+          },
+          {
+            text:'Fuerzo la pieza para ir rápido.',
+            type:'wrong',
+            react:{ speaker:'mentor', text:'No. Alto riesgo de rotura.' },
+            explain:'Forzar piezas frágiles agrava la avería y eleva el riesgo.'
+          }
+        ]
+      },
+      {
+        key:'cierre',
+        title:'Explicar pasos y tiempo',
+        systemMsgs:[
+          { speaker:'client', text:'¿Cuánto tardará? ¿Qué haréis?' }
+        ],
+        options:[
+          {
+            text:'30–40 min: cerrar, revisar, junta nueva y prueba.',
+            type:'correct',
+            react:{ speaker:'client', text:'Gracias por explicarlo.' },
+            explain:'Plan y tiempo claros: gestionas expectativas y das tranquilidad.'
+          },
+          {
+            text:'Una media hora, ya te digo.',
+            type:'partial',
+            react:{ speaker:'client', text:'Vale, ¿qué pasos siguen?' },
+            explain:'Das un tiempo, pero faltan pasos: deja dudas innecesarias.'
+          },
+          {
+            text:'Depende… ya veremos.',
+            type:'wrong',
+            react:{ speaker:'client', text:'Preferiría una estimación.' },
+            explain:'No estimar ni explicar genera incertidumbre y mala experiencia.'
+          }
+        ]
+      }
+    ];
+
+    // --------- STATE ----------
+    let stepIndex = 0; // 0..4
+    const decisions = []; // {title, choiceText, type, explain}
+
+    // --------- RENDER HELPERS ----------
+    function clampOptionLabels() {
+      const btns = choices.querySelectorAll('.choiceBtn .choiceLabel');
+      btns.forEach(el => el.textContent = trimLabel(el.textContent || ''));
+    }
+
+    function renderMessage(charKey, text){
+      const c = CHAR[charKey];
+      const isRight = c.side === 'right';
+      const msg = document.createElement('div');
+      msg.className = `msg ${isRight ? 'right':'left'}`;
+      msg.setAttribute('role','article');
+      msg.innerHTML = `
+        <img class="avatar" src="${c.avatar}" alt="${c.name}" loading="lazy">
+        <div class="bubble">
+          <div class="name">${c.name}</div>
+          <div class="text">${escapeHTML(text)}</div>
+        </div>`;
+      chat.appendChild(msg);
+      // keep chat bottom-visible
+      requestAnimationFrame(()=> chat.scrollTop = chat.scrollHeight);
+    }
+
+    function renderSystemForStep(step){
+      // 1 short message per turn as per UX guardrail (kept in data)
+      const msg = step.systemMsgs[0];
+      renderMessage(msg.speaker, msg.text);
+    }
+
+    function renderChoices(step){
+      choices.innerHTML = '';
+      step.options.forEach((opt, idx)=>{
+        const btn = document.createElement('button');
+        btn.className = 'choiceBtn';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', `Opción ${idx+1}`);
+        btn.dataset.type = opt.type;
+        btn.dataset.index = idx;
+        btn.innerHTML = `<span class="choiceLabel">${escapeHTML(opt.text)}</span>`;
+        btn.addEventListener('click', ()=> handleChoice(opt, step));
+        choices.appendChild(btn);
+      });
+      clampOptionLabels();
+    }
+
+    function updateProgress(){
+      // stepIndicator counts 1..6 (5 turns + final). We are in gameplay turn: show (stepIndex+1)/6
+      const current = stepIndex + 1;
+      stepIndicator.textContent = `${current}/${TOTAL_STEPS}`;
+      const pct = Math.round((current / TOTAL_STEPS) * 100);
+      barFill.style.width = pct + '%';
+    }
+
+    function startStep(idx){
+      const step = steps[idx];
+      updateProgress();
+      renderSystemForStep(step);
+      renderChoices(step);
+      ensureFits();
+    }
+
+    function handleChoice(opt, step){
+      // Player message
+      renderMessage('apprentice', opt.text);
+      // Reaction (1 short msg)
+      if (opt.react) renderMessage(opt.react.speaker, opt.react.text);
+      // Record decision
+      decisions.push({
+        title: step.title,
+        choiceText: opt.text,
+        type: opt.type,
+        explain: limitExplain(opt.explain)
+      });
+      // Next
+      stepIndex++;
+      if(stepIndex < steps.length){
+        setTimeout(()=> startStep(stepIndex), 260);
+      } else {
+        // Finish -> results
+        setTimeout(()=> showResults(), 320);
+      }
+    }
+
+    function limitExplain(s){
+      const max = 180;
+      let txt = s.trim();
+      if (txt.length > max) txt = txt.slice(0, max-1) + '…';
+      return txt;
+    }
+
+    // --------- RESULTS ----------
+    function showResults(){
+      // Progress to 6/6
+      stepIndicator.textContent = `${TOTAL_STEPS}/${TOTAL_STEPS}`;
+      barFill.style.width = '100%';
+
+      // Build results
+      decisionsList.innerHTML = '';
+      let score = 0;
+      decisions.forEach((d, i)=>{
+        const tagClass = d.type === 'correct' ? '' : (d.type === 'partial' ? 'partial':'wrong');
+        if (d.type === 'correct') score += 1;
+        const el = document.createElement('div');
+        el.className = 'decisionItem';
+        el.innerHTML = `
+          <div class="dTop">
+            <div>${i+1}. ${escapeHTML(d.title)}</div>
+            <span class="tag ${tagClass}">${d.type === 'correct' ? 'Correcta' : d.type === 'partial' ? 'Parcial' : 'Incorrecta'}</span>
+          </div>
+          <div class="dExplain">${escapeHTML(d.explain)}</div>
+        `;
+        decisionsList.appendChild(el);
+      });
+      scoreText.textContent = `Tu balance: ${score}/${steps.length} decisiones óptimas`;
+
+      // reward link with initData
+      const url = 'https://kampe-game-phaser.onrender.com/daily_streak?initData=' + encodeURIComponent(initData);
+      rewardBtn.href = url;
+      if(!hasInit){
+        initWarn.textContent = 'Aviso: initData no detectado. Podrás ver la recompensa, pero tu progreso podría no guardarse.';
+      } else {
+        initWarn.textContent = '';
+      }
+
+      // Show results view
+      results.classList.remove('hidden');
+
+      // Keep global scroll locked; results panel scrolls itself.
+      ensureFits(); // still check scale if necessary
+    }
+
+    retryBtn.addEventListener('click', ()=>{
+      // Reset
+      results.classList.add('hidden');
+      chat.innerHTML = '';
+      choices.innerHTML = '';
+      decisions.splice(0, decisions.length);
+      stepIndex = 0;
+      // Reset progress
+      barFill.style.width = '0%';
+      stepIndicator.textContent = `1/${TOTAL_STEPS}`;
+      startStep(0);
+    });
+
+    // --------- INTRO ----------
+    startBtn.addEventListener('click', ()=>{
+      introModal.classList.add('hidden');
+      startStep(0);
+    });
+
+    // --------- FIT / RESPONSIVE GUARDRAILS ----------
+    function assertNoOverflow(){
+      // compare sceneInner scrollHeight vs scene clientHeight after scale
+      return sceneInner.scrollHeight <= scene.clientHeight + 1; // +1 tolerance
+    }
+
+    function applyCompactMode(){
+      if(!document.body.classList.contains('compact')){
+        document.body.classList.add('compact');
+      }
+    }
+
+    function fitBoardToViewport(){
+      // Reserve: could reduce some paddings or heights if needed (already handled by .compact)
+      // Here we might tweak nothing; returns true to continue.
+      return;
+    }
+
+    function autoscaleUI(minScale=0.88){
+      // dynamically scale down if still overflows
+      let scale = 1;
+      // compute needed scale
+      const sh = sceneInner.scrollHeight;
+      const ch = scene.clientHeight;
+      if (sh > ch){
+        scale = Math.max(minScale, ch / sh);
+      }
+      sceneInner.style.setProperty('--ui-scale', scale.toFixed(3));
+    }
+
+    function ensureFits(){
+      // reset scale
+      sceneInner.style.setProperty('--ui-scale','1');
+      // 1) try vanilla
+      if (assertNoOverflow()) return;
+      // 2) compact
+      applyCompactMode();
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      // 3) autoscale
+      autoscaleUI(0.88);
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', ()=> setTimeout(ensureFits, 50));
+
+    // --------- UTILS ----------
+    function escapeHTML(str=''){
+      return str.replace(/[&<>"']/g, m => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+      }[m]));
+    }
+
+    // --------- ACCESSIBILITY: Keyboard support ----------
+    choices.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+        const btns = Array.from(choices.querySelectorAll('.choiceBtn'));
+        const idx = btns.indexOf(document.activeElement);
+        if(idx >= 0){
+          e.preventDefault();
+          const next = e.key === 'ArrowDown' ? Math.min(btns.length-1, idx+1) : Math.max(0, idx-1);
+          btns[next].focus();
+        }
+      }
+    });
+
+    // Preload key avatars for snappier feel
+    const preload = [CHAR.mentor.avatar, CHAR.apprentice.avatar, CHAR.client.avatar];
+    preload.forEach(src => { const im=new Image(); im.decoding='async'; im.loading='eager'; im.src=src; });
+
+    // Initial ensure (for intro sizing)
+    ensureFits();
+  })();
+  </script>
+</body>
+</html>
