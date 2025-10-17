@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Carrito Pro: EPI, herramienta o paso</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset y base */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    html, body { overflow: hidden; overscroll-behavior: none; background: #0d1d4a; }
+    body { font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #eaf2ff; }
+
+    :root{
+      --bg1:#1b3aa6;
+      --bg2:#0f69f2;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --glass-border: rgba(255,255,255,0.28);
+      --ok:#10d47f;
+      --ko:#ff5e78;
+      --warn:#ffd063;
+      --epi:#46e1ff;
+      --tool:#9eff6a;
+      --proc:#ffd063;
+      --ui-scale:1;
+      --hudH: 64px;
+      --cardH: clamp(120px, 24vh, 180px);
+      --btnH: 56px;
+      --gap: 12px;
+
+      /* Variables para ensureFits() */
+      --cellH: 56px;
+      --cellAR: 2.8;
+    }
+
+    /* Escena full viewport con fallbacks svh/dvh/vh */
+    .scene {
+      position: relative;
+      width: 100%;
+      touch-action: none;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 12px);
+      background: radial-gradient(120% 120% at 80% 0%, var(--bg2) 0%, var(--bg1) 60%, #0a1a40 100%);
+      isolation: isolate;
+      transform: scale(var(--ui-scale));
+      transform-origin: 50% 0%;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    /* Fondo avatar con luz */
+    .avatar-bg{
+      position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.18;
+      background:
+        radial-gradient(60% 40% at 70% 10%, rgba(255,255,255,0.25) 0%, transparent 60%),
+        url('https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png') center bottom / cover no-repeat;
+      mix-blend-mode: screen;
+      filter: saturate(1.1);
+    }
+
+    /* HUD superior */
+    .hud {
+      z-index: 3;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; min-height: var(--hudH);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.24), rgba(255,255,255,0.12));
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+      backdrop-filter: blur(8px);
+    }
+    .brand img { width: 36px; height: 36px; object-fit: contain; }
+    .title {
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: clamp(16px, 2.7vw, 20px);
+      line-height: 1.1;
+      max-width: 58vw;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.35);
+    }
+    .progress {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(8px);
+      padding: 8px 12px;
+      border-radius: 14px;
+      min-width: 72px; justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .bar {
+      position: relative; height: 6px; width: 64px; border-radius: 999px;
+      background: rgba(255,255,255,0.18); overflow: hidden;
+    }
+    .bar > span{
+      position: absolute; height: 100%; left: 0; top: 0; width: 0%;
+      background: linear-gradient(90deg, #72fa9c, #10d47f);
+      border-radius: inherit; transition: width 220ms ease;
+      box-shadow: 0 0 10px rgba(16,212,127,0.55);
+    }
+    .count { min-width: 44px; text-align: right; }
+
+    /* Área de juego */
+    .play {
+      z-index: 2;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: var(--gap);
+      min-height: 0; /* evita overflow por grid */
+    }
+    .card {
+      align-self: center;
+      justify-self: center;
+      width: min(94%, 680px);
+      min-height: var(--cardH);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.28);
+      backdrop-filter: blur(10px);
+      padding: 16px 16px;
+      display: grid; place-items: center; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .item-label {
+      font-weight: 800; letter-spacing: 0.3px;
+      font-size: clamp(20px, 4.8vw, 26px);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.35);
+      max-width: 90%;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .hint {
+      position: absolute; bottom: 8px; left: 12px; right: 12px;
+      color: rgba(255,255,255,0.78);
+      font-size: 12px; letter-spacing: 0.2px;
+      display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+      opacity: .8;
+    }
+    /* Panel de opciones */
+    .choices {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap);
+      align-items: end;
+    }
+    @media (max-width: 360px){
+      .choices { gap: 8px; }
+    }
+    .chip {
+      position: relative;
+      height: var(--btnH);
+      min-height: 48px;
+      border-radius: 14px;
+      border: 1px solid var(--glass-border);
+      padding: 10px 12px;
+      font-weight: 800; letter-spacing: 0.2px;
+      font-size: clamp(14px, 3.8vw, 16px);
+      text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+      display: grid; place-items: center;
+      user-select: none; -webkit-tap-highlight-color: transparent;
+      cursor: pointer;
+      outline: none;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.24);
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      backdrop-filter: blur(10px);
+      color: #0b1535;
+      text-transform: uppercase;
+    }
+    .chip span{
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      max-width: 100%;
+    }
+    .chip:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+    .chip:active { transform: translateY(1px) scale(0.98); }
+    .chip.epi { background: linear-gradient(180deg, rgba(70,225,255,0.9), rgba(70,225,255,0.62)); }
+    .chip.tool { background: linear-gradient(180deg, rgba(158,255,106,0.92), rgba(158,255,106,0.62)); }
+    .chip.proc { background: linear-gradient(180deg, rgba(255,208,99,0.9), rgba(255,208,99,0.62)); }
+    .chip .pulse {
+      position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0;
+    }
+    .chip.pulsing .pulse{
+      animation: pulse 420ms ease-out forwards;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.9), rgba(255,255,255,0) 56%);
+      mix-blend-mode: overlay;
+    }
+    @keyframes pulse {
+      0% { opacity: .85; transform: scale(0.9); }
+      100% { opacity: 0; transform: scale(1.35); }
+    }
+
+    /* Fantasma de caída (microinteracción drop) */
+    .ghost {
+      position: fixed; left: 0; top: 0; transform: translate(-9999px, -9999px);
+      z-index: 999; pointer-events: none;
+      background: rgba(255,255,255,0.96); color: #0b1535;
+      border-radius: 14px; padding: 10px 12px; font-weight: 800;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+      will-change: transform, opacity;
+    }
+
+    /* Intro / Resultados (modales tipo sheet) */
+    .sheet {
+      position: absolute; inset: auto 12px 12px 12px; top: 12px;
+      z-index: 10;
+      background: rgba(8,16,48,0.72);
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+      backdrop-filter: blur(12px);
+      border-radius: 18px;
+      max-height: 90svh;
+      overflow-y: auto;
+      padding: 14px;
+    }
+    .sheet h2{
+      margin: 6px 0 8px; font-size: clamp(18px, 5.2vw, 22px); font-weight: 800;
+    }
+    .sheet p{
+      margin: 6px 0; color: #eaf2ff; opacity: .95;
+      font-size: clamp(14px, 3.6vw, 16px);
+    }
+    .sheet .small{ font-size: 12px; opacity:.8; }
+    .sheet .cta-row{
+      display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 8px;
+      position: sticky; bottom: 0; background: linear-gradient(180deg, transparent, rgba(8,16,48,0.85) 35%);
+      padding-top: 10px;
+    }
+    .btn {
+      height: 52px; min-height: 48px; border-radius: 14px; border: 0;
+      font-weight: 800; letter-spacing: 0.3px; cursor: pointer; color: #0b1535;
+      background: linear-gradient(180deg, #72fa9c, #10d47f);
+      box-shadow: 0 10px 22px rgba(16,212,127,0.35), inset 0 1px 0 rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      font-size: clamp(14px, 3.8vw, 16px);
+    }
+    .btn.secondary {
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(240,240,240,0.86));
+      box-shadow: 0 10px 22px rgba(255,255,255,0.15), inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+    .intro-list{
+      display: grid; gap: 6px; margin: 8px 0;
+    }
+    .intro-tag{
+      display: inline-flex; align-items:center; gap: 6px; border-radius: 999px; padding: 6px 10px;
+      border: 1px solid var(--glass-border); background: rgba(255,255,255,0.12);
+      font-size: 12px; font-weight: 700; width: fit-content;
+    }
+
+    /* Resultado items */
+    .results {
+      display: grid; gap: 10px; margin-top: 10px;
+    }
+    .r-item{
+      display: grid; grid-template-columns: 1fr auto; gap: 8px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 14px; padding: 10px;
+    }
+    .r-title{ font-weight: 800; margin-bottom: 4px; line-height: 1.15; }
+    .r-expl{ font-size: 13px; opacity: .95; }
+    .r-pill{
+      align-self: start; padding: 6px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 800; color: #0b1535;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    .ok { background: var(--ok); }
+    .ko { background: var(--ko); color: white; border-color: rgba(255,255,255,0.2); }
+    .pill-epi { background: var(--epi); }
+    .pill-tool { background: var(--tool); }
+    .pill-proc { background: var(--proc); }
+
+    .tip{
+      margin-top: 6px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 14px; padding: 10px;
+      font-size: 13px;
+    }
+    .warn {
+      display:flex; align-items:center; gap:8px; color: #1a1300;
+      background: linear-gradient(180deg, #ffe18a, #ffd063);
+      padding: 8px 10px; border-radius: 12px;
+      font-weight: 700; font-size: 12px;
+      border: 1px solid rgba(0,0,0,0.2);
+    }
+
+    /* Estados compactos para ensureFits */
+    .compact .title { font-size: clamp(15px, 2.2vw, 18px); }
+    .compact { --hudH: 56px; --cardH: clamp(108px, 22vh, 160px); --btnH: 50px; --gap: 8px; }
+    .compact .brand img { width: 30px; height: 30px; }
+    .compact .progress .bar { width: 54px; }
+
+    /* Accesibilidad foco en chips y botones */
+    .chip:focus-visible, .btn:focus-visible { box-shadow: 0 0 0 3px rgba(255,255,255,0.9), 0 10px 22px rgba(0,0,0,0.3); }
+
+    /* Ocultos */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="scene" role="application" aria-label="Carrito Pro: EPI, herramienta o paso">
+    <div class="avatar-bg" aria-hidden="true"></div>
+
+    <!-- HUD -->
+    <header class="hud" aria-live="polite">
+      <div class="brand" aria-label="Kämpe">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title">Carrito Pro: EPI, herramienta o paso ⚡</div>
+      </div>
+      <div class="progress" aria-label="Progreso">
+        <div class="bar" aria-hidden="true"><span id="barFill"></span></div>
+        <div class="count"><span id="countTxt">0/9</span></div>
+      </div>
+    </header>
+
+    <!-- Juego -->
+    <main class="play">
+      <section class="card" aria-live="polite" aria-atomic="true">
+        <div id="itemLabel" class="item-label">—</div>
+        <div class="hint">Elige la categoría correcta y avanzas.</div>
+      </section>
+
+      <nav class="choices" aria-label="Categorías">
+        <button class="chip epi" data-cat="EPI" aria-label="Elegir EPI">
+          <span>EPI</span>
+          <i class="pulse"></i>
+        </button>
+        <button class="chip tool" data-cat="Herramienta" aria-label="Elegir Herramienta">
+          <span>Herramienta</span>
+          <i class="pulse"></i>
+        </button>
+        <button class="chip proc" data-cat="Procedimiento" aria-label="Elegir Procedimiento">
+          <span>Procedimiento</span>
+          <i class="pulse"></i>
+        </button>
+      </nav>
+    </main>
+
+    <!-- Intro -->
+    <section id="intro" class="sheet" role="dialog" aria-label="Introducción" aria-modal="true">
+      <h2>Tu carro listo en minutos</h2>
+      <p>Primer día en mantenimiento: ordena mentalmente tu carro. Decide si cada ítem es EPI, herramienta o procedimiento. Toca y pasa al siguiente.</p>
+      <div class="intro-list">
+        <span class="intro-tag" style="background: rgba(70,225,255,0.22)">EPI: se viste</span>
+        <span class="intro-tag" style="background: rgba(158,255,106,0.22)">Herramienta: se usa</span>
+        <span class="intro-tag" style="background: rgba(255,208,99,0.22)">Procedimiento: es una acción</span>
+      </div>
+      <div class="cta-row">
+        <button id="startBtn" class="btn" aria-label="Empezar">Empezar</button>
+      </div>
+    </section>
+
+    <!-- Resultados -->
+    <section id="results" class="sheet hidden" role="dialog" aria-label="Resultados" aria-modal="true">
+      <h2>Resumen de tu carro</h2>
+      <p class="small">Ves tu elección y la correcta. Apunta las alertas típicas.</p>
+      <div id="scoreLine" class="small" style="margin:6px 0 2px; font-weight:800;"></div>
+      <div id="resultsList" class="results" aria-live="polite"></div>
+      <div class="tip">
+        Consejo: si se viste → EPI; si se usa para ejecutar → Herramienta; si describe una acción o pauta → Procedimiento.
+      </div>
+      <div class="cta-row">
+        <button id="retryBtn" class="btn secondary" aria-label="Repetir práctica">Repetir práctica</button>
+        <div id="rewardWrap">
+          <button id="rewardBtn" class="btn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+          <div id="noInitWarn" class="warn hidden" style="margin-top:8px;">
+            ⚠ Falta initData: podrás continuar, pero tu progreso puede no registrarse.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ghost para animación drop -->
+    <div id="ghost" class="ghost" aria-hidden="true"></div>
+  </div>
+
+  <script>
+    // Datos del reto
+    const DATASET = [
+      { id: 1, text: "Guantes dieléctricos", cat: "EPI", expl: "Protegen frente a corriente. Se visten: Equipo de Protección Individual.", alert:"Comprueba fecha y norma EN." },
+      { id: 2, text: "Gafas de protección", cat: "EPI", expl: "Protegen los ojos de proyecciones. Se visten: EPI.", alert:"Limpia y revisa rayones." },
+      { id: 3, text: "Mascarilla FFP2", cat: "EPI", expl: "Filtra partículas/polvo. Se viste: EPI.", alert:"Ajuste facial y sello nasal." },
+      { id: 4, text: "Destornillador aislado", cat: "Herramienta", expl: "Sirve para atornillar con aislamiento IEC/EN. Herramienta.", alert:"No uses si el aislamiento está dañado." },
+      { id: 5, text: "Llave inglesa", cat: "Herramienta", expl: "Ajusta tuercas y pernos. Herramienta de mano.", alert:"Ajusta bien la mordaza para no barrer." },
+      { id: 6, text: "Escalera plegable", cat: "Herramienta", expl: "Permite trabajar en altura. Medio de trabajo: herramienta.", alert:"Ángulo seguro y calzado antideslizante." },
+      { id: 7, text: "Bloquear y etiquetar (LOTO)", cat: "Procedimiento", expl: "Asegura equipos desenergizados con candado y etiqueta.", alert:"Cada operario, su candado." },
+      { id: 8, text: "Cortar suministro", cat: "Procedimiento", expl: "Desconectar energía antes de intervenir. Procedimiento.", alert:"Verifica ausencia de tensión." },
+      { id: 9, text: "Señalizar zona", cat: "Procedimiento", expl: "Delimitar y avisar de riesgos a terceros. Procedimiento.", alert:"Cinta/cono visibles y carteles." }
+    ];
+
+    // Estado
+    const state = {
+      initData: "",
+      index: 0,
+      answers: [], // {id, text, chosen, correct, expl, alert}
+      compactApplied: false,
+      uiScale: 1
+    };
+
+    // Referencias UI
+    const $scene = document.querySelector('.scene');
+    const $itemLabel = document.getElementById('itemLabel');
+    const $barFill = document.getElementById('barFill');
+    const $countTxt = document.getElementById('countTxt');
+    const $choices = document.querySelectorAll('.chip');
+    const $intro = document.getElementById('intro');
+    const $results = document.getElementById('results');
+    const $resultsList = document.getElementById('resultsList');
+    const $scoreLine = document.getElementById('scoreLine');
+    const $rewardBtn = document.getElementById('rewardBtn');
+    const $noInitWarn = document.getElementById('noInitWarn');
+    const $retryBtn = document.getElementById('retryBtn');
+    const $startBtn = document.getElementById('startBtn');
+    const $ghost = document.getElementById('ghost');
+
+    // Utilidades: lectura initData
+    function readInitData() {
+      const url = new URL(window.location.href);
+      const initData = url.searchParams.get('initData') || "";
+      state.initData = initData;
+      // Preparar CTA de recompensa
+      $rewardBtn.addEventListener('click', () => {
+        const tgt = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(state.initData)}`;
+        window.location.href = tgt;
+      });
+      if (!initData) $noInitWarn.classList.remove('hidden');
+    }
+
+    // Render del ítem actual
+    function renderTurn() {
+      const total = DATASET.length;
+      const idx = state.index;
+      if (idx >= total) { showResults(); return; }
+      const item = DATASET[idx];
+      // Asegurar textos cortos en gameplay (máx 48 chars)
+      const label = item.text.length > 48 ? item.text.slice(0,45) + "…" : item.text;
+      $itemLabel.textContent = label;
+      // Progreso
+      $countTxt.textContent = `${idx+1}/${total}`;
+      const pct = Math.round(((idx) / total) * 100);
+      $barFill.style.width = `${pct}%`;
+      // foco accesible al comenzar un turno
+      setTimeout(() => {
+        // Nada especial, se mantiene enfocado el primer botón si navega con teclado.
+      }, 0);
+      ensureFits();
+    }
+
+    // Selección de categoría
+    function onChoose(cat, btnEl) {
+      const idx = state.index;
+      const total = DATASET.length;
+      if (idx >= total) return;
+
+      // Pulsing visual
+      btnEl.classList.remove('pulsing');
+      void btnEl.offsetWidth; // restart animation
+      btnEl.classList.add('pulsing');
+
+      // Animación drop del item hacia el botón
+      doDropAnimation(btnEl);
+
+      const item = DATASET[idx];
+      const chosen = cat;
+      const correct = (chosen === item.cat);
+      state.answers.push({
+        id: item.id, text: item.text, chosen, correctCat: item.cat, correct,
+        expl: item.expl, alert: item.alert
+      });
+
+      state.index++;
+      // Siguiente turno tras una breve pausa
+      setTimeout(() => {
+        // Update progreso fill al pasar
+        $barFill.style.width = `${Math.round(((state.index) / total) * 100)}%`;
+        renderTurn();
+      }, 420);
+    }
+
+    // Microinteracción: animación de caída del texto al botón
+    function doDropAnimation(targetBtn) {
+      const cardRect = $itemLabel.getBoundingClientRect();
+      const btnRect = targetBtn.getBoundingClientRect();
+      // Configura ghost
+      $ghost.textContent = $itemLabel.textContent;
+      $ghost.style.transform = `translate(${cardRect.left + (cardRect.width/2) - 60}px, ${cardRect.top + (cardRect.height/2) - 20}px)`;
+      $ghost.style.opacity = '1';
+      $ghost.style.transition = 'transform 320ms cubic-bezier(.2,.9,.2,1), opacity 420ms ease';
+      // Forzar reflujo
+      void $ghost.offsetWidth;
+      const centerX = btnRect.left + btnRect.width/2 - 60;
+      const centerY = btnRect.top + btnRect.height/2 - 20;
+      $ghost.style.transform = `translate(${centerX}px, ${centerY}px) scale(0.92)`;
+      $ghost.style.opacity = '0';
+      // Limpia luego
+      setTimeout(() => {
+        $ghost.style.transform = 'translate(-9999px, -9999px)';
+      }, 450);
+    }
+
+    // Mostrar resultados
+    function showResults() {
+      // Ajustar progreso a 100%
+      $barFill.style.width = '100%';
+      $countTxt.textContent = `${DATASET.length}/${DATASET.length}`;
+
+      // Desbloquear scroll solo en la vista final (scroll interno, no global)
+      $results.classList.remove('hidden');
+
+      // Rellenar lista de resultados
+      $resultsList.innerHTML = '';
+      let correctCount = 0;
+      state.answers.forEach((ans) => {
+        if (ans.correct) correctCount++;
+        const wrap = document.createElement('div');
+        wrap.className = 'r-item';
+        const left = document.createElement('div');
+        const right = document.createElement('div');
+
+        const title = document.createElement('div');
+        title.className = 'r-title';
+        title.textContent = ans.text;
+
+        const expl = document.createElement('div');
+        expl.className = 'r-expl';
+        const chosenTxt = `Tu elección: ${ans.chosen}`;
+        const correctTxt = ans.correct ? "¡Acertaste!" : `Correcta: ${ans.correctCat}`;
+        const alertTxt = ans.alert ? ` Alerta: ${ans.alert}` : "";
+        expl.textContent = `${chosenTxt} • ${correctTxt}. ${ans.expl}.${alertTxt}`;
+
+        left.appendChild(title);
+        left.appendChild(expl);
+
+        const pill = document.createElement('div');
+        pill.className = 'r-pill ' + (ans.correct ? 'ok' : 'ko');
+        pill.textContent = ans.correct ? 'Correcto' : 'Revisa';
+        right.appendChild(pill);
+
+        const pillCat = document.createElement('div');
+        pillCat.className = 'r-pill ' + (ans.correctCat === 'EPI' ? 'pill-epi' : ans.correctCat === 'Herramienta' ? 'pill-tool' : 'pill-proc');
+        pillCat.style.marginTop = '8px';
+        pillCat.textContent = ans.correctCat;
+        right.appendChild(pillCat);
+
+        wrap.appendChild(left);
+        wrap.appendChild(right);
+        $resultsList.appendChild(wrap);
+      });
+      $scoreLine.textContent = `Aciertos: ${correctCount}/${DATASET.length}`;
+      // Mover el foco accesible al principio del sheet
+      $results.focus?.();
+      ensureFits(); // Aunque es un sheet con scroll interno, intentamos encajar
+    }
+
+    // Reiniciar
+    function resetGame() {
+      state.index = 0;
+      state.answers = [];
+      $results.classList.add('hidden');
+      renderTurn();
+    }
+
+    // Eventos
+    $choices.forEach(btn => {
+      btn.addEventListener('click', () => onChoose(btn.dataset.cat, btn));
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onChoose(btn.dataset.cat, btn);
+        }
+      });
+    });
+    $startBtn.addEventListener('click', () => {
+      $intro.classList.add('hidden');
+      renderTurn();
+    });
+    $retryBtn.addEventListener('click', () => {
+      // Mantener intro oculta, reiniciar y volver a empezar
+      resetGame();
+      // Scroll al top del sheet por si quedara en medio
+      $results.scrollTop = 0;
+    });
+
+    // Guardarraíles técnicos: ensureFits()
+    function assertNoOverflow() {
+      // true si cabe
+      return $scene.scrollHeight <= $scene.clientHeight;
+    }
+    function applyCompactMode() {
+      if (!state.compactApplied) {
+        document.body.classList.add('compact');
+        state.compactApplied = true;
+      }
+    }
+    function fitBoardToViewport() {
+      // Reducimos tamaño de celda/base de UI ligeramente
+      document.documentElement.style.setProperty('--cellH', '52px');
+      document.documentElement.style.setProperty('--cellAR', '3.0');
+      // Reducimos carta
+      document.documentElement.style.setProperty('--cardH', 'min(22vh, 150px)');
+    }
+    function autoscaleUI() {
+      // Último recurso: scale hasta 0.88
+      const step = 0.02;
+      let scale = state.uiScale;
+      while (!assertNoOverflow() && scale > 0.88) {
+        scale -= step;
+        document.documentElement.style.setProperty('--ui-scale', scale.toFixed(2));
+      }
+      state.uiScale = scale;
+    }
+    function ensureFits() {
+      // 1) Comprobar overflow
+      if (assertNoOverflow()) return;
+      // 2) Compact
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+      // 3) Ajuste de rejilla
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      // 4) Autoscale
+      autoscaleUI();
+    }
+
+    // Inicialización
+    function init() {
+      readInitData();
+      // Inicializar progress y primer render (intro visible, pero render pre-carga UI)
+      $barFill.style.width = '0%';
+      $countTxt.textContent = `0/${DATASET.length}`;
+      // Bloquear scroll global en gameplay y permitir en sheets con overflow propio
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      ensureFits();
+      // Re-encajar al cambiar tamaño/orientación
+      window.addEventListener('resize', ensureFits);
+      window.addEventListener('orientationchange', () => setTimeout(ensureFits, 50));
+    }
+    init();
+  </script>
+</body>
+</html>
