@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Fontanería Segura: ¿V o F?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ============ RESET / BASE ============ */
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; margin: 0; }
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    :root {
+      --ui-scale: 1;
+      --hudH: 64px;
+      --ctaH: 132px;
+      --gap: 14px;
+      --radius: 16px;
+      --glass: rgba(255,255,255,0.14);
+      --glass-strong: rgba(255,255,255,0.18);
+      --stroke: rgba(255,255,255,0.28);
+      --shadow: 0 8px 24px rgba(0,0,0,0.25);
+      --blue-0: #0e67ff;
+      --blue-1: #0057f7;
+      --blue-2: #0b3fe0;
+      --ok: #18d57e;
+      --bad: #ff4d67;
+      --txt: #ffffff;
+      --muted: rgba(255,255,255,0.75);
+      --questionFS: clamp(18px, 3.6vw, 22px);
+      --titleFS: clamp(18px, 3.6vw, 22px);
+      --badgeFS: clamp(12px, 2.8vw, 14px);
+      --btnFS: clamp(16px, 4.2vw, 18px);
+      --cardPad: 14px;
+      --boardMinH: 180px;
+    }
+    body {
+      font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--txt);
+      background: radial-gradient(1200px 70% at 50% -10%, #4aa3ff 0%, #246cff 45%, #1633c7 100%) fixed;
+    }
+
+    /* ============ SCENE HEIGHT WITH FALLBACKS ============ */
+    .scene {
+      width: 100%;
+      /* height set with @supports cascade */
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 10px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 10px);
+      position: relative;
+      touch-action: none;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { @supports (height: 100dvh) { .scene { height: 100dvh; } } }
+    @supports not (height: 100svh) { @supports not (height: 100dvh) { .scene { height: 100vh; } } }
+
+    /* ============ UI WRAP (for autoscale) ============ */
+    .ui {
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      width: min(720px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      position: relative;
+      filter: drop-shadow(0 10px 24px rgba(0,0,0,0.3));
+    }
+
+    /* Avatar backdrop */
+    .avatar-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.18;
+      mix-blend-mode: screen;
+      background-size: 480px auto;
+      background-repeat: no-repeat;
+      background-position: right -20px bottom -40px;
+      filter: saturate(1.2) contrast(1.05);
+    }
+
+    /* ============ HUD ============ */
+    .hud {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      height: var(--hudH);
+      gap: var(--gap);
+      backdrop-filter: blur(8px) saturate(1.2);
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      padding: 8px 12px;
+    }
+    .logo {
+      height: 32px;
+      width: auto;
+      display: block;
+    }
+    .title {
+      font-weight: 800;
+      font-size: var(--titleFS);
+      letter-spacing: 0.2px;
+      line-height: 1.1;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .progress {
+      font-weight: 700;
+      font-size: var(--badgeFS);
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.22);
+      min-width: 64px;
+      text-align: center;
+    }
+
+    /* ============ BOARD / QUESTION ============ */
+    .board {
+      flex: 1;
+      min-height: var(--boardMinH);
+      display: grid;
+      grid-template-rows: 1fr;
+      gap: var(--gap);
+      position: relative;
+    }
+
+    .card {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      backdrop-filter: blur(10px) saturate(1.2);
+      background: linear-gradient(180deg, var(--glass-strong), rgba(255,255,255,0.10));
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      padding: var(--cardPad);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .question {
+      font-size: var(--questionFS);
+      font-weight: 800;
+      line-height: 1.15;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 88%;
+    }
+
+    /* Microfeedback pulse (neutral) */
+    .pulse::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border-radius: 22px;
+      box-shadow: 0 0 0 0 rgba(255,255,255,0.75);
+      animation: ring 420ms ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes ring {
+      to { box-shadow: 0 0 0 18px rgba(255,255,255,0); }
+    }
+
+    /* ============ CTA BUTTONS ============ */
+    .cta {
+      height: var(--ctaH);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap);
+    }
+    .btn {
+      -webkit-user-select: none;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.12));
+      color: var(--txt);
+      font-weight: 800;
+      font-size: var(--btnFS);
+      text-align: center;
+      cursor: pointer;
+      min-height: 56px; /* ≥44px */
+      box-shadow: var(--shadow);
+      transition: transform 0.08s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+    .btn:active { transform: translateY(1px) scale(0.99); }
+    .btn:focus-visible { outline: 3px solid rgba(255,255,255,0.7); outline-offset: 2px; }
+
+    .btn.v { background: linear-gradient(135deg, rgba(24,213,126,0.45), rgba(24,213,126,0.22)); border-color: rgba(24,213,126,0.55); }
+    .btn.f { background: linear-gradient(135deg, rgba(255,77,103,0.45), rgba(255,77,103,0.22)); border-color: rgba(255,77,103,0.55); }
+
+    /* ============ INTRO / RESULT MODALS ============ */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 16, 32, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 10;
+    }
+    .overlay.show { display: flex; }
+
+    .modal {
+      width: min(720px, 96%);
+      max-height: 90svh;
+      overflow-y: auto;
+      backdrop-filter: blur(10px) saturate(1.2);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.10));
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .modal h2 {
+      margin: 0 0 8px;
+      font-size: clamp(20px, 5vw, 24px);
+      font-weight: 800;
+    }
+    .modal p {
+      margin: 8px 0;
+      color: var(--txt);
+      opacity: 0.95;
+      font-size: clamp(14px, 3.4vw, 16px);
+      line-height: 1.25;
+    }
+    .modal .row { display: flex; gap: 10px; margin-top: 12px; }
+    .modal .btn.primary {
+      flex: 1;
+      background: linear-gradient(135deg, var(--blue-0), var(--blue-2));
+      border-color: rgba(255,255,255,0.4);
+    }
+    .modal .btn.ghost { background: rgba(255,255,255,0.12); }
+
+    .intro-list {
+      margin: 10px 0 6px;
+      padding-left: 16px;
+      color: var(--muted);
+      font-size: clamp(13px, 3.2vw, 15px);
+    }
+
+    /* ============ RESULTS LIST ============ */
+    .score {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-radius: 12px;
+      background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.22);
+      margin-bottom: 10px;
+      font-weight: 800;
+    }
+    .result-item {
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin: 8px 0;
+    }
+    .res-q {
+      font-weight: 800;
+      font-size: clamp(14px, 3.6vw, 16px);
+      line-height: 1.2;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+    .pill {
+      padding: 6px 8px; border-radius: 999px; font-weight: 700; font-size: 12px;
+      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.14);
+    }
+    .pill.ok { background: rgba(24,213,126,0.35); border-color: rgba(24,213,126,0.6); }
+    .pill.bad { background: rgba(255,77,103,0.35); border-color: rgba(255,77,103,0.6); }
+    .res-expl {
+      color: var(--muted);
+      font-size: clamp(12px, 3.2vw, 14px);
+      line-height: 1.25;
+    }
+    .final-tips {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(20,20,20,0.28), rgba(255,255,255,0.10));
+      border: 1px solid rgba(255,255,255,0.22);
+    }
+    .final-tips strong { display: block; margin-bottom: 6px; }
+    .tips-list { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .final-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .warn { color: #fffbe6; font-size: 12px; opacity: 0.9; }
+
+    /* ============ COMPACT MODE ============ */
+    .compact :root {}
+    body.compact {
+      --hudH: 56px;
+      --ctaH: 120px;
+      --titleFS: clamp(16px, 3.2vw, 20px);
+      --badgeFS: clamp(11px, 2.4vw, 13px);
+      --btnFS: clamp(15px, 4vw, 17px);
+      --questionFS: clamp(16px, 3.2vw, 20px);
+      --cardPad: 12px;
+      --boardMinH: 160px;
+    }
+    .compact .title { letter-spacing: 0; }
+    .compact .logo { height: 28px; }
+
+    /* Focus ring for accessibility in dark background */
+    .btn:focus-visible, .modal .btn:focus-visible { outline: 3px solid rgba(255,255,255,0.85); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <div class="ui" id="ui">
+      <div class="avatar-bg" id="avatarBg" style="background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png');"></div>
+
+      <header class="hud" aria-label="Cabecera de desafío">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        <div class="title" id="challengeTitle">Fontanería Segura: ¿V o F? 🔧</div>
+        <div class="progress" id="progress" aria-live="polite">1/8</div>
+      </header>
+
+      <main class="board">
+        <section class="card" id="questionCard" aria-live="polite" aria-atomic="true">
+          <div class="question" id="questionText">Aparecerá aquí la afirmación.</div>
+        </section>
+      </main>
+
+      <nav class="cta" aria-label="Opciones Verdadero o Falso">
+        <button class="btn v" id="btnTrue" aria-label="Responder Verdadero">Verdadero</button>
+        <button class="btn f" id="btnFalse" aria-label="Responder Falso">Falso</button>
+      </nav>
+    </div>
+
+    <!-- Intro modal -->
+    <div class="overlay" id="introOverlay" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+      <div class="modal">
+        <h2 id="introTitle">Fontanería Segura: ¿V o F? 🔧</h2>
+        <p>Escenario: goteo en el sifón del lavabo. Piso pequeño y suelo delicado. Actúa con seguridad, orden y buena comunicación.</p>
+        <p><strong>Cómo jugar:</strong> Responde Verdadero o Falso. Avanza automático. El resultado y las explicaciones aparecerán al final.</p>
+        <ul class="intro-list">
+          <li>Duración: 8 afirmaciones.</li>
+          <li>Objetivo: PRL básica y trato con cliente.</li>
+        </ul>
+        <div class="row">
+          <button class="btn primary" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results modal -->
+    <div class="overlay" id="resultsOverlay" role="dialog" aria-modal="true" aria-labelledby="resultsTitle">
+      <div class="modal" id="resultsModal">
+        <h2 id="resultsTitle">Resultados</h2>
+        <div class="score" id="scoreBar">
+          <span id="scoreText">0/8 correctas</span>
+          <span id="timeText" aria-hidden="true">Reto diario</span>
+        </div>
+        <div id="resultsList" aria-live="polite"></div>
+
+        <div class="final-tips">
+          <strong>Mini-checklist: cierra, protege, comunica, verifica.</strong>
+          <div class="tips-list">
+            <span class="tip">Cierra la llave</span>
+            <span class="tip">Protege el suelo</span>
+            <span class="tip">Comunica el corte</span>
+            <span class="tip">Verifica fugas</span>
+          </div>
+        </div>
+
+        <div class="final-actions">
+          <button class="btn ghost" id="retryBtn" aria-label="Reintentar el reto">Reintentar</button>
+          <button class="btn primary" id="rewardBtn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+        </div>
+        <div id="initWarn" class="warn" style="margin-top:6px; display:none;">Aviso: initData no recibido. Se continuará sin datos.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===========================
+       Kämpe | Daily Challenge
+       Tipo: Afirmaciones binarias (Verdadero/Falso)
+       =========================== */
+
+    // --------- Utils: Query param (initData) ----------
+    const params = new URLSearchParams(location.search);
+    const initData = params.get('initData') || "";
+
+    // --------- Data: 8 ítems, <=48 chars cada uno ----------
+    const ITEMS = [
+      {
+        text: "Cierro la llave de paso antes de desmontar.",
+        answer: true,
+        explanation: "Cerrar la llave evita derrames al abrir el sifón. Comprueba que ya no hay presión abriendo un grifo."
+      },
+      {
+        text: "Aviso al cliente del corte de agua temporal.",
+        answer: true,
+        explanation: "Comunicar el corte y la duración evita sorpresas y genera confianza."
+      },
+      {
+        text: "Protejo el suelo con lona o cartón.",
+        answer: true,
+        explanation: "El suelo es delicado: coloca protección y retírala limpia para no dañar ni ensuciar."
+      },
+      {
+        text: "Uso agua jabonosa para detectar fugas.",
+        answer: true,
+        explanation: "El jabón hace burbujas en microfugas; es limpio y seguro para roscas y racores."
+      },
+      {
+        text: "Corto PVC sin guantes, para más precisión.",
+        answer: false,
+        explanation: "Usa guantes adecuados: evitan cortes y mejoran el agarre al cortar y desbarbar."
+      },
+      {
+        text: "No pongo teflón en juntas con goma.",
+        answer: true,
+        explanation: "La goma sella por compresión; el teflón la deforma. Limpia y lubrica con vaselina técnica o jabón."
+      },
+      {
+        text: "Desconecto el termo antes de manipularlo.",
+        answer: true,
+        explanation: "Corta la corriente antes de tocar el termo: agua y electricidad son un riesgo grave."
+      },
+      {
+        text: "Los residuos del desatasco van al desagüe.",
+        answer: false,
+        explanation: "No los viertas. Recógelos y entrégalos como residuo para proteger el medioambiente y las tuberías."
+      }
+    ];
+
+    // --------- State ----------
+    let index = 0;
+    const picks = []; // { choice: boolean }
+
+    // --------- DOM ----------
+    const introOverlay = document.getElementById('introOverlay');
+    const resultsOverlay = document.getElementById('resultsOverlay');
+    const resultsList = document.getElementById('resultsList');
+    const scoreText = document.getElementById('scoreText');
+    const initWarn = document.getElementById('initWarn');
+    const progressEl = document.getElementById('progress');
+    const questionText = document.getElementById('questionText');
+    const questionCard = document.getElementById('questionCard');
+    const btnTrue = document.getElementById('btnTrue');
+    const btnFalse = document.getElementById('btnFalse');
+    const startBtn = document.getElementById('startBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const scene = document.querySelector('.scene');
+    const ui = document.getElementById('ui');
+
+    // --------- Clamp helper (<=48 chars) ----------
+    function clampLabel(text, max = 48) {
+      if (!text) return "";
+      if (text.length <= max) return text;
+      return text.slice(0, max - 1).trim() + "…";
+    }
+
+    // --------- Render ----------
+    function render() {
+      const item = ITEMS[index];
+      progressEl.textContent = `${index + 1}/${ITEMS.length}`;
+      questionText.textContent = clampLabel(item.text, 48);
+      questionCard.classList.remove('pulse');
+      // Ensure fits after rendering each turn
+      ensureFits();
+    }
+
+    // --------- Microfeedback (neutral) ----------
+    function pulseCard() {
+      questionCard.classList.remove('pulse');
+      void questionCard.offsetWidth; // reflow for restart animation
+      questionCard.classList.add('pulse');
+      if (navigator.vibrate) { try { navigator.vibrate(12); } catch(e){} }
+    }
+
+    // --------- Answer handling ----------
+    function lockButtons(lock) {
+      btnTrue.disabled = lock;
+      btnFalse.disabled = lock;
+      btnTrue.style.opacity = lock ? 0.85 : 1;
+      btnFalse.style.opacity = lock ? 0.85 : 1;
+    }
+
+    function pick(choice) {
+      picks.push({ choice });
+      pulseCard();
+      lockButtons(true);
+      // Auto-avance sin revelar solución
+      setTimeout(() => {
+        if (index < ITEMS.length - 1) {
+          index += 1;
+          render();
+          lockButtons(false);
+        } else {
+          showResults();
+        }
+      }, 480);
+    }
+
+    // --------- Results ----------
+    function showResults() {
+      // Build results
+      resultsList.innerHTML = '';
+      let corrects = 0;
+      ITEMS.forEach((item, i) => {
+        const isCorrect = picks[i]?.choice === item.answer;
+        if (isCorrect) corrects += 1;
+
+        const row = document.createElement('div');
+        row.className = 'result-item';
+
+        const q = document.createElement('div');
+        q.className = 'res-q';
+        q.textContent = clampLabel(item.text, 72);
+        row.appendChild(q);
+
+        const pills = document.createElement('div');
+        pills.className = 'pills';
+
+        const p1 = document.createElement('span');
+        p1.className = 'pill ' + (isCorrect ? 'ok' : 'bad');
+        p1.textContent = "Tu respuesta: " + (picks[i]?.choice ? "Verdadero" : "Falso");
+
+        const p2 = document.createElement('span');
+        p2.className = 'pill';
+        p2.textContent = "Correcta: " + (item.answer ? "Verdadero" : "Falso");
+
+        pills.appendChild(p1);
+        pills.appendChild(p2);
+        row.appendChild(pills);
+
+        const ex = document.createElement('div');
+        ex.className = 'res-expl';
+        ex.textContent = clampLabel(item.explanation, 180);
+        row.appendChild(ex);
+
+        resultsList.appendChild(row);
+      });
+
+      scoreText.textContent = `${corrects}/${ITEMS.length} correctas`;
+      // Activar resultados (modal con scroll interno, no global)
+      resultsOverlay.classList.add('show');
+
+      // Mostrar aviso si falta initData
+      initWarn.style.display = initData ? 'none' : 'block';
+
+      ensureFits(); // keep UI tidy behind modal
+    }
+
+    // --------- Start / Retry ----------
+    function startGame() {
+      index = 0;
+      picks.length = 0;
+      render();
+      lockButtons(false);
+      // Cerrar intro si visible
+      introOverlay.classList.remove('show');
+    }
+
+    function retryGame() {
+      resultsOverlay.classList.remove('show');
+      startGame();
+    }
+
+    // --------- CTA reward ----------
+    function goToReward() {
+      const url = "https://kampe-game-phaser.onrender.com/daily_streak?initData=" + encodeURIComponent(initData);
+      window.location.href = url;
+    }
+
+    // --------- Ensure FITS (required functions) ----------
+    function assertNoOverflow() {
+      // Step 1: check scene scroll vs client
+      return scene.scrollHeight <= scene.clientHeight;
+    }
+
+    function applyCompactMode() {
+      // Step 2: compact mode (smaller HUD, fonts)
+      document.body.classList.add('compact');
+    }
+
+    function fitBoardToViewport() {
+      // Step 3: adjust some CSS vars to shrink gently
+      // Reduce paddings and card min height in small steps
+      document.documentElement.style.setProperty('--cardPad', '10px');
+      document.documentElement.style.setProperty('--boardMinH', '150px');
+    }
+
+    function autoscaleUI() {
+      // Step 4: scale down to minimum 0.88
+      const sceneRect = scene.getBoundingClientRect();
+      const uiRect = ui.getBoundingClientRect();
+      let scale = Math.min(1, Math.max(0.88, sceneRect.height / uiRect.height));
+      document.documentElement.style.setProperty('--ui-scale', scale.toFixed(3));
+    }
+
+    function resetFitTweaks() {
+      document.body.classList.remove('compact');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      document.documentElement.style.setProperty('--cardPad', '14px');
+      document.documentElement.style.setProperty('--boardMinH', '180px');
+    }
+
+    function ensureFits() {
+      // Reset before measuring
+      resetFitTweaks();
+
+      // First check
+      if (assertNoOverflow()) return;
+
+      // Apply compact
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+
+      // Fit board
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+
+      // Autoscale
+      autoscaleUI();
+    }
+
+    // --------- Accessibility: keyboard shortcuts (optional) ----------
+    function onKey(e) {
+      if (resultsOverlay.classList.contains('show')) return;
+      if (introOverlay.classList.contains('show')) return;
+      const k = e.key.toLowerCase();
+      if (k === 'v' || k === 'arrowleft') { btnTrue.click(); }
+      if (k === 'f' || k === 'arrowright') { btnFalse.click(); }
+    }
+
+    // --------- Event wiring ----------
+    btnTrue.addEventListener('click', () => pick(true));
+    btnFalse.addEventListener('click', () => pick(false));
+    startBtn.addEventListener('click', startGame);
+    retryBtn.addEventListener('click', retryGame);
+    rewardBtn.addEventListener('click', goToReward);
+    window.addEventListener('resize', () => ensureFits());
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 80));
+    window.addEventListener('keydown', onKey, { passive: true });
+
+    // --------- Init: show intro ----------
+    function init() {
+      // Prepare first question
+      render();
+      // Show intro modal on load
+      introOverlay.classList.add('show');
+      // Ensure no global scroll during gameplay; results modal has its own scroll
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+
+    // Lazy switch avatar variant randomly (1..4)
+    (function setAvatar() {
+      const i = Math.floor(Math.random() * 4) + 1;
+      const url = `https://techkampe.github.io/daily-streak/assets/Avatar%20${i}_low.png`;
+      const bg = document.getElementById('avatarBg');
+      // Preload image
+      const img = new Image();
+      img.loading = 'eager';
+      img.src = url;
+      img.onload = () => { bg.style.backgroundImage = `url('${url}')`; };
+    })();
+
+    // Start
+    window.addEventListener('load', () => {
+      init();
+      ensureFits();
+    });
+  </script>
+</body>
+</html>
