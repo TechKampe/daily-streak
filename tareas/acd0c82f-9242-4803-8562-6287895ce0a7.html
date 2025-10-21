@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Kämpe | Caza-Mitos Eléctricos ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* ========== RESET & BASE ========== */
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Bloqueo de scroll global en gameplay */
+      overscroll-behavior: none;
+      background: #0e3df1;
+      color: #ffffff;
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    :root{
+      /* UI scaling vars (adjusted by ensureFits) */
+      --ui-scale: 1;
+      --cellH: 1;
+      --cellAR: 1;
+      --cardMinH: 28vh;
+      --gap: 12px;
+
+      /* Colors & styles */
+      --fortnite-blue-1:#1b4cff;
+      --fortnite-blue-2:#0f2fd8;
+      --glass: rgba(255,255,255,0.14);
+      --glass-strong: rgba(255,255,255,0.18);
+      --glass-border: rgba(255,255,255,0.28);
+      --accent: #00f0ff;
+      --accent-2: #27ff88;
+      --warning: #ffd257;
+      --danger: #ff5d6c;
+      --ok: #27ff88;
+
+      --text-strong: #ffffff;
+      --text-dim: rgba(255,255,255,0.82);
+    }
+
+    /* ========== SCENE (viewport safe) ========== */
+    .scene{
+      position: relative;
+      width: 100%;
+      height: 100vh; /* fallback */
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      display: grid;
+      place-items: stretch;
+      background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(255,255,255,0.12), transparent 60%),
+      radial-gradient(900px 700px at 110% 10%, rgba(0,240,255,0.20), transparent 55%),
+      linear-gradient(160deg, var(--fortnite-blue-1) 0%, var(--fortnite-blue-2) 70%);
+      isolation: isolate;
+      touch-action: none; /* anti-derrapes en gameplay */
+    }
+    @supports (height: 100svh) { .scene{ height: 100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene{ height: 100dvh; } }
+
+    /* Background avatar */
+    .bg-avatar{
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: min(60vw, 360px);
+      max-height: 70%;
+      opacity: 0.26;
+      filter: drop-shadow(0 6px 18px rgba(0,0,0,0.4));
+      pointer-events: none;
+      user-select: none;
+      object-fit: contain;
+      transform: translate(8%, 6%);
+      z-index: 0;
+    }
+
+    /* Kämpe watermark sparkles */
+    .spark{
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(60px 60px at 20% 35%, rgba(255,255,255,0.15), transparent 60%),
+                  radial-gradient(80px 80px at 75% 25%, rgba(39,255,136,0.18), transparent 65%),
+                  radial-gradient(70px 70px at 55% 75%, rgba(0,240,255,0.16), transparent 65%);
+      mix-blend-mode: screen;
+      opacity: 0.7;
+      pointer-events: none;
+      animation: twinkle 6s ease-in-out infinite alternate;
+      z-index: 0;
+    }
+    @keyframes twinkle{
+      0%{ opacity: 0.35; transform: scale(1); }
+      100%{ opacity: 0.85; transform: scale(1.03); }
+    }
+
+    /* ========== GAMEPLAY VIEWPORT (scaled) ========== */
+    .viewport{
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      padding: 14px 14px 16px;
+      z-index: 2;
+      transform-origin: top center;
+      will-change: transform;
+      transform: scale(var(--ui-scale));
+      contain: layout paint;
+    }
+
+    /* Topbar */
+    .topbar{
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+    }
+    .logo{
+      height: clamp(18px, 3.2vw, 26px);
+      filter: drop-shadow(0 1px 0 rgba(0,0,0,0.3));
+    }
+    .title{
+      font-weight: 800;
+      font-size: clamp(14px, 3.6vw, 18px);
+      line-height: 1.1;
+      color: var(--text-strong);
+      text-wrap: balance;
+      letter-spacing: 0.2px;
+      padding-left: 4px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .progress{
+      display: grid;
+      gap: 6px;
+      min-width: 92px;
+      justify-items: end;
+    }
+    .p-label{
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .p-outer{
+      width: 100%;
+      height: 8px;
+      min-width: 90px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 99px;
+      outline: 1px solid rgba(255,255,255,0.25);
+      overflow: hidden;
+    }
+    .p-inner{
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #52ffd6);
+      border-radius: 99px;
+      transition: width 240ms ease;
+    }
+
+    /* Card (statement) */
+    .card{
+      flex: 1 1 auto;
+      min-height: var(--cardMinH);
+      display: grid;
+      grid-template-rows: 1fr;
+      align-items: center;
+      justify-items: stretch;
+      gap: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+      border-radius: 16px;
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.24);
+      padding: 14px;
+      position: relative;
+    }
+    .scenario{
+      font-size: clamp(12px, 3.2vw, 13px);
+      color: rgba(255,255,255,0.9);
+      background: rgba(0,0,0,0.24);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 10px;
+      padding: 8px 10px;
+      line-height: 1.25;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .statement{
+      font-weight: 800;
+      font-size: clamp(18px, 5vw, 22px);
+      text-align: center;
+      color: #fff;
+      letter-spacing: 0.2px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      padding: 8px 4px 2px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* action buttons */
+    .actions{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 2px;
+    }
+    .btn{
+      appearance: none;
+      border: none;
+      border-radius: 14px;
+      min-height: 56px; /* >=44px */
+      font-weight: 800;
+      font-size: clamp(16px, 4.6vw, 18px);
+      color: #0c1030;
+      background: linear-gradient(180deg, #fff, #d9fbff);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.25);
+      outline: 2px solid rgba(255,255,255,0.18);
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.18s ease, filter 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn:active{ transform: translateY(1px) scale(0.98); }
+    .btn:focus-visible{
+      outline: 2px solid #00f0ff;
+      box-shadow: 0 0 0 4px rgba(0,240,255,0.35);
+    }
+    .btn.true{
+      background: linear-gradient(180deg, #9efff1, #62f1ff);
+      color: #022024;
+    }
+    .btn.false{
+      background: linear-gradient(180deg, #ffe5e9, #ffd7df);
+      color: #2b0b12;
+    }
+
+    /* Microfeedback pulse */
+    .pulse::after{
+      content:"";
+      position: absolute;
+      inset: -8px;
+      border-radius: 16px;
+      box-shadow: 0 0 0 0 rgba(255,255,255,0.55), 0 0 0 0 rgba(0,240,255,0.55);
+      animation: pulseGlow 380ms ease-out;
+      pointer-events: none;
+    }
+    @keyframes pulseGlow {
+      0%{ box-shadow: 0 0 0 0 rgba(255,255,255,0.45), 0 0 0 0 rgba(0,240,255,0.45); }
+      100%{ box-shadow: 0 0 0 16px rgba(255,255,255,0), 0 0 0 26px rgba(0,240,255,0); }
+    }
+
+    /* HUD result chip (during gameplay we don't reveal) */
+    .chip{
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: var(--text-dim);
+      display: none; /* oculto en gameplay para no revelar */
+    }
+
+    /* Intro & Results modals */
+    .modal{
+      position: absolute;
+      inset: 0;
+      background: rgba(8,14,60,0.65);
+      display: grid;
+      place-items: center;
+      padding: 14px;
+      z-index: 5;
+    }
+    .modal .panel{
+      width: 100%;
+      max-width: 560px;
+      background: rgba(14,20,66,0.46);
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 18px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+      backdrop-filter: blur(10px);
+      padding: 16px;
+      color: #fff;
+      max-height: 90svh;
+      overflow-y: auto; /* scroll solo dentro del modal */
+      touch-action: pan-y; /* permitir desplazamiento vertical en modal */
+    }
+    .modal h2{
+      margin: 6px 0 8px;
+      font-size: clamp(18px, 5.4vw, 24px);
+      line-height: 1.1;
+    }
+    .modal p, .modal li{
+      font-size: clamp(14px, 3.8vw, 15px);
+      line-height: 1.25;
+      color: var(--text-dim);
+    }
+    .modal .subtitle{
+      font-weight: 700;
+      color: #fff;
+      margin-top: 6px;
+    }
+    .modal .btn-row{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .btn.primary{
+      background: linear-gradient(180deg, #00f0ff, #0bd0df);
+      color: #062e33;
+    }
+    .btn.secondary{
+      background: linear-gradient(180deg, #343a8b, #2b3178);
+      color: #e6f7ff;
+      outline-color: rgba(255,255,255,0.35);
+    }
+
+    /* Results list */
+    .result-item{
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 12px;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .r-top{
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: start;
+    }
+    .r-statement{
+      font-weight: 800;
+      color: #fff;
+      font-size: 15px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .r-tags{
+      display: grid;
+      gap: 6px;
+      justify-items: end;
+      align-content: center;
+    }
+    .tag{
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(0,0,0,0.25);
+    }
+    .tag.ok{ background: rgba(39,255,136,0.2); border-color: rgba(39,255,136,0.6); color: #cfffeb; }
+    .tag.bad{ background: rgba(255,93,108,0.2); border-color: rgba(255,93,108,0.6); color: #ffd7dc; }
+    .r-expl{
+      margin-top: 8px;
+      font-size: 13px;
+      color: #e9f9ff;
+    }
+
+    .score{
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.26);
+      margin: 8px 0 4px;
+    }
+    .score strong{ font-size: 18px; }
+
+    .tip{
+      background: rgba(0,0,0,0.24);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 12px;
+      padding: 10px;
+      margin-top: 6px;
+    }
+    .tip-title{
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+    .tip ul{
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .small-note{
+      font-size: 12px;
+      color: #ffe;
+      opacity: 0.85;
+    }
+    .small-note.warn{ color: var(--warning); }
+
+    /* Compact mode for tiny screens */
+    .compact .topbar{ min-height: 40px; }
+    .compact .title{ font-size: clamp(12px, 3.2vw, 14px); }
+    .compact .p-outer{ height: 7px; }
+    .compact .card{ padding: 10px; }
+    .compact .scenario{ -webkit-line-clamp: 2; font-size: clamp(11px, 3.2vw, 12px); }
+    .compact .statement{ font-size: clamp(16px, 4.4vw, 18px); }
+    .compact .btn{ min-height: 52px; font-size: clamp(15px, 4.2vw, 17px); }
+    .compact .viewport{ padding: 10px; }
+
+    /* Motion reduce */
+    @media (prefers-reduced-motion: reduce) {
+      .p-inner, .spark, .btn { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <!-- Background avatar (lazy) -->
+    <img class="bg-avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="Avatar Kämpe" loading="lazy">
+    <div class="spark" aria-hidden="true"></div>
+
+    <!-- Gameplay viewport (scaled by ensureFits) -->
+    <div class="viewport" id="viewport" role="application" aria-label="Caza-Mitos Eléctricos">
+      <header class="topbar">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe">
+        <div class="title" id="gameTitle">Caza-Mitos Eléctricos ⚡</div>
+        <div class="progress" aria-label="Progreso">
+          <div class="p-label"><span id="countLabel">0/7</span></div>
+          <div class="p-outer"><div class="p-inner" id="pbar"></div></div>
+        </div>
+      </header>
+
+      <main class="card" id="card" aria-live="polite">
+        <div class="scenario" id="scenarioText">
+          Es tu primer día como ayudante en un piso habitado: cambia un interruptor y revisa un enchufe sin molestar. Trabaja con seguridad y cuidado.
+        </div>
+        <div class="statement" id="statement" role="heading" aria-level="2">
+          ...
+        </div>
+        <div class="chip" id="chip">Respuesta registrada</div>
+      </main>
+
+      <footer class="actions">
+        <button class="btn true" id="btnTrue" aria-label="Responder Verdadero">Verdadero</button>
+        <button class="btn false" id="btnFalse" aria-label="Responder Falso">Falso</button>
+      </footer>
+    </div>
+
+    <!-- Intro Modal -->
+    <section class="modal" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle" aria-describedby="introDesc">
+      <div class="panel">
+        <h2 id="introTitle">Caza-Mitos Eléctricos ⚡</h2>
+        <p class="subtitle">Briefing</p>
+        <p id="introDesc">
+          Es tu primer día como ayudante de electricista en un piso habitado. Cambiarás un interruptor y revisarás un enchufe con seguridad y respeto al cliente.
+        </p>
+        <p class="subtitle">Cómo jugar</p>
+        <p>
+          Verás 7 afirmaciones breves. Toca Verdadero o Falso. Avanzas automáticamente y verás tu resumen al final. Recibirás microfeedback visual por intento.
+        </p>
+        <div class="btn-row">
+          <button class="btn primary" id="startBtn" aria-label="Empezar reto">¡Empezar!</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Modal -->
+    <section class="modal" id="resultsModal" role="dialog" aria-modal="true" aria-labelledby="resultsTitle" aria-describedby="resultsDesc" hidden>
+      <div class="panel">
+        <h2 id="resultsTitle">Tu resumen</h2>
+        <div class="score" id="scoreBox">
+          <div><strong id="scoreText">Aciertos: 0/7</strong><br><span class="small-note">Mitos cazados con éxito.</span></div>
+          <div class="tag" id="scoreTag">¡Bien!</div>
+        </div>
+        <div id="resultsDesc" class="small-note">Afirmación, tu respuesta, la correcta y explicación breve.</div>
+        <div id="resultsList"></div>
+
+        <div class="tip" aria-label="Consejo práctico">
+          <div class="tip-title">Consejo práctico final</div>
+          <ul>
+            <li>Cortar tensión (cuadro).</li>
+            <li>Verificar ausencia con instrumento.</li>
+            <li>Bloquear/etiquetar y señalizar.</li>
+            <li>Comunicar y confirmar con el cliente.</li>
+          </ul>
+        </div>
+
+        <div class="btn-row" style="margin-top:12px;">
+          <button class="btn secondary" id="retryBtn" aria-label="Reintentar reto">Reintentar</button>
+          <a class="btn primary" id="rewardBtn" href="#" aria-label="Ver mi recompensa">Ver mi recompensa</a>
+          <div id="initDataWarn" class="small-note warn" style="display:none;">Aviso: initData no recibido.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    /* =========================
+       DATA & STATE (in-memory)
+       ========================= */
+    const QUESTIONS = [
+      {
+        id: 1,
+        text: "Cambiar un enchufe con el cuadro encendido.",
+        correct: false,
+        expl: "Debes cortar la energía en el cuadro y bloquear antes de abrir un enchufe. Evita reenergizaciones accidentales. Regla base: cortar‑verificar‑señalizar."
+      },
+      {
+        id: 2,
+        text: "El tester sin contacto sustituye bloqueo/etq.",
+        correct: false,
+        expl: "El tester sin contacto solo indica tensión aproximada; no evita reconexiones. El bloqueo‑etiquetado (LOTO) sigue siendo obligatorio."
+      },
+      {
+        id: 3,
+        text: "Guantes de obra protegen contra electricidad.",
+        correct: false,
+        expl: "Guantes de obra o cuero no aíslan. Usa guantes dieléctricos certificados (EN 60903) y protectores cuando proceda."
+      },
+      {
+        id: 4,
+        text: "Aviso al cliente antes de cortar la luz.",
+        correct: true,
+        expl: "Avisar evita sorpresas y protege equipos del cliente. La comunicación es parte de un trabajo seguro y profesional."
+      },
+      {
+        id: 5,
+        text: "Verificar ausencia de tensión antes de tocar.",
+        correct: true,
+        expl: "Tras cortar, verifica ausencia de tensión con instrumento adecuado y método comprobar‑probar‑comprobar. Sin verificación, no toques."
+      },
+      {
+        id: 6,
+        text: "Usar detector de cables antes de perforar.",
+        correct: true,
+        expl: "Un detector de cables/tuberías reduce el riesgo de dañar conductores ocultos y otros servicios. Es práctica básica antes de taladrar."
+      },
+      {
+        id: 7,
+        text: "Compartir fotos del hogar del cliente está bien.",
+        correct: false,
+        expl: "No publiques imágenes del hogar sin permiso explícito. Minimiza datos y enfoca solo lo técnico; respeta privacidad y normativa."
+      }
+    ];
+
+    const state = {
+      current: 0,
+      answers: [], // {qId, picked: boolean}
+      initData: ""
+    };
+
+    /* =========================
+       QUERY PARAM: initData
+       ========================= */
+    (function readInitData(){
+      const params = new URLSearchParams(location.search);
+      state.initData = params.get("initData") || "";
+    })();
+
+    /* =========================
+       DOM ELEMENTS
+       ========================= */
+    const scene = document.getElementById('scene');
+    const viewport = document.getElementById('viewport');
+    const introModal = document.getElementById('introModal');
+    const resultsModal = document.getElementById('resultsModal');
+    const startBtn = document.getElementById('startBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initDataWarn = document.getElementById('initDataWarn');
+
+    const pbar = document.getElementById('pbar');
+    const countLabel = document.getElementById('countLabel');
+    const statementEl = document.getElementById('statement');
+    const chip = document.getElementById('chip');
+    const card = document.getElementById('card');
+
+    const btnTrue = document.getElementById('btnTrue');
+    const btnFalse = document.getElementById('btnFalse');
+
+    const resultsList = document.getElementById('resultsList');
+    const scoreText = document.getElementById('scoreText');
+    const scoreTag = document.getElementById('scoreTag');
+
+    /* =========================
+       ACCESSIBILITY HELPERS
+       ========================= */
+    function setAriaBusy(el, busy=true){ el.setAttribute('aria-busy', busy ? 'true' : 'false'); }
+
+    /* =========================
+       FIT & COMPACT LOGIC
+       ========================= */
+    function assertNoOverflow(){
+      // returns true if the scene currently fits without scrolling
+      return scene.scrollHeight <= scene.clientHeight;
+    }
+
+    function applyCompactMode(on){
+      document.body.classList.toggle('compact', !!on);
+    }
+
+    function fitBoardToViewport(){
+      // Recalculate size hints of "grid/cell" proxies
+      // Step: slightly reduce card min height and internal vars
+      const doc = document.documentElement;
+      let cellH = parseFloat(getComputedStyle(doc).getPropertyValue('--cellH')) || 1;
+      cellH = Math.max(0.9, cellH - 0.04);
+      doc.style.setProperty('--cellH', cellH.toFixed(2));
+      // card min height depends on --cellH
+      const baseMinH = 28; // in vh
+      const newMinH = Math.max(22, baseMinH * cellH);
+      doc.style.setProperty('--cardMinH', newMinH + 'vh');
+    }
+
+    function autoscaleUI(){
+      // last resort: apply transform scale down to 0.88
+      const doc = document.documentElement;
+      let scale = parseFloat(getComputedStyle(doc).getPropertyValue('--ui-scale')) || 1;
+      if(scale <= 0.88) return; // min
+      scale = Math.max(0.88, scale - 0.02);
+      doc.style.setProperty('--ui-scale', scale.toFixed(2));
+    }
+
+    function ensureFits(maxPasses=8){
+      // Reset to defaults before fitting
+      const doc = document.documentElement;
+      doc.style.setProperty('--ui-scale', '1');
+      doc.style.setProperty('--cellH', '1');
+      doc.style.setProperty('--cardMinH', '28vh');
+      applyCompactMode(false);
+
+      let passes = 0;
+      if(assertNoOverflow()) return;
+
+      // 1) compact mode
+      applyCompactMode(true);
+      if(assertNoOverflow()) return;
+
+      // 2) adjust "grid" sizes
+      while(!assertNoOverflow() && passes < maxPasses){
+        fitBoardToViewport();
+        passes++;
+      }
+      if(assertNoOverflow()) return;
+
+      // 3) autoscale last resort
+      passes = 0;
+      while(!assertNoOverflow() && passes < maxPasses){
+        autoscaleUI();
+        passes++;
+      }
+    }
+
+    window.addEventListener('resize', () => ensureFits(), {passive:true});
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => ensureFits(), 50);
+    });
+
+    /* =========================
+       RENDERING
+       ========================= */
+    function clampLabel(text, max=48){
+      if(!text) return '';
+      return text.length > max ? (text.slice(0, max-1) + '…') : text;
+    }
+
+    function updateProgress(){
+      const total = QUESTIONS.length;
+      const current = state.current;
+      countLabel.textContent = `${Math.min(current, total)}/${total}`;
+      const pct = Math.min(100, Math.round((current / total) * 100));
+      pbar.style.width = pct + '%';
+    }
+
+    function renderQuestion(){
+      const q = QUESTIONS[state.current];
+      if(!q){ return; }
+      statementEl.textContent = clampLabel(q.text, 48);
+      updateProgress();
+      chip.style.display = 'none';
+      // ensure everything fits after render
+      requestAnimationFrame(() => ensureFits());
+    }
+
+    /* =========================
+       GAME FLOW & EVENTS
+       ========================= */
+    function microfeedback(){
+      // simple pulse on card
+      card.classList.remove('pulse');
+      // reflow to restart animation
+      void card.offsetWidth;
+      card.classList.add('pulse');
+      chip.textContent = "¡Hecho!";
+      chip.style.display = 'none'; // keep neutral; not revealing
+    }
+
+    function lockUI(lock=true){
+      btnTrue.disabled = lock;
+      btnFalse.disabled = lock;
+    }
+
+    function nextTurn(){
+      state.current++;
+      const done = state.current >= QUESTIONS.length;
+      updateProgress();
+      if(done){
+        setTimeout(showResults, 220);
+      }else{
+        renderQuestion();
+        lockUI(false);
+      }
+    }
+
+    function onAnswer(pickedBool){
+      const q = QUESTIONS[state.current];
+      if(!q) return;
+      lockUI(true);
+      state.answers[state.current] = { qId: q.id, picked: !!pickedBool };
+      microfeedback();
+      // auto advance
+      setTimeout(nextTurn, 260);
+    }
+
+    btnTrue.addEventListener('click', () => onAnswer(true));
+    btnFalse.addEventListener('click', () => onAnswer(false));
+
+    // Intro start
+    startBtn.addEventListener('click', () => {
+      introModal.style.display = 'none';
+      introModal.setAttribute('hidden', 'true');
+      // Render first question
+      state.current = 0;
+      state.answers = [];
+      renderQuestion();
+      lockUI(false);
+      ensureFits();
+    });
+
+    // Retry
+    retryBtn.addEventListener('click', () => {
+      resultsModal.style.display = 'none';
+      resultsModal.setAttribute('hidden', 'true');
+      // Reset scroll lock for gameplay
+      // (global scroll remains hidden; results had its own internal scroll)
+      state.current = 0;
+      state.answers = [];
+      renderQuestion();
+      lockUI(false);
+      ensureFits();
+    });
+
+    // Reward button target
+    function updateRewardLink(){
+      const base = "https://kampe-game-phaser.onrender.com/daily_streak";
+      const url = base + "?initData=" + encodeURIComponent(state.initData);
+      rewardBtn.href = url;
+      if(!state.initData){
+        initDataWarn.style.display = 'block';
+      }else{
+        initDataWarn.style.display = 'none';
+      }
+    }
+
+    /* =========================
+       RESULTS
+       ========================= */
+    function showResults(){
+      setAriaBusy(resultsModal, true);
+      resultsList.innerHTML = '';
+
+      const merged = QUESTIONS.map((q, i) => {
+        const a = state.answers[i];
+        const picked = a ? !!a.picked : null;
+        const correct = q.correct;
+        const isRight = picked === correct;
+        return {
+          id: q.id,
+          text: q.text,
+          picked,
+          correct,
+          isRight,
+          expl: q.expl
+        };
+      });
+
+      const score = merged.reduce((acc, it) => acc + (it.isRight ? 1 : 0), 0);
+      scoreText.textContent = `Aciertos: ${score}/${QUESTIONS.length}`;
+      scoreTag.className = 'tag';
+      if(score === QUESTIONS.length){
+        scoreTag.classList.add('ok'); scoreTag.textContent = 'Perfecto';
+      } else if (score >= Math.ceil(QUESTIONS.length * 0.7)) {
+        scoreTag.classList.add('ok'); scoreTag.textContent = '¡Bien!';
+      } else {
+        scoreTag.classList.add('bad'); scoreTag.textContent = 'A mejorar';
+      }
+
+      merged.forEach((it, idx) => {
+        const item = document.createElement('div');
+        item.className = 'result-item';
+
+        const top = document.createElement('div');
+        top.className = 'r-top';
+
+        const st = document.createElement('div');
+        st.className = 'r-statement';
+        st.textContent = it.text;
+
+        const tags = document.createElement('div');
+        tags.className = 'r-tags';
+
+        const tag1 = document.createElement('div');
+        tag1.className = 'tag ' + (it.isRight ? 'ok' : 'bad');
+        tag1.textContent = 'Tu: ' + (it.picked ? 'Verdadero' : 'Falso');
+
+        const tag2 = document.createElement('div');
+        tag2.className = 'tag';
+        tag2.textContent = 'Correcta: ' + (it.correct ? 'Verdadero' : 'Falso');
+
+        tags.appendChild(tag1);
+        tags.appendChild(tag2);
+
+        top.appendChild(st);
+        top.appendChild(tags);
+
+        const expl = document.createElement('div');
+        expl.className = 'r-expl';
+        expl.textContent = it.expl; // breve: 1–2 frases
+
+        item.appendChild(top);
+        item.appendChild(expl);
+        resultsList.appendChild(item);
+      });
+
+      updateRewardLink();
+
+      // Show modal
+      resultsModal.style.display = 'grid';
+      resultsModal.removeAttribute('hidden');
+      setAriaBusy(resultsModal, false);
+      // ensure fits is irrelevant here; internal modal scroll takes over
+    }
+
+    /* =========================
+       INIT
+       ========================= */
+    function init(){
+      // Prepare first render, still behind intro modal
+      updateProgress();
+      statementEl.textContent = "Toca Empezar para comenzar.";
+      lockUI(true);
+      ensureFits();
+    }
+
+    init();
+  </script>
+</body>
+</html>
