@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Chispa Segura ⚡</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ============ RESET + BASE ============ */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    body {
+      margin: 0;
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: #eaf2ff;
+      background: radial-gradient(80% 60% at 50% 20%, #2b6fff 0%, #1436bf 40%, #0d1a7a 100%);
+      -webkit-tap-highlight-color: transparent;
+    }
+    :root{
+      --ui-scale: 1;
+      --gap: clamp(8px, 2.4vw, 14px);
+      --radius: 16px;
+      --btnH: 56px; /* >=44px */
+      --hudH: 60px;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --stroke: rgba(255,255,255,0.28);
+      --shadow: 0 8px 24px rgba(0,0,0,0.35);
+      --brand: #5cf2ff;
+      --accent: #9bff70;
+      --warn: #ffd166;
+      --bad: #ff6b6b;
+      --good: #57ffa6;
+      --textDim: #c8dcff;
+      --focus: #ffef5a;
+      --btnFont: clamp(14px, 2.5vh, 18px);
+      --titleFont: clamp(18px, 3.8vh, 24px);
+      --qFont: clamp(16px, 3.2vh, 20px);
+      --safePadTop: env(safe-area-inset-top, 0px);
+      --safePadBottom: env(safe-area-inset-bottom, 0px);
+    }
+    /* 100svh fallback chain */
+    .scene { height: 100vh; }
+    @supports (height: 100dvh) { .scene { height: 100dvh; } }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+
+    /* ============ SCENE LAYOUT ============ */
+    .scene {
+      position: relative;
+      width: 100%;
+      display: grid;
+      place-items: stretch;
+      isolation: isolate;
+      touch-action: none; /* anti-derrapes */
+    }
+    .ui {
+      position: relative;
+      display: grid;
+      grid-template-rows: var(--hudH) 1fr auto;
+      height: 100%;
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      padding: 0 clamp(12px, 3.2vw, 20px);
+      gap: var(--gap);
+    }
+
+    /* ============ TOP HUD ============ */
+    .hud {
+      margin-top: max(var(--safePadTop), 6px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: var(--hudH);
+    }
+    .logo {
+      height: 28px;
+      width: auto;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .hud-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .progress {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.1));
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.4px;
+      min-width: 58px;
+      text-align: center;
+    }
+
+    /* ============ CENTER PLAY AREA ============ */
+    .stage {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: var(--gap);
+      overflow: hidden; /* ensures no inner scroll */
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      padding: clamp(10px, 2.8vw, 16px);
+    }
+    .stage-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .challenge-title {
+      margin: 0;
+      font-size: var(--titleFont);
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .avatar {
+      position: absolute;
+      right: 4%;
+      bottom: 18%;
+      width: 160px;
+      opacity: 0.16;
+      pointer-events: none;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.35));
+      user-select: none;
+    }
+    .questionWrap {
+      position: relative;
+      display: grid;
+      place-items: start stretch;
+      align-content: start;
+      row-gap: clamp(6px, 1.6vh, 10px);
+      min-height: 0; /* allow shrinking */
+    }
+    .question {
+      margin: 6px 0 0 0;
+      font-size: var(--qFont);
+      font-weight: 800;
+      line-height: 1.2;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .sub {
+      margin: 0;
+      font-size: clamp(12px, 1.9vh, 14px);
+      color: var(--textDim);
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ============ ANSWERS NAV ============ */
+    .answers {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-auto-rows: var(--btnH);
+      gap: clamp(8px, 2.4vh, 12px);
+      margin-bottom: max(var(--safePadBottom), 6px);
+    }
+    .option {
+      -webkit-appearance: none;
+      appearance: none;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+      color: #fff;
+      font-weight: 800;
+      font-size: var(--btnFont);
+      border-radius: 14px;
+      padding: 10px 14px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform 120ms ease, background 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      outline: none;
+      display: grid;
+      place-items: center;
+      user-select: none;
+    }
+    .option span {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .option:hover, .option:focus-visible {
+      transform: translateY(-2px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.1));
+      border-color: #ffffff66;
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+    .option:active {
+      transform: translateY(1px) scale(0.98);
+    }
+    .option.correctGhost { border-color: #6bffbaaa; }
+    .option.wrongGhost { border-color: #ff6b6baa; }
+
+    /* ============ INTRO + RESULTS MODALS ============ */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(10,15,40,0.6), rgba(10,15,40,0.65));
+      z-index: 50;
+    }
+    .hidden { display: none !important; }
+    .modal {
+      width: min(720px, 94%);
+      max-height: 90svh;
+      @supports not (max-height: 90svh) { max-height: 90dvh; }
+      @supports not (max-height: 90dvh) { max-height: 90vh; }
+      overflow-y: auto;
+      border-radius: 20px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .modal h2 {
+      margin: 4px 0 8px;
+      font-size: clamp(20px, 4.2vh, 26px);
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .modal p {
+      margin: 8px 0;
+      color: var(--textDim);
+      line-height: 1.35;
+      font-size: clamp(14px, 2.3vh, 16px);
+    }
+    .modal .actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 14px;
+      position: sticky;
+      bottom: 0;
+      padding-top: 8px;
+      background: linear-gradient(0deg, rgba(15,25,60,0.6), rgba(15,25,60,0));
+      backdrop-filter: blur(4px);
+    }
+    .cta, .ghost {
+      height: 56px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      font-weight: 800;
+      font-size: clamp(15px, 2.6vh, 18px);
+      cursor: pointer;
+      transition: transform 120ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+      box-shadow: var(--shadow);
+      outline: none;
+    }
+    .cta {
+      color: #0a173e;
+      background: linear-gradient(180deg, #7dffb5, #47e291);
+    }
+    .cta:hover, .cta:focus-visible { transform: translateY(-2px); outline: 2px solid var(--focus); outline-offset: 2px; }
+    .ghost {
+      color: #fff;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+    }
+    .ghost:hover, .ghost:focus-visible { transform: translateY(-2px); outline: 2px solid var(--focus); outline-offset: 2px; }
+
+    .warn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--warn);
+      font-size: 13px;
+    }
+
+    /* ============ RESULTS CONTENT ============ */
+    .results-summary{
+      display: grid;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .score-badge{
+      display: inline-grid;
+      place-items: center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(124,255,181,0.2), rgba(54,210,134,0.1));
+      color: #e7fff4;
+      font-weight: 800;
+      width: fit-content;
+    }
+    .results-list{
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .result-item{
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      padding: 12px;
+    }
+    .r-q{
+      margin: 0 0 6px 0;
+      font-weight: 800;
+    }
+    .r-rows{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .pill{
+      border-radius: 999px;
+      padding: 6px 10px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.08);
+      display: inline-block;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ok { color: var(--good); border-color: rgba(111,255,185,0.5); }
+    .bad { color: var(--bad); border-color: rgba(255,107,107,0.5); }
+    .why{
+      margin: 8px 0 0 0;
+      color: var(--textDim);
+      font-size: 13px;
+      line-height: 1.3;
+    }
+    .final-tip{
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px dashed rgba(255,255,255,0.35);
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      font-size: 14px;
+    }
+
+    /* ============ ANIMATIONS ============ */
+    .slideIn { animation: slideIn 220ms ease forwards; }
+    .slideOut { animation: slideOut 200ms ease forwards; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-10px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .slideIn, .slideOut, .option, .cta, .ghost { transition: none !important; animation: none !important; }
+    }
+
+    /* ============ COMPACT MODE ============ */
+    .scene.compact .hud { height: calc(var(--hudH) - 12px); }
+    .scene.compact .challenge-title { font-size: clamp(16px, 3vh, 20px); }
+    .scene.compact .question { font-size: clamp(14px, 2.6vh, 18px); }
+    .scene.compact .option { height: max(48px, calc(var(--btnH) - 6px)); font-size: clamp(13px, 2.2vh, 16px); }
+    .scene.compact .avatar { width: 130px; opacity: 0.14; }
+    .scene.compact .progress { padding: 6px 10px; min-width: 52px; }
+
+    /* ============ ACCESSIBILITY FOCUS ============ */
+    :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  </style>
+</head>
+<body>
+  <!-- Main Scene -->
+  <div class="scene" id="scene">
+    <div class="ui" id="ui">
+      <!-- HUD -->
+      <header class="hud">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" class="logo" />
+        <div class="hud-right">
+          <div id="progress" class="progress" aria-live="polite">1/5</div>
+        </div>
+      </header>
+
+      <!-- Stage -->
+      <section class="stage" aria-label="Zona de juego">
+        <div class="stage-head">
+          <h1 class="challenge-title" aria-label="Título del reto">Chispa Segura ⚡</h1>
+        </div>
+        <div class="questionWrap" id="questionWrap">
+          <p id="question" class="question">...</p>
+          <p id="sub" class="sub">Toca una opción para continuar</p>
+          <img class="avatar" alt="" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" loading="eager" />
+        </div>
+      </section>
+
+      <!-- Answers -->
+      <nav class="answers" id="answers" aria-label="Respuestas"></nav>
+    </div>
+
+    <!-- Intro Modal -->
+    <div id="intro" class="overlay">
+      <div class="modal" role="dialog" aria-labelledby="introTitle" aria-modal="true">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" class="logo" />
+        <h2 id="introTitle">Chispa Segura ⚡</h2>
+        <p>Escenario: un enchufe chispea en el salón. Eres aprendiz en tu primera visita.</p>
+        <p style="margin-top:6px;">Cómo jugar: responde 5 preguntas cortas. Toca una opción y avanza al instante.</p>
+        <div class="actions">
+          <button id="startBtn" class="cta" aria-label="Comenzar el reto">Empezar</button>
+          <button id="howBtn" class="ghost" aria-label="Ver objetivo pedagógico">Objetivo</button>
+          <p id="howText" class="hidden" style="margin: 0 2px 8px; color: var(--textDim); font-size: 13px;">
+            Reconocer decisiones básicas de seguridad y comunicación antes de intervenir en un circuito doméstico.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="results" class="overlay hidden">
+      <div class="modal" role="dialog" aria-labelledby="resultsTitle" aria-modal="true" style="touch-action: auto;">
+        <h2 id="resultsTitle">Resultados</h2>
+        <div id="resultsSummary" class="results-summary"></div>
+        <div id="resultsList" class="results-list"></div>
+        <div class="final-tip" id="finalTip"></div>
+        <div class="actions">
+          <div id="initDataWarn" class="warn hidden">⚠ initData no encontrado. Puedes continuar.</div>
+          <button id="rewardBtn" class="cta" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+          <button id="retryBtn" class="ghost" aria-label="Reintentar">Reintentar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================
+       Kämpe Daily - Chispa Segura ⚡
+       Requirements: no-scroll gameplay, 5 Qs quiz, auto-advance, progress,
+       accessibility and adaptive ensureFits() pipeline.
+       ========================= */
+
+    // ---------- Dataset ----------
+    const QUIZ = [
+      {
+        q: "¿Qué haces primero al llegar?",
+        options: [
+          { t: "Bajo el interruptor general", correct: true },
+          { t: "Toco el enchufe con cuidado", correct: false },
+          { t: "Busco la avería sin cortar luz", correct: false },
+          { t: "Limpio el polvo del enchufe", correct: false }
+        ],
+        why: "Primero elimina el riesgo: corta la energía en el general antes de cualquier revisión."
+      },
+      {
+        q: "EPI básico antes de tocar nada:",
+        options: [
+          { t: "Guantes aislantes y gafas", correct: true },
+          { t: "Tapones y casco", correct: false },
+          { t: "Mascarilla", correct: false },
+          { t: "Ninguno, voy con cuidado", correct: false }
+        ],
+        why: "Protege manos y ojos frente a arco y proyecciones; EPI mínimo para la tarea."
+      },
+      {
+        q: "¿Con qué confirmas 0 V?",
+        options: [
+          { t: "Comprobador o multímetro", correct: true },
+          { t: "Buscapolos de neón", correct: false },
+          { t: "Linterna", correct: false },
+          { t: "Regla metálica", correct: false }
+        ],
+        why: "Usa comprobador o multímetro fiable para verificar ausencia de tensión."
+      },
+      {
+        q: "Conductor de protección es:",
+        options: [
+          { t: "Verde-amarillo", correct: true },
+          { t: "Azul", correct: false },
+          { t: "Marrón", correct: false },
+          { t: "Negro", correct: false }
+        ],
+        why: "El PE (tierra) se identifica en verde-amarillo; deriva fallos a tierra."
+      },
+      {
+        q: "¿Qué le dices al cliente?",
+        options: [
+          { t: "No use ese punto y mantenga distancia", correct: true },
+          { t: "Úselo con cuidado por ahora", correct: false },
+          { t: "Todo bien, ya pasará", correct: false },
+          { t: "Lávelo con agua", correct: false }
+        ],
+        why: "Comunica el riesgo: no usar la toma y mantenerse alejado hasta resolverlo."
+      }
+    ];
+
+    const FINAL_TIP = "Recuerda: corta el general, verifica 0 V con un multímetro y comunica claramente el riesgo al cliente antes de intervenir.";
+
+    // ---------- State ----------
+    const state = {
+      step: 0,
+      answers: [], // {selectedIndex, correctIndex, correct}
+      initData: "",
+    };
+
+    // ---------- Elements ----------
+    const scene = document.getElementById('scene');
+    const ui = document.getElementById('ui');
+    const progressEl = document.getElementById('progress');
+    const questionWrap = document.getElementById('questionWrap');
+    const questionEl = document.getElementById('question');
+    const subEl = document.getElementById('sub');
+    const answersEl = document.getElementById('answers');
+
+    const intro = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+    const howBtn = document.getElementById('howBtn');
+    const howText = document.getElementById('howText');
+
+    const results = document.getElementById('results');
+    const resultsSummary = document.getElementById('resultsSummary');
+    const resultsList = document.getElementById('resultsList');
+    const finalTip = document.getElementById('finalTip');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const initDataWarn = document.getElementById('initDataWarn');
+
+    // ---------- Utilities ----------
+    function getParam(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name) || "";
+    }
+    function clampText(str, max=48) {
+      if (!str) return "";
+      const clean = str.toString().trim();
+      return clean.length <= max ? clean : clean.slice(0, max - 1) + "…";
+    }
+
+    // Ensure-Fits Pipeline (as requested)
+    function assertNoOverflow() {
+      // Measure main scene content
+      const overflow = scene.scrollHeight > scene.clientHeight + 1; // allow tiny rounding
+      return !overflow;
+    }
+    function applyCompactMode() {
+      scene.classList.add('compact');
+    }
+    function fitBoardToViewport() {
+      // Reduce vertical gaps and button height slightly, ensuring >= 44px
+      const cs = getComputedStyle(document.documentElement);
+      const btnH = parseInt(cs.getPropertyValue('--btnH')) || 56;
+      const newBtnH = Math.max(46, btnH - 6);
+      document.documentElement.style.setProperty('--btnH', newBtnH + 'px');
+      // Also reduce HUD height slightly
+      const hudH = parseInt(cs.getPropertyValue('--hudH')) || 60;
+      const newHudH = Math.max(50, hudH - 6);
+      document.documentElement.style.setProperty('--hudH', newHudH + 'px');
+    }
+    function autoscaleUI(minScale = 0.88) {
+      // Scale the entire UI slightly if still not fitting
+      let current = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      current = Math.max(minScale, current - 0.04);
+      document.documentElement.style.setProperty('--ui-scale', current.toFixed(2));
+    }
+    function ensureFits(iteration = 0) {
+      if (assertNoOverflow()) return;
+      if (iteration === 0) {
+        applyCompactMode();
+      } else if (iteration === 1) {
+        fitBoardToViewport();
+      } else if (iteration === 2) {
+        autoscaleUI();
+      } else {
+        // Last resort: autoscale again down to min
+        autoscaleUI(0.88);
+      }
+      if (iteration < 5 && !assertNoOverflow()) ensureFits(iteration + 1);
+    }
+
+    // ---------- Render ----------
+    function renderStep() {
+      const total = QUIZ.length;
+      const i = state.step;
+      progressEl.textContent = `${Math.min(i + 1, total)}/${total}`;
+
+      if (i >= total) {
+        showResults();
+        return;
+      }
+
+      const item = QUIZ[i];
+      const qText = clampText(item.q, 72); // shorter visible question
+      questionEl.textContent = qText;
+      subEl.textContent = "Toca una opción para continuar";
+
+      // Build answers
+      answersEl.innerHTML = "";
+      const correctIndex = item.options.findIndex(o => o.correct);
+
+      item.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.setAttribute('role', 'button');
+        btn.setAttribute('aria-label', opt.t);
+        btn.type = 'button';
+        btn.innerHTML = `<span>${clampText(opt.t, 48)}</span>`;
+        // Micro interactions: hint of correct/incorrect on hover (ghost colors)
+        btn.addEventListener('pointerdown', () => btn.blur()); // avoid accidental persistent focus on mobile
+        btn.addEventListener('click', () => handleAnswer(idx, correctIndex));
+        answersEl.appendChild(btn);
+      });
+
+      // Entrance animation
+      questionWrap.classList.remove('slideOut');
+      questionWrap.classList.add('slideIn');
+
+      // Layout assurance
+      ensureFits();
+
+      // Set initial focus for accessibility (first option)
+      const firstBtn = answersEl.querySelector('.option');
+      if (firstBtn) firstBtn.focus({ preventScroll: true });
+    }
+
+    function handleAnswer(selectedIndex, correctIndex) {
+      const i = state.step;
+      const item = QUIZ[i];
+      const correct = selectedIndex === correctIndex;
+
+      // Save state
+      state.answers[i] = { selectedIndex, correctIndex, correct };
+
+      // Small visual feedback on press
+      const btns = [...answersEl.querySelectorAll('.option')];
+      btns.forEach((b, idx) => {
+        b.disabled = true;
+        b.classList.add(idx === correctIndex ? 'correctGhost' : 'wrongGhost');
+      });
+
+      // Animate out and move to next
+      questionWrap.classList.remove('slideIn');
+      questionWrap.classList.add('slideOut');
+
+      setTimeout(() => {
+        state.step++;
+        renderStep();
+      }, 220);
+    }
+
+    // ---------- Results ----------
+    function showResults() {
+      // Build summary
+      const total = QUIZ.length;
+      const correctCount = state.answers.filter(a => a && a.correct).length;
+      const pct = Math.round((correctCount / total) * 100);
+
+      resultsSummary.innerHTML = `
+        <div class="score-badge" aria-live="polite">Aciertos: ${correctCount}/${total} (${pct}%)</div>
+        <p>Revisa tus decisiones y aprende con los porqués.</p>
+      `;
+
+      // List
+      resultsList.innerHTML = "";
+      QUIZ.forEach((item, i) => {
+        const userAns = state.answers[i]?.selectedIndex ?? -1;
+        const correctIndex = state.answers[i]?.correctIndex ?? item.options.findIndex(o => o.correct);
+        const wasRight = state.answers[i]?.correct ?? false;
+
+        const el = document.createElement('div');
+        el.className = 'result-item';
+        const userLabel = userAns >= 0 ? item.options[userAns].t : "Sin respuesta";
+        const correctLabel = item.options[correctIndex].t;
+
+        el.innerHTML = `
+          <p class="r-q">${clampText(item.q, 72)}</p>
+          <div class="r-rows">
+            <div>
+              <span class="pill ${wasRight ? 'ok' : 'bad'}">Tu respuesta: ${clampText(userLabel, 48)}</span>
+            </div>
+            <div>
+              <span class="pill ok">Correcta: ${clampText(correctLabel, 48)}</span>
+            </div>
+          </div>
+          <p class="why">${item.why}</p>
+        `;
+        resultsList.appendChild(el);
+      });
+
+      finalTip.textContent = FINAL_TIP;
+
+      // initData and CTA
+      if (!state.initData) {
+        initDataWarn.classList.remove('hidden');
+      } else {
+        initDataWarn.classList.add('hidden');
+      }
+
+      // Show results modal
+      results.classList.remove('hidden');
+      // Allow scroll ONLY inside results modal (scrollable container already)
+      // Global page stays locked.
+
+      ensureFits(); // in case overlay impacts layout
+    }
+
+    // ---------- Navigation ----------
+    startBtn.addEventListener('click', () => {
+      intro.classList.add('hidden');
+      renderStep();
+    });
+    howBtn.addEventListener('click', () => {
+      howText.classList.toggle('hidden');
+    });
+    retryBtn.addEventListener('click', () => {
+      results.classList.add('hidden');
+      // Reset state
+      state.step = 0;
+      state.answers = [];
+      // Reset any UI scale/compact applied previously
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      document.documentElement.style.setProperty('--btnH', '56px');
+      document.documentElement.style.setProperty('--hudH', '60px');
+      scene.classList.remove('compact');
+      renderStep();
+    });
+    rewardBtn.addEventListener('click', () => {
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(state.initData)}`;
+      window.location.href = url;
+    });
+
+    // ---------- Init ----------
+    function init() {
+      // Read initData and store
+      state.initData = getParam('initData');
+
+      // Pre-render first screen (question placeholder)
+      questionEl.textContent = "¿Listo para empezar?";
+      subEl.textContent = "Son 5 preguntas. Avanzas al tocar una opción.";
+
+      // Ensure starting layout fits
+      ensureFits();
+    }
+
+    // Refit on resize/rotation
+    window.addEventListener('resize', () => ensureFits());
+    window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+    init();
+
+  </script>
+</body>
+</html>
