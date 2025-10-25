@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
+  <title>Kämpe | Match PRL: Electricidad Segura ⚡</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset & base */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    :root{
+      --ui-scale: 1;
+      --gap: 10px;
+      --gapRows: 12px;
+      --cardRadius: 14px;
+      --cardPad: 10px;
+      --cellAR: 0.78; /* width/height ratio => height = width/AR */
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --brand: #5df0ff;
+      --brand-2: #7cff6b;
+      --danger: #ff5874;
+      --ok: #66ffa9;
+      --glass: rgba(255,255,255,0.12);
+      --glass-mid: rgba(255,255,255,0.18);
+      --glass-strong: rgba(255,255,255,0.26);
+      --text: #e9f3ff;
+      --text-dim: #cfe2ff;
+      --title-size: clamp(16px, 3.3vw, 22px);
+      --hud-h: 116px; /* default top HUD height */
+    }
+    body { font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--text); background: #081a3a; }
+
+    /* Scene fixed-height container with 100svh fallbacks */
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      padding: calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 12px);
+      display: flex;
+      flex-direction: column;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+      isolation: isolate;
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) and (height: 100dvh) { .scene { height: 100dvh; } }
+    @supports not (height: 100svh) and (height: 100dvh) and (height: 100vh) { .scene { height: 100vh; } }
+
+    /* Fortnite-ish background */
+    .bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(1200px 550px at 60% -10%, rgba(56,167,255,0.55), transparent 60%),
+        radial-gradient(1000px 700px at -10% 110%, rgba(92,255,218,0.3), transparent 60%),
+        linear-gradient(180deg,#0d2a5d 0%, #09204b 60%, #071a3c 100%);
+      z-index: -2;
+    }
+    .avatar {
+      position: absolute;
+      right: 0; bottom: 0; top: 20%;
+      width: min(46vw, 340px);
+      opacity: 0.25;
+      transform: translate(10%, 8%);
+      z-index: -1;
+      pointer-events: none;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+      user-select: none;
+    }
+
+    /* Top HUD */
+    .hud {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      height: var(--hud-h);
+      min-height: var(--hud-h);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px;
+      background: var(--glass);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+    }
+    .brand img.logo {
+      width: 36px; height: 36px; object-fit: contain;
+    }
+    .brand .title-wrap {
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .brand .title {
+      font-size: var(--title-size);
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      line-height: 1.05;
+      color: #eaffff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .brand .subtitle {
+      margin-top: 4px;
+      font-size: clamp(11px, 2.2vw, 13px);
+      color: var(--text-dim);
+      display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .stats {
+      display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+    }
+    .stat {
+      min-width: 92px;
+      padding: 8px 10px;
+      background: var(--glass);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .stat .label { font-size: 11px; color: #c7defa; text-transform: uppercase; letter-spacing: 0.4px; }
+    .stat .value { font-size: clamp(16px, 4.4vw, 20px); font-weight: 800; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+    .btn-ghost {
+      appearance: none; border: 0; background: var(--glass);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #eaffff; font-weight: 700; padding: 10px 12px; border-radius: 12px;
+      backdrop-filter: blur(8px); box-shadow: var(--shadow);
+      min-height: 44px; cursor: pointer;
+    }
+    .btn-ghost:focus-visible, .cta:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+    .btn-ghost:hover { filter: brightness(1.06); }
+    .btn-ghost:active { transform: translateY(1px); }
+
+    /* Board Area */
+    .board {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .tips-mini {
+      font-size: 12px; color: #cfe2ff; opacity: 0.9;
+      text-align: left; padding: 6px 10px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--gap);
+      padding: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 18px;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      touch-action: none; /* Anti-derrapes */
+    }
+
+    /* Card */
+    .card {
+      position: relative;
+      width: 100%;
+      aspect-ratio: var(--cellAR);
+      border-radius: var(--cardRadius);
+      perspective: 900px;
+      transform-style: preserve-3d;
+      background: transparent;
+      border: 0; cursor: pointer;
+      padding: 0; margin: 0;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      outline: none;
+    }
+    .card-inner {
+      position: absolute; inset: 0;
+      transition: transform 0.48s cubic-bezier(.2,.7,.2,1);
+      transform-style: preserve-3d;
+      border-radius: var(--cardRadius);
+    }
+    .card:focus-visible .card-inner { box-shadow: 0 0 0 3px rgba(255,255,255,0.9) inset; }
+    .card.flipped .card-inner { transform: rotateY(180deg) scale(1.03); }
+    .card.matched .card-inner { transform: rotateY(180deg); }
+    .card .face {
+      position: absolute; inset: 0;
+      backface-visibility: hidden;
+      border-radius: var(--cardRadius);
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--cardPad);
+    }
+    .face.back {
+      transform: rotateY(180deg);
+      background: linear-gradient(180deg, rgba(36,207,255,0.2), rgba(36,207,255,0.05));
+      border: 2px solid rgba(131,232,255,0.55);
+    }
+    .face.front {
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 2px solid rgba(255,255,255,0.2);
+      display: grid;
+      place-items: center;
+    }
+    .cover-icon {
+      width: min(46%, 82px); height: auto; opacity: 0.92; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+    }
+    .label {
+      text-align: center; color: #eaffff;
+      font-size: clamp(13px, 3.4vw, 16px);
+      font-weight: 800; line-height: 1.1;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.45);
+    }
+
+    /* Match / miss microinteractions */
+    .card.matched .face.back {
+      animation: glow 1000ms ease-in-out 1;
+      border-color: rgba(126,255,188,0.85);
+      box-shadow: 0 0 0 2px rgba(126,255,188,0.3) inset, 0 0 22px rgba(126,255,188,0.35);
+    }
+    @keyframes glow {
+      0% { box-shadow: 0 0 0 0 rgba(126,255,188,0.0); }
+      40% { box-shadow: 0 0 0 6px rgba(126,255,188,0.35); }
+      100% { box-shadow: 0 0 0 0 rgba(126,255,188,0.0); }
+    }
+    .card.miss .face.back { animation: wobble 420ms ease-in-out 1; }
+    @keyframes wobble {
+      15% { transform: rotateY(180deg) translateX(-2px) rotateZ(-1deg); }
+      45% { transform: rotateY(180deg) translateX(3px) rotateZ(1deg); }
+      75% { transform: rotateY(180deg) translateX(-1px) rotateZ(-0.8deg); }
+    }
+
+    /* Bottom inline helper (small) */
+    .foot {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      margin-top: 8px;
+    }
+    .progress {
+      flex: 1;
+      height: 10px; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18);
+    }
+    .progress .bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); transition: width 260ms ease; }
+
+    /* Modals (intro / results) */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px);
+      background: rgba(6,12,26,0.65);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 50;
+    }
+    .overlay.show { display: flex; }
+    .modal {
+      width: min(700px, 92vw);
+      max-height: 90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+      backdrop-filter: blur(12px);
+      overflow-y: auto;
+    }
+    .modal .m-body { padding: 16px 16px 12px; }
+    .modal h2 {
+      margin: 0 0 8px;
+      font-size: clamp(18px, 4vw, 24px); font-weight: 800; color: #eaffff;
+    }
+    .modal p, .modal li {
+      color: #e7f3ff; opacity: 0.95; font-size: clamp(13px, 3.6vw, 15px);
+      line-height: 1.25;
+    }
+    .modal p.limit, .modal li.limit {
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+      max-height: 5.4em;
+    }
+    .modal .m-actions {
+      position: sticky; bottom: 0; left: 0; right: 0;
+      display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end;
+      padding: 12px; background: rgba(8,26,58,0.75);
+      border-top: 1px solid rgba(255,255,255,0.16);
+      backdrop-filter: blur(6px);
+    }
+    .cta {
+      appearance: none; border: 0;
+      background: linear-gradient(90deg, #2bd1ff, #4bff83);
+      color: #052041; font-weight: 800;
+      padding: 12px 16px; border-radius: 12px; box-shadow: var(--shadow);
+      min-height: 44px; cursor: pointer;
+    }
+    .cta.secondary {
+      background: linear-gradient(90deg, #b9c6ff, #97f1ff);
+      color: #0a2550;
+    }
+    .cta.danger {
+      background: linear-gradient(90deg, #ff7c96, #ff5770);
+      color: #fff;
+    }
+    .warn {
+      color: #ffeaa7; font-size: 12px; margin-right: auto; display: flex; align-items: center; gap: 6px;
+    }
+    .result-list {
+      display: grid; gap: 10px; margin-top: 8px;
+    }
+    .result-item {
+      padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+    .pair-title { font-weight: 800; color: #d8fff2; margin-bottom: 4px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; font-size: 12px; font-weight: 800;
+      border-radius: 999px; border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.12); color: #eaffff;
+    }
+
+    /* Compact mode to free space if needed */
+    body.compact {
+      --gap: 8px;
+      --gapRows: 8px;
+      --cardRadius: 12px;
+      --cardPad: 8px;
+      --hud-h: 96px;
+    }
+    body.compact .brand { padding: 6px 8px; }
+    body.compact .brand .subtitle { display: none; }
+    body.compact .stat { padding: 6px 8px; min-width: 86px; }
+    body.compact .tips-mini { display: none; }
+
+    /* Accessibility helpers */
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <div class="bg"></div>
+    <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="eager">
+
+    <!-- HUD -->
+    <div class="hud">
+      <div class="brand">
+        <img class="logo" src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe">
+        <div class="title-wrap">
+          <div class="title">Match PRL: Electricidad Segura ⚡</div>
+          <div class="subtitle">Asocia concepto ↔ uso. 12 intentos.</div>
+        </div>
+      </div>
+      <div></div>
+      <div class="stats" aria-label="Indicadores de juego">
+        <div class="stat" aria-live="polite">
+          <div class="label">Intentos</div>
+          <div class="value" id="attemptsVal">12</div>
+        </div>
+        <div class="stat" aria-live="polite">
+          <div class="label">Parejas</div>
+          <div class="value"><span id="pairsVal">0</span>/4</div>
+        </div>
+        <button class="btn-ghost" id="btnRestart" aria-label="Reiniciar partida">Reiniciar</button>
+      </div>
+    </div>
+
+    <!-- Board -->
+    <div class="board">
+      <div class="tips-mini" id="miniTip">Tip: voltea 2 cartas. Si coinciden, se quedan; si no, se tapan tras 1 s.</div>
+      <ul class="grid" id="grid" aria-label="Tablero de memorama"></ul>
+      <div class="foot">
+        <div class="badge" aria-hidden="true">PRL básica • Vivienda</div>
+        <div class="progress" aria-hidden="true"><div class="bar" id="progBar"></div></div>
+      </div>
+    </div>
+
+    <!-- Intro Modal -->
+    <div class="overlay" id="introOverlay" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+      <div class="modal" id="introModal">
+        <div class="m-body">
+          <h2 id="introTitle">Calentamiento rápido</h2>
+          <p class="limit">Escenario: llegas a una vivienda para cambiar un enchufe; antes de tocar cables, repasas lo básico de seguridad eléctrica.</p>
+          <ul>
+            <li class="limit">Dinámica: voltea cartas de texto y busca parejas concepto ↔ uso. Si fallas, se tapan tras 1 s.</li>
+            <li class="limit">Objetivo: entrenar vocabulario PRL clave para trabajar sin riesgo. Dispones de 12 intentos.</li>
+          </ul>
+        </div>
+        <div class="m-actions">
+          <button class="cta" id="btnStart">¡Empezar!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div class="overlay" id="resultOverlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+      <div class="modal" id="resultModal">
+        <div class="m-body">
+          <h2 id="resultTitle">Resumen del reto</h2>
+          <p id="summary" class="limit">Resultados</p>
+          <div class="result-list" id="resultList" aria-live="polite"></div>
+          <div class="result-tip" style="margin-top:10px;">
+            <div class="pair-title">Consejo de memorización</div>
+            <p class="limit" id="studyTip">Regla 3D: Desenergiza (corte general), Detecta (multímetro), Defensa (guantes). Y bloquea/etiqueta para que nadie reenergice.</p>
+          </div>
+        </div>
+        <div class="m-actions">
+          <span class="warn" id="initWarn" hidden>⚠ Falta initData: podrás continuar sin perder tu progreso.</span>
+          <button class="cta secondary" id="btnRetry">Reintentar</button>
+          <button class="cta" id="btnReward">Ver mi recompensa</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --------- Data & Constants ----------
+    const MAX_ATTEMPTS = 12;
+    const PAIRS_DATA = [
+      {
+        key: "multimetro",
+        term: "Multímetro",
+        use: "Medir tensión",
+        explanation: "Antes de intervenir, mide tensión para confirmar ausencia y evitar choques."
+      },
+      {
+        key: "guantes",
+        term: "Guantes dieléctricos",
+        use: "Aislar manos",
+        explanation: "Protegen las manos ante posibles contactos eléctricos accidentales."
+      },
+      {
+        key: "bloqueo",
+        term: "Bloqueo/etiquetado",
+        use: "Evitar reenergización",
+        explanation: "Asegura que nadie encienda el circuito mientras trabajas."
+      },
+      {
+        key: "corte",
+        term: "Corte general",
+        use: "Desenergizar circuito",
+        explanation: "Primero corta la alimentación para eliminar el riesgo eléctrico."
+      },
+    ];
+
+    // --------- State ----------
+    let deck = [];
+    let firstCard = null;
+    let secondCard = null;
+    let lockBoard = false;
+    let attemptsLeft = MAX_ATTEMPTS;
+    let matches = 0;
+    let turnsUsed = 0;
+    let initDataParam = "";
+
+    // --------- Elements ----------
+    const gridEl = document.getElementById('grid');
+    const attemptsValEl = document.getElementById('attemptsVal');
+    const pairsValEl = document.getElementById('pairsVal');
+    const progBarEl = document.getElementById('progBar');
+    const btnRestart = document.getElementById('btnRestart');
+    const introOverlay = document.getElementById('introOverlay');
+    const btnStart = document.getElementById('btnStart');
+    const resultOverlay = document.getElementById('resultOverlay');
+    const resultList = document.getElementById('resultList');
+    const summaryEl = document.getElementById('summary');
+    const btnRetry = document.getElementById('btnRetry');
+    const btnReward = document.getElementById('btnReward');
+    const initWarn = document.getElementById('initWarn');
+    const scene = document.getElementById('scene');
+
+    // --------- Utils ----------
+    const qs = (s, el=document)=>el.querySelector(s);
+    const qsa = (s, el=document)=>[...el.querySelectorAll(s)];
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+    function clampLabel(text, max=48) {
+      if (!text) return "";
+      return text.length > max ? (text.slice(0, max-1) + "…") : text;
+    }
+
+    // --------- Build Deck ----------
+    function buildDeck() {
+      const raw = [];
+      for (const p of PAIRS_DATA) {
+        raw.push({ id: p.key + "_A", key: p.key, text: clampLabel(p.term), explanation: p.explanation, side: "term" });
+        raw.push({ id: p.key + "_B", key: p.key, text: clampLabel(p.use), explanation: p.explanation, side: "use" });
+      }
+      deck = shuffle(raw);
+    }
+
+    // --------- Render ----------
+    function renderBoard() {
+      gridEl.innerHTML = "";
+      deck.forEach((cardData, idx) => {
+        const li = document.createElement('li');
+        li.style.listStyle = "none";
+        li.setAttribute('aria-label', "Carta de memoria");
+        const btn = document.createElement('button');
+        btn.className = "card";
+        btn.type = "button";
+        btn.setAttribute('aria-label', `Carta ${idx+1}: voltear`);
+        btn.dataset.id = cardData.id;
+        btn.dataset.key = cardData.key;
+        btn.dataset.side = cardData.side;
+        btn.dataset.text = cardData.text;
+
+        btn.innerHTML = `
+          <div class="card-inner">
+            <div class="face front">
+              <svg class="cover-icon" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#2bd1ff"/>
+                    <stop offset="1" stop-color="#7cff6b"/>
+                  </linearGradient>
+                </defs>
+                <rect x="8" y="12" width="48" height="40" rx="8" stroke="url(#g1)" stroke-width="3" fill="rgba(255,255,255,0.06)"/>
+                <path d="M20 24h24M20 32h24M20 40h18" stroke="url(#g1)" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="face back">
+              <div class="label">${cardData.text}</div>
+            </div>
+          </div>
+        `;
+        li.appendChild(btn);
+        gridEl.appendChild(li);
+
+        btn.addEventListener('click', onCardClick);
+        btn.addEventListener('keydown', (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCardClick({ currentTarget: btn }); }
+        });
+      });
+      updateHUD();
+      ensureFits(); // Verify everything fits on screen
+    }
+
+    // --------- Game Logic ----------
+    function onCardClick(e) {
+      const card = e.currentTarget;
+      if (lockBoard) return;
+      if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+      card.classList.add('flipped');
+      if (!firstCard) {
+        firstCard = card;
+        return;
+      }
+      if (card === firstCard) return;
+
+      secondCard = card;
+      lockBoard = true;
+
+      // A turn is committed when two cards are face-up
+      turnsUsed++;
+      attemptsLeft = Math.max(0, attemptsLeft - 1);
+      updateHUD();
+
+      const isMatch = firstCard.dataset.key === secondCard.dataset.key;
+
+      if (isMatch) {
+        matches++;
+        setTimeout(() => {
+          firstCard.classList.add('matched');
+          secondCard.classList.add('matched');
+          resetPick();
+          updateHUD();
+          if (matches === PAIRS_DATA.length || attemptsLeft === 0) {
+            endGame();
+          } else {
+            lockBoard = false;
+          }
+        }, 280);
+      } else {
+        firstCard.classList.add('miss');
+        secondCard.classList.add('miss');
+        setTimeout(() => {
+          firstCard.classList.remove('flipped', 'miss');
+          secondCard.classList.remove('flipped', 'miss');
+          resetPick();
+          updateHUD();
+          if (attemptsLeft === 0 || matches === PAIRS_DATA.length) {
+            endGame();
+          } else {
+            lockBoard = false;
+          }
+        }, 1000);
+      }
+    }
+
+    function resetPick() {
+      firstCard = null;
+      secondCard = null;
+    }
+
+    function updateHUD() {
+      attemptsValEl.textContent = attemptsLeft;
+      pairsValEl.textContent = matches;
+      const pct = Math.round((matches / PAIRS_DATA.length) * 100);
+      progBarEl.style.width = pct + "%";
+    }
+
+    function endGame() {
+      // Lock board and show results with explanations
+      lockBoard = true;
+      setTimeout(showResults, 400);
+    }
+
+    // --------- Results ----------
+    function showResults() {
+      resultList.innerHTML = "";
+      const foundPairsKeys = new Set(qsa('.card.matched').map(c => c.dataset.key));
+      const fails = Math.max(0, turnsUsed - matches);
+      summaryEl.textContent = `Parejas correctas: ${matches}/${PAIRS_DATA.length} · Intentos usados: ${turnsUsed} · Fallos: ${fails}`;
+
+      for (const p of PAIRS_DATA) {
+        const isFound = foundPairsKeys.has(p.key);
+        const row = document.createElement('div');
+        row.className = "result-item";
+        const title = document.createElement('div');
+        title.className = "pair-title";
+        title.textContent = `${p.term} ↔ ${p.use}`; // <= 48+48 but it's fine for results, and clamp via CSS
+        const explain = document.createElement('p');
+        explain.textContent = p.explanation.slice(0, 180);
+        const badge = document.createElement('div');
+        badge.className = "badge";
+        badge.style.background = isFound ? "rgba(62,255,165,0.15)" : "rgba(255,255,255,0.12)";
+        badge.style.borderColor = isFound ? "rgba(62,255,165,0.45)" : "rgba(255,255,255,0.18)";
+        badge.innerHTML = isFound ? "✔️ Encontrada" : "❌ Pendiente";
+        row.appendChild(title);
+        row.appendChild(explain);
+        row.appendChild(badge);
+        resultList.appendChild(row);
+      }
+
+      // Enable scroll only inside results modal (not global)
+      // The modal already has max-height: 90svh; overflow-y: auto via CSS.
+      resultOverlay.classList.add('show');
+      // Keep gameplay non-scrollable globally
+    }
+
+    function resetGame() {
+      attemptsLeft = MAX_ATTEMPTS;
+      matches = 0;
+      turnsUsed = 0;
+      firstCard = secondCard = null;
+      lockBoard = false;
+      buildDeck();
+      renderBoard();
+      // close overlays if open
+      introOverlay.classList.remove('show');
+      resultOverlay.classList.remove('show');
+    }
+
+    // --------- Layout Fit System ----------
+    function assertNoOverflow() {
+      // 1) Check if scene content fits
+      return scene.scrollHeight <= scene.clientHeight;
+    }
+    function applyCompactMode() {
+      // 2) Activate compact mode to free space
+      if (!document.body.classList.contains('compact')) {
+        document.body.classList.add('compact');
+      }
+    }
+    function fitBoardToViewport() {
+      // 3) Recalculate card aspect ratio to reduce board height
+      const root = document.documentElement;
+      const sceneEl = scene;
+      let ar = parseFloat(getComputedStyle(root).getPropertyValue('--cellAR')) || 0.78;
+      let changed = false;
+      let tries = 0;
+      while (sceneEl.scrollHeight > sceneEl.clientHeight && tries < 6) {
+        ar = Math.max(0.62, ar - 0.04); // shrink height
+        root.style.setProperty('--cellAR', ar.toFixed(2));
+        changed = true;
+        tries++;
+      }
+      return changed;
+    }
+    function autoscaleUI() {
+      // 4) As last resort, scale whole UI
+      const root = document.documentElement;
+      let scale = parseFloat(getComputedStyle(root).getPropertyValue('--ui-scale')) || 1;
+      const sceneEl = scene;
+      let changed = false;
+      let guard = 0;
+      while (sceneEl.scrollHeight > sceneEl.clientHeight && scale > 0.88 && guard < 20) {
+        scale = +(scale - 0.02).toFixed(2);
+        root.style.setProperty('--ui-scale', scale);
+        changed = true; guard++;
+      }
+      return changed;
+    }
+    function ensureFits() {
+      // Run sequence
+      if (assertNoOverflow()) return;
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      autoscaleUI();
+      // final check not necessary; we trust autoscale
+    }
+
+    // --------- initData handling ----------
+    function getInitData() {
+      const q = new URLSearchParams(location.search);
+      return q.get('initData') || "";
+    }
+    function goToReward() {
+      const url = "https://kampe-game-phaser.onrender.com/daily_streak?initData=" + encodeURIComponent(initDataParam || "");
+      location.href = url;
+    }
+
+    // --------- Events ----------
+    btnRestart.addEventListener('click', resetGame);
+    btnStart.addEventListener('click', () => {
+      introOverlay.classList.remove('show');
+      ensureFits();
+    });
+    btnRetry.addEventListener('click', () => { resetGame(); });
+    btnReward.addEventListener('click', goToReward);
+
+    window.addEventListener('resize', () => { ensureFits(); });
+    window.addEventListener('orientationchange', () => { setTimeout(ensureFits, 100); });
+
+    // --------- Boot ----------
+    (function boot(){
+      initDataParam = getInitData();
+      if (!initDataParam) initWarn.hidden = false;
+      buildDeck();
+      renderBoard();
+      introOverlay.classList.add('show');
+      // Gameplay no-scroll is default via CSS. Results allow internal scroll in modal only.
+    })();
+  </script>
+</body>
+</html>
