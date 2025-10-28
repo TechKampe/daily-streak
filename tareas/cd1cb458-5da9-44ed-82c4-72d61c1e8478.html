@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe | Fuga en cocina: actúa seguro 🔧</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* =============== Reset & Base =============== */
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      color: #eefdff;
+      background: radial-gradient(1200px 600px at 20% 0%, #184dff 0%, #0a2b8f 48%, #071e5b 100%);
+      overflow: hidden; /* gameplay: no scroll global */
+      overscroll-behavior: none;
+    }
+    :root{
+      --ui-scale: 1;
+      --hudH: 108px;
+      --controlsH: 146px;
+      --radius: 16px;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --shadow: 0 8px 24px rgba(0,0,0,0.35);
+      --progress: 0%; /* width of progress bar */
+      --safeTop: env(safe-area-inset-top);
+      --safeBottom: env(safe-area-inset-bottom);
+      --accent: #56f7ff;
+      --good: #24d58b;
+      --warn: #ffd761;
+      --bad: #ff5a5a;
+      --msgMaxLines: 3;
+    }
+
+    /* =============== Scene =============== */
+    .scene {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(0,0,0,0.15));
+      backdrop-filter: blur(8px);
+      border-left: 1px solid rgba(255,255,255,0.08);
+      border-right: 1px solid rgba(255,255,255,0.08);
+      box-shadow: var(--shadow);
+      touch-action: none; /* no gestures on gameplay container */
+    }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+    @supports not (height: 100svh) { .scene { height: 100dvh; } }
+    @supports not (height: 100dvh) { .scene { height: 100vh; } }
+
+    .scene-inner{
+      position: relative;
+      height: 100%;
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      display: flex;
+      flex-direction: column;
+      padding-top: calc(var(--safeTop) + 8px);
+      padding-bottom: calc(var(--safeBottom) + 8px);
+      overflow: hidden;
+    }
+
+    /* Background watermark avatar */
+    .watermark {
+      position: absolute;
+      right: -30px;
+      bottom: -24px;
+      width: 52%;
+      max-width: 300px;
+      opacity: 0.07;
+      pointer-events: none;
+      filter: drop-shadow(0 10px 24px rgba(0,0,0,0.45));
+      user-select: none;
+    }
+
+    /* =============== HUD =============== */
+    .hud{
+      position: relative;
+      flex: 0 0 auto;
+      padding: 10px 12px;
+      padding-left: 12px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      grid-template-areas:
+        "title logo"
+        "meta  logo";
+      gap: 6px 8px;
+      min-height: var(--hudH);
+    }
+    .logo {
+      grid-area: logo;
+      align-self: start;
+      justify-self: end;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      padding: 6px 8px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+    .logo img{
+      height: 24px;
+      width: auto;
+      display: block;
+    }
+    .title{
+      grid-area: title;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05));
+      border: 1px solid rgba(255,255,255,0.14);
+      padding: 10px 12px;
+      border-radius: 14px;
+      line-height: 1.05;
+      box-shadow: var(--shadow);
+    }
+    .title h1{
+      margin: 0;
+      font-size: clamp(16px, 3.6vw, 20px);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+    .title p{
+      margin: 4px 0 0 0;
+      font-size: clamp(11px, 2.9vw, 13px);
+      opacity: 0.9;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .meta{
+      grid-area: meta;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .progress {
+      flex: 1;
+      min-width: 120px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      height: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress .bar{
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: var(--progress);
+      background: linear-gradient(90deg, #56f7ff, #2ad1ff);
+      box-shadow: 0 0 12px rgba(86,247,255,0.7), inset 0 0 8px rgba(255,255,255,0.3);
+      border-radius: inherit;
+      transition: width 220ms ease-out;
+    }
+    .step{
+      font-weight: 700;
+      font-size: clamp(12px, 3vw, 14px);
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 10px;
+    }
+
+    /* =============== Chat Area =============== */
+    .chat-wrap{
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 120px;
+      margin: 6px 12px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.12);
+      overflow: hidden;
+    }
+    .chat{
+      position: absolute;
+      inset: 0;
+      padding: 10px 10px 10px 10px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      touch-action: pan-y; /* allow scroll only in chat */
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.25) transparent;
+    }
+    .chat::-webkit-scrollbar{ width: 6px; }
+    .chat::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.25); border-radius: 999px; }
+
+    .msg{
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 8px;
+      margin: 8px 0;
+      align-items: start;
+    }
+    .msg.right{
+      grid-template-columns: 1fr 36px;
+    }
+    .msg .avatar{
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    .msg.right .avatar{ order: 2; }
+    .msg .avatar img{ width: 100%; height: 100%; object-fit: cover; display:block; }
+    .bubble{
+      max-width: 95%;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 14px;
+      padding: 8px 10px;
+      line-height: 1.2;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+    }
+    .right .bubble{
+      background: rgba(86,247,255,0.16);
+      border-color: rgba(86,247,255,0.45);
+    }
+    .name{
+      font-weight: 700;
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 2px;
+      color: #bdf3ff;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+    }
+    .text{
+      font-size: clamp(13px, 3.2vw, 14px);
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: var(--msgMaxLines);
+      line-clamp: var(--msgMaxLines);
+      overflow: hidden;
+    }
+
+    /* =============== Controls =============== */
+    .controls{
+      flex: 0 0 auto;
+      padding: 10px 12px calc(10px + var(--safeBottom));
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .choice{
+      min-height: 48px;
+      padding: 10px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      color: #eefdff;
+      font-weight: 700;
+      font-size: clamp(12px, 3.2vw, 14px);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transition: transform 0.06s ease, background 0.2s ease;
+    }
+    .choice:active{ transform: translateY(1px) scale(0.995); }
+    .choice .label{
+      display: -webkit-box; -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2; line-clamp: 2;
+      overflow: hidden;
+    }
+    .choice:focus-visible{
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* =============== Intro Modal =============== */
+    .modal{
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      z-index: 50;
+    }
+    .modal.show{ display: flex; }
+    .modal .card{
+      width: 100%;
+      max-width: 480px;
+      max-height: 90svh;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 16px;
+      padding: 14px;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .modal .card h2{
+      margin: 4px 0 6px; font-size: clamp(18px, 4.5vw, 22px);
+    }
+    .modal .card p{
+      margin: 8px 0;
+      opacity: 0.95;
+      font-size: clamp(13px, 3.4vw, 15px);
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow:hidden;
+    }
+    .modal .actions{
+      display: flex; gap: 8px; margin-top: 10px;
+    }
+    .btn{
+      padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(180deg, rgba(86,247,255,0.25), rgba(86,247,255,0.12));
+      color: #00233a; font-weight: 800;
+      cursor: pointer; user-select: none;
+      min-height: 44px; text-align: center; flex: 1;
+      box-shadow: var(--shadow);
+    }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* =============== Results View =============== */
+    .results{
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 60;
+      padding: 10px;
+      align-items: center;
+      justify-content: center;
+    }
+    .results.show{ display: flex; }
+    .results .panel{
+      width: 100%;
+      max-width: 520px;
+      max-height: 90svh;
+      background: rgba(10, 22, 70, 0.75);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      overflow-y: auto; /* scroll only here in results */
+      box-shadow: var(--shadow);
+      padding: 12px;
+      color: #eefdff;
+    }
+    .results h3{
+      margin: 2px 0 8px; font-size: clamp(18px, 4.6vw, 22px);
+    }
+    .score{
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    }
+    .badge{
+      padding: 6px 10px; border-radius: 10px;
+      background: rgba(86,247,255,0.2);
+      border: 1px solid rgba(86,247,255,0.4);
+      color: #9af6ff; font-weight: 800; font-size: 13px;
+    }
+    .decisions{
+      margin: 8px 0;
+    }
+    .decisions .item{
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+    .decisions .item .head{
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      font-weight: 800;
+    }
+    .pill{
+      padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .ok{ background: rgba(36,213,139,0.2); color: #b5ffdf; border-color: rgba(36,213,139,0.45); }
+    .mid{ background: rgba(255,215,97,0.18); color: #fff0b8; border-color: rgba(255,215,97,0.45); }
+    .ko{ background: rgba(255,90,90,0.2); color: #ffd0d0; border-color: rgba(255,90,90,0.45); }
+    .explain{
+      margin-top: 6px; opacity: 0.95; font-size: 13px;
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow:hidden;
+    }
+    .tip{
+      margin-top: 10px;
+      background: rgba(86,247,255,0.12);
+      border: 1px solid rgba(86,247,255,0.3);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .final-actions{
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.20) 60%);
+      padding-top: 8px; padding-bottom: 4px;
+      display: flex; gap: 8px;
+    }
+    .cta{
+      flex: 1;
+      padding: 14px 16px; min-height: 48px;
+      border-radius: 14px; border: 1px solid rgba(255,255,255,0.28);
+      background: linear-gradient(180deg, #56f7ff, #2ad1ff);
+      color: #001b2e; font-weight: 900; letter-spacing: 0.3px;
+      cursor: pointer; box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .warn-init{
+      align-self: center; font-size: 12px; opacity: 0.9;
+      background: rgba(255,215,97,0.15); border: 1px solid rgba(255,215,97,0.35);
+      color: #fff3c2; padding: 6px 8px; border-radius: 10px;
+    }
+
+    /* =============== Compact Mode =============== */
+    body.compact :root{ --hudH: 94px; --controlsH: 132px; --msgMaxLines: 2; }
+    body.compact .title h1{ font-size: 16px; }
+    body.compact .title p{ display: none; }
+    body.compact .meta .step{ font-size: 12px; padding: 4px 8px; }
+    body.compact .chat-wrap{ margin: 4px 8px; }
+    body.compact .controls{ padding: 8px 8px calc(8px + var(--safeBottom)); gap: 6px; }
+    body.compact .choice{ min-height: 44px; padding: 8px; font-size: 12px; }
+    body.compact .msg{ gap: 6px; margin: 6px 0; }
+    body.compact .msg .avatar{ width: 30px; height: 30px; }
+    body.compact .bubble{ padding: 6px 8px; }
+
+    /* =============== Accessibility helpers =============== */
+    .sr-only{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+  </style>
+</head>
+<body>
+  <!-- SCENE -->
+  <main class="scene" id="gameScene" aria-label="Chatbot: Fuga en cocina">
+    <div class="scene-inner">
+      <img class="watermark" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" aria-hidden="true" />
+
+      <!-- HUD -->
+      <header class="hud" aria-label="Cabecera del reto">
+        <div class="title">
+          <h1>Fuga en cocina: actúa seguro 🔧</h1>
+          <p id="desc">Escenario: La Sra. Pérez reporta fuga bajo el fregadero; Lucía te guía y tú, Dani, respondes con seguridad y claridad.</p>
+        </div>
+        <div class="meta">
+          <div class="progress" aria-label="Progreso">
+            <div class="bar" id="progressBar" style="width: 0%"></div>
+          </div>
+          <div class="step" id="stepLabel" aria-live="polite">0/5</div>
+          <div class="logo" aria-hidden="true">
+            <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          </div>
+        </div>
+      </header>
+
+      <!-- CHAT -->
+      <section class="chat-wrap" aria-label="Conversación">
+        <div class="chat" id="chatLog" tabindex="0" aria-live="polite"></div>
+      </section>
+
+      <!-- CONTROLS -->
+      <nav class="controls" id="controls" aria-label="Opciones de respuesta">
+        <!-- Buttons injected by JS -->
+      </nav>
+    </div>
+  </main>
+
+  <!-- INTRO MODAL -->
+  <div class="modal show" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="card">
+      <h2 id="introTitle">Listo para el turno, Dani</h2>
+      <p>Elige una respuesta en cada turno y sigue el orden seguro. El chat guarda el historial; solo el chat se puede desplazar.</p>
+      <div class="actions">
+        <button class="btn" id="startBtn" aria-label="Empezar">Empezar</button>
+      </div>
+      <div style="margin-top:10px; font-size:12px; opacity:0.8;">
+        Roles y avatares — Lucía (Mentora) • Dani (Aprendiz) • Sra. Pérez (Cliente)
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="resultsView" role="dialog" aria-modal="true" aria-labelledby="resultsTitle">
+    <div class="panel">
+      <h3 id="resultsTitle">Resultados del reto</h3>
+      <div class="score">
+        <span class="badge" id="scoreBadge">Puntuación: 0/10</span>
+        <span class="badge" id="accuracyBadge">Aciertos: 0</span>
+      </div>
+      <div class="decisions" id="decisionsList" aria-label="Lista de decisiones">
+        <!-- items injected -->
+      </div>
+      <div class="tip" id="tipBox">
+        Consejo práctico: Lleva cubo, bayeta y guantes siempre. Antes de tocar el sifón, corta el agua y revisa enchufes cercanos.
+      </div>
+      <div class="final-actions">
+        <button class="cta" id="rewardBtn">Ver mi recompensa</button>
+        <span class="warn-init" id="initWarn" style="display:none;">initData no encontrado</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =================== Utility: URL param (initData) ===================
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || "";
+
+    // =================== Game Data ===================
+    const AVATARS = {
+      mentor: { name: "Lucía", img: "https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" },
+      apprentice: { name: "Dani", img: "https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" },
+      client: { name: "Sra. Pérez", img: "https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png" }
+      // recruiter mapped to Avatar 3, not used in scenario
+    };
+
+    const TURNS = [
+      {
+        id: 1,
+        messages: [
+          { who: 'client', text: 'Hola, soy la Sra. Pérez. Sale agua bajo el fregadero.' },
+          { who: 'mentor', text: 'Dani, estás llegando. ¿Qué respondes primero?' }
+        ],
+        choices: [
+          {
+            label: 'Llego en 1 min. ¿Puedo entrar y poner cubo?',
+            type: 'correct',
+            reactions: { from: 'client', lines: ['¡Gracias! Pasa, te dejo un cubo.', 'Perfecto, entra; tengo trapos listos.', 'Bien, adelante. Voy despejando la zona.'] },
+            explain: {
+              correct: 'Pedir permiso y contener el agua evita daños y genera confianza.',
+              partial: 'Bien pensar en la llave, pero primero permiso y contención.',
+              incorrect: 'Desmontar sin permiso ni contención es inseguro.'
+            }
+          },
+          {
+            label: 'Llego ya. ¿Dónde está la llave del agua?',
+            type: 'partial',
+            reactions: { from: 'mentor', lines: ['Bien por la llave, pero primero contén el agua.', 'Cerca, recuerda permiso y cubo/bayeta.'] }
+          },
+          {
+            label: 'Abro y desmonto directo.',
+            type: 'incorrect',
+            reactions: { from: 'mentor', lines: ['Detente. Sin permiso ni contención, mal arranque.', 'No desmontes aún; prioriza permiso y control.'] }
+          }
+        ],
+        explanations: {
+          correct: 'Pedir permiso y colocar cubo/bayeta evita daños y marca respeto.',
+          partial: 'Pensar en la llave está bien, pero primero permiso y contención.',
+          incorrect: 'Entrar y desmontar sin permiso ni contención es inseguro.'
+        }
+      },
+      {
+        id: 2,
+        messages: [
+          { who: 'mentor', text: 'Primero, corta el agua para trabajar seguro.' },
+          { who: 'client', text: 'Creo que hay una llave bajo el fregadero.' }
+        ],
+        choices: [
+          {
+            label: 'Pido permiso y cierro la llave general.',
+            type: 'correct',
+            reactions: { from: 'mentor', lines: ['Eso es. Corta y confirma que el goteo para.', 'Bien: agua cerrada, podemos seguir.'] }
+          },
+          {
+            label: 'Cierro la del fregadero; si no, la general.',
+            type: 'partial',
+            reactions: { from: 'mentor', lines: ['Vale, pero confirma con prueba de goteo.', 'Ok, si dudas: cierra la general y avisa.'] }
+          },
+          {
+            label: 'Sigo sin cortar para ver la fuga.',
+            type: 'incorrect',
+            reactions: { from: 'mentor', lines: ['Riesgo innecesario. Corta YA el suministro.', 'No sigas: primero seguridad.'] }
+          }
+        ],
+        explanations: {
+          correct: 'Cerrar la llave general garantiza que no siga la fuga y es seguro.',
+          partial: 'Cerrar la más cercana puede valer; corta la general si dudas.',
+          incorrect: 'Trabajar con agua abierta aumenta riesgos y desorden.'
+        }
+      },
+      {
+        id: 3,
+        messages: [
+          { who: 'client', text: 'Hay un enchufe del micro cerca del fregadero.' },
+          { who: 'mentor', text: 'Recuerda EPI y electricidad.' }
+        ],
+        choices: [
+          {
+            label: 'Aviso, desenchufo y me pongo guantes.',
+            type: 'correct',
+            reactions: { from: 'mentor', lines: ['Excelente. Seguridad eléctrica controlada.', 'Bien: guantes y enchufe fuera.'] }
+          },
+          {
+            label: 'Solo guantes; no toco la corriente.',
+            type: 'partial',
+            reactions: { from: 'mentor', lines: ['Mejor desenchufar o cortar el circuito.', 'Falta gestionar la electricidad.'] }
+          },
+          {
+            label: 'Lo ignoro, es poca agua.',
+            type: 'incorrect',
+            reactions: { from: 'mentor', lines: ['Peligro serio: agua y corriente no se mezclan.', 'Incorrecto: gestiona el enchufe de inmediato.'] }
+          }
+        ],
+        explanations: {
+          correct: 'Desenchufar y usar EPI previene accidentes eléctricos en zona mojada.',
+          partial: 'Los guantes ayudan, pero sin cortar o desenchufar hay riesgo.',
+          incorrect: 'Ignorar electricidad en zona húmeda es peligroso.'
+        }
+      },
+      {
+        id: 4,
+        messages: [
+          { who: 'mentor', text: 'Punto de fuga típico: sifón o manguera.' },
+          { who: 'mentor', text: '¿Cómo confirmas sin causar más daños?' }
+        ],
+        choices: [
+          {
+            label: 'Seco, aprieto con llave ajustable y pruebo.',
+            type: 'correct',
+            reactions: { from: 'mentor', lines: ['Top: método limpio y verificable.', 'Eso, prueba de goteo tras ajustar.'] }
+          },
+          {
+            label: 'Aprieto a mano y miro rápido.',
+            type: 'partial',
+            reactions: { from: 'mentor', lines: ['Mejor usa herramienta y seca antes.', 'Falta prueba y ajuste correcto.'] }
+          },
+          {
+            label: 'Desmonto todo el sifón sin revisar.',
+            type: 'incorrect',
+            reactions: { from: 'mentor', lines: ['Demasiado invasivo. Empieza por lo simple.', 'No desmontes sin diagnóstico.'] }
+          }
+        ],
+        explanations: {
+          correct: 'Secar, ajustar con herramienta y probar localiza el fallo sin dañar.',
+          partial: 'Apretar a mano y mirar rápido puede pasar por alto el origen.',
+          incorrect: 'Desmontar todo es innecesario y puede empeorar la fuga.'
+        }
+      },
+      {
+        id: 5,
+        messages: [
+          { who: 'client', text: '¿Qué harás y cuánto puede costar?' },
+          { who: 'mentor', text: 'Comunica claro y cierra la intervención.' }
+        ],
+        choices: [
+          {
+            label: 'Explico arreglo y precio; limpio la zona.',
+            type: 'correct',
+            reactions: { from: 'client', lines: ['Genial, gracias por la claridad y orden.', 'Perfecto, así me quedo tranquila.'] }
+          },
+          {
+            label: 'Doy precio y arreglo; no menciono limpieza.',
+            type: 'partial',
+            reactions: { from: 'client', lines: ['Vale, pero avisa si vas a limpiar y tiempos.', 'Gracias, aunque me gustaría saber limpieza.'] }
+          },
+          {
+            label: 'Arreglo y luego hablamos del precio.',
+            type: 'incorrect',
+            reactions: { from: 'client', lines: ['Prefiero saber precio antes de tocar nada.', 'No me gusta la sorpresa de costes.'] }
+          }
+        ],
+        explanations: {
+          correct: 'Explicar plan y precio y dejar limpio muestra profesionalidad.',
+          partial: 'Falta mencionar limpieza y tiempos para cerrar bien.',
+          incorrect: 'Trabajar sin acordar precio rompe la confianza.'
+        }
+      }
+    ];
+
+    // =================== State ===================
+    const state = {
+      turnIndex: 0,
+      history: [],
+      decisions: [], // { turn:1..5, label, type, explain }
+      score: 0
+    };
+
+    // =================== DOM refs ===================
+    const chatEl = document.getElementById('chatLog');
+    const controlsEl = document.getElementById('controls');
+    const stepLabel = document.getElementById('stepLabel');
+    const progressBar = document.getElementById('progressBar');
+    const introModal = document.getElementById('introModal');
+    const startBtn = document.getElementById('startBtn');
+    const resultsView = document.getElementById('resultsView');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const accuracyBadge = document.getElementById('accuracyBadge');
+    const decisionsList = document.getElementById('decisionsList');
+    const rewardBtn = document.getElementById('rewardBtn');
+    const initWarn = document.getElementById('initWarn');
+
+    // =================== Rendering helpers ===================
+    function avatarFor(who){
+      if(who==='mentor') return AVATARS.mentor;
+      if(who==='client') return AVATARS.client;
+      return AVATARS.apprentice;
+    }
+    function sideFor(who){
+      return who === 'apprentice' ? 'right' : 'left';
+    }
+    function clampText(t, max=140){
+      return t.length > max ? t.slice(0, max-1)+'…' : t;
+    }
+    function addMessage(who, text){
+      state.history.push({ who, text });
+      // Render only the last message for performance
+      const msg = document.createElement('div');
+      msg.className = 'msg ' + (sideFor(who)==='right'?'right':'');
+      const av = avatarFor(who);
+      msg.innerHTML = `
+        <div class="avatar"><img loading="lazy" src="${av.img}" alt="${av.name}"></div>
+        <div class="bubble">
+          <div class="name">${av.name}</div>
+          <div class="text">${clampText(text)}</div>
+        </div>
+      `;
+      if(sideFor(who)==='right'){
+        // reorder children for right side (avatar last)
+        msg.innerHTML = `
+          <div class="bubble">
+            <div class="name">${av.name}</div>
+            <div class="text">${clampText(text)}</div>
+          </div>
+          <div class="avatar"><img loading="lazy" src="${av.img}" alt="${av.name}"></div>
+        `;
+      }
+      chatEl.appendChild(msg);
+      chatEl.scrollTop = chatEl.scrollHeight + 999;
+    }
+
+    function renderChoices(choices){
+      controlsEl.innerHTML = '';
+      choices.forEach((c, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice';
+        btn.setAttribute('aria-label', c.label);
+        btn.innerHTML = `<span class="label">${c.label}</span>`;
+        btn.addEventListener('click', () => handleChoice(c));
+        controlsEl.appendChild(btn);
+      });
+    }
+
+    function updateProgress(){
+      const step = Math.min(state.turnIndex + 1, TURNS.length);
+      stepLabel.textContent = `${state.turnIndex}/${TURNS.length}`;
+      // Set progress based on finished turns
+      const pct = (state.turnIndex / TURNS.length) * 100;
+      document.documentElement.style.setProperty('--progress', pct.toFixed(0) + '%');
+    }
+
+    // =================== Flow ===================
+    function startGame(){
+      introModal.classList.remove('show');
+      document.body.classList.remove('results-open');
+      chatEl.innerHTML = '';
+      state.turnIndex = 0;
+      state.history = [];
+      state.decisions = [];
+      state.score = 0;
+
+      // Seed first turn messages
+      TURNS[0].messages.forEach(m => addMessage(m.who, m.text));
+      renderChoices(TURNS[0].choices);
+      updateProgress();
+      ensureFits();
+    }
+
+    function handleChoice(choice){
+      // Player (Dani) message
+      addMessage('apprentice', choice.label);
+
+      // Reaction (random among variations)
+      const rxFrom = choice.reactions?.from || 'mentor';
+      const lines = choice.reactions?.lines || ['Ok.'];
+      const rx = lines[Math.floor(Math.random()*lines.length)];
+      addMessage(rxFrom, rx);
+
+      // Record decision + scoring
+      const currentTurn = TURNS[state.turnIndex];
+      const type = choice.type || 'partial';
+      const explain = currentTurn.explanations?.[type] || 'Decisión registrada.';
+      state.decisions.push({
+        turn: currentTurn.id,
+        label: choice.label,
+        type,
+        explanation: explain
+      });
+      if(type==='correct'){ state.score += 2; }
+      else if(type==='partial'){ state.score += 1; }
+
+      // Advance turn
+      state.turnIndex++;
+      updateProgress();
+
+      // Next turn or results
+      if(state.turnIndex < TURNS.length){
+        const nxt = TURNS[state.turnIndex];
+        // Add next turn's base messages
+        setTimeout(() => {
+          nxt.messages.forEach(m => addMessage(m.who, m.text));
+          renderChoices(nxt.choices);
+          ensureFits();
+        }, 280);
+      } else {
+        // Finished
+        setTimeout(showResults, 280);
+      }
+    }
+
+    // =================== Results ===================
+    function showResults(){
+      // Populate results
+      const maxScore = TURNS.length * 2;
+      const corrects = state.decisions.filter(d=>d.type==='correct').length;
+      scoreBadge.textContent = `Puntuación: ${state.score}/${maxScore}`;
+      accuracyBadge.textContent = `Aciertos: ${corrects}/${TURNS.length}`;
+      decisionsList.innerHTML = '';
+      state.decisions.forEach(d => {
+        const pillCls = d.type==='correct'?'ok':(d.type==='partial'?'mid':'ko');
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = `
+          <div class="head">
+            <div>T${d.turn} · ${escapeHtml(d.label)}</div>
+            <span class="pill ${pillCls}">${labelType(d.type)}</span>
+          </div>
+          <div class="explain">${escapeHtml(d.explanation)}</div>
+        `;
+        decisionsList.appendChild(item);
+      });
+      // initData warning
+      initWarn.style.display = initData ? 'none' : 'inline-block';
+      resultsView.classList.add('show');
+
+      // Allow scroll only in results (global ok)
+      document.documentElement.style.overflowY = 'auto';
+      document.body.style.overflowY = 'auto';
+      ensureFits();
+    }
+
+    function labelType(t){
+      if(t==='correct') return 'Correcta';
+      if(t==='partial') return 'Parcial';
+      return 'Incorrecta';
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    // =================== Fit / Compact / Autoscale ===================
+    function assertNoOverflow(){
+      const sc = document.getElementById('gameScene');
+      // If content fits within visible height (allow small rounding)
+      return sc.scrollHeight <= sc.clientHeight + 1;
+    }
+    function applyCompactMode(){
+      document.body.classList.add('compact');
+    }
+    function fitBoardToViewport(){
+      // Reduce some spacings via CSS variables for tighter layout
+      document.documentElement.style.setProperty('--hudH', '92px');
+      document.documentElement.style.setProperty('--controlsH', '128px');
+    }
+    function autoscaleUI(minScale = 0.88){
+      // Scale down the inner UI as last resort
+      const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+      const next = Math.max(minScale, cur - 0.06);
+      document.documentElement.style.setProperty('--ui-scale', String(next));
+    }
+    function ensureFits(){
+      // Reset to defaults before checking
+      document.body.classList.remove('compact');
+      document.documentElement.style.setProperty('--ui-scale', '1');
+      document.documentElement.style.setProperty('--hudH', '108px');
+      document.documentElement.style.setProperty('--controlsH', '146px');
+
+      // Step 1: check
+      if(assertNoOverflow()) return;
+
+      // Step 2: compact mode
+      applyCompactMode();
+      if(assertNoOverflow()) return;
+
+      // Step 3: tweak layout vars
+      fitBoardToViewport();
+      if(assertNoOverflow()) return;
+
+      // Step 4: autoscale
+      autoscaleUI(0.88);
+      // Final check not necessary; we accept minimal 0.88
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', ensureFits);
+
+    // =================== Start / Events ===================
+    startBtn.addEventListener('click', () => {
+      // Disable global scroll again when gameplay starts
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      resultsView.classList.remove('show');
+      startGame();
+    });
+
+    rewardBtn.addEventListener('click', () => {
+      const url = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      location.href = url;
+    });
+
+    // Seed first render (still intro open)
+    updateProgress();
+
+    // Accessibility small improvements
+    chatEl.addEventListener('keydown', (e) => {
+      // space/enter focus next interactive element
+      if(e.key === 'Enter' || e.key === ' '){
+        const firstBtn = controlsEl.querySelector('button');
+        if(firstBtn){ firstBtn.focus(); e.preventDefault(); }
+      }
+    });
+
+    // =================== Initial turn seeding (upon start) ===================
+    // done via startGame()
+
+    // =================== On load, prefit ===================
+    ensureFits();
+
+    // =================== Initial content injection (after start) ===================
+
+    // Start with intro visible; will start game on click
+
+  </script>
+</body>
+</html>
