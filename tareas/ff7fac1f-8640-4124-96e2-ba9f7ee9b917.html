@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>PRL Flash: Taller Eléctrico ⚡ | Kämpe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* =============== RESET & BASE =============== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    html, body { margin: 0; padding: 0; overflow: hidden; overscroll-behavior: none; }
+    body {
+      font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial, sans-serif;
+      color: #F5FAFF;
+      background: radial-gradient(1200px 600px at 70% -10%, #60A5FA 0%, rgba(96,165,250,0) 60%),
+                  linear-gradient(180deg, #0C2ECF 0%, #0B1F89 90%);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    :root{
+      --ui-scale: 1;
+      --gap: 12px;
+      --pad: 14px;
+      --radius: 14px;
+      --btnH: 56px; /* target >= 44px */
+      --hudH: 64px;
+      --glass: rgba(255,255,255,0.12);
+      --glass-border: rgba(255,255,255,0.25);
+      --accent: #22D3EE; /* cyan */
+      --accent2: #34D399; /* green */
+      --danger: #F43F5E; /* rose */
+      --warning: #F59E0B; /* amber */
+      --muted: rgba(255,255,255,0.65);
+      --clampTitle: clamp(18px, 4.5vw, 22px);
+      --clampQuestion: clamp(18px, 5vw, 22px);
+      --clampBtn: clamp(14px, 4.2vw, 16px);
+    }
+
+    /* Compact mode for tight screens */
+    body.compact :root {}
+    body.compact .hud { --hudH: 54px; }
+    body.compact .title { font-size: clamp(16px, 4vw, 18px); }
+    body.compact .answers { gap: 8px; }
+    body.compact .answer-btn { min-height: 48px; }
+    body.compact .subtitle { display: none; }
+    body.compact .header-right .progress { font-size: 13px; }
+    body.compact .ui-wrap { padding: 12px; }
+
+    /* =============== SCENE =============== */
+    .scene {
+      width: 100%;
+      position: relative;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      display: grid;
+      place-items: center;
+      touch-action: none; /* anti-derrapes during gameplay */
+    }
+    /* Safe viewport height fallbacks */
+    .scene { height: 100vh; }
+    @supports (height: 100dvh) { .scene { height: 100dvh; } }
+    @supports (height: 100svh) { .scene { height: 100svh; } }
+
+    /* Avatar background */
+    .avatar-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png');
+      background-repeat: no-repeat;
+      background-position: 92% 92%;
+      background-size: 45vh;
+      opacity: 0.18;
+      filter: saturate(1.2) drop-shadow(0 10px 30px rgba(0,0,0,0.25));
+      mix-blend-mode: screen;
+    }
+
+    /* =============== UI WRAP =============== */
+    .ui-wrap {
+      width: min(680px, 92vw);
+      transform: scale(var(--ui-scale));
+      transform-origin: top center;
+      transition: transform 200ms ease;
+      padding: 16px;
+      border-radius: 18px;
+      backdrop-filter: blur(12px) saturate(1.05);
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+      border: 1px solid var(--glass-border);
+      box-shadow:
+        0 8px 24px rgba(0,0,0,0.25),
+        inset 0 0 0 1px rgba(255,255,255,0.05);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+    }
+
+    /* =============== HUD =============== */
+    .hud{
+      height: var(--hudH);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+    }
+    .branding{
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+    }
+    .logo{
+      height: 36px;
+      width: auto;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.14);
+      padding: 6px 8px;
+      display: grid;
+      place-items: center;
+    }
+    .logo img{ height: 22px; width: auto; display: block; }
+
+    .title-wrap{ min-width: 0; }
+    .title{
+      font-size: var(--clampTitle);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .subtitle{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .header-right{
+      display: grid;
+      grid-auto-flow: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .progress{
+      font-weight: 700;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 8px 10px;
+      border-radius: 12px;
+      min-width: 64px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .bar{
+      height: 8px;
+      width: 110px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.16);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+    .bar > .fill{
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #22D3EE, #34D399);
+      transition: width 240ms ease;
+    }
+
+    /* =============== GAME PANEL =============== */
+    .game {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: var(--gap);
+    }
+
+    .question{
+      padding: 10px 10px 0;
+      display: grid;
+      gap: 8px;
+    }
+    .qtext{
+      font-size: var(--clampQuestion);
+      font-weight: 800;
+      line-height: 1.2;
+      max-height: calc(1.2em * 2);
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.35);
+    }
+
+    .answers{
+      display: grid;
+      align-content: start;
+      gap: var(--gap);
+      padding: 4px 0 8px;
+    }
+    .answer-btn{
+      width: 100%;
+      min-height: var(--btnH);
+      padding: 12px 14px;
+      font-size: var(--clampBtn);
+      font-weight: 700;
+      color: #06122b;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.35);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.75));
+      box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+      transition: transform 120ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .answer-btn .label{
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .answer-btn .mark{
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(0,0,0,0.12);
+      display: grid; place-items: center;
+      color: rgba(0,0,0,0.6);
+      font-size: 14px; font-weight: 900;
+    }
+    .answer-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(0,0,0,0.28); }
+    .answer-btn:active { transform: translateY(0); }
+    .answer-btn:focus-visible { outline: 3px solid #22D3EE; outline-offset: 3px; }
+
+    .answer-btn.correct { background: linear-gradient(180deg, #34D399, #10B981); color: #062215; border-color: rgba(255,255,255,0.55); }
+    .answer-btn.correct .mark { background: rgba(255,255,255,0.25); color: #fff; }
+    .answer-btn.wrong { background: linear-gradient(180deg, #F43F5E, #B91C1C); color: #fff; border-color: rgba(255,255,255,0.6); }
+    .answer-btn.wrong .mark { background: rgba(255,255,255,0.18); color: #fff; }
+
+    /* Slide animation between turns */
+    .turn {
+      animation: slideIn 260ms ease both;
+    }
+    .turn.out {
+      animation: slideOut 240ms ease both;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideOut {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(-10px); }
+    }
+    @media (prefers-reduced-motion: reduce){
+      .turn, .turn.out, .answer-btn{ animation: none !important; transition: none !important; }
+    }
+
+    /* =============== INTRO MODAL =============== */
+    .modal{
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, rgba(6,18,43,0.86), rgba(6,18,43,0.75));
+      z-index: 5;
+      padding: 16px;
+    }
+    .sheet{
+      width: min(700px, 92vw);
+      max-height: 90svh;
+      overflow-y: auto;
+      padding: 16px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.08));
+      border: 1px solid rgba(255,255,255,0.28);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 32px rgba(0,0,0,0.35);
+      display: grid;
+      gap: 12px;
+    }
+    .intro h2{
+      margin: 4px 0 0;
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .intro p{
+      margin: 2px 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .cta{
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: start;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .btn{
+      min-height: 48px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.35);
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 120ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+    .btn:focus-visible { outline: 3px solid #22D3EE; outline-offset: 3px; }
+    .btn.primary{
+      background: linear-gradient(180deg, #22D3EE, #0891B2);
+      color: #041423;
+      box-shadow: 0 8px 16px rgba(34,211,238,0.3);
+    }
+    .btn.primary:hover{ transform: translateY(-1px); }
+    .btn.ghost{
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    /* =============== RESULTS =============== */
+    .results-modal .header{
+      display: grid;
+      gap: 4px;
+    }
+    .score-pill{
+      display: inline-grid;
+      grid-auto-flow: column;
+      gap: 8px;
+      align-items: center;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 8px 12px;
+      border-radius: 12px;
+      width: max-content;
+      font-weight: 800;
+    }
+    .summary{
+      display: grid;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .item{
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: grid;
+      gap: 6px;
+    }
+    .item .q{
+      font-weight: 800;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+    .qa{
+      display: grid;
+      gap: 4px;
+      font-size: 14px;
+    }
+    .you{ color: #FECACA; } /* light red */
+    .you.ok{ color: #BBF7D0; } /* light green */
+    .correct{ color: #D1FAE5; }
+    .explain{ color: var(--muted); font-size: 13px; }
+    .results-cta{
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, rgba(6,18,43,0), rgba(6,18,43,0.45));
+      padding-top: 6px;
+      margin-top: 6px;
+      display: grid;
+      gap: 8px;
+    }
+    .tip{
+      font-size: 14px;
+      color: #E0F2FE;
+      background: rgba(34,211,238,0.18);
+      border: 1px solid rgba(34,211,238,0.45);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .warning{
+      font-size: 12px;
+      color: #FDE68A;
+      opacity: 0.9;
+    }
+
+    /* Accessibility helpers */
+    [role="button"]:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid #22D3EE; outline-offset: 3px; }
+    .sr-only{ position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene" aria-live="polite">
+    <div class="avatar-bg" aria-hidden="true"></div>
+
+    <div class="ui-wrap" id="ui">
+      <!-- HUD -->
+      <div class="hud">
+        <div class="branding">
+          <div class="logo" aria-hidden="true">
+            <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+          </div>
+          <div class="title-wrap">
+            <div class="title">PRL Flash: Taller Eléctrico ⚡</div>
+            <div class="subtitle">Decide rápido y seguro en baja tensión</div>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="bar" aria-hidden="true"><div class="fill" id="barFill"></div></div>
+          <div class="progress" id="progress">0/5</div>
+        </div>
+      </div>
+
+      <!-- GAME -->
+      <div class="game">
+        <div class="question">
+          <div class="qtext" id="qtext">Cargando…</div>
+        </div>
+        <div class="answers" id="answers"></div>
+      </div>
+
+      <!-- Footer spacer (keeps CTAs always visible if needed) -->
+      <div style="height: 0;"></div>
+    </div>
+
+    <!-- INTRO MODAL -->
+    <div class="modal" id="intro">
+      <div class="sheet intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;">
+          <div class="logo" aria-hidden="true">
+            <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="">
+          </div>
+          <div>
+            <h2 id="introTitle">PRL Flash: Taller Eléctrico ⚡</h2>
+            <p>Escenario: primer día en obra. Responde 5 decisiones rápidas de seguridad básica. Toca una opción y pasas de inmediato.</p>
+          </div>
+        </div>
+        <div class="cta">
+          <button class="btn primary" id="startBtn" aria-label="Empezar el reto">Empezar</button>
+          <button class="btn ghost" id="howBtn" aria-label="Cómo jugar">¿Cómo se juega?</button>
+        </div>
+        <div id="how" style="display:none; font-size:13px; color:var(--muted);">
+          • Toca la respuesta correcta. • Verás tu progreso (5/5). • Al final tendrás explicación y tu recompensa.
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS MODAL (hidden by default) -->
+    <div class="modal" id="results" style="display:none;">
+      <div class="sheet results-modal" role="dialog" aria-modal="true" aria-labelledby="resTitle">
+        <div class="header">
+          <h2 id="resTitle" style="margin:0;font-size:22px;font-weight:800;">Resultados</h2>
+          <div class="score-pill" id="scorePill">Puntuación: 0/5</div>
+        </div>
+        <div class="summary" id="summary"></div>
+        <div class="results-cta">
+          <div class="tip">Consejo: si dudas, detén, señaliza y consulta. La prisa no vale un accidente.</div>
+          <div class="cta">
+            <a id="rewardBtn" class="btn primary" role="button" aria-label="Ver mi recompensa">Ver mi recompensa</a>
+            <span id="initWarn" class="warning" aria-live="polite" style="align-self:center;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===================== DATA ===================== */
+    const QUESTIONS = [
+      {
+        q: "Vas a taladrar una pared: ¿qué EPI básico?",
+        options: [
+          "Gafas, guantes y calzado de seguridad",
+          "Solo guantes",
+          "Mascarilla y gorra",
+          "Ninguno, es un taladro corto"
+        ],
+        correctIndex: 0,
+        explain: "Protege ojos de proyecciones y manos/pies de impactos y cortes. Es el mínimo para taladrar paredes."
+      },
+      {
+        q: "Antes de abrir un enchufe, ¿qué haces?",
+        options: [
+          "Cortar la luz y verificar ausencia de tensión",
+          "Usar guantes y abrir rápido",
+          "Solo bajar un magneto cercano",
+          "Avisar al cliente y seguir"
+        ],
+        correctIndex: 0,
+        explain: "Primero elimina la energía y verifica ausencia de tensión con el comprobador. Evita contactos eléctricos."
+      },
+      {
+        q: "Ves humedad junto a una toma de corriente.",
+        options: [
+          "No intervenir; secar, señalizar y avisar",
+          "Continuar con cuidado",
+          "Cubrir con cinta y seguir"
+        ],
+        correctIndex: 0,
+        explain: "Agua y electricidad no mezclan. Señaliza, corta la energía si procede y espera a resolver la humedad."
+      },
+      {
+        q: "Trabajarás cerca del cuadro eléctrico. Escalera:",
+        options: [
+          "Escalera de fibra o madera seca",
+          "Escalera de aluminio",
+          "Subirte a una silla estable"
+        ],
+        correctIndex: 0,
+        explain: "Usa material no conductor (fibra/madera seca). El aluminio conduce y aumenta el riesgo."
+      },
+      {
+        q: "Herramienta con aislante del cable dañado.",
+        options: [
+          "Retírala, etiqueta y cámbiala. No usar",
+          "Usarla con guantes gruesos",
+          "Cubrir con cinta y seguir"
+        ],
+        correctIndex: 0,
+        explain: "No uses herramientas con aislamiento dañado. Retírala del servicio y reemplázala para evitar contactos."
+      }
+    ];
+
+    /* ===================== STATE ===================== */
+    const state = {
+      initData: "",
+      turn: 0,
+      answers: [] // {pick, correct}
+    };
+
+    /* ===================== UTILS ===================== */
+    const $ = sel => document.querySelector(sel);
+
+    function getInitData() {
+      try {
+        const url = new URL(window.location.href);
+        return url.searchParams.get('initData') || "";
+      } catch {
+        return "";
+      }
+    }
+
+    function clampLabel(str, max=48){
+      if(!str) return "";
+      if(str.length <= max) return str;
+      return str.slice(0, max-1).trimEnd() + "…";
+    }
+
+    /* ===================== FIT / LAYOUT GUARDS ===================== */
+    function assertNoOverflow(){
+      const scene = $('#scene');
+      const inner = $('#ui');
+      if(!scene || !inner) return true;
+      const sceneRect = scene.getBoundingClientRect();
+      const innerRect = inner.getBoundingClientRect();
+      return innerRect.height <= sceneRect.height + 0.5;
+    }
+
+    function applyCompactMode(){
+      document.body.classList.add('compact');
+    }
+
+    function fitBoardToViewport(){
+      const root = document.documentElement;
+      const cs = getComputedStyle(root);
+      let btnH = parseInt(cs.getPropertyValue('--btnH')) || 56;
+      // Reduce a little but keep >= 44
+      btnH = Math.max(44, btnH - 6);
+      root.style.setProperty('--btnH', btnH + 'px');
+    }
+
+    function autoscaleUI(){
+      const root = document.documentElement;
+      const cs = getComputedStyle(root);
+      let scale = parseFloat(cs.getPropertyValue('--ui-scale')) || 1;
+      // Step down gently, min 0.88
+      scale = Math.max(0.88, scale - 0.04);
+      root.style.setProperty('--ui-scale', String(scale));
+    }
+
+    function ensureFits(){
+      const root = document.documentElement;
+      // Reset to defaults before measuring
+      document.body.classList.remove('compact');
+      root.style.setProperty('--btnH','56px');
+      root.style.setProperty('--ui-scale','1');
+
+      if (assertNoOverflow()) return;
+
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+
+      // Try scaling stepwise
+      let guard=0;
+      while(!assertNoOverflow() && guard<6){
+        autoscaleUI();
+        guard++;
+      }
+    }
+
+    function onResize(){
+      ensureFits();
+    }
+
+    /* ===================== RENDERING ===================== */
+    function updateProgress(){
+      const total = QUESTIONS.length;
+      const current = Math.min(state.turn+1, total);
+      $('#progress').textContent = `${state.turn < total ? current : total}/${total}`;
+      const pct = Math.min((state.turn)/total, 1) * 100;
+      $('#barFill').style.width = `${pct}%`;
+    }
+
+    function renderQuestion(){
+      const total = QUESTIONS.length;
+      if(state.turn >= total){
+        showResults();
+        return;
+      }
+
+      const q = QUESTIONS[state.turn];
+      const qtext = $('#qtext');
+      const answers = $('#answers');
+
+      // Fill text (clamped)
+      qtext.textContent = clampLabel(q.q, 64);
+
+      // Build answers
+      answers.innerHTML = '';
+      const turnWrap = document.createElement('div');
+      turnWrap.className = 'turn';
+
+      const optsWrap = document.createElement('div');
+      optsWrap.style.display = 'contents';
+
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn';
+        btn.setAttribute('aria-label', `Respuesta ${i+1}: ${opt}`);
+        btn.setAttribute('data-index', String(i));
+
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = clampLabel(opt, 48);
+
+        const mark = document.createElement('span');
+        mark.className = 'mark';
+        mark.textContent = i+1;
+
+        btn.appendChild(label);
+        btn.appendChild(mark);
+
+        btn.addEventListener('click', () => handleAnswer(i, btn));
+
+        optsWrap.appendChild(btn);
+      });
+
+      turnWrap.appendChild(optsWrap);
+      answers.appendChild(turnWrap);
+
+      updateProgress();
+      ensureFits();
+    }
+
+    let locked = false;
+    function handleAnswer(index, btnEl){
+      if(locked) return;
+      locked = true;
+
+      const q = QUESTIONS[state.turn];
+      const correct = index === q.correctIndex;
+
+      // Visual feedback on chosen
+      const all = [...document.querySelectorAll('.answer-btn')];
+      all.forEach(b => b.disabled = true);
+      if(correct){
+        btnEl.classList.add('correct');
+      } else {
+        btnEl.classList.add('wrong');
+        // Mark correct one too for learning
+        const correctBtn = all[q.correctIndex];
+        if (correctBtn) { correctBtn.classList.add('correct'); }
+      }
+
+      state.answers.push({ pick: index, correct });
+
+      // Short delay + slide out + next
+      setTimeout(() => {
+        const turnNode = document.querySelector('.turn');
+        if(turnNode){
+          turnNode.classList.add('out');
+        }
+        setTimeout(() => {
+          state.turn += 1;
+          renderQuestion();
+          locked = false;
+        }, 180);
+      }, 520);
+    }
+
+    /* ===================== RESULTS ===================== */
+    function showResults(){
+      // Update progress bar to 100%
+      $('#barFill').style.width = '100%';
+      $('#progress').textContent = `${QUESTIONS.length}/${QUESTIONS.length}`;
+
+      // Prepare summary
+      const summary = $('#summary');
+      summary.innerHTML = '';
+      const score = state.answers.filter(a => a.correct).length;
+      $('#scorePill').textContent = `Puntuación: ${score}/${QUESTIONS.length}`;
+
+      QUESTIONS.forEach((q, i) => {
+        const item = document.createElement('div');
+        item.className = 'item';
+
+        const qEl = document.createElement('div');
+        qEl.className = 'q';
+        qEl.textContent = q.q;
+
+        const qa = document.createElement('div');
+        qa.className = 'qa';
+
+        const your = document.createElement('div');
+        const wasOk = state.answers[i]?.pick === q.correctIndex;
+        your.className = wasOk ? 'you ok' : 'you';
+        const yourLabel = (q.options[state.answers[i]?.pick] ?? '—');
+        your.textContent = `Tu respuesta: ${yourLabel}`;
+
+        const correct = document.createElement('div');
+        correct.className = 'correct';
+        correct.textContent = `Correcta: ${q.options[q.correctIndex]}`;
+
+        const explain = document.createElement('div');
+        explain.className = 'explain';
+        explain.textContent = q.explain;
+
+        qa.appendChild(your);
+        qa.appendChild(correct);
+        qa.appendChild(explain);
+
+        item.appendChild(qEl);
+        item.appendChild(qa);
+        summary.appendChild(item);
+      });
+
+      // Prepare reward CTA
+      const base = 'https://kampe-game-phaser.onrender.com/daily_streak';
+      const init = state.initData || "";
+      const url = `${base}?initData=${encodeURIComponent(init)}`;
+      const rewardBtn = $('#rewardBtn');
+      rewardBtn.setAttribute('href', url);
+      rewardBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = url;
+      });
+
+      const warn = $('#initWarn');
+      warn.textContent = init ? "" : "Aviso: no se detectó initData; continuarás igualmente.";
+
+      // Toggle results modal
+      $('#results').style.display = 'grid';
+
+      // Enable scroll in results view and auto for touch
+      document.body.style.overflowY = 'auto';
+      const scene = $('#scene');
+      if(scene) scene.style.touchAction = 'auto';
+    }
+
+    /* ===================== INIT ===================== */
+    function startGame(){
+      $('#intro').style.display = 'none';
+      state.turn = 0;
+      state.answers = [];
+      renderQuestion();
+    }
+
+    function wireUI(){
+      $('#startBtn').addEventListener('click', startGame);
+      $('#howBtn').addEventListener('click', () => {
+        const h = $('#how');
+        h.style.display = h.style.display === 'none' ? 'block' : 'none';
+        ensureFits();
+      });
+
+      window.addEventListener('resize', onResize);
+      window.addEventListener('orientationchange', onResize);
+    }
+
+    function boot(){
+      state.initData = getInitData();
+      wireUI();
+      updateProgress();
+      ensureFits();
+      // Pre-render first question text placeholder fits
+      $('#qtext').textContent = "Listo para empezar";
+      ensureFits();
+    }
+
+    document.addEventListener('DOMContentLoaded', boot);
+  </script>
+</body>
+</html>
