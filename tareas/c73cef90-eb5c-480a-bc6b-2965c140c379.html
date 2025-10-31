@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kämpe · ¿Protege, Ejecuta o Comunica? ⚡</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ui-scale: 1;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.18);
+      --white: #ffffff;
+      --ink: #EBF4FF;
+      --ink-dim: #CDE3FF;
+      --accent: #78A6FF;
+      --ok: #5CF2B1;
+      --warn: #FFC857;
+      --err: #FF6B6B;
+
+      --catH: 136px;        /* category bar height default */
+      --itemH: 96px;        /* item card height */
+      --hdrH: 60px;         /* header height baseline */
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0,10,60,0.35);
+    }
+
+    *{box-sizing: border-box}
+    html, body{height:100%; margin:0; background:#0f1c5c; color:var(--ink); font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;}
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    img{max-width:100%; height:auto; display:block}
+    a{color:inherit; text-decoration:none}
+    button{font-family:inherit}
+
+    /* Scene sizing with svh/dvh/vh fallbacks */
+    .scene{
+      position:relative;
+      width:100%;
+      height:100vh; /* fallback */
+      display:flex; flex-direction:column; justify-content:stretch; align-items:stretch;
+      background:
+        radial-gradient(1200px 600px at 80% 0%, #3757ff26 0%, transparent 70%),
+        radial-gradient(800px 600px at 10% 100%, #22ccff1f 0%, transparent 65%),
+        linear-gradient(180deg, #0a46d8 0%, #0c2a83 70%, #091b58 100%);
+      isolation:isolate;
+      padding: clamp(8px, 2.7vw, 16px);
+      padding-top: calc(clamp(8px, 2.7vw, 16px) + env(safe-area-inset-top));
+      padding-right: calc(clamp(8px, 2.7vw, 16px) + env(safe-area-inset-right));
+      padding-bottom: calc(clamp(8px, 2.7vw, 16px) + env(safe-area-inset-bottom));
+      padding-left: calc(clamp(8px, 2.7vw, 16px) + env(safe-area-inset-left));
+      touch-action: none;
+      overflow: hidden;
+    }
+    @supports (height: 100svh){
+      .scene{height:100svh;}
+    }
+    @supports not (height: 100svh){
+      @supports (height: 100dvh){
+        .scene{height:100dvh;}
+      }
+    }
+
+    /* UI wrapper to autoscale if needed */
+    .ui {
+      position:relative;
+      display:flex; flex-direction:column; width:100%; height:100%;
+      transform-origin: top center;
+      transform: scale(var(--ui-scale));
+    }
+
+    /* Avatar background */
+    .avatar-bg{
+      position:absolute; inset:auto -10% -10% auto; right:-6%; bottom:-6%;
+      width:min(48%, 420px); opacity:0.18; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.35));
+      pointer-events:none; user-select:none;
+      transform: rotate(2deg);
+      z-index:0;
+    }
+
+    /* Header */
+    .hdr{
+      position:relative; z-index:2;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      min-height: var(--hdrH);
+    }
+    .brand{
+      display:flex; align-items:center; gap:8px; min-width:0;
+    }
+    .brand img{width:32px; height:auto}
+    .title{
+      display:flex; flex-direction:column; min-width:0; flex:1; text-align:center;
+    }
+    .title h1{
+      margin:0; font-weight:800; letter-spacing:0.2px;
+      font-size: clamp(16px, 2.9vw, 20px);
+      text-shadow: 0 2px 14px rgba(0,0,0,0.35);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .subtitle{
+      margin:2px 0 0; opacity:0.9; font-weight:600;
+      font-size: clamp(11px, 2.3vw, 13px);
+      display:block;
+      max-width:100%;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .progress{
+      display:flex; align-items:center; gap:8px;
+      min-width:72px; justify-content:flex-end;
+      font-weight:700; color:#D7ECFF;
+    }
+    .pbar{
+      width:72px; height:8px; border-radius:999px; background:rgba(255,255,255,0.18); overflow:hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+    }
+    .pbar > i{display:block; height:100%; width:0%; background:linear-gradient(90deg, #4EF2EA, #59FF9A);}
+
+    /* Card area */
+    .board{
+      position:relative; z-index:2;
+      flex:1; display:flex; flex-direction:column; gap:10px; justify-content:center; align-items:center;
+      min-height:0;
+    }
+    .itemCard{
+      width: min(92%, 560px);
+      min-height: var(--itemH);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--glass-strong), rgba(255,255,255,0.08));
+      border: 1px solid rgba(255,255,255,0.24);
+      box-shadow: var(--shadow), inset 0 0 40px rgba(255,255,255,0.06);
+      display:flex; align-items:center; justify-content:center; text-align:center;
+      padding: 14px 16px;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .itemText{
+      font-size: clamp(18px, 4.6vw, 24px);
+      font-weight: 800; line-height:1.1;
+      text-wrap: balance;
+      display: -webkit-box; -webkit-line-clamp:2; -webkit-box-orient: vertical; overflow:hidden;
+      max-height: 2.2em;
+    }
+
+    /* Category bar */
+    .catBar{
+      position:relative; z-index:3;
+      display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;
+      width:100%; margin:0 auto;
+      max-width: 820px;
+      min-height: var(--catH);
+    }
+    .catBtn{
+      position:relative;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+      padding: 10px 8px;
+      min-height: 60px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,0.24);
+      background: radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      cursor:pointer;
+      user-select:none;
+      touch-action: manipulation;
+      transition: transform .12s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .catBtn:active{ transform: translateY(1px) scale(0.98); }
+    .catBtn:focus-visible{ outline: 3px solid #8FE6FF; outline-offset: 3px; }
+    .catEmoji{ font-size: clamp(18px, 5.2vw, 26px); line-height:1;}
+    .catLabel{ font-weight:800; font-size: clamp(12px, 3.3vw, 14px); letter-spacing:0.2px; text-align:center;
+      display: -webkit-box; -webkit-line-clamp:2; -webkit-box-orient: vertical; overflow:hidden;
+      max-height: 2.4em;
+    }
+    .catBtn .hint{ font-size:10px; opacity:0.85; font-weight:700; letter-spacing:0.3px; }
+
+    .catBtn[data-key="Seguridad"]{ --tint: #66E4FF; }
+    .catBtn[data-key="Herramientas"]{ --tint: #FFD166; }
+    .catBtn[data-key="Cliente"]{ --tint: #7BFFB4; }
+
+    .catBtn:is(:hover, :focus-visible){ border-color: rgba(255,255,255,0.5); box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 2px color-mix(in oklab, var(--tint) 40%, transparent); }
+    .catBtn.flash::after{
+      content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+      background: radial-gradient(120% 120% at 50% 50%, color-mix(in oklab, var(--tint) 40%, transparent) 0%, transparent 70%);
+      animation: flash 420ms ease-out;
+    }
+    @keyframes flash{
+      0%{ opacity:0; }
+      15%{ opacity:1; }
+      100%{ opacity:0; }
+    }
+    .catBtn.bump{ animation: bump 260ms ease-out; }
+    @keyframes bump{
+      0%{ transform: scale(1); }
+      40%{ transform: scale(1.03); }
+      100%{ transform: scale(1); }
+    }
+    .catBtn.shake{ animation: shake 220ms ease-in-out; }
+    @keyframes shake{
+      0%,100%{ transform: translateX(0); }
+      25%{ transform: translateX(-2px); }
+      75%{ transform: translateX(2px); }
+    }
+
+    /* Ripple "visual sound" */
+    .ripple{
+      position:absolute; border-radius:50%;
+      transform: translate(-50%, -50%);
+      pointer-events:none; opacity:0.55;
+      background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.1) 60%, transparent 70%);
+      animation: ripple 420ms ease-out forwards;
+    }
+    @keyframes ripple{
+      from{ width: 8px; height:8px; opacity:0.6; }
+      to{ width: 120px; height:120px; opacity:0; }
+    }
+
+    /* Ghost drop token */
+    .ghost{
+      position:fixed; z-index:9999; pointer-events:none;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.2);
+      border:1px solid rgba(255,255,255,0.35);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.46);
+      display:flex; align-items:center; justify-content:center; text-align:center;
+      padding: 14px 16px; color: var(--white); font-weight:800;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      transition: transform 360ms cubic-bezier(.2,.8,.2,1), opacity 420ms ease;
+    }
+
+    /* Intro modal */
+    .modal{
+      position:absolute; inset:0; z-index:5; display:none; align-items:center; justify-content:center;
+      padding: clamp(12px, 3vw, 20px);
+      background: linear-gradient(180deg, rgba(5,12,60,0.7), rgba(5,12,60,0.55));
+      backdrop-filter: blur(2px);
+    }
+    .modal.active{ display:flex; }
+    .modalCard{
+      width:min(720px, 94%);
+      max-height: 90svh;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border:1px solid rgba(255,255,255,0.25);
+      border-radius: 18px; padding:16px;
+      overflow-y:auto; box-shadow: var(--shadow);
+    }
+    .modalHead{
+      display:flex; align-items:center; gap:12px; margin-bottom:6px;
+    }
+    .modalHead img{ width:30px; }
+    .modalTitle{ margin:0; font-size: clamp(18px, 5.2vw, 22px); font-weight:800; }
+    .modalBody{ font-size: clamp(13px, 3.4vw, 15px); opacity:0.95; }
+    .modalBtns{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
+    .btn{
+      border:none; border-radius: 14px; padding: 12px 16px; min-height:44px;
+      font-weight:800; letter-spacing:0.3px; color:#0a1553; background: linear-gradient(90deg, #68F1F1, #7CFFB5);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35); cursor:pointer;
+    }
+    .btn:focus-visible{ outline: 3px solid #8FE6FF; outline-offset: 3px; }
+
+    /* Results panel */
+    .results{ position:absolute; inset:0; z-index:6; display:none; }
+    .results.active{ display:flex; }
+    .resultsWrap{
+      width:100%; max-width: 960px; margin: auto; padding: clamp(10px, 3vw, 18px);
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .resultsCard{
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border:1px solid rgba(255,255,255,0.25);
+      border-radius: 18px; padding: 14px;
+      box-shadow: var(--shadow);
+      width:100%; max-height: 90svh; overflow-y:auto;
+    }
+    .scoreRow{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    .score{
+      display:flex; align-items:center; gap:10px; font-weight:800;
+      font-size: clamp(16px, 4.4vw, 20px);
+    }
+    .score .ok{ color: var(--ok); }
+    .score .total{ opacity:0.85; }
+    .tips{
+      font-size: clamp(12px, 3.3vw, 14px); opacity:0.95;
+      background: rgba(0,0,0,0.2); border-radius: 12px; padding:10px; border:1px solid rgba(255,255,255,0.14);
+    }
+    .list{
+      display:grid; gap:8px; margin-top:8px;
+    }
+    .li{
+      display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center;
+      padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,0.2);
+    }
+    .li.correct{ border-color: rgba(92,242,177,0.6); box-shadow: 0 0 0 2px rgba(92,242,177,0.18) inset; }
+    .li.wrong{ border-color: rgba(255,107,107,0.6); box-shadow: 0 0 0 2px rgba(255,107,107,0.18) inset; }
+    .liMain{
+      display:flex; flex-direction:column; gap:6px; min-width:0;
+    }
+    .liTitle{
+      font-weight:800; font-size: clamp(13px, 3.6vw, 15px);
+      display: -webkit-box; -webkit-line-clamp:2; -webkit-box-orient: vertical; overflow:hidden; max-height: 2.5em;
+    }
+    .liMeta{
+      font-size: clamp(11px, 3.2vw, 13px); opacity:0.95;
+      display:flex; flex-wrap:wrap; gap:8px;
+    }
+    .pill{
+      padding: 4px 8px; border-radius:999px; font-weight:800; letter-spacing:0.2px; background: rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.22);
+    }
+    .pill.ok{ background: rgba(92,242,177,0.2); border-color: rgba(92,242,177,0.5); color:#DFFFEF; }
+    .pill.err{ background: rgba(255,107,107,0.2); border-color: rgba(255,107,107,0.5); color:#FFE8E8; }
+    .liExp{
+      font-size: clamp(11px, 3.2vw, 13px); opacity:0.95;
+      display: -webkit-box; -webkit-line-clamp:2; -webkit-box-orient: vertical; overflow:hidden; max-height: 2.6em;
+    }
+    .liAside{
+      display:flex; flex-direction:column; align-items:flex-end; gap:6px;
+    }
+
+    .resultsCTA{
+      position:sticky; bottom:0; left:0; right:0;
+      display:flex; align-items:center; gap:10px; margin-top:10px; padding-top:10px;
+      background: linear-gradient(180deg, transparent, rgba(9,27,88,0.6));
+      backdrop-filter: blur(2px);
+    }
+    .btnPrimary{
+      flex:1; border:none; border-radius:14px; padding:12px 16px; min-height:48px;
+      font-weight:800; letter-spacing:0.3px; color:#0a1553;
+      background: linear-gradient(90deg, #68F1F1, #7CFFB5);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+      cursor:pointer;
+    }
+    .btnGhost{
+      border:1px solid rgba(255,255,255,0.32); color:var(--ink); background: rgba(255,255,255,0.12);
+      border-radius:14px; padding:12px 16px; min-height:48px; font-weight:800;
+    }
+    .warnBadge{
+      font-size: 12px; color:#FFEDC7; background: rgba(255,200,87,0.2); border:1px solid rgba(255,200,87,0.5);
+      padding:6px 10px; border-radius:999px; white-space:nowrap;
+    }
+
+    /* COMPACT MODE */
+    .scene.compact .subtitle{ display:none; }
+    .scene.compact{ --hdrH: 52px; --itemH: 84px; --catH: 118px; }
+    .scene.compact .itemText{ font-size: clamp(16px, 4.2vw, 20px); }
+    .scene.compact .catBtn{ padding: 8px 6px; }
+    .scene.compact .catLabel{ font-size: clamp(11px, 3vw, 13px); }
+    .scene.compact .pbar{ width:64px; }
+    .scene.compact .brand img{ width:28px; }
+
+    /* Focus ring utility on keyboard navigation */
+    .focus-ring :focus-visible{ outline: 3px solid #8FE6FF; outline-offset:3px; }
+  </style>
+</head>
+<body class="focus-ring">
+  <div class="scene" id="scene" aria-live="polite">
+    <div class="ui" id="ui">
+      <!-- HEADER -->
+      <header class="hdr" role="banner">
+        <div class="brand" aria-label="Kämpe">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+        </div>
+        <div class="title">
+          <h1>¿Protege, Ejecuta o Comunica? ⚡</h1>
+          <span class="subtitle">Clasifica cada ítem tocando la categoría correcta.</span>
+        </div>
+        <div class="progress" aria-label="Progreso">
+          <div class="pbar" aria-hidden="true"><i id="pbar"></i></div>
+          <span id="pcount">0/9</span>
+        </div>
+      </header>
+
+      <!-- BOARD -->
+      <main class="board" role="main">
+        <section class="itemCard" id="itemCard" aria-live="assertive">
+          <div class="itemText" id="itemText">Pulsa “Empezar”</div>
+        </section>
+      </main>
+
+      <!-- CATEGORY BAR -->
+      <nav class="catBar" aria-label="Categorías">
+        <button class="catBtn" data-key="Seguridad" aria-label="Seguridad. Protege">
+          <div class="catEmoji">🛡️</div>
+          <div class="catLabel">Seguridad</div>
+          <div class="hint" aria-hidden="true">Protege</div>
+        </button>
+        <button class="catBtn" data-key="Herramientas" aria-label="Herramientas. Ejecuta">
+          <div class="catEmoji">🛠️</div>
+          <div class="catLabel">Herramientas</div>
+          <div class="hint" aria-hidden="true">Ejecuta</div>
+        </button>
+        <button class="catBtn" data-key="Cliente" aria-label="Cliente. Comunica">
+          <div class="catEmoji">💬</div>
+          <div class="catLabel">Cliente</div>
+          <div class="hint" aria-hidden="true">Comunica</div>
+        </button>
+      </nav>
+    </div>
+
+    <!-- AVATAR -->
+    <img class="avatar-bg" src="https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png" alt="" aria-hidden="true" loading="lazy">
+
+    <!-- INTRO MODAL -->
+    <div class="modal active" id="intro">
+      <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+        <div class="modalHead">
+          <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" loading="lazy">
+          <h2 class="modalTitle" id="introTitle">¿Protege, Ejecuta o Comunica? ⚡</h2>
+        </div>
+        <div class="modalBody">
+          Eres ayudante de electricidad en un piso y vas a cambiar un enchufe frente al propietario. Clasifica cada ítem: Seguridad (protege), Herramientas (ejecuta) o Cliente (comunica).
+        </div>
+        <div class="modalBtns">
+          <button class="btn" id="btnStart" aria-label="Empezar desafío">Empezar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <section class="results" id="results" aria-hidden="true">
+      <div class="resultsWrap">
+        <div class="resultsCard" role="dialog" aria-modal="true" aria-labelledby="resTitle">
+          <div class="scoreRow">
+            <h3 class="modalTitle" id="resTitle">Resultados</h3>
+            <div class="score"><span class="ok" id="scoreOk">0</span>/<span class="total" id="scoreTotal">9</span> correctos</div>
+          </div>
+          <div class="tips" id="finalTip">
+            Consejo: usa la regla rápida “¿Protege? ¿Ejecuta? ¿Comunica?” para decidir si es Seguridad, Herramientas o Cliente mientras trabajas.
+          </div>
+          <div class="list" id="list"></div>
+          <div class="resultsCTA">
+            <span id="initWarn" class="warnBadge" style="display:none">initData no encontrado</span>
+            <button class="btnGhost" id="btnRetry" aria-label="Repetir">Repetir</button>
+            <button class="btnPrimary" id="btnReward" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // State and data
+    const urlParams = new URLSearchParams(location.search);
+    const initData = urlParams.get('initData') || "";
+
+    const categories = [
+      { key: "Seguridad", label: "Seguridad", hint: "Protege" },
+      { key: "Herramientas", label: "Herramientas", hint: "Ejecuta" },
+      { key: "Cliente", label: "Cliente", hint: "Comunica" },
+    ];
+
+    const ITEMS = [
+      { text: "Guantes dieléctricos", cat: "Seguridad", exp: "Protegen de contactos eléctricos. Póntelos antes de tocar cables." },
+      { text: "Gafas de protección", cat: "Seguridad", exp: "Evitan que polvo o chispas te lleguen a los ojos. Úsalas al desmontar." },
+      { text: "Destornillador plano", cat: "Herramientas", exp: "Herramienta básica para aflojar y fijar los tornillos del enchufe." },
+      { text: "Cinta aislante", cat: "Herramientas", exp: "Sirve para aislar empalmes y cubrir conductores pelados de forma segura." },
+      { text: "Buscapolos", cat: "Herramientas", exp: "Comprueba si hay tensión antes de trabajar en el enchufe o cables." },
+      { text: "Avisar del corte de luz", cat: "Cliente", exp: "Informas que vas a cortar la luz para trabajar seguro y sin sorpresas." },
+      { text: "Pedir permiso para mover muebles", cat: "Cliente", exp: "Respeta el espacio del cliente antes de mover sus cosas o cambiar su posición." },
+      { text: "Explicar el tiempo estimado", cat: "Cliente", exp: "Alineas expectativas: cuánto tardarás y cuándo quedarás listo." },
+      { text: "Pasar factura simple", cat: "Cliente", exp: "Dejas un comprobante claro por el servicio realizado y el coste acordado." },
+    ];
+
+    let index = 0;
+    let history = []; // { text, picked, correct, isCorrect, exp }
+
+    // DOM refs
+    const scene = document.getElementById('scene');
+    const ui = document.getElementById('ui');
+    const itemCard = document.getElementById('itemCard');
+    const itemText = document.getElementById('itemText');
+    const pbar = document.getElementById('pbar');
+    const pcount = document.getElementById('pcount');
+    const intro = document.getElementById('intro');
+    const results = document.getElementById('results');
+    const scoreOk = document.getElementById('scoreOk');
+    const scoreTotal = document.getElementById('scoreTotal');
+    const list = document.getElementById('list');
+    const btnStart = document.getElementById('btnStart');
+    const btnRetry = document.getElementById('btnRetry');
+    const btnReward = document.getElementById('btnReward');
+    const initWarn = document.getElementById('initWarn');
+
+    scoreTotal.textContent = ITEMS.length.toString();
+
+    // Clamp long strings to avoid overflow (48 chars max for labels)
+    function clampLabel(str, max=48){
+      if(str.length <= max) return str;
+      return str.slice(0, max - 1).trim() + "…";
+    }
+
+    // Render current item and progress
+    function render(){
+      const total = ITEMS.length;
+      const current = ITEMS[index];
+      itemText.textContent = clampLabel(current ? current.text : "");
+      pcount.textContent = `${Math.min(index, total)}/${total}`;
+      pbar.style.width = `${(Math.min(index, total)/total)*100}%`;
+      ensureFits();
+    }
+
+    function next(){
+      index++;
+      if(index >= ITEMS.length){
+        finish();
+      }else{
+        render();
+      }
+    }
+
+    // Create a ripple effect for "visual sound"
+    function makeRipple(target, x, y){
+      const r = document.createElement('span');
+      r.className = 'ripple';
+      r.style.left = `${x}px`;
+      r.style.top = `${y}px`;
+      scene.appendChild(r);
+      setTimeout(() => r.remove(), 500);
+    }
+
+    // Animate "drop" from item to selected category
+    function animateDropTo(targetBtn){
+      const tokenRect = itemCard.getBoundingClientRect();
+      const targetRect = targetBtn.getBoundingClientRect();
+
+      const ghost = document.createElement('div');
+      ghost.className = 'ghost';
+      ghost.textContent = itemText.textContent;
+      ghost.style.left = tokenRect.left + 'px';
+      ghost.style.top = tokenRect.top + 'px';
+      ghost.style.width = tokenRect.width + 'px';
+      ghost.style.height = tokenRect.height + 'px';
+      document.body.appendChild(ghost);
+
+      const dx = (targetRect.left + targetRect.width/2) - (tokenRect.left + tokenRect.width/2);
+      const dy = (targetRect.top + targetRect.height/2) - (tokenRect.top + tokenRect.height/2);
+      requestAnimationFrame(()=>{
+        ghost.style.transform = `translate(${dx}px, ${dy}px) scale(0.5)`;
+        ghost.style.opacity = '0';
+      });
+
+      setTimeout(()=> ghost.remove(), 420);
+    }
+
+    // Handle category selection
+    function onPick(catKey, btn, evt){
+      if(index >= ITEMS.length) return;
+      const current = ITEMS[index];
+      const isCorrect = (catKey === current.cat);
+
+      // Visual feedback
+      animateDropTo(btn);
+      const rect = btn.getBoundingClientRect();
+      makeRipple(btn, rect.left + rect.width/2, rect.top + rect.height/2);
+
+      // Subtle feedback: flash on correct, tiny shake otherwise
+      if(isCorrect){
+        btn.classList.add('flash','bump');
+        setTimeout(()=> btn.classList.remove('flash','bump'), 450);
+      }else{
+        btn.classList.add('shake');
+        setTimeout(()=> btn.classList.remove('shake'), 260);
+      }
+
+      // Save choice
+      history.push({
+        text: current.text,
+        picked: catKey,
+        correct: current.cat,
+        isCorrect,
+        exp: current.exp
+      });
+
+      // Advance next item automatically
+      setTimeout(next, 320);
+    }
+
+    // Populate category event listeners
+    document.querySelectorAll('.catBtn').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        onPick(btn.dataset.key, btn, e);
+      });
+    });
+
+    // Results
+    function finish(){
+      render(); // finalize progress to full
+      showResults();
+    }
+
+    function showResults(){
+      // Build list
+      list.innerHTML = "";
+      let ok = 0;
+      history.forEach(row=>{
+        if(row.isCorrect) ok++;
+        const li = document.createElement('div');
+        li.className = 'li ' + (row.isCorrect ? 'correct' : 'wrong');
+        li.setAttribute('role','group');
+        li.setAttribute('aria-label', row.text);
+
+        const main = document.createElement('div');
+        main.className = 'liMain';
+        const title = document.createElement('div');
+        title.className = 'liTitle';
+        title.textContent = row.text;
+        const meta = document.createElement('div');
+        meta.className = 'liMeta';
+        const you = document.createElement('span');
+        you.className = 'pill ' + (row.isCorrect ? 'ok' : 'err');
+        you.textContent = `Tu elección: ${row.picked}`;
+        const correct = document.createElement('span');
+        correct.className = 'pill';
+        correct.textContent = `Correcta: ${row.correct}`;
+        meta.append(you, correct);
+        const exp = document.createElement('div');
+        exp.className = 'liExp';
+        exp.textContent = row.exp;
+
+        main.append(title, meta, exp);
+
+        const aside = document.createElement('div');
+        aside.className = 'liAside';
+        aside.innerHTML = row.isCorrect ? '✅' : '❌';
+
+        li.append(main, aside);
+        list.appendChild(li);
+      });
+
+      scoreOk.textContent = ok.toString();
+      // Activate results view
+      results.classList.add('active');
+      results.setAttribute('aria-hidden','false');
+
+      // Scroll rules: enable internal scroll only
+      // (Global scroll remains locked by design)
+      ensureFits(); // Re-evaluate fit
+
+      // initData warning
+      initWarn.style.display = initData ? 'none' : 'inline-flex';
+    }
+
+    // Intro
+    btnStart.addEventListener('click', ()=>{
+      intro.classList.remove('active');
+      // Initialize
+      index = 0;
+      history = [];
+      render();
+    });
+
+    // Retry
+    btnRetry.addEventListener('click', ()=>{
+      results.classList.remove('active');
+      results.setAttribute('aria-hidden','true');
+      index = 0;
+      history = [];
+      render();
+    });
+
+    // Reward
+    btnReward.addEventListener('click', ()=>{
+      const dest = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}`;
+      location.href = dest;
+    });
+
+    // FITTING ENGINE
+    function assertNoOverflow() {
+      const fits = scene.scrollHeight <= scene.clientHeight + 1; // +1 for rounding
+      return fits;
+    }
+
+    function applyCompactMode(){
+      scene.classList.add('compact');
+    }
+
+    function fitBoardToViewport(){
+      // Tweak CSS variables slightly to reclaim space
+      const root = document.documentElement;
+      root.style.setProperty('--catH', '112px');
+      root.style.setProperty('--itemH', '82px');
+      root.style.setProperty('--hdrH', '50px');
+    }
+
+    function autoscaleUI(){
+      // As last resort, scale the .ui down to a minimum of 0.88
+      let scale = 1.0;
+      const min = 0.88;
+      const step = 0.02;
+      const root = document.documentElement;
+      while (scale > min && (scene.scrollHeight > scene.clientHeight + 1)) {
+        scale -= step;
+        root.style.setProperty('--ui-scale', String(scale));
+      }
+    }
+
+    function ensureFits(){
+      // Reset scaling/compact before measuring
+      const root = document.documentElement;
+      scene.classList.remove('compact');
+      root.style.setProperty('--catH', '136px');
+      root.style.setProperty('--itemH', '96px');
+      root.style.setProperty('--hdrH', '60px');
+      root.style.setProperty('--ui-scale', '1');
+
+      if (assertNoOverflow()) return;
+      applyCompactMode();
+      if (assertNoOverflow()) return;
+      fitBoardToViewport();
+      if (assertNoOverflow()) return;
+      autoscaleUI();
+      // End: even if assert still fails, UI is scaled; avoid recursion
+    }
+
+    window.addEventListener('resize', ensureFits);
+    window.addEventListener('orientationchange', ensureFits);
+
+    // Kick off
+    render();
+    ensureFits();
+
+    // Accessibility: keyboard support for category selection (1-3)
+    window.addEventListener('keydown', (e)=>{
+      if(results.classList.contains('active')) return;
+      if(intro.classList.contains('active')) return;
+      if(e.key === '1') document.querySelector('.catBtn[data-key="Seguridad"]').click();
+      if(e.key === '2') document.querySelector('.catBtn[data-key="Herramientas"]').click();
+      if(e.key === '3') document.querySelector('.catBtn[data-key="Cliente"]').click();
+    });
+  </script>
+</body>
+</html>
