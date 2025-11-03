@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark">
+<title>Corte Seguro en Casa ⚡ | Kämpe</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* =============== RESET + BASE =============== */
+* { box-sizing: border-box; }
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  background: #0c2cff;
+  color: #fff;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+  overflow: hidden; /* bloqueado en gameplay; se activa en resultados */
+}
+:root{
+  --bg-grad: radial-gradient(120% 120% at 70% 20%, #4aa2ff 0%, #2457ff 40%, #0e1f7a 100%);
+  --glass: rgba(255,255,255,0.12);
+  --glass-strong: rgba(255,255,255,0.22);
+  --border: rgba(255,255,255,0.25);
+  --accent: #48ff9c;
+  --accent-2: #ffd24d;
+  --danger: #ff5470;
+  --muted: rgba(255,255,255,0.7);
+  --ui-scale: 1;
+  --radius: 16px;
+  --gap: 10px;
+  --btn-h: 56px;
+  --topbar-h: 64px;
+  --actions-h: 158px;
+  --chat-pad: 10px;
+}
+body.compact {
+  --radius: 12px;
+  --gap: 8px;
+  --btn-h: 52px;
+  --topbar-h: 58px;
+  --actions-h: 148px;
+}
+img { max-width: 100%; display: block; }
+button {
+  font: inherit;
+  cursor: pointer;
+}
+/* =============== SCENE CONTAINER =============== */
+.scene {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: var(--bg-grad);
+  display: grid;
+  grid-template-rows: var(--topbar-h) 1fr var(--actions-h);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  transform: scale(var(--ui-scale));
+  transform-origin: top center;
+  touch-action: none; /* anti-derrapes global */
+}
+@supports (height: 100svh) { .scene { height: 100svh; } }
+@supports not (height: 100svh) and (height: 100dvh) { .scene { height: 100dvh; } }
+/* fallback already set to 100vh */
+
+/* =============== TOPBAR =============== */
+.topbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  height: var(--topbar-h);
+}
+.brand {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.24), rgba(255,255,255,0.06));
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.25) inset, 0 6px 14px rgba(0,0,0,0.2);
+}
+.brand img { width: 28px; height: 28px; object-fit: contain; }
+.brand .title {
+  font-weight: 800; font-size: clamp(14px, 2.5vw, 16px); letter-spacing: 0.2px;
+}
+.progress {
+  justify-self: center;
+  display: flex; align-items: center; gap: 10px;
+}
+.progress .label { font-weight: 700; font-size: clamp(12px, 2.2vw, 14px); color: var(--muted); }
+.progressbar {
+  width: 120px; height: 10px; border-radius: 999px;
+  background: rgba(255,255,255,0.14);
+  overflow: hidden; border: 1px solid var(--border);
+}
+.progressbar .fill {
+  height: 100%; width: 0%; background: linear-gradient(90deg, #48ff9c, #6cf);
+  transition: width .3s ease;
+}
+.badge {
+  justify-self: end;
+  font-size: clamp(12px, 2.2vw, 14px);
+  padding: 6px 10px;
+  background: rgba(72,255,156,0.18);
+  border: 1px solid rgba(72,255,156,0.5);
+  color: #caffea; border-radius: 10px;
+}
+
+/* =============== CHAT =============== */
+.chat-wrap {
+  position: relative;
+  padding: 0 12px;
+  display: flex; flex-direction: column;
+  min-height: 0; /* crucial for flex overflow */
+}
+.chat {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto; /* scroll SOLO dentro del chat */
+  padding: var(--chat-pad);
+  gap: 8px;
+  display: flex; flex-direction: column;
+  scroll-behavior: smooth;
+  touch-action: pan-y; /* permitir scroll interno */
+  overscroll-behavior: contain;
+  border-radius: calc(var(--radius) + 4px);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+.msg {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 8px;
+  max-width: 100%;
+}
+.avatar {
+  width: 34px; height: 34px; border-radius: 8px;
+  overflow: hidden; border: 1px solid var(--border);
+  background: rgba(0,0,0,0.25);
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.bubble {
+  position: relative;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+  line-height: 1.1;
+  font-size: clamp(13px, 2.6vw, 15px);
+  display: grid; gap: 4px;
+}
+.bubble .name {
+  font-weight: 800; font-size: 12px; color: #e7f9ff; opacity: 0.85;
+}
+.bubble .text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.msg.player { grid-template-columns: 1fr 34px; }
+.msg.player .bubble {
+  background: rgba(72,255,156,0.15);
+  border-color: rgba(72,255,156,0.45);
+}
+.msg.player .bubble .name { color: #b9ffdc; }
+.msg.player .avatar { order: 2; }
+
+/* =============== ACTIONS (sticky) =============== */
+.actions {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  background: linear-gradient(180deg, rgba(5,20,60,0.0), rgba(5,20,60,0.35));
+  backdrop-filter: blur(6px);
+}
+.help {
+  font-size: 12px; color: var(--muted); text-align: center;
+  margin-bottom: 2px;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.choices {
+  display: grid; gap: 8px;
+  grid-template-columns: 1fr;
+}
+.choice {
+  min-height: var(--btn-h);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.14);
+  color: #fff; font-weight: 800;
+  padding: 10px 14px;
+  text-align: left;
+  transition: transform .08s ease, background .2s ease, border-color .2s ease;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center; gap: 10px;
+}
+.choice:active { transform: translateY(1px) scale(0.99); }
+.choice .txt {
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  font-size: clamp(14px, 2.9vw, 16px);
+}
+.choice[data-grade="correct"]  { background: rgba(72,255,156,0.14); border-color: rgba(72,255,156,0.45); }
+.choice[data-grade="partial"]  { background: rgba(255,210,77,0.12); border-color: rgba(255,210,77,0.45); }
+.choice[data-grade="wrong"]    { background: rgba(255,84,112,0.12); border-color: rgba(255,84,112,0.45); }
+.choice .badge-emoji { font-size: 18px; opacity: 0.9; }
+.actions .progress-mini {
+  display: flex; justify-content: center; gap: 10px; align-items: center;
+  font-size: 12px; color: var(--muted);
+}
+
+/* =============== INTRO & RESULTS MODALS =============== */
+.modal {
+  position: fixed; inset: 0;
+  display: none; place-items: center;
+  padding: 20px;
+  z-index: 10;
+}
+.modal.active { display: grid; }
+.modal .card {
+  width: min(720px, 94vw);
+  max-height: 90svh;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  padding: 16px;
+  overflow-y: auto;
+}
+.card header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px; align-items: center;
+  margin-bottom: 10px;
+}
+.card header img { width: 42px; height: 42px; }
+.card h1 {
+  margin: 0; font-size: clamp(18px, 4.6vw, 26px);
+  line-height: 1.05;
+}
+.card .desc {
+  color: #eaf7ff;
+  opacity: 0.9;
+  font-size: clamp(13px, 2.8vw, 15px);
+  display: -webkit-box; -webkit-line-clamp: 4; line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.card .tip {
+  margin-top: 8px; color: #b8e5ff; font-size: 13px;
+  display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.card .cta {
+  display: grid; gap: 8px; margin-top: 12px;
+}
+.btn {
+  height: 56px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.28);
+  background: linear-gradient(180deg, rgba(72,255,156,0.35), rgba(72,255,156,0.18));
+  color: #041f24; font-weight: 900; letter-spacing: 0.2px;
+}
+.btn.secondary {
+  background: rgba(255,255,255,0.16); color: #fff;
+}
+.notice {
+  margin-top: 8px; font-size: 12px; color: var(--muted);
+}
+
+/* Results content */
+.results {
+  display: grid; gap: 10px;
+}
+.result-item {
+  border-radius: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.08);
+}
+.result-item .row {
+  display: flex; justify-content: space-between; gap: 10px; align-items: center;
+  font-weight: 800;
+}
+.result-item .row .tag { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--border); }
+.tag.correct { background: rgba(72,255,156,0.15); border-color: rgba(72,255,156,0.45); color: #caffea; }
+.tag.partial { background: rgba(255,210,77,0.15); border-color: rgba(255,210,77,0.45); color: #fff1bf; }
+.tag.wrong   { background: rgba(255,84,112,0.15); border-color: rgba(255,84,112,0.45); color: #ffd3dd; }
+.result-item .why {
+  margin-top: 6px; color: #dbf4ff; font-size: 13px;
+}
+
+/* Accessibility focus */
+:focus-visible {
+  outline: 2px solid #fff; outline-offset: 2px;
+}
+
+/* Hide scrollbars (optional aesthetic) */
+.chat::-webkit-scrollbar, .modal .card::-webkit-scrollbar { width: 8px; }
+.chat::-webkit-scrollbar-thumb, .modal .card::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.25); border-radius: 8px;
+}
+
+/* Tiny helpers */
+.hidden { display: none !important; }
+.em { color: var(--accent); font-weight: 800; }
+
+/* Avatar mapping legend (not displayed) */
+.legend { display:none; }
+
+/* Compact tweaks */
+body.compact .brand .title { display: none; }
+body.compact .badge { display: none; }
+body.compact .progressbar { width: 100px; }
+body.compact .choice { min-height: 50px; }
+
+/* Small screen min (iPhone SE) safe */
+@media (max-width: 360px) {
+  .progressbar { width: 96px; }
+}
+</style>
+</head>
+<body>
+<!-- INTRO MODAL -->
+<div class="modal active" id="introModal" aria-modal="true" role="dialog" aria-label="Introducción del reto">
+  <div class="card">
+    <header>
+      <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+      <div>
+        <h1>Corte Seguro en Casa ⚡</h1>
+        <div class="desc">
+          Escenario: Ana reporta chispazos en el interruptor del salón. Eres Leo (aprendiz) y coordinas por chat con tu mentora Irene antes de intervenir.
+        </div>
+      </div>
+    </header>
+    <div class="tip">
+      Tutorial: elige respuestas y avanza. Tu historial queda en el chat. Dos minutos, cinco turnos. Seguridad primero, siempre.
+    </div>
+    <div class="cta">
+      <button class="btn" id="startBtn" aria-label="Empezar reto">¡Empezar!</button>
+      <button class="btn secondary" id="howBtn" aria-label="Cómo se juega">Cómo se juega</button>
+      <div id="howTxt" class="notice hidden">Toca una opción por turno (máx. 2 líneas). El chat se puede deslizar, pero las decisiones están siempre abajo.</div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME SCENE -->
+<main class="scene" id="scene" aria-live="polite">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="brand">
+      <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe logo">
+      <div class="title">Kämpe • Oficios</div>
+    </div>
+    <div class="progress">
+      <div class="label" id="progressLabel">0/5</div>
+      <div class="progressbar" aria-hidden="true">
+        <div class="fill" id="progressFill"></div>
+      </div>
+    </div>
+    <div class="badge" id="scoreBadge" aria-label="Puntuación parcial">Seguridad 0%</div>
+  </div>
+
+  <!-- Chat area -->
+  <section class="chat-wrap">
+    <div class="chat" id="chat" aria-label="Chat de la visual novel">
+      <!-- Messages injected here -->
+    </div>
+  </section>
+
+  <!-- Actions -->
+  <section class="actions" id="actions" aria-label="Zona de decisiones">
+    <div class="help" id="hint">Elige una respuesta.</div>
+    <div class="choices" id="choices">
+      <!-- Buttons injected -->
+    </div>
+    <div class="progress-mini">
+      <span id="progressMini">Turno 0 de 5</span>
+    </div>
+  </section>
+</main>
+
+<!-- RESULTS MODAL -->
+<div class="modal" id="resultsModal" aria-modal="true" role="dialog" aria-label="Resultados">
+  <div class="card">
+    <header>
+      <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe" />
+      <div>
+        <h1>Resultados — Corte Seguro en Casa ⚡</h1>
+        <div class="desc" id="summaryTitle">Resumen de tus decisiones</div>
+      </div>
+    </header>
+    <div class="results" id="resultsList">
+      <!-- List items injected -->
+    </div>
+    <div class="result-item" style="margin-top:8px;">
+      <div class="row"><div>Consejo práctico</div></div>
+      <div class="why">Checklist rápido: 1) Informar y despejar zona. 2) Cortar MCB general identificado. 3) Bloquear/etiquetar. 4) Verificar ausencia de tensión con equipo adecuado. 5) Explicar plan y tiempos a la clienta.</div>
+    </div>
+    <div class="cta" style="margin-top:12px;">
+      <button class="btn" id="rewardBtn">Ver mi recompensa</button>
+      <div class="notice" id="initWarn" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AVATAR LEGEND (for mapping) -->
+<div class="legend" aria-hidden="true">
+  Avatar 1 → Mentor/Profesor (Irene)
+  Avatar 2 → Aprendiz/Compañero (Tú/Leo)
+  Avatar 4 → Cliente/Empresa (Ana)
+</div>
+
+<script>
+/* ======================= DATA & STATE ======================= */
+const avatars = {
+  irene: "https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png", // Mentor
+  leo:   "https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png", // Aprendiz
+  ana:   "https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png"  // Cliente
+};
+
+const turns = [
+  {
+    id: 1,
+    messages: [
+      { speaker: "Irene", role: "irene", text: "Ana reporta chispazos en el salón. ¿Qué confirmas primero?" }
+    ],
+    options: [
+      {
+        text: "Pregunto si ve chispas u olor a quemado",
+        grade: "correct",
+        reaction: { speaker: "Irene", role: "irene", text: "Bien. Evaluamos riesgo inmediato antes de mover un dedo." },
+        explain: "Confirmar chispas/olor detecta peligro activo y orienta la urgencia."
+      },
+      {
+        text: "Le pido un video del interruptor",
+        grade: "partial",
+        reaction: { speaker: "Irene", role: "irene", text: "Vale para contexto, pero lo primero es la seguridad." },
+        explain: "Un video ayuda, pero prioriza evaluar riesgo (chispas/olor) y pausar uso."
+      },
+      {
+        text: "Voy directo y lo aprieto fuerte",
+        grade: "wrong",
+        reaction: { speaker: "Irene", role: "irene", text: "❌ Nunca fuerces un interruptor que chispea." },
+        explain: "Forzar puede agravar un fallo y ponerte en riesgo."
+      }
+    ]
+  },
+  {
+    id: 2,
+    messages: [
+      { speaker: "Irene", role: "irene", text: "Antes de llegar, ¿qué le dices a Ana?" }
+    ],
+    options: [
+      {
+        text: "No usar el interruptor y despejar la zona",
+        grade: "correct",
+        reaction: { speaker: "Ana", role: "ana", text: "Ok, apago y aparto muebles/alfombra del área." },
+        explain: "Evitas nuevos chispazos y dejas acceso seguro de trabajo."
+      },
+      {
+        text: "Le digo que no toque nada",
+        grade: "partial",
+        reaction: { speaker: "Irene", role: "irene", text: "Mejor también pedir que despeje la zona." },
+        explain: "Pedir no tocar está bien; falta asegurar el entorno despejado."
+      },
+      {
+        text: "Que lo use con cuidado hasta que llegue",
+        grade: "wrong",
+        reaction: { speaker: "Irene", role: "irene", text: "⚠️ Si chispea, se deja fuera de servicio ya." },
+        explain: "Permitir uso mantiene el riesgo activo."
+      }
+    ]
+  },
+  {
+    id: 3,
+    messages: [
+      { speaker: "Irene", role: "irene", text: "Ya en el piso. Antes de abrir, ¿qué corte haces?" }
+    ],
+    options: [
+      {
+        text: "Bajo el magnetotérmico general del piso",
+        grade: "correct",
+        reaction: { speaker: "Irene", role: "irene", text: "Correcto. Corte general identificado = entorno seguro." },
+        explain: "Asegura la instalación completa si hay dudas de circuitos."
+      },
+      {
+        text: "Solo el del salón si está marcado",
+        grade: "partial",
+        reaction: { speaker: "Irene", role: "irene", text: "Solo si estás 100% segura de la identificación." },
+        explain: "Cortar solo el circuito sirve si está bien rotulado; si no, general."
+      },
+      {
+        text: "Trabajo con tensión para no molestar",
+        grade: "wrong",
+        reaction: { speaker: "Irene", role: "irene", text: "❌ PRL: sin tensión siempre que sea posible." },
+        explain: "Trabajar en tensión eleva el riesgo innecesariamente."
+      }
+    ]
+  },
+  {
+    id: 4,
+    messages: [
+      { speaker: "Irene", role: "irene", text: "Con el corte hecho, ¿cómo aseguras la ausencia?" }
+    ],
+    options: [
+      {
+        text: "Verifico con comprobador y coloco etiqueta",
+        grade: "correct",
+        reaction: { speaker: "Irene", role: "irene", text: "De 10: medir ausencia y bloquear/etiquetar energización." },
+        explain: "Comprobador adecuado + etiqueta evita reconexiones accidentales."
+      },
+      {
+        text: "Multímetro vale, pero sin etiquetar",
+        grade: "partial",
+        reaction: { speaker: "Irene", role: "irene", text: "Mides bien, pero falta señalizar/etiquetar." },
+        explain: "Medir es clave; sin etiqueta, alguien podría reactivar por error."
+      },
+      {
+        text: "Si la luz no enciende, es suficiente",
+        grade: "wrong",
+        reaction: { speaker: "Irene", role: "irene", text: "No. La luz puede engañar; siempre medir tensión." },
+        explain: "La ausencia de luz no demuestra ausencia de tensión."
+      }
+    ]
+  },
+  {
+    id: 5,
+    messages: [
+      { speaker: "Irene", role: "irene", text: "Ana pregunta tiempos. ¿Cómo procedes?" }
+    ],
+    options: [
+      {
+        text: "Explico plan y tiempos; actúo solo si es seguro",
+        grade: "correct",
+        reaction: { speaker: "Ana", role: "ana", text: "Gracias por explicarlo. Adelante si es seguro." },
+        explain: "Comunicas expectativas y priorizas PRL antes de intervenir."
+      },
+      {
+        text: "Arreglo rápido sin detallar tiempos",
+        grade: "partial",
+        reaction: { speaker: "Irene", role: "irene", text: "Falta informar tiempos y pasos al cliente." },
+        explain: "Mejora la confianza explicando plan/tiempos."
+      },
+      {
+        text: "Pospongo sin avisar ni explicar",
+        grade: "wrong",
+        reaction: { speaker: "Irene", role: "irene", text: "❌ Siempre comunicar y justificar la decisión." },
+        explain: "Mala comunicación y gestión con la clienta."
+      }
+    ]
+  }
+];
+
+const gradeScore = { correct: 1, partial: 0.5, wrong: 0 };
+
+const state = {
+  turnIndex: 0, // 0..4
+  decisions: [], // {turn, choiceText, grade, explain}
+  score: 0,
+  initData: ""
+};
+
+/* ======================= ELEMENTS ======================= */
+const introModal = document.getElementById('introModal');
+const resultsModal = document.getElementById('resultsModal');
+const howBtn = document.getElementById('howBtn');
+const howTxt = document.getElementById('howTxt');
+const startBtn = document.getElementById('startBtn');
+
+const sceneEl = document.getElementById('scene');
+const chatEl = document.getElementById('chat');
+const choicesEl = document.getElementById('choices');
+const hintEl = document.getElementById('hint');
+
+const progressLabel = document.getElementById('progressLabel');
+const progressMini = document.getElementById('progressMini');
+const progressFill = document.getElementById('progressFill');
+const scoreBadge = document.getElementById('scoreBadge');
+
+const resultsList = document.getElementById('resultsList');
+const summaryTitle = document.getElementById('summaryTitle');
+const rewardBtn = document.getElementById('rewardBtn');
+const initWarn = document.getElementById('initWarn');
+
+/* ======================= HELPERS (UI) ======================= */
+// Message rendering
+function addMsg({speaker, role, text}, isPlayer=false) {
+  const msg = document.createElement('div');
+  msg.className = 'msg' + (isPlayer ? ' player' : '');
+  msg.innerHTML = `
+    <div class="avatar"><img loading="lazy" src="${role==='irene'?avatars.irene: role==='ana'?avatars.ana: avatars.leo}" alt="Avatar ${speaker}"></div>
+    <div class="bubble">
+      <div class="name">${speaker}</div>
+      <div class="text">${truncateLines(text, 3)}</div>
+    </div>
+  `;
+  chatEl.appendChild(msg);
+  // scroll to bottom of chat only (no page scroll)
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+// Clamp helper (hard limit for options length 48 chars)
+function clampOptionText(str, max=48) {
+  if (!str) return '';
+  if (str.length <= max) return str;
+  return str.slice(0, max-1) + '…';
+}
+// For bubbles we keep them short already. Provide minimal sanitizer.
+function truncateLines(str, maxLines=3) {
+  // Content is concise by design; keep as-is.
+  return str;
+}
+
+/* ======================= LAYOUT FIT GUARDRAILS ======================= */
+function assertNoOverflow() {
+  // Check if scene content exceeds available clientHeight
+  const fits = sceneEl.scrollHeight <= sceneEl.clientHeight + 1; // tolerance
+  return fits;
+}
+function applyCompactMode() {
+  document.body.classList.add('compact');
+}
+function fitBoardToViewport() {
+  // Could tweak paddings or action heights if needed in future
+  // For now we ensure chat gets min-height:0; flex will absorb changes
+}
+function autoscaleUI(min=0.88) {
+  // Iteratively reduce --ui-scale until fits or hit min
+  let scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+  while (!assertNoOverflow() && scale > min) {
+    scale -= 0.02;
+    document.documentElement.style.setProperty('--ui-scale', scale.toFixed(2));
+  }
+}
+function ensureFits() {
+  // reset
+  document.body.classList.remove('compact');
+  document.documentElement.style.setProperty('--ui-scale', '1');
+  if (assertNoOverflow()) return;
+  applyCompactMode();
+  if (assertNoOverflow()) return;
+  fitBoardToViewport();
+  if (assertNoOverflow()) return;
+  autoscaleUI(0.88);
+}
+// re-check on resize or orientation change
+window.addEventListener('resize', () => ensureFits(), { passive: true });
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+/* ======================= GAME FLOW ======================= */
+function setProgress() {
+  const step = state.turnIndex + 1;
+  const total = turns.length;
+  progressLabel.textContent = `${step}/${total}`;
+  progressMini.textContent = `Turno ${step} de ${total}`;
+  const pct = Math.round((step-1) / total * 100);
+  progressFill.style.width = `${pct}%`;
+  const scorePct = Math.round(state.score / total * 100);
+  scoreBadge.textContent = `Seguridad ${scorePct}%`;
+}
+
+function renderTurn() {
+  const t = turns[state.turnIndex];
+  // Write intro messages for the turn (1–2)
+  t.messages.forEach(m => addMsg(m));
+  // Render choices (2–3)
+  choicesEl.innerHTML = '';
+  t.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.setAttribute('aria-label', `Opción: ${opt.text}`);
+    btn.dataset.grade = opt.grade;
+    btn.innerHTML = `
+      <span class="badge-emoji">${opt.grade==='correct'?'✅':opt.grade==='partial'?'🟨':'⛔'}</span>
+      <span class="txt">${clampOptionText(opt.text, 48)}</span>
+      <span class="badge-emoji">→</span>
+    `;
+    btn.addEventListener('click', () => handleChoice(opt));
+    choicesEl.appendChild(btn);
+  });
+  hintEl.textContent = 'Elige la mejor respuesta.';
+  setProgress();
+  ensureFits();
+}
+
+function handleChoice(opt) {
+  // push player's choice bubble
+  addMsg({ speaker: "Tú/Leo", role: "leo", text: opt.text }, true);
+  // push reaction
+  setTimeout(() => {
+    addMsg(opt.reaction);
+  }, 180);
+  // record decision
+  state.decisions.push({
+    turn: state.turnIndex + 1,
+    choiceText: clampOptionText(opt.text, 48),
+    grade: opt.grade,
+    explain: opt.explain
+  });
+  state.score += gradeScore[opt.grade] || 0;
+  // disable buttons and move next
+  Array.from(choicesEl.children).forEach(b => b.disabled = true);
+  // proceed after short pause
+  setTimeout(() => {
+    nextTurn();
+  }, 650);
+}
+
+function nextTurn() {
+  if (state.turnIndex < turns.length - 1) {
+    state.turnIndex++;
+    renderTurn();
+  } else {
+    endGame();
+  }
+}
+
+function startGame() {
+  introModal.classList.remove('active');
+  // Seed intro in chat (2–3 líneas)
+  addMsg({ speaker: "Irene", role: "irene", text: "Vamos a coordinar por chat antes de intervenir. Mantén foco en PRL y comunicación." });
+  addMsg({ speaker: "Ana", role: "ana", text: "Hola, soy Ana. El interruptor del salón soltó chispas anoche." });
+  renderTurn();
+}
+
+function endGame() {
+  // Progress fill to 100%
+  progressFill.style.width = '100%';
+  // Build results
+  resultsList.innerHTML = '';
+  const total = turns.length;
+  const scorePct = Math.round(state.score / total * 100);
+
+  summaryTitle.textContent = `Seguridad lograda: ${scorePct}% — Decisiones:`;
+  state.decisions.forEach(d => {
+    const item = document.createElement('div');
+    item.className = 'result-item';
+    const label = d.grade==='correct'?'Correcta':(d.grade==='partial'?'Parcial':'Incorrecta');
+    item.innerHTML = `
+      <div class="row">
+        <div>Turno ${d.turn} · ${escapeHTML(d.choiceText)}</div>
+        <div class="tag ${d.grade}">${label}</div>
+      </div>
+      <div class="why">${escapeHTML(d.explain)}</div>
+    `;
+    resultsList.appendChild(item);
+  });
+
+  // Enable scroll only in results
+  document.body.style.overflowY = 'auto';
+  resultsModal.classList.add('active');
+  ensureFits(); // (modal has its own scroll)
+}
+
+/* ======================= UTILS ======================= */
+function escapeHTML(str='') {
+  return str.replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+}
+
+function readInitData() {
+  const params = new URLSearchParams(location.search);
+  state.initData = params.get('initData') || "";
+  if (!state.initData) {
+    initWarn.textContent = "Aviso: sin initData. Seguimos, pero puede no guardar tu progreso.";
+  } else {
+    initWarn.textContent = "";
+  }
+}
+function goToReward() {
+  const url = "https://kampe-game-phaser.onrender.com/daily_streak?initData=" + encodeURIComponent(state.initData);
+  location.href = url;
+}
+
+/* ======================= EVENTS ======================= */
+howBtn.addEventListener('click', () => {
+  howTxt.classList.toggle('hidden');
+});
+startBtn.addEventListener('click', () => startGame());
+rewardBtn.addEventListener('click', () => goToReward());
+
+/* ======================= INIT ======================= */
+readInitData();
+setProgress(); // initial
+ensureFits();
+
+</script>
+</body>
+</html>
