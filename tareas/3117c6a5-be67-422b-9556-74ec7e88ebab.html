@@ -1,0 +1,735 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Kämpe - EPI-Manía</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET Y CONFIGURACIÓN GLOBAL --- */
+        :root {
+            --brand-gradient: linear-gradient(135deg, #1EA4FF 0%, #007BFF 100%);
+            --background-color: #F8F7F2; /* Marfil */
+            --text-color: #1A1B2F; /* Azul profundo */
+            --card-bg: #FFFFFF;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --border-radius: 16px;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --font-family: 'Baloo 2', cursive;
+            --ui-scale: 1;
+
+            /* Safe areas para iOS */
+            --safe-area-top: env(safe-area-inset-top, 0px);
+            --safe-area-right: env(safe-area-inset-right, 0px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-area-left: env(safe-area-inset-left, 0px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            /* Bloqueo de scroll global durante el gameplay */
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+
+        /* --- CONTENEDOR PRINCIPAL (ESCENA) --- */
+        .scene {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 100%;
+            height: 100vh; /* Fallback inicial */
+            padding: calc(var(--safe-area-top) + 16px) calc(var(--safe-area-right) + 16px) calc(var(--safe-area-bottom) + 16px) calc(var(--safe-area-left) + 16px);
+            position: relative;
+            transform: scale(var(--ui-scale));
+            transform-origin: center;
+            transition: transform 0.2s ease-out;
+        }
+
+        /* Soporte para unidades de viewport dinámicas */
+        @supports (height: 100svh) { .scene { height: 100svh; } }
+        @supports not (height: 100svh) {
+            @supports (height: 100dvh) { .scene { height: 100dvh; } }
+        }
+        
+        .scene.results-active {
+             /* Permite scroll solo en la pantalla de resultados */
+            height: auto;
+            min-height: 100svh;
+        }
+        
+        .scene.results-active > body {
+            overflow-y: auto;
+        }
+
+
+        #game-area, #results-screen {
+            display: none; /* Ocultos por defecto */
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .scene.game-active #game-area {
+            display: flex;
+        }
+
+        .scene.results-active #results-screen {
+            display: flex;
+        }
+
+        /* --- LOGO Y AVATAR --- */
+        .kampe-logo {
+            position: absolute;
+            top: calc(var(--safe-area-top) + 16px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            z-index: 10;
+        }
+
+        .avatar-bg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120%;
+            height: 120%;
+            object-fit: contain;
+            opacity: 0.05;
+            z-index: -1;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* --- MODAL (TUTORIAL Y RESULTADOS) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            /* Control de altura y scroll interno */
+            max-height: 90svh;
+            overflow-y: auto;
+        }
+        
+        .modal-content h2 {
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            margin-bottom: 16px;
+            color: var(--text-color);
+        }
+
+        .modal-content p {
+            font-size: clamp(1rem, 3.5vw, 1.125rem);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        /* --- BOTÓN PRINCIPAL --- */
+        .cta-button {
+            background: var(--brand-gradient);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 14px 24px;
+            font-family: var(--font-family);
+            font-size: clamp(1rem, 4vw, 1.2rem);
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+            min-height: 48px; /* Accesibilidad */
+        }
+        
+        .cta-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        /* --- ÁREA DE JUEGO --- */
+        .game-header {
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .game-header h1 {
+            font-size: clamp(1.2rem, 5vw, 1.5rem);
+            margin-bottom: 4px;
+        }
+
+        .progress-bar {
+            font-size: clamp(0.9rem, 3vw, 1rem);
+            color: #6c757d;
+        }
+
+        .card-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin: 16px 0;
+            min-height: 200px;
+        }
+
+        .card {
+            position: absolute;
+            width: clamp(250px, 80vw, 320px);
+            aspect-ratio: 3 / 4;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+            cursor: grab;
+            user-select: none;
+            touch-action: none; /* Anti-derrapes */
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            will-change: transform;
+            border: 2px solid transparent;
+            overflow: hidden;
+        }
+        
+        .card.top-card {
+            z-index: 5;
+        }
+        
+        .card.dragging {
+            transition: none;
+        }
+        
+        .card .card-text {
+            font-size: clamp(1.5rem, 6vw, 2rem);
+            font-weight: 700;
+            /* Limitar longitud de texto */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: 3em; /* aprox 2 lineas */
+        }
+        
+        .card-feedback {
+            position: absolute;
+            top: 40px;
+            font-size: 2rem;
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 4px solid;
+            text-transform: uppercase;
+            opacity: 0;
+            transform: rotate(0deg);
+            z-index: 10;
+        }
+        
+        .card-feedback.right {
+            color: var(--correct-color);
+            border-color: var(--correct-color);
+            right: 20px;
+            transform: rotate(15deg);
+        }
+        
+        .card-feedback.left {
+            color: var(--incorrect-color);
+            border-color: var(--incorrect-color);
+            left: 20px;
+            transform: rotate(-15deg);
+        }
+
+        .game-footer {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding-bottom: 16px;
+            flex-shrink: 0;
+        }
+
+        .action-button {
+            width: clamp(60px, 15vw, 80px);
+            height: clamp(60px, 15vw, 80px);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: var(--shadow);
+        }
+        
+        .action-button:hover {
+            transform: scale(1.1);
+        }
+
+        .action-button.left { background-color: #fff; border: 2px solid var(--incorrect-color); }
+        .action-button.right { background-color: #fff; border: 2px solid var(--correct-color); }
+        .action-button svg { width: 50%; height: 50%; }
+        .action-button.left svg { fill: var(--incorrect-color); }
+        .action-button.right svg { fill: var(--correct-color); }
+
+        /* --- PANTALLA DE RESULTADOS --- */
+        #results-screen {
+            padding: 16px;
+            overflow-y: auto; /* Scroll solo para el contenido de resultados */
+        }
+
+        .results-header { text-align: center; margin-bottom: 24px; }
+        .results-header h2 { font-size: clamp(1.8rem, 6vw, 2.5rem); }
+        .results-header p { font-size: clamp(1rem, 4vw, 1.2rem); }
+        
+        .results-list {
+            list-style-type: none;
+            margin-bottom: 24px;
+            width: 100%;
+        }
+
+        .result-item {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 6px solid;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .result-item.correct { border-left-color: var(--correct-color); }
+        .result-item.incorrect { border-left-color: var(--incorrect-color); }
+
+        .result-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .result-item-header strong { font-size: clamp(1rem, 4vw, 1.1rem); }
+        
+        .result-indicator {
+            font-size: 0.9rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 20px;
+            color: white;
+        }
+        .result-indicator.correct { background-color: var(--correct-color); }
+        .result-indicator.incorrect { background-color: var(--incorrect-color); }
+        
+        .result-explanation {
+            font-size: clamp(0.9rem, 3.5vw, 1rem);
+            line-height: 1.4;
+            max-width: 95%; /* para que no pegue al borde */
+        }
+
+        .final-message {
+            background-color: #e9f5ff;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        
+        .initdata-warning {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* --- MODO COMPACTO --- */
+        .scene.compact .game-header h1 { font-size: clamp(1.1rem, 4vw, 1.3rem); margin-bottom: 0;}
+        .scene.compact .progress-bar { font-size: clamp(0.8rem, 2.5vw, 0.9rem); }
+        .scene.compact .card-container { margin: 8px 0; }
+        .scene.compact .action-button { width: clamp(50px, 12vw, 65px); height: clamp(50px, 12vw, 65px); }
+        .scene.compact .game-footer { padding-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+    <main class="scene" id="main-scene">
+        <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Kämpe Logo" class="kampe-logo">
+        <img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="Avatar" class="avatar-bg">
+
+        <!-- ÁREA DE JUEGO -->
+        <div id="game-area">
+            <header class="game-header">
+                <h1>EPI-Manía: ¿Te Proteges o te la Juegas? ⚡</h1>
+                <p class="progress-bar" id="progress-bar">Pregunta 1 de 6</p>
+            </header>
+
+            <div class="card-container" id="card-container">
+                <!-- Las cartas se generarán aquí con JS -->
+            </div>
+
+            <footer class="game-footer">
+                <button class="action-button left" id="swipe-left-btn" aria-label="No es EPI esencial">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+                </button>
+                <button class="action-button right" id="swipe-right-btn" aria-label="Sí es EPI esencial">
+                    <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>
+                </button>
+            </footer>
+        </div>
+
+        <!-- PANTALLA DE RESULTADOS (INICIALMENTE OCULTA) -->
+        <div id="results-screen">
+             <!-- Se llena dinámicamente -->
+        </div>
+
+    </main>
+    
+    <!-- MODAL TUTORIAL -->
+    <div class="modal-overlay visible" id="tutorial-modal">
+        <div class="modal-content">
+            <h2>¡Hola, Kämpe!</h2>
+            <p>Desliza a la derecha si es un EPI esencial para un electricista, y a la izquierda si no lo es. ¡Demuestra que sabes protegerte!</p>
+            <button class="cta-button" id="start-btn">¡Entendido!</button>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- CONSTANTES Y ESTADO DEL JUEGO ---
+        const challengeData = [
+            { item: 'Guantes dieléctricos', isEPI: true, explanation: '¡Correcto! Son cruciales para aislarte de la corriente eléctrica y prevenir descargas graves.' },
+            { item: 'Calzado de seguridad aislante', isEPI: true, explanation: '¡Esencial! Este calzado te aísla del suelo, evitando que la electricidad pase por tu cuerpo.' },
+            { item: 'Anillos metálicos', isEPI: false, explanation: '¡Peligro! Los metales son conductores. Llevar joyas metálicas aumenta el riesgo de electrocución.' },
+            { item: 'Casco con barboquejo', isEPI: true, explanation: '¡Indispensable! Protege tu cabeza de caídas de objetos y el barboquejo evita que se caiga.' },
+            { item: 'Gafas de sol normales', isEPI: false, explanation: 'Incorrecto. Necesitas gafas de seguridad homologadas que protejan contra arcos eléctricos y proyecciones.' },
+            { item: 'Arnés de seguridad', isEPI: true, explanation: 'Si trabajas en altura, es obligatorio para prevenir caídas. ¡La seguridad ante todo!' }
+        ];
+
+        let currentIndex = 0;
+        let userAnswers = [];
+        let initData = '';
+
+        // --- REFERENCIAS AL DOM ---
+        const scene = document.getElementById('main-scene');
+        const gameArea = document.getElementById('game-area');
+        const resultsScreen = document.getElementById('results-screen');
+        const tutorialModal = document.getElementById('tutorial-modal');
+        const startBtn = document.getElementById('start-btn');
+        const cardContainer = document.getElementById('card-container');
+        const progressBar = document.getElementById('progress-bar');
+        const swipeLeftBtn = document.getElementById('swipe-left-btn');
+        const swipeRightBtn = document.getElementById('swipe-right-btn');
+        
+        // --- LÓGICA DE SWIPE ---
+        let activeCard = null;
+        let startX, currentX;
+        let isDragging = false;
+
+        function initializeSwipe(card) {
+            activeCard = card;
+            
+            function onPointerDown(e) {
+                if (!activeCard) return;
+                isDragging = true;
+                startX = e.pageX || e.touches[0].pageX;
+                activeCard.classList.add('dragging');
+                document.body.style.cursor = 'grabbing';
+            }
+
+            function onPointerMove(e) {
+                if (!isDragging || !activeCard) return;
+                e.preventDefault();
+                currentX = e.pageX || e.touches[0].pageX;
+                const deltaX = currentX - startX;
+                const rotation = deltaX / 20;
+                
+                activeCard.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
+                
+                const feedbackLeft = activeCard.querySelector('.card-feedback.left');
+                const feedbackRight = activeCard.querySelector('.card-feedback.right');
+
+                if (deltaX > 0) {
+                    feedbackRight.style.opacity = Math.min(Math.abs(deltaX) / 100, 1);
+                    feedbackLeft.style.opacity = 0;
+                } else {
+                    feedbackLeft.style.opacity = Math.min(Math.abs(deltaX) / 100, 1);
+                    feedbackRight.style.opacity = 0;
+                }
+            }
+            
+            function onPointerUp(e) {
+                if (!isDragging || !activeCard) return;
+                isDragging = false;
+                const deltaX = currentX - startX;
+                const decisionThreshold = window.innerWidth / 4;
+                
+                activeCard.classList.remove('dragging');
+                document.body.style.cursor = 'default';
+
+                const feedbackLeft = activeCard.querySelector('.card-feedback.left');
+                const feedbackRight = activeCard.querySelector('.card-feedback.right');
+                feedbackLeft.style.opacity = 0;
+                feedbackRight.style.opacity = 0;
+
+                if (Math.abs(deltaX) > decisionThreshold) {
+                    const direction = deltaX > 0 ? 1 : -1;
+                    swipeCard(direction);
+                } else {
+                    activeCard.style.transform = 'translateX(0) rotate(0deg)';
+                }
+            }
+            
+            activeCard.addEventListener('pointerdown', onPointerDown);
+            document.addEventListener('pointermove', onPointerMove);
+            document.addEventListener('pointerup', onPointerUp);
+        }
+
+        function swipeCard(direction) {
+            if (!activeCard) return;
+
+            const flyOutX = direction * window.innerWidth;
+            const rotate = direction * 30;
+            activeCard.style.transform = `translateX(${flyOutX}px) rotate(${rotate}deg)`;
+            activeCard.style.opacity = 0;
+
+            const isRightSwipe = direction === 1;
+            setTimeout(() => {
+                handleAnswer(isRightSwipe);
+            }, 300);
+        }
+
+        // --- FLUJO DEL JUEGO ---
+        function initGame() {
+            const urlParams = new URLSearchParams(window.location.search);
+            initData = urlParams.get('initData') || '';
+            
+            startBtn.addEventListener('click', startChallenge);
+            swipeLeftBtn.addEventListener('click', () => swipeCard(-1));
+            swipeRightBtn.addEventListener('click', () => swipeCard(1));
+            
+            window.addEventListener('resize', ensureFits);
+            window.addEventListener('orientationchange', ensureFits);
+            ensureFits(); // Primera ejecución
+        }
+
+        function startChallenge() {
+            tutorialModal.classList.remove('visible');
+            scene.classList.add('game-active');
+            document.body.style.overflow = 'hidden';
+            scene.style.height = '100svh'; // Reforzar bloqueo
+            
+            loadCards();
+            updateProgress();
+            ensureFits();
+        }
+
+        function loadCards() {
+            cardContainer.innerHTML = '';
+            // Cargar en orden inverso para que la primera quede arriba con z-index
+            for (let i = challengeData.length - 1; i >= 0; i--) {
+                const card = createCardElement(challengeData[i], i);
+                cardContainer.appendChild(card);
+            }
+            const topCard = cardContainer.querySelector('.card');
+            if(topCard) {
+                topCard.classList.add('top-card');
+                initializeSwipe(topCard);
+            }
+        }
+
+        function createCardElement(data, index) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.zIndex = challengeData.length - index;
+            card.innerHTML = `
+                <div class="card-feedback left">NO EPI</div>
+                <div class="card-feedback right">EPI</div>
+                <p class="card-text">${data.item}</p>
+            `;
+            // Posicionar ligeramente las cartas de abajo para efecto de stack
+            card.style.transform = `translateY(${ (challengeData.length - 1 - index) * -6}px) scale(${1 - (challengeData.length - 1 - index) * 0.03})`;
+            return card;
+        }
+
+        function handleAnswer(isRightSwipe) {
+            const currentQuestion = challengeData[currentIndex];
+            const wasCorrect = (isRightSwipe === currentQuestion.isEPI);
+            
+            userAnswers.push({
+                question: currentQuestion.item,
+                userAnswer: isRightSwipe ? 'EPI Esencial' : 'No es EPI',
+                correctAnswer: currentQuestion.isEPI ? 'EPI Esencial' : 'No es EPI',
+                wasCorrect: wasCorrect,
+                explanation: currentQuestion.explanation
+            });
+
+            currentIndex++;
+            
+            if (activeCard) {
+                activeCard.remove();
+                activeCard = null;
+            }
+
+            if (currentIndex < challengeData.length) {
+                updateProgress();
+                const nextCard = cardContainer.querySelector('.card:last-child');
+                if (nextCard) {
+                    nextCard.classList.add('top-card');
+                    nextCard.style.transform = 'translateY(0) scale(1)';
+                    initializeSwipe(nextCard);
+                }
+            } else {
+                endGame();
+            }
+        }
+
+        function updateProgress() {
+            progressBar.textContent = `Pregunta ${currentIndex + 1} de ${challengeData.length}`;
+        }
+        
+        function endGame() {
+            gameArea.style.display = 'none';
+            scene.classList.remove('game-active');
+            scene.classList.add('results-active');
+            document.body.style.overflowY = 'auto'; // Permitir scroll para resultados
+            
+            buildResults();
+        }
+
+        function buildResults() {
+            const correctCount = userAnswers.filter(a => a.wasCorrect).length;
+            
+            let resultsHTML = `
+                <div class="results-header">
+                    <h2>¡Reto completado!</h2>
+                    <p>Has acertado ${correctCount} de ${challengeData.length}.</p>
+                </div>
+                <ul class="results-list">
+            `;
+            
+            userAnswers.forEach(answer => {
+                const resultClass = answer.wasCorrect ? 'correct' : 'incorrect';
+                const indicatorText = answer.wasCorrect ? 'Correcto' : 'Incorrecto';
+                resultsHTML += `
+                    <li class="result-item ${resultClass}">
+                        <div class="result-item-header">
+                            <strong>${answer.question}</strong>
+                            <span class="result-indicator ${resultClass}">${indicatorText}</span>
+                        </div>
+                        <p class="result-explanation">${answer.explanation}</p>
+                    </li>
+                `;
+            });
+
+            resultsHTML += `</ul>
+                <div class="final-message">
+                    <p>¡Cada EPI que identificas es un paso más para ser un profesional seguro y competente! Sigue así, Kämpe.</p>
+                </div>
+                <button class="cta-button" id="reward-btn">Ver mi recompensa</button>
+            `;
+            
+            if (!initData) {
+                resultsHTML += `<p class="initdata-warning">Modo de prueba: No se guardará el progreso.</p>`;
+            }
+
+            resultsScreen.innerHTML = resultsHTML;
+            resultsScreen.style.display = 'flex';
+            
+            document.getElementById('reward-btn').addEventListener('click', () => {
+                const baseUrl = 'https://kampe-game-phaser.onrender.com/daily_streak';
+                window.location.href = initData ? `${baseUrl}?initData=${initData}` : baseUrl;
+            });
+        }
+
+        // --- LÓGICA DE AJUSTE DE UI (ensureFits) ---
+        function assertNoOverflow(element) {
+            return element.scrollHeight <= element.clientHeight;
+        }
+
+        function applyCompactMode(activate) {
+            scene.classList.toggle('compact', activate);
+        }
+
+        function autoscaleUI(element) {
+            let scale = 1;
+            if (!assertNoOverflow(element)) {
+                // Si aún hay overflow, escalar como último recurso
+                const contentHeight = element.scrollHeight;
+                const viewportHeight = element.clientHeight;
+                scale = Math.min(1, viewportHeight / contentHeight);
+                scale = Math.max(0.88, scale); // No escalar menos de 0.88
+            }
+            element.style.setProperty('--ui-scale', scale);
+        }
+        
+        function ensureFits() {
+            // Solo se aplica en la vista de juego
+            if (!scene.classList.contains('game-active')) {
+                scene.style.setProperty('--ui-scale', 1);
+                applyCompactMode(false);
+                return;
+            };
+
+            // 1. Resetear para medir el tamaño real
+            applyCompactMode(false);
+            scene.style.setProperty('--ui-scale', 1);
+
+            // 2. Comprobar si cabe. Si no, activar modo compacto
+            if (!assertNoOverflow(scene)) {
+                applyCompactMode(true);
+            }
+            
+            // 3. Comprobar de nuevo y aplicar escalado si es necesario
+            // Se usa un pequeño timeout para que el DOM se actualice tras el cambio de clase
+            setTimeout(() => {
+                autoscaleUI(scene);
+            }, 50);
+        }
+        
+        // --- INICIAR EL JUEGO ---
+        initGame();
+    });
+    </script>
+</body>
+</html>
