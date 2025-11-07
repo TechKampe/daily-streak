@@ -1,0 +1,622 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Kämpe - Misión Reciclaje</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET Y CONFIGURACIÓN GLOBAL --- */
+        :root {
+            --bg-color: #F8F7F4; /* Marfil claro */
+            --text-color: #1A1B2F; /* Azul profundo */
+            --brand-primary: #1EA4FF;
+            --brand-secondary: #007BFF;
+            --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+            --danger-color: #E74C3C;
+            --success-color: #2ECC71;
+            --warning-color: #F39C12;
+            --font-family: 'Baloo 2', cursive;
+            --border-radius: 12px;
+            --ui-scale: 1;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Bloqueo de scroll global durante el gameplay */
+        body.game-active {
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+
+        /* --- CONTENEDOR PRINCIPAL Y VISTAS --- */
+        .scene {
+            position: relative;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+            transform: scale(var(--ui-scale));
+            transform-origin: center center;
+            transition: transform 0.2s ease-out;
+        }
+        
+        /* Soporte para 100svh con fallbacks */
+        @supports (height: 100svh) { .scene { height: 100svh; } }
+        @supports not (height: 100svh) {
+            @supports (height: 100dvh) { .scene { height: 100dvh; } }
+            @supports not (height: 100dvh) { .scene { height: 100vh; } }
+        }
+
+        .view {
+            width: 100%;
+            height: 100%;
+            display: none; /* Oculto por defecto, JS controla la visibilidad */
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 1rem;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* --- ELEMENTOS COMUNES --- */
+        .kampe-logo {
+            width: 100px;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        .main-title {
+            font-size: clamp(1.5rem, 6vw, 2.25rem);
+            text-align: center;
+            line-height: 1.2;
+            margin: 1rem 0;
+            color: var(--text-color);
+        }
+
+        .description {
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            text-align: center;
+            line-height: 1.5;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px; /* Accesibilidad */
+            min-width: 48px; /* Accesibilidad */
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: var(--border-radius);
+            background: var(--brand-gradient);
+            color: white;
+            font-family: var(--font-family);
+            font-size: clamp(1rem, 4vw, 1.25rem);
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+            transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .button:hover {
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(1px) scale(0.98);
+            box-shadow: 0 2px 10px rgba(0, 123, 255, 0.2);
+        }
+
+        .button:focus-visible {
+            outline: 3px solid var(--brand-primary);
+            outline-offset: 3px;
+        }
+
+        /* --- VISTA DE INTRODUCCIÓN --- */
+        #intro-screen {
+            justify-content: center;
+            gap: 1.5rem;
+        }
+        
+        #intro-screen .intro-content {
+            max-width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* --- VISTA DE JUEGO --- */
+        #game-screen {
+            position: relative;
+            touch-action: none;
+        }
+        
+        .avatar-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png');
+            background-size: cover;
+            background-position: center 30%;
+            opacity: 0.1;
+            z-index: -1;
+        }
+        
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1rem;
+            flex-shrink: 0;
+            transition: margin-bottom 0.3s ease;
+        }
+
+        .progress-indicator {
+            font-size: clamp(1rem, 4vw, 1.25rem);
+            font-weight: 700;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+        }
+        
+        #item-area {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .item-card {
+            background: white;
+            padding: 2rem 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 25px rgba(26, 27, 47, 0.1);
+            text-align: center;
+            font-size: clamp(1.2rem, 5vw, 1.75rem);
+            font-weight: 700;
+            min-height: 100px;
+            width: 90%;
+            max-width: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.3;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        .item-card.dropping {
+            animation: dropAnimation 0.5s ease-in forwards;
+        }
+        
+        @keyframes dropAnimation {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(150px) scale(0.5); opacity: 0; }
+        }
+
+        #category-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            width: 100%;
+            max-width: 400px;
+            padding: 0 1rem;
+            flex-shrink: 0;
+        }
+        
+        .category-button {
+            width: 100%;
+            font-size: clamp(1rem, 4vw, 1.1rem);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+        }
+
+        .category-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+        }
+
+        .category-button.ripple::after {
+            animation: rippleEffect 0.5s ease-out;
+        }
+
+        @keyframes rippleEffect {
+            to {
+                transform: translate(-50%, -50%) scale(50);
+                opacity: 0;
+            }
+        }
+
+        /* --- VISTA DE RESULTADOS --- */
+        #results-screen {
+            justify-content: flex-start;
+            padding-top: max(2rem, var(--safe-top));
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
+            display: none; /* JS will change to flex */
+        }
+        
+        .results-modal {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(26, 27, 47, 0.1);
+            max-height: 90vh; /* Permitir scroll interno sin provocar scroll global */
+            max-height: 90svh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        #results-list {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .result-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .result-item-header {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-item-details {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .result-item-details .user-choice.correct {
+            color: var(--success-color);
+        }
+        
+        .result-item-details .user-choice.incorrect {
+            color: var(--danger-color);
+            text-decoration: line-through;
+        }
+
+        .final-tip {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        .final-tip h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        #init-data-warning {
+            font-size: 0.8rem;
+            text-align: center;
+            color: var(--warning-color);
+            margin-top: 1rem;
+        }
+
+        /* --- MODO COMPACTO --- */
+        .scene.compact .hud {
+            margin-bottom: -10px; /* Sube el HUD */
+        }
+        
+        .scene.compact .progress-indicator {
+            font-size: clamp(0.8rem, 3vw, 1rem);
+            padding: 0.2rem 0.6rem;
+        }
+        
+        .scene.compact .item-card {
+            padding: 1.5rem 1rem;
+            font-size: clamp(1rem, 4.5vw, 1.5rem);
+            min-height: 80px;
+        }
+        
+        .scene.compact #category-buttons {
+            gap: 0.5rem;
+        }
+        
+        .scene.compact .category-button {
+            min-height: 44px;
+            padding: 0.5rem 1rem;
+        }
+    </style>
+</head>
+<body class="">
+    <div class="scene" id="main-scene">
+        
+        <!-- VISTA DE INTRODUCCIÓN -->
+        <div id="intro-screen" class="view active">
+            <div class="intro-content">
+                <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Logo de Kämpe" class="kampe-logo">
+                <h1 class="main-title">Misión Reciclaje: ¡Cada cosa en su sitio! ♻️</h1>
+                <p class="description">Estás al final de la jornada y toca limpiar. Clasifica cada residuo en su contenedor correcto para proteger el medio ambiente y cumplir la normativa.</p>
+            </div>
+            <button id="start-button" class="button">Empezar misión</button>
+        </div>
+
+        <!-- VISTA DE JUEGO -->
+        <div id="game-screen" class="view">
+            <div class="avatar-bg"></div>
+            <header class="hud">
+                <img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_blanco.png" alt="Logo de Kämpe" class="kampe-logo">
+                <span id="progress-indicator" class="progress-indicator">1/9</span>
+            </header>
+            
+            <main id="item-area">
+                <div id="item-card" class="item-card"></div>
+            </main>
+            
+            <footer id="category-buttons">
+                <button class="category-button button" data-category="Peligroso">Peligroso</button>
+                <button class="category-button button" data-category="Reciclable">Reciclable</button>
+                <button class="category-button button" data-category="Inerte">Inerte</button>
+            </footer>
+        </div>
+
+        <!-- VISTA DE RESULTADOS -->
+        <div id="results-screen" class="view">
+            <div class="results-modal">
+                <h2 class="main-title">Resumen de la Misión</h2>
+                <ul id="results-list"></ul>
+                <div class="final-tip">
+                    <h3>Consejo Kämpe</h3>
+                    <p>En la obra, piensa "P-R-I": ¿Pica, quema o es tóxico? (Peligroso). ¿Es cartón, plástico o metal limpio? (Reciclable). ¿Es piedra o escombro? (Inerte). ¡Esta regla simple agiliza todo!</p>
+                </div>
+                <a href="#" id="final-cta" class="button">Ver mi recompensa</a>
+                <p id="init-data-warning" style="display: none;">No se detectó initData. La recompensa podría no asignarse.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- CONFIGURACIÓN DEL DESAFÍO ---
+            const challengeData = [
+                { item: 'Botes de disolvente vacíos', category: 'Peligroso', explanation: 'Contienen restos químicos que pueden ser tóxicos o inflamables. Deben gestionarse por un especialista.' },
+                { item: 'Restos de pladur (yeso laminado)', category: 'Inerte', explanation: 'No reacciona químicamente y es estable. Se gestiona en vertederos específicos para materiales de construcción.' },
+                { item: 'Cartón de embalaje limpio', category: 'Reciclable', explanation: 'El cartón limpio es 100% reciclable. Plegarlo ahorra espacio y facilita su recogida.' },
+                { item: 'Trozos de ladrillo y hormigón', category: 'Inerte', explanation: 'Son escombros limpios que no se descomponen ni reaccionan. Se pueden reutilizar como áridos.' },
+                { item: 'Plásticos de retractilado (film)', category: 'Reciclable', explanation: 'El plástico de embalaje, si está limpio, se puede reciclar para crear nuevos productos plásticos.' },
+                { item: 'Lanas minerales (aislamiento)', category: 'Peligroso', explanation: 'Las fibras pueden ser irritantes y nocivas si se inhalan. Requieren un manejo con protección y gestión especial.' },
+                { item: 'Cables eléctricos sobrantes', category: 'Reciclable', explanation: 'Contienen metales valiosos como el cobre. Se reciclan en puntos limpios o a través de gestores autorizados.' },
+                { item: 'Pintura sobrante y envases', category: 'Peligroso', explanation: 'Las pinturas contienen compuestos químicos que contaminan el suelo y el agua. Nunca deben tirarse por el desagüe.' },
+                { item: 'Sacos de cemento vacíos (papel)', category: 'Inerte', explanation: 'Aunque el papel es reciclable, los restos de cemento lo contaminan, clasificándose como residuo de construcción.' }
+            ];
+
+            // --- ESTADO DEL JUEGO ---
+            let currentItemIndex = 0;
+            let userAnswers = [];
+            let initData = '';
+            let isProcessing = false;
+
+            // --- REFERENCIAS AL DOM ---
+            const dom = {
+                body: document.body,
+                scene: document.getElementById('main-scene'),
+                views: {
+                    intro: document.getElementById('intro-screen'),
+                    game: document.getElementById('game-screen'),
+                    results: document.getElementById('results-screen')
+                },
+                buttons: {
+                    start: document.getElementById('start-button'),
+                    categories: document.querySelectorAll('.category-button'),
+                    finalCta: document.getElementById('final-cta')
+                },
+                gameElements: {
+                    progress: document.getElementById('progress-indicator'),
+                    itemCard: document.getElementById('item-card')
+                },
+                resultsElements: {
+                    list: document.getElementById('results-list'),
+                    warning: document.getElementById('init-data-warning')
+                }
+            };
+
+            // --- LÓGICA DE CONTROL DE VISTAS ---
+            function showView(viewName) {
+                Object.values(dom.views).forEach(view => view.classList.remove('active'));
+                if (dom.views[viewName]) {
+                    dom.views[viewName].classList.add('active');
+                }
+            }
+
+            // --- INICIALIZACIÓN ---
+            function init() {
+                // Capturar initData
+                const urlParams = new URLSearchParams(window.location.search);
+                initData = urlParams.get('initData') || '';
+
+                // Configurar listeners
+                dom.buttons.start.addEventListener('click', startGame);
+                dom.buttons.categories.forEach(button => {
+                    button.addEventListener('click', () => handleAnswer(button.dataset.category));
+                });
+                dom.buttons.finalCta.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = `https://kampe-game-phaser.onrender.com/daily_streak?initData=${initData}`;
+                });
+                
+                window.addEventListener('resize', ensureFits);
+                window.addEventListener('orientationchange', ensureFits);
+
+                showView('intro');
+            }
+
+            // --- FLUJO DEL JUEGO ---
+            function startGame() {
+                dom.body.classList.add('game-active');
+                showView('game');
+                currentItemIndex = 0;
+                userAnswers = [];
+                isProcessing = false;
+                displayNextItem();
+                ensureFits();
+            }
+
+            function displayNextItem() {
+                if (currentItemIndex < challengeData.length) {
+                    const itemData = challengeData[currentItemIndex];
+                    dom.gameElements.itemCard.textContent = itemData.item;
+                    dom.gameElements.itemCard.classList.remove('dropping');
+                    dom.gameElements.progress.textContent = `${currentItemIndex + 1}/${challengeData.length}`;
+                    isProcessing = false;
+                } else {
+                    endGame();
+                }
+            }
+
+            function handleAnswer(chosenCategory) {
+                if (isProcessing) return;
+                isProcessing = true;
+
+                const currentItem = challengeData[currentItemIndex];
+                userAnswers.push({
+                    item: currentItem.item,
+                    chosen: chosenCategory,
+                    correct: currentItem.category,
+                    explanation: currentItem.explanation
+                });
+
+                // Micro-interacciones
+                const button = document.querySelector(`.category-button[data-category="${chosenCategory}"]`);
+                button.classList.add('ripple');
+                setTimeout(() => button.classList.remove('ripple'), 500);
+
+                dom.gameElements.itemCard.classList.add('dropping');
+
+                setTimeout(() => {
+                    currentItemIndex++;
+                    displayNextItem();
+                }, 500); // Sincronizado con la animación
+            }
+
+            function endGame() {
+                dom.body.classList.remove('game-active');
+                showView('results');
+                displayResults();
+            }
+            
+            function displayResults() {
+                dom.resultsElements.list.innerHTML = '';
+                userAnswers.forEach(answer => {
+                    const isCorrect = answer.chosen === answer.correct;
+                    const li = document.createElement('li');
+                    li.className = 'result-item';
+                    li.innerHTML = `
+                        <div class="result-item-header">${answer.item}</div>
+                        <div class="result-item-details">
+                            Tu elección: <span class="user-choice ${isCorrect ? 'correct' : 'incorrect'}">${answer.chosen}</span>
+                            ${!isCorrect ? `<br>Correcta: <strong>${answer.correct}</strong>` : ''}
+                            <p style="margin-top: 0.25rem;"><em>${answer.explanation}</em></p>
+                        </div>
+                    `;
+                    dom.resultsElements.list.appendChild(li);
+                });
+
+                if (!initData) {
+                    dom.resultsElements.warning.style.display = 'block';
+                }
+            }
+            
+            // --- LÓGICA DE AJUSTE DE UI (ensureFits) ---
+            function ensureFits() {
+                if (!dom.views.game.classList.contains('active')) return;
+
+                const scene = dom.scene;
+                // Resetear estados antes de medir
+                scene.classList.remove('compact');
+                scene.style.setProperty('--ui-scale', '1');
+
+                // Permitir que el DOM se actualice
+                requestAnimationFrame(() => {
+                    // 1. Comprobar si hay desbordamiento
+                    if (scene.scrollHeight <= scene.clientHeight) {
+                        return; // Todo cabe, no hacer nada
+                    }
+
+                    // 2. Aplicar modo compacto
+                    scene.classList.add('compact');
+                    requestAnimationFrame(() => {
+                        if (scene.scrollHeight <= scene.clientHeight) {
+                            return; // Ahora cabe, listo
+                        }
+                    
+                        // 3. Como último recurso, escalar la UI
+                        let scale = Math.min(1, scene.clientHeight / scene.scrollHeight);
+                        scale = Math.max(0.88, scale); // No escalar menos de 0.88
+                        scene.style.setProperty('--ui-scale', scale);
+                    });
+                });
+            }
+
+            // Iniciar la aplicación
+            init();
+        });
+    </script>
+</body>
+</html>
