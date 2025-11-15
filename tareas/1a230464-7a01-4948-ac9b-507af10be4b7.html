@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Misión: Herramienta Maestra 🔧 | Kämpe</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;font-family:'Baloo 2',sans-serif;background:#F5F5F0;color:#1A1B2F;overflow:hidden;overscroll-behavior:none;touch-action:pan-y}
+.scene{width:100%;position:relative;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+@supports(height:100svh){.scene{height:100svh}}
+@supports not(height:100svh){.scene{height:100dvh}}
+@supports not(height:100dvh){.scene{height:100vh}}
+.scene.results{overflow-y:auto}
+.bg-avatar{position:absolute;top:0;left:0;width:100%;height:100%;background:url('https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png') center/cover no-repeat;opacity:0.08;pointer-events:none;z-index:0}
+.content{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;overflow:hidden}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(26,27,47,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.3s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-content{background:#FFF;border-radius:20px;padding:clamp(20px,5vw,32px);max-width:500px;width:100%;max-height:90svh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.2);animation:slideUp 0.4s}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.logo{width:clamp(80px,20vw,120px);margin:0 auto 16px;display:block}
+h1{font-size:clamp(1.4rem,5vw,1.8rem);color:#007BFF;text-align:center;margin-bottom:12px;font-weight:700}
+.desc{font-size:clamp(0.85rem,3.5vw,0.95rem);line-height:1.5;margin-bottom:20px;color:#333}
+.btn{background:linear-gradient(135deg,#1EA4FF,#007BFF);color:#FFF;border:none;border-radius:12px;padding:14px 24px;font-size:clamp(1rem,4vw,1.1rem);font-weight:600;cursor:pointer;min-height:44px;min-width:44px;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 4px 12px rgba(0,123,255,0.3);font-family:'Baloo 2',sans-serif}
+.btn:active{transform:scale(0.97)}
+.btn:hover{box-shadow:0 6px 16px rgba(0,123,255,0.4)}
+.hud{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(255,255,255,0.9);border-radius:12px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.hud-item{font-size:clamp(0.85rem,3.5vw,0.95rem);font-weight:600;color:#007BFF}
+.progress-bar{flex:1;height:8px;background:#E0E0E0;border-radius:10px;margin:0 12px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#1EA4FF,#007BFF);border-radius:10px;transition:width 0.4s ease}
+.task-card{background:#FFF;border-radius:16px;padding:clamp(16px,4vw,24px);margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,0.1);flex-shrink:0}
+.task-title{font-size:clamp(1rem,4vw,1.15rem);font-weight:600;color:#1A1B2F;margin-bottom:12px;line-height:1.4}
+.tools{display:flex;flex-direction:column;gap:10px}
+.tool-btn{background:#F8F9FA;border:2px solid #E0E0E0;border-radius:12px;padding:14px 16px;font-size:clamp(0.9rem,3.8vw,1rem);font-weight:600;cursor:pointer;transition:all 0.3s;text-align:left;color:#1A1B2F;font-family:'Baloo 2',sans-serif;min-height:44px;display:flex;align-items:center}
+.tool-btn:hover{border-color:#1EA4FF;background:#E3F2FD}
+.tool-btn.selected{border-color:#1EA4FF;background:#E3F2FD;box-shadow:0 0 0 3px rgba(30,164,255,0.2)}
+.tool-btn.correct{border-color:#4CAF50;background:#E8F5E9}
+.tool-btn.wrong{border-color:#F44336;background:#FFEBEE}
+.next-btn{width:100%;margin-top:auto}
+.result-item{background:#FFF;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.result-task{font-size:clamp(0.9rem,3.8vw,1rem);font-weight:600;color:#1A1B2F;margin-bottom:8px}
+.result-choice{font-size:clamp(0.85rem,3.5vw,0.9rem);color:#666;margin-bottom:4px}
+.result-correct{color:#4CAF50;font-weight:600}
+.result-wrong{color:#F44336;font-weight:600}
+.result-explanation{font-size:clamp(0.8rem,3.3vw,0.85rem);color:#555;line-height:1.4;margin-top:8px;font-style:italic}
+.score-box{background:linear-gradient(135deg,#1EA4FF,#007BFF);color:#FFF;border-radius:16px;padding:20px;text-align:center;margin-bottom:20px;box-shadow:0 4px 16px rgba(0,123,255,0.3)}
+.score-number{font-size:clamp(2rem,8vw,3rem);font-weight:700;margin:8px 0}
+.tip-box{background:#FFF9E6;border-left:4px solid #FFC107;padding:16px;border-radius:8px;margin-bottom:20px}
+.tip-title{font-weight:700;color:#F57C00;margin-bottom:8px;font-size:clamp(0.9rem,3.8vw,1rem)}
+.tip-text{font-size:clamp(0.85rem,3.5vw,0.9rem);color:#555;line-height:1.5}
+.compact .hud{padding:8px 12px;margin-bottom:8px}
+.compact .task-card{padding:12px;margin-bottom:12px}
+.compact .task-title{font-size:clamp(0.9rem,3.8vw,1rem);margin-bottom:10px}
+.compact .tool-btn{padding:10px 12px;font-size:clamp(0.85rem,3.5vw,0.95rem)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const urlParams=new URLSearchParams(window.location.search);
+const initData=urlParams.get('initData')||'';
+const tasks=[
+{task:"Necesitas aflojar una tuerca hexagonal oxidada en una válvula de paso.",tools:["Llave inglesa ajustable 🔧","Destornillador Phillips ➕","Alicates de corte ✂️"],correct:0,why:"La llave inglesa ajustable permite ajustar la apertura a la tuerca hexagonal y aplicar torque. El destornillador es para tornillos con ranura en cruz, no tuercas. Los alicates de corte sirven para cortar cables o alambres, no para aflojar tuercas."},
+{task:"Debes cortar un tubo de PVC de 32 mm de diámetro para empalmar una tubería.",tools:["Sierra de arco para metal 🪚","Cortatubos de PVC ⭕","Taladro percutor 🔨"],correct:1,why:"El cortatubos de PVC hace un corte limpio y perpendicular en plástico. La sierra de arco es menos precisa y genera rebabas. El taladro percutor es para perforar, no cortar tubos."},
+{task:"Vas a roscar una conexión macho-hembra y necesitas sellar la rosca para evitar fugas.",tools:["Cinta de teflón (PTFE) 📼","Sellador de silicona 🧴","Cinta aislante eléctrica ⚡"],correct:0,why:"La cinta de teflón (PTFE) es específica para sellar roscas de agua/gas sin endurecer. La silicona endurece y dificulta el desmontaje. La cinta aislante eléctrica no sella agua y se degrada con la humedad."},
+{task:"Tienes que desatascar un sifón en el lavabo de la cocina retirando residuos sólidos.",tools:["Ventosa de desatasco 🪠","Desatascador químico 🧪","Fuet o cable desatascador 🐍"],correct:2,why:"El fuet (cable desatascador) alcanza y deshace obstrucciones sólidas en el sifón. La ventosa es útil para bloqueos leves, no residuos duros. Los químicos disuelven materia orgánica, pero no retiran objetos sólidos y pueden dañar tuberías viejas."},
+{task:"Debes medir con precisión el diámetro interior de un tubo de cobre para elegir el racor.",tools:["Calibre o pie de rey 📏","Flexómetro de carpintero 📐","Nivel de burbuja 🟢"],correct:0,why:"El calibre (pie de rey) mide diámetros interiores y exteriores con precisión milimétrica. El flexómetro es para distancias largas, no diámetros precisos. El nivel de burbuja solo indica horizontalidad/verticalidad."},
+{task:"Necesitas apretar un racor de latón sin dañarlo ni pasarte de fuerza.",tools:["Llave fija de dos bocas 🔩","Llave dinamométrica con torquímetro ⚙️","Martillo de goma 🔨"],correct:1,why:"La llave dinamométrica limita el par de apriete exacto, evitando roturas. La llave fija funciona, pero no controla la fuerza aplicada. El martillo de goma es para golpear sin dañar, no para apretar roscas."}
+];
+let currentTask=0;
+let selected=null;
+let score=0;
+let answers=[];
+function render(){
+const app=document.getElementById('app');
+if(currentTask<tasks.length){
+app.innerHTML=`
+<div class="scene" id="scene">
+<div class="bg-avatar"></div>
+<div class="content">
+<div class="hud">
+<div class="hud-item">🔧 Tarea ${currentTask+1}/${tasks.length}</div>
+<div class="progress-bar"><div class="progress-fill" style="width:${(currentTask/tasks.length)*100}%"></div></div>
+<div class="hud-item">✅ ${score}</div>
+</div>
+<div class="task-card">
+<div class="task-title">${tasks[currentTask].task}</div>
+<div class="tools" id="tools">
+${tasks[currentTask].tools.map((tool,i)=>`<button class="tool-btn" data-index="${i}">${tool}</button>`).join('')}
+</div>
+</div>
+<button class="btn next-btn" id="nextBtn" style="display:none">Siguiente ➜</button>
+</div>
+</div>`;
+document.querySelectorAll('.tool-btn').forEach(btn=>{
+btn.addEventListener('click',()=>{
+if(selected!==null)return;
+selected=parseInt(btn.dataset.index);
+document.querySelectorAll('.tool-btn').forEach(b=>b.style.pointerEvents='none');
+btn.classList.add('selected');
+setTimeout(()=>{
+if(selected===tasks[currentTask].correct){
+btn.classList.add('correct');
+score++;
+}else{
+btn.classList.add('wrong');
+document.querySelectorAll('.tool-btn')[tasks[currentTask].correct].classList.add('correct');
+}
+answers.push({task:tasks[currentTask].task,choice:tasks[currentTask].tools[selected],correct:tasks[currentTask].tools[tasks[currentTask].correct],isCorrect:selected===tasks[currentTask].correct,why:tasks[currentTask].why});
+document.getElementById('nextBtn').style.display='block';
+},300);
+});
+});
+document.getElementById('nextBtn').addEventListener('click',()=>{
+selected=null;
+currentTask++;
+render();
+});
+}else{
+showResults();
+}
+ensureFits();
+}
+function showResults(){
+const app=document.getElementById('app');
+const resultHTML=answers.map((a,i)=>`
+<div class="result-item">
+<div class="result-task">📌 Tarea ${i+1}: ${a.task}</div>
+<div class="result-choice">Tu elección: <span class="${a.isCorrect?'result-correct':'result-wrong'}">${a.choice}</span></div>
+<div class="result-choice">Correcta: <span class="result-correct">${a.correct}</span></div>
+<div class="result-explanation">${a.why}</div>
+</div>
+`).join('');
+app.innerHTML=`
+<div class="scene results" id="scene">
+<div class="bg-avatar"></div>
+<div class="content" style="overflow-y:auto;padding:20px">
+<img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_oscuro.png" alt="Kämpe" class="logo" loading="lazy">
+<div class="score-box">
+<div>🏆 Resultado Final</div>
+<div class="score-number">${score}/${tasks.length}</div>
+<div>${score===tasks.length?'¡Perfecto! Eres un maestro':'Buen intento, sigue practicando'}</div>
+</div>
+${resultHTML}
+<div class="tip-box">
+<div class="tip-title">💡 Consejo profesional</div>
+<div class="tip-text">Cada herramienta tiene su momento: usa llaves para tuercas, cortatubos para cortes limpios, teflón para roscas, fuet para obstrucciones, calibre para medidas precisas y dinamométricas para controlar la fuerza. Conocerlas te hace más eficiente y profesional.</div>
+</div>
+<button class="btn" onclick="location.href='https://kampe-game-phaser.onrender.com/daily_streak?initData=${encodeURIComponent(initData)}'">Ver mi recompensa</button>
+${initData?'':'<p style="font-size:0.8rem;color:#999;text-align:center;margin-top:8px">⚠️ initData no detectado</p>'}
+</div>
+</div>`;
+document.querySelector('html').style.overflow='auto';
+document.querySelector('body').style.overflow='auto';
+}
+function showIntro(){
+const app=document.getElementById('app');
+app.innerHTML=`
+<div class="modal">
+<div class="modal-content">
+<img src="https://techkampe.github.io/daily-streak/assets/kampe_logo_oscuro.png" alt="Kämpe" class="logo">
+<h1>Misión: Herramienta Maestra 🔧</h1>
+<p class="desc">Estás en tus primeras prácticas de fontanería y te enfrentas a una serie de averías reales en una vivienda. Tu mentor te pone a prueba: ¿sabrás qué herramienta usar en cada momento?</p>
+<p class="desc">En cada turno, elige la herramienta idónea para resolver la tarea. Al final recibirás feedback detallado sobre tus decisiones.</p>
+<button class="btn" onclick="startGame()">¡Comenzar! 🚀</button>
+</div>
+</div>`;
+}
+function startGame(){
+render();
+}
+function ensureFits(){
+const scene=document.getElementById('scene');
+if(!scene||scene.classList.contains('results'))return;
+setTimeout(()=>{
+if(scene.scrollHeight>scene.clientHeight+5){
+scene.classList.add('compact');
+setTimeout(()=>{
+if(scene.scrollHeight>scene.clientHeight+5){
+const scale=Math.max(0.88,scene.clientHeight/scene.scrollHeight);
+scene.style.transform=`scale(${scale})`;
+scene.style.transformOrigin='top center';
+}
+},50);
+}
+},100);
+}
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',ensureFits);
+showIntro();
+</script>
+</body>
+</html>
+
