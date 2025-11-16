@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Maestro de la Prevención</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;font-family:'Baloo 2',sans-serif;background:#F5F5F0;color:#1A1B2F}
+.scene{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:max(env(safe-area-inset-top),12px) max(env(safe-area-inset-right),16px) max(env(safe-area-inset-bottom),16px) max(env(safe-area-inset-left),16px);position:relative;overflow:hidden}
+@supports(height:100svh){.scene{height:100svh}}
+@supports not(height:100svh){.scene{height:100dvh}}
+@supports not(height:100dvh){.scene{height:100vh}}
+.bg-avatar{position:absolute;top:0;right:0;width:min(45%,280px);height:auto;opacity:0.12;pointer-events:none;z-index:0}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(26,27,47,0.85);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;overflow-y:auto}
+.modal-content{background:#FFF;border-radius:20px;padding:clamp(20px,5vw,32px);max-width:480px;width:100%;max-height:90svh;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.2);position:relative}
+.modal-content h1{font-size:clamp(1.5rem,5vw,2rem);font-weight:700;color:#1A1B2F;margin-bottom:12px;line-height:1.2}
+.modal-content p{font-size:clamp(0.95rem,3.5vw,1.1rem);color:#4A4A68;line-height:1.5;margin-bottom:16px}
+.btn{background:linear-gradient(135deg,#1EA4FF 0%,#007BFF 100%);color:#FFF;border:none;border-radius:12px;padding:14px 24px;font-size:clamp(1rem,4vw,1.15rem);font-weight:600;font-family:'Baloo 2',sans-serif;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;min-height:48px;box-shadow:0 4px 12px rgba(30,164,255,0.3);touch-action:manipulation}
+.btn:hover,.btn:focus{transform:translateY(-2px);box-shadow:0 6px 16px rgba(30,164,255,0.4);outline:3px solid #007BFF;outline-offset:2px}
+.btn:active{transform:translateY(0)}
+.hud{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 0;z-index:10;flex-shrink:0}
+.progress-bar{flex:1;height:10px;background:#E0E0E8;border-radius:8px;overflow:hidden;margin:0 12px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.1)}
+.progress-fill{height:100%;background:linear-gradient(90deg,#1EA4FF 0%,#007BFF 100%);transition:width 0.4s ease;border-radius:8px}
+.progress-text{font-size:clamp(0.85rem,3vw,1rem);font-weight:600;color:#1A1B2F;white-space:nowrap}
+.question-container{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;width:100%;max-width:600px;z-index:10;overflow:hidden}
+.question-box{background:#FFF;border-radius:16px;padding:clamp(16px,4vw,24px);box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-bottom:clamp(16px,4vh,24px);width:100%;max-height:30vh;overflow-y:auto}
+.question-box h2{font-size:clamp(1.1rem,4vw,1.4rem);font-weight:700;color:#1A1B2F;line-height:1.3;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.answers{display:flex;flex-direction:column;gap:clamp(10px,2vh,14px);width:100%;max-height:50vh;overflow-y:auto;padding:4px}
+.answer-btn{background:#FFF;color:#1A1B2F;border:2px solid #E0E0E8;border-radius:12px;padding:clamp(12px,3vw,16px);font-size:clamp(0.95rem,3.5vw,1.1rem);font-weight:600;font-family:'Baloo 2',sans-serif;cursor:pointer;transition:all 0.3s;min-height:48px;text-align:left;line-height:1.3;box-shadow:0 2px 8px rgba(0,0,0,0.05);touch-action:manipulation;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.answer-btn:hover,.answer-btn:focus{border-color:#1EA4FF;background:linear-gradient(135deg,rgba(30,164,255,0.1) 0%,rgba(0,123,255,0.1) 100%);transform:translateX(4px);outline:2px solid #007BFF;outline-offset:2px}
+.answer-btn:active{transform:scale(0.98)}
+.answer-btn.correct{background:linear-gradient(135deg,#10B981 0%,#059669 100%);color:#FFF;border-color:#059669;animation:pulse 0.5s}
+.answer-btn.incorrect{background:linear-gradient(135deg,#EF4444 0%,#DC2626 100%);color:#FFF;border-color:#DC2626;animation:shake 0.5s}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn 0.4s ease}
+.results{width:100%;max-width:600px;background:#FFF;border-radius:20px;padding:clamp(20px,5vw,32px);box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:10;overflow-y:auto;max-height:80vh}
+.results h2{font-size:clamp(1.4rem,5vw,1.8rem);font-weight:700;color:#1A1B2F;margin-bottom:clamp(12px,3vh,20px);text-align:center}
+.score{font-size:clamp(1.8rem,7vw,2.5rem);font-weight:700;background:linear-gradient(135deg,#1EA4FF 0%,#007BFF 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:clamp(16px,4vh,24px)}
+.result-item{background:#F9FAFB;border-left:4px solid #E0E0E8;padding:clamp(12px,3vw,16px);margin-bottom:clamp(12px,3vh,16px);border-radius:8px}
+.result-item.correct{border-left-color:#10B981}
+.result-item.incorrect{border-left-color:#EF4444}
+.result-item h3{font-size:clamp(0.95rem,3.5vw,1.1rem);font-weight:600;color:#1A1B2F;margin-bottom:6px;line-height:1.3}
+.result-item p{font-size:clamp(0.85rem,3vw,0.95rem);color:#4A4A68;margin:4px 0;line-height:1.4}
+.result-item .label{font-weight:600;color:#1A1B2F}
+.advice{background:linear-gradient(135deg,rgba(30,164,255,0.1) 0%,rgba(0,123,255,0.1) 100%);border-radius:12px;padding:clamp(14px,4vw,20px);margin:clamp(16px,4vh,24px) 0;border-left:4px solid #1EA4FF}
+.advice p{font-size:clamp(0.95rem,3.5vw,1.05rem);color:#1A1B2F;line-height:1.5;font-weight:500}
+.compact .hud{padding:4px 0}
+.compact .question-box{padding:12px;margin-bottom:12px}
+.compact .question-box h2{font-size:clamp(1rem,3.5vw,1.2rem)}
+.compact .answer-btn{padding:10px;font-size:clamp(0.9rem,3vw,1rem);min-height:44px}
+.compact .answers{gap:8px}
+@media(max-height:640px){.question-box{max-height:25vh}.answers{max-height:45vh;gap:8px}.answer-btn{padding:10px;min-height:44px}}
+</style>
+</head>
+<body>
+<div class="scene" id="scene">
+<img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" class="bg-avatar" loading="lazy">
+<div class="hud" id="hud">
+<span class="progress-text" id="progressText">1/5</span>
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:20%"></div></div>
+</div>
+<div class="question-container" id="questionContainer"></div>
+</div>
+<div class="modal" id="introModal">
+<div class="modal-content">
+<h1>Maestro de la Prevención 👷‍♀️</h1>
+<p>Estás en tu primer día en una obra y tu mentor te pone a prueba. Antes de coger ninguna herramienta, debes demostrar que sabes identificar los peligros.</p>
+<p><strong>Tutorial:</strong> Lee cada situación y elige la acción más segura. Responde 5 preguntas sobre prevención de riesgos laborales.</p>
+<button class="btn" onclick="startQuiz()" aria-label="Comenzar desafío">¡Empezar!</button>
+</div>
+</div>
+<script>
+const questions=[
+{q:"Antes de empezar a trabajar en altura, ¿qué es lo primero que debes verificar?",
+answers:["Que el arnés esté homologado y en buen estado","Que haga buen tiempo","Que haya una escalera cerca","Que el supervisor esté presente"],
+correct:0,
+explanation:"El arnés es tu salvavidas. Siempre verifica que esté certificado y sin daños antes de usarlo."},
+{q:"Ves cables eléctricos sueltos en el suelo. ¿Qué haces?",
+answers:["Los rodeo y sigo trabajando","Aviso al responsable y señalizo la zona","Los recojo yo mismo con las manos","Apago la luz general"],
+correct:1,
+explanation:"Nunca toques cables sin formación. Avisa y señaliza para evitar accidentes a otros."},
+{q:"¿Cuándo es obligatorio usar guantes de protección?",
+answers:["Solo si manipulo productos químicos","Siempre que haya riesgo de cortes o contacto con sustancias","Solo en invierno por el frío","Cuando me lo diga mi jefe"],
+correct:1,
+explanation:"Los guantes protegen tus manos de cortes, quemaduras y químicos. Úsalos siempre que exista riesgo."},
+{q:"Necesitas levantar un saco de cemento de 25 kg. ¿Cómo lo haces?",
+answers:["Flexiono rodillas, espalda recta, levanto con las piernas","Lo arrastro por el suelo","Lo levanto rápido doblando la espalda","Pido a un compañero que lo haga por mí"],
+correct:0,
+explanation:"La técnica correcta protege tu espalda. Dobla las rodillas y usa la fuerza de tus piernas, no de la espalda."},
+{q:"Al finalizar tu turno, ¿qué debes hacer con las herramientas?",
+answers:["Dejarlas donde las usé para continuar mañana","Guardarlas en su sitio y limpiar la zona","Apilarlas en un rincón","Dárselas a otro compañero"],
+correct:1,
+explanation:"El orden previene accidentes. Guarda las herramientas y mantén el área limpia para todos."}
+];
+let currentQuestion=0;
+let userAnswers=[];
+let isAnswering=false;
+function startQuiz(){
+document.getElementById('introModal').style.display='none';
+showQuestion();
+ensureFits();
+}
+function showQuestion(){
+if(currentQuestion>=questions.length){
+showResults();
+return;
+}
+const q=questions[currentQuestion];
+const container=document.getElementById('questionContainer');
+container.innerHTML=`
+<div class="question-box fade-in">
+<h2>${q.q}</h2>
+</div>
+<div class="answers fade-in">
+${q.answers.map((a,i)=>`<button class="answer-btn" onclick="selectAnswer(${i})" aria-label="Respuesta ${i+1}: ${a}">${a}</button>`).join('')}
+</div>
+`;
+document.getElementById('progressText').textContent=`${currentQuestion+1}/${questions.length}`;
+document.getElementById('progressFill').style.width=`${((currentQuestion+1)/questions.length)*100}%`;
+isAnswering=false;
+setTimeout(ensureFits,100);
+}
+function selectAnswer(index){
+if(isAnswering)return;
+isAnswering=true;
+const q=questions[currentQuestion];
+userAnswers.push(index);
+const btns=document.querySelectorAll('.answer-btn');
+btns.forEach((btn,i)=>{
+btn.disabled=true;
+if(i===q.correct){
+btn.classList.add('correct');
+}else if(i===index&&i!==q.correct){
+btn.classList.add('incorrect');
+}
+});
+setTimeout(()=>{
+currentQuestion++;
+showQuestion();
+},1200);
+}
+function showResults(){
+document.querySelector('html').style.overflow='auto';
+document.querySelector('body').style.overflow='auto';
+document.getElementById('scene').style.overflow='auto';
+const correct=userAnswers.filter((a,i)=>a===questions[i].correct).length;
+const container=document.getElementById('questionContainer');
+container.innerHTML=`
+<div class="results fade-in">
+<h2>🎯 Resultados</h2>
+<div class="score">${correct}/${questions.length} correctas</div>
+${questions.map((q,i)=>{
+const isCorrect=userAnswers[i]===q.correct;
+return`<div class="result-item ${isCorrect?'correct':'incorrect'}">
+<h3>${isCorrect?'✅':'❌'} ${q.q}</h3>
+<p><span class="label">Tu respuesta:</span> ${q.answers[userAnswers[i]]}</p>
+${!isCorrect?`<p><span class="label">Correcta:</span> ${q.answers[q.correct]}</p>`:''}
+<p><strong>Explicación:</strong> ${q.explanation}</p>
+</div>`;
+}).join('')}
+<div class="advice">
+<p><strong>💡 Consejo:</strong> La prevención empieza por ti. Usa siempre tus EPIs, mantén tu zona ordenada y ante la duda, pregunta.</p>
+</div>
+<button class="btn" onclick="completeTask()" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+</div>
+`;
+}
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+function ensureFits(){
+const scene=document.getElementById('scene');
+if(!scene)return;
+const sh=scene.scrollHeight;
+const ch=scene.clientHeight;
+if(sh<=ch)return;
+if(!scene.classList.contains('compact')){
+scene.classList.add('compact');
+setTimeout(()=>{
+if(scene.scrollHeight>scene.clientHeight){
+const scale=Math.max(0.88,scene.clientHeight/scene.scrollHeight);
+scene.style.transform=`scale(${scale})`;
+scene.style.transformOrigin='top center';
+}
+},50);
+}
+}
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,200));
+</script>
+</body>
+</html>
+
