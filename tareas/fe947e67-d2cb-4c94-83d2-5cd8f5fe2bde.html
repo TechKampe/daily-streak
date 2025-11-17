@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Inspector de Riesgos: ¡Tu Primera Obra!</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;font-family:'Baloo 2',sans-serif;background:#F5F5F0}
+.scene{width:100%;position:relative;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);touch-action:none}
+@supports(height:100svh){.scene{height:100svh}}
+@supports not(height:100svh){.scene{height:100dvh}}
+@supports not(height:100dvh){.scene{height:100vh}}
+.modal{position:fixed;inset:0;background:rgba(26,27,47,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1rem}
+.modal-content{background:#FFF;border-radius:20px;padding:1.5rem;max-width:400px;width:100%;max-height:90svh;overflow-y:auto;box-shadow:0 8px 24px rgba(0,123,255,0.25);position:relative}
+.modal-content h2{font-size:clamp(1.25rem,5vw,1.75rem);color:#1A1B2F;margin-bottom:0.75rem;line-height:1.2}
+.modal-content p{font-size:clamp(0.9rem,3.5vw,1rem);color:#4A4A68;line-height:1.5;margin-bottom:1rem}
+.btn{background:linear-gradient(135deg,#1EA4FF,#007BFF);color:#FFF;border:none;padding:0.875rem 1.5rem;border-radius:50px;font-size:clamp(0.95rem,4vw,1.1rem);font-weight:600;cursor:pointer;min-height:44px;min-width:44px;box-shadow:0 4px 12px rgba(30,164,255,0.3);transition:transform 0.2s,box-shadow 0.2s;font-family:'Baloo 2',sans-serif}
+.btn:active{transform:scale(0.95);box-shadow:0 2px 8px rgba(30,164,255,0.4)}
+.avatar-bg{position:absolute;top:-40px;right:-40px;width:280px;height:280px;opacity:0.12;pointer-events:none;z-index:0}
+.game-container{flex:1;display:flex;flex-direction:column;padding:1rem;position:relative;overflow:hidden}
+.hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding:0.5rem 0.75rem;background:rgba(255,255,255,0.8);border-radius:15px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.hud-item{font-size:clamp(0.85rem,3.5vw,1rem);color:#1A1B2F;font-weight:600}
+.item-card{background:#FFF;border-radius:20px;padding:1.5rem;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.1);margin-bottom:1.5rem;animation:slideIn 0.4s ease-out}
+.item-card h3{font-size:clamp(1.1rem,4.5vw,1.4rem);color:#1A1B2F;margin-bottom:0.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.categories{display:flex;flex-direction:column;gap:0.75rem}
+.category-btn{background:linear-gradient(135deg,#1EA4FF,#007BFF);color:#FFF;border:none;padding:1rem;border-radius:15px;font-size:clamp(0.9rem,3.8vw,1.05rem);font-weight:600;cursor:pointer;min-height:54px;box-shadow:0 3px 10px rgba(30,164,255,0.25);transition:all 0.3s;font-family:'Baloo 2',sans-serif;position:relative;overflow:hidden}
+.category-btn:active{transform:scale(0.96)}
+.category-btn.drop-animation{animation:dropEffect 0.5s ease-out}
+@keyframes slideIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes dropEffect{0%{transform:scale(1)}50%{transform:scale(1.05);box-shadow:0 6px 20px rgba(30,164,255,0.4)}100%{transform:scale(1)}}
+.results-container{padding:1.5rem;overflow-y:auto;max-height:calc(100svh - 2rem);background:#F5F5F0}
+.result-item{background:#FFF;border-radius:15px;padding:1rem;margin-bottom:1rem;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.result-item h4{font-size:clamp(0.95rem,4vw,1.1rem);color:#1A1B2F;margin-bottom:0.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.result-item p{font-size:clamp(0.85rem,3.5vw,0.95rem);color:#4A4A68;line-height:1.4;margin-bottom:0.25rem}
+.result-correct{border-left:4px solid #28A745}
+.result-wrong{border-left:4px solid #DC3545}
+.score-summary{background:linear-gradient(135deg,#1EA4FF,#007BFF);color:#FFF;border-radius:20px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;box-shadow:0 4px 16px rgba(30,164,255,0.3)}
+.score-summary h3{font-size:clamp(1.3rem,5vw,1.8rem);margin-bottom:0.5rem}
+.advice-box{background:#FFF9E6;border-left:4px solid#FFC107;padding:1rem;border-radius:12px;margin-bottom:1.5rem}
+.advice-box h4{color:#1A1B2F;font-size:clamp(1rem,4vw,1.2rem);margin-bottom:0.5rem}
+.advice-box p{color:#4A4A68;font-size:clamp(0.85rem,3.5vw,0.95rem);line-height:1.4}
+.compact .hud{padding:0.25rem 0.5rem;margin-bottom:0.5rem}
+.compact .item-card{padding:1rem;margin-bottom:1rem}
+.compact .categories{gap:0.5rem}
+.compact .category-btn{padding:0.75rem;min-height:48px}
+</style>
+</head>
+<body>
+<div class="scene" id="app"></div>
+<script>
+const items=[
+{text:'Charco cerca de enchufe',correct:'Peligro Inmediato',explanation:'Agua y electricidad: riesgo de electrocución grave.'},
+{text:'Zona de trabajo señalizada',correct:'Buena Práctica',explanation:'La señalización previene accidentes y ordena la obra.'},
+{text:'Herramientas abandonadas en paso',correct:'Potencial Desorden',explanation:'Pueden provocar tropiezos; deben guardarse tras uso.'},
+{text:'Trabajador con casco y arnés',correct:'Buena Práctica',explanation:'Equipos de protección individual obligatorios.'},
+{text:'Escalera inestable sobre escombros',correct:'Peligro Inmediato',explanation:'Alto riesgo de caída; debe estabilizarse primero.'},
+{text:'Cables sueltos en el suelo',correct:'Potencial Desorden',explanation:'Riesgo de tropiezo; deben recogerse o señalizarse.'},
+{text:'Extintor accesible y señalizado',correct:'Buena Práctica',explanation:'Fundamental para emergencias; debe estar visible.'},
+{text:'Trabajos en altura sin protección',correct:'Peligro Inmediato',explanation:'Requiere líneas de vida o redes; riesgo mortal.'},
+{text:'Materiales apilados desordenados',correct:'Potencial Desorden',explanation:'Pueden colapsar; deben apilarse correctamente.'},
+{text:'Botiquín completo en caseta',correct:'Buena Práctica',explanation:'Necesario para primeros auxilios en cualquier obra.'}
+];
+const categories=['Peligro Inmediato','Potencial Desorden','Buena Práctica'];
+let currentIndex=0;
+let answers=[];
+let state='intro';
+function render(){
+const app=document.getElementById('app');
+if(state==='intro'){
+app.innerHTML=`
+<div class="modal">
+<div class="modal-content">
+<img src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="Avatar" class="avatar-bg">
+<h2>Inspector de Riesgos: ¡Tu Primera Obra! 👷</h2>
+<p>Estás en tu primer día en una obra. Clasifica cada situación según su riesgo: Peligro Inmediato, Potencial Desorden o Buena Práctica. ¡Entrena tu ojo crítico!</p>
+<button class="btn" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>`;
+}else if(state==='game'){
+const item=items[currentIndex];
+app.innerHTML=`
+<div class="game-container">
+<div class="hud">
+<div class="hud-item">🎯 Ítem ${currentIndex+1}/${items.length}</div>
+</div>
+<div class="item-card">
+<h3>${item.text}</h3>
+</div>
+<div class="categories">
+${categories.map(cat=>`<button class="category-btn" onclick="selectCategory('${cat}')">${cat}</button>`).join('')}
+</div>
+</div>`;
+setTimeout(ensureFits,50);
+}else if(state==='results'){
+const correct=answers.filter(a=>a.correct).length;
+const total=items.length;
+document.documentElement.style.overflow='auto';
+document.body.style.overflow='auto';
+app.innerHTML=`
+<div class="results-container">
+<div class="score-summary">
+<h3>¡Reto Completado! 🎉</h3>
+<p>Has acertado ${correct} de ${total} situaciones</p>
+</div>
+<div class="advice-box">
+<h4>💡 Consejo Profesional</h4>
+<p>En obra, clasifica mentalmente cada elemento: ¿Es seguro? ¿Está ordenado? ¿Cumple normativa? Esta alerta constante salva vidas.</p>
+</div>
+${answers.map((ans,i)=>`
+<div class="result-item ${ans.correct?'result-correct':'result-wrong'}">
+<h4>${items[i].text}</h4>
+<p><strong>${ans.correct?'✓':'✗'} Tu respuesta:</strong> ${ans.answer}</p>
+<p><strong>Correcta:</strong> ${items[i].correct}</p>
+<p>${items[i].explanation}</p>
+</div>
+`).join('')}
+<button class="btn" onclick="completeTask()" style="width:100%;margin-top:1rem">Ver mi recompensa</button>
+</div>`;
+}
+}
+function startGame(){
+state='game';
+render();
+}
+function selectCategory(cat){
+const btn=event.target;
+btn.classList.add('drop-animation');
+answers.push({answer:cat,correct:cat===items[currentIndex].correct});
+setTimeout(()=>{
+currentIndex++;
+if(currentIndex<items.length){
+state='game';
+render();
+}else{
+state='results';
+render();
+}
+},500);
+}
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+function ensureFits(){
+const scene=document.querySelector('.game-container');
+if(!scene)return;
+if(scene.scrollHeight>scene.clientHeight){
+scene.classList.add('compact');
+setTimeout(()=>{
+if(scene.scrollHeight>scene.clientHeight){
+const scale=Math.max(0.88,scene.clientHeight/scene.scrollHeight);
+scene.style.transform=`scale(${scale})`;
+scene.style.transformOrigin='top center';
+}
+},50);
+}
+}
+window.addEventListener('resize',()=>{
+if(state==='game')ensureFits();
+});
+window.addEventListener('orientationchange',()=>{
+if(state==='game')setTimeout(ensureFits,300);
+});
+render();
+</script>
+</body>
+</html>
+
