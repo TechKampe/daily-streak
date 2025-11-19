@@ -1,0 +1,198 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<title>¡No te chispotees! ⚡️</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;font-family:'Baloo 2',system-ui,sans-serif;background:#FFFFFF;color:#1A1B2F;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;touch-action:pan-y}
+body.results-mode{overflow-y:auto}
+@supports(height:100svh){.scene{height:100svh!important}}
+@supports not(height:100svh){.scene{height:100dvh!important}}
+@supports not(height:100dvh){.scene{height:100vh!important}}
+.scene{width:100%;height:100vh;display:flex;flex-direction:column;padding:max(env(safe-area-inset-top),80px) env(safe-area-inset-right,16px) env(safe-area-inset-bottom,16px) env(safe-area-inset-left,16px);position:relative;overflow:hidden}
+.avatar{position:fixed;bottom:-40px;right:-20px;width:200px;height:200px;opacity:0.15;pointer-events:none;z-index:0;background:url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png') no-repeat center;background-size:contain}
+.modal-overlay{position:fixed;inset:0;background:rgba(11,33,74,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;animation:fadeIn 0.3s ease}
+.modal{background:#FFFFFF;border-radius:24px;padding:clamp(20px,5vw,32px);max-width:500px;width:100%;max-height:90svh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);border:1px solid #00E6BC;position:relative}
+.modal h1{font-size:clamp(1.5rem,5vw,2rem);font-weight:800;color:#1A1B2F;margin-bottom:12px;line-height:1.2}
+.modal p{font-size:clamp(0.95rem,3.5vw,1.05rem);color:#1A1B2F;line-height:1.5;margin-bottom:20px}
+.btn{background:#0B214A;color:#00E6BC;border:none;border-radius:24px;padding:16px 32px;font-size:clamp(1rem,4vw,1.1rem);font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;box-shadow:0 8px 18px rgba(11,33,74,0.25);transition:transform 0.15s,box-shadow 0.15s;min-height:44px;touch-action:manipulation;width:100%}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 24px rgba(11,33,74,0.35)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:0.4;cursor:not-allowed;box-shadow:none}
+.gameplay{flex:1;display:flex;flex-direction:column;position:relative;z-index:1;overflow:hidden}
+.hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:clamp(12px,3vh,20px);flex-shrink:0}
+.progress-indicator{background:#C5FFDF;color:#0B214A;padding:8px 16px;border-radius:12px;font-weight:700;font-size:clamp(0.9rem,3.5vw,1rem)}
+.score{font-weight:700;color:#00E6BC;font-size:clamp(1rem,4vw,1.2rem)}
+.question-container{flex:1;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;min-height:0}
+.question-text{font-size:clamp(1.1rem,4.5vw,1.35rem);font-weight:700;color:#1A1B2F;margin-bottom:clamp(16px,3vh,24px);line-height:1.3;flex-shrink:0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.answers{display:flex;flex-direction:column;gap:clamp(10px,2vh,14px);flex-shrink:0;overflow-y:auto;max-height:calc(100% - 80px);padding-bottom:8px}
+.answer-btn{background:#FFFFFF;border:2px solid #0B214A;color:#1A1B2F;border-radius:20px;padding:clamp(14px,3vh,18px) clamp(16px,4vw,20px);font-size:clamp(0.95rem,3.8vw,1.05rem);font-weight:600;font-family:'Baloo 2',sans-serif;cursor:pointer;transition:all 0.2s;min-height:44px;text-align:left;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;touch-action:manipulation}
+.answer-btn:hover{border-color:#00E6BC;background:#C5FFDF;transform:translateX(4px)}
+.answer-btn.correct{background:#04FFB4;border-color:#04FFB4;color:#1A1B2F;animation:pulse 0.4s ease}
+.answer-btn.incorrect{background:#F9577E;border-color:#F9577E;color:#FFFFFF;animation:shake 0.4s ease}
+.results-container{width:100%;max-width:600px;margin:0 auto;padding:20px;background:#FFFFFF}
+.results-header{text-align:center;margin-bottom:24px}
+.results-header h2{font-size:clamp(1.5rem,5vw,2rem);font-weight:800;color:#1A1B2F;margin-bottom:8px}
+.results-score{font-size:clamp(1.2rem,4.5vw,1.5rem);color:#00E6BC;font-weight:700;background:#C5FFDF;padding:12px 24px;border-radius:16px;display:inline-block}
+.question-review{background:#FFFFFF;border:1px solid #00E6BC;border-radius:20px;padding:16px;margin-bottom:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05)}
+.question-review h3{font-size:clamp(1rem,4vw,1.15rem);font-weight:700;color:#1A1B2F;margin-bottom:10px;line-height:1.3}
+.review-item{margin:8px 0;font-size:clamp(0.9rem,3.5vw,0.95rem);line-height:1.4}
+.review-label{font-weight:700;color:#0B214A}
+.review-correct{color:#04FFB4}
+.review-incorrect{color:#F9577E}
+.review-explanation{background:#C5FFDF;padding:10px 12px;border-radius:12px;margin-top:10px;font-size:clamp(0.85rem,3.2vw,0.9rem);color:#1A1B2F;line-height:1.4}
+.tip-box{background:#C5FFDF;border-radius:20px;padding:20px;margin:24px 0;border:1px solid #00E6BC}
+.tip-box h3{font-size:clamp(1.1rem,4vw,1.25rem);font-weight:700;color:#0B214A;margin-bottom:8px}
+.tip-box p{font-size:clamp(0.9rem,3.5vw,1rem);color:#1A1B2F;line-height:1.5}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.compact .hud{margin-bottom:8px}
+.compact .question-text{font-size:clamp(1rem,4vw,1.2rem);margin-bottom:12px;-webkit-line-clamp:3}
+.compact .answer-btn{padding:12px 14px;font-size:clamp(0.9rem,3.5vw,1rem)}
+.compact .answers{gap:8px}
+@media(max-height:640px){.question-text{-webkit-line-clamp:3;margin-bottom:12px}.answers{gap:8px}.answer-btn{padding:12px 14px}}
+</style>
+</head>
+<body>
+<div class="avatar"></div>
+<div id="app"></div>
+<script>
+const questions=[
+{q:"Antes de trabajar en un cuadro eléctrico, ¿cuál es la PRIMERA de las 5 Reglas de Oro?",
+answers:["Desconectar todas las fuentes de tensión","Verificar ausencia de tensión","Poner a tierra y en cortocircuito"],
+correct:0,
+explanation:"Siempre debes desconectar primero. Sin desconexión, ninguna otra medida tiene sentido."},
+{q:"Vas a verificar si un circuito está sin tensión. ¿Qué EPI es imprescindible?",
+answers:["Guantes dieléctricos homologados","Guantes de algodón normales","Guantes de latex sanitarios"],
+correct:0,
+explanation:"Los guantes dieléctricos protegen de contactos eléctricos. Nunca uses guantes no homologados."},
+{q:"Has dejado abierto un interruptor para trabajar. ¿Qué debes hacer para evitar que alguien lo cierre?",
+answers:["Poner un cartel escrito a mano","Enclavamiento y señalización reglamentaria","Avisar verbalmente al equipo"],
+correct:1,
+explanation:"El enclavamiento físico + señalización impiden reconexiones accidentales. Los avisos verbales no bastan."},
+{q:"¿Cuándo puedes considerar que una instalación está 'sin tensión'?",
+answers:["Cuando el interruptor está apagado","Tras verificar ausencia con equipo homologado","Si lleva más de 10 minutos desconectada"],
+correct:1,
+explanation:"Solo tras medir con un voltímetro o comprobador homologado puedes asegurar ausencia de tensión."},
+{q:"Trabajas cerca de una línea que NO puedes desenergizar. ¿Qué medida aplicas?",
+answers:["Trabajar rápido y con cuidado","Proteger o señalizar para mantener distancia de seguridad","Usar solo herramientas aisladas"],
+correct:1,
+explanation:"Cuando no puedes quitar tensión, debes delimitar zonas y mantener distancias de seguridad reglamentarias."}
+];
+let state={screen:'intro',currentQ:0,answers:[],score:0};
+function render(){
+const app=document.getElementById('app');
+if(state.screen==='intro'){
+app.innerHTML=`
+<div class="modal-overlay">
+<div class="modal">
+<h1>¡No te chispotees! ⚡️</h1>
+<p>Eres aprendiz de electricista en tu primer día. Tu responsable quiere asegurar que conoces los básicos de seguridad antes de tocar un cable.</p>
+<p><strong>5 preguntas rápidas</strong> sobre PRL, las 5 Reglas de Oro, EPIs y señalización. ¿Estás listo?</p>
+<button class="btn" onclick="startGame()" aria-label="Comenzar el reto">Comenzar</button>
+</div>
+</div>`;
+}else if(state.screen==='game'){
+const q=questions[state.currentQ];
+app.innerHTML=`
+<div class="scene gameplay">
+<div class="hud">
+<div class="progress-indicator" aria-label="Pregunta ${state.currentQ+1} de ${questions.length}">${state.currentQ+1}/${questions.length}</div>
+<div class="score" aria-label="Puntuación ${state.score}">✓ ${state.score}</div>
+</div>
+<div class="question-container">
+<div class="question-text">${q.q}</div>
+<div class="answers" role="radiogroup" aria-label="Opciones de respuesta">
+${q.answers.map((a,i)=>`<button class="answer-btn" onclick="selectAnswer(${i})" aria-label="Opción ${i+1}: ${a}">${a}</button>`).join('')}
+</div>
+</div>
+</div>`;
+setTimeout(()=>ensureFits(),50);
+}else if(state.screen==='results'){
+document.body.classList.add('results-mode');
+const reviews=questions.map((q,i)=>{
+const userAns=state.answers[i];
+const isCorrect=userAns===q.correct;
+return`
+<div class="question-review">
+<h3>${i+1}. ${q.q}</h3>
+<div class="review-item"><span class="review-label">Tu respuesta:</span> <span class="${isCorrect?'review-correct':'review-incorrect'}">${q.answers[userAns]} ${isCorrect?'✓':'✗'}</span></div>
+${!isCorrect?`<div class="review-item"><span class="review-label">Correcta:</span> <span class="review-correct">${q.answers[q.correct]} ✓</span></div>`:''}
+<div class="review-explanation">${q.explanation}</div>
+</div>`;
+}).join('');
+app.innerHTML=`
+<div class="results-container">
+<div class="results-header">
+<h2>¡Reto completado!</h2>
+<div class="results-score">${state.score} de ${questions.length} correctas</div>
+</div>
+${reviews}
+<div class="tip-box">
+<h3>💡 Consejo práctico</h3>
+<p>Las 5 Reglas de Oro son obligatorias para trabajos sin tensión. Memorízalas y aplícalas siempre: pueden salvar tu vida.</p>
+</div>
+<button class="btn" onclick="completeTask()" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+</div>`;
+}
+}
+function startGame(){
+state.screen='game';
+render();
+}
+function selectAnswer(idx){
+const q=questions[state.currentQ];
+const isCorrect=idx===q.correct;
+state.answers.push(idx);
+if(isCorrect)state.score++;
+const btns=document.querySelectorAll('.answer-btn');
+btns.forEach(b=>b.disabled=true);
+btns[idx].classList.add(isCorrect?'correct':'incorrect');
+setTimeout(()=>{
+state.currentQ++;
+if(state.currentQ<questions.length){
+render();
+}else{
+state.screen='results';
+render();
+}
+},800);
+}
+function ensureFits(){
+const scene=document.querySelector('.scene');
+if(!scene)return;
+if(scene.scrollHeight>scene.clientHeight+5){
+scene.classList.add('compact');
+setTimeout(()=>{
+if(scene.scrollHeight>scene.clientHeight+5){
+const scale=Math.max(0.88,scene.clientHeight/scene.scrollHeight);
+scene.style.transform=`scale(${scale})`;
+scene.style.transformOrigin='top center';
+}
+},50);
+}
+}
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+window.addEventListener('resize',()=>{
+if(state.screen==='game')setTimeout(ensureFits,100);
+});
+window.addEventListener('orientationchange',()=>{
+if(state.screen==='game')setTimeout(ensureFits,200);
+});
+render();
+</script>
+</body>
+</html>
+
