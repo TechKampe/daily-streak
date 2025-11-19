@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>¡No te chispotees! ⚡️</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;font-family:'Baloo 2',sans-serif;background:#FFF;color:#1A1B2F;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+.scene{height:100svh;height:100dvh;display:flex;flex-direction:column;padding:max(env(safe-area-inset-top),80px) max(env(safe-area-inset-right),20px) max(env(safe-area-inset-bottom),20px) max(env(safe-area-inset-left),20px);overflow:hidden;touch-action:none}
+.scene.results{overflow-y:auto;touch-action:auto}
+.hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.progress{font-size:clamp(14px,3.5vw,16px);font-weight:600;color:#00E6BC}
+.avatar{width:48px;height:48px;border-radius:50%;object-fit:cover}
+.content{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:24px;padding:0 8px}
+.question-text{font-size:clamp(18px,4.5vw,22px);font-weight:700;text-align:center;line-height:1.3;max-width:500px}
+.options{display:flex;flex-direction:column;gap:12px;width:100%;max-width:400px}
+.option-btn{background:#FFF;border:2px solid #00E6BC;border-radius:24px;padding:16px 20px;font-family:'Baloo 2',sans-serif;font-size:clamp(15px,3.8vw,17px);font-weight:600;color:#1A1B2F;min-height:56px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.2;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.option-btn:hover{background:#C5FFDF;transform:translateY(-2px)}
+.option-btn:active{transform:scale(.98)}
+.option-btn.correct{background:#04FFB4;border-color:#04FFB4;animation:pulse .4s}
+.option-btn.wrong{background:#F9577E;border-color:#F9577E;color:#FFF;animation:shake .4s}
+.option-btn:disabled{opacity:.4;cursor:not-allowed}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .4s}
+.tutorial{text-align:center;max-width:450px}
+.tutorial h1{font-size:clamp(24px,6vw,32px);margin-bottom:16px;color:#1A1B2F}
+.tutorial p{font-size:clamp(15px,3.8vw,17px);line-height:1.4;margin-bottom:24px;color:#1A1B2F}
+.start-btn{background:#0B214A;color:#00E6BC;border:none;border-radius:24px;padding:16px 40px;font-family:'Baloo 2',sans-serif;font-size:clamp(16px,4vw,18px);font-weight:700;min-height:56px;cursor:pointer;box-shadow:0 8px 18px rgba(11,33,74,.25);transition:all .2s}
+.start-btn:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(11,33,74,.35)}
+.start-btn:active{transform:scale(.98)}
+.results-content{padding-bottom:40px}
+.results-header{text-align:center;margin-bottom:32px}
+.results-header h2{font-size:clamp(24px,6vw,28px);margin-bottom:12px}
+.score{font-size:clamp(20px,5vw,24px);color:#00E6BC;font-weight:700}
+.result-item{background:#FFF;border:1px solid #00E6BC;border-radius:16px;padding:16px;margin-bottom:16px}
+.result-q{font-weight:700;font-size:clamp(15px,3.8vw,17px);margin-bottom:8px}
+.result-answer{font-size:clamp(14px,3.5vw,16px);margin:6px 0;padding:8px;border-radius:8px}
+.result-answer.user{background:#C5FFDF}
+.result-answer.correct{background:#C5FFDF;border-left:3px solid #04FFB4}
+.result-answer.wrong{background:#FFE5E5;border-left:3px solid #F9577E}
+.result-explanation{font-size:clamp(14px,3.5vw,15px);color:#1A1B2F;margin-top:8px;line-height:1.3;font-style:italic;max-width:100%;overflow-wrap:break-word}
+.advice{background:#C5FFDF;border-radius:16px;padding:20px;margin:24px 0;text-align:center}
+.advice h3{font-size:clamp(17px,4.2vw,19px);margin-bottom:8px;color:#0B214A}
+.advice p{font-size:clamp(14px,3.5vw,16px);line-height:1.4}
+.reward-btn{background:#0B214A;color:#00E6BC;border:none;border-radius:24px;padding:16px 40px;font-family:'Baloo 2',sans-serif;font-size:clamp(16px,4vw,18px);font-weight:700;min-height:56px;cursor:pointer;box-shadow:0 8px 18px rgba(11,33,74,.25);width:100%;max-width:400px;margin:0 auto;display:block}
+</style>
+</head>
+<body>
+<div class="scene" id="app"></div>
+<script>
+const questions=[
+{q:"Antes de intervenir un circuito, la primera de las '5 Reglas de Oro' es:",options:["Verificar ausencia de tensión","Cortar todas las fuentes de tensión","Poner a tierra y en cortocircuito"],correct:1,explanation:"Primero debes cortar todas las fuentes de alimentación para garantizar que no haya energía."},
+{q:"¿Cuál de estos EPIs es obligatorio al trabajar en un cuadro eléctrico?",options:["Guantes dieléctricos","Casco con barboquejo","Chaleco reflectante"],correct:0,explanation:"Los guantes dieléctricos te protegen del contacto eléctrico directo."},
+{q:"Encuentras un cable pelado en obra. ¿Qué haces primero?",options:["Lo cubres con cinta aislante rápida","Señalizas la zona y avisas al responsable","Lo desconectas inmediatamente"],correct:1,explanation:"Señalizar y avisar evita que otros se expongan mientras se soluciona correctamente."},
+{q:"La señal de riesgo eléctrico es un triángulo amarillo con:",options:["Un rayo negro","Una calavera","Una mano abierta"],correct:0,explanation:"El rayo negro sobre fondo amarillo es la señal universal de riesgo eléctrico."},
+{q:"Después de cortar la tensión, ¿qué regla sigue?",options:["Poner a tierra","Condenar los aparatos de corte","Verificar ausencia de tensión"],correct:2,explanation:"Tras cortar, debes verificar con un instrumento que realmente no hay tensión."}
+];
+let state={phase:'tutorial',currentQ:0,answers:[]};
+function render(){
+const app=document.getElementById('app');
+if(state.phase==='tutorial'){
+app.innerHTML=`<div class="content tutorial fade-in">
+<img src="https://techkampe.github.io/daily-streak/assets/Avatar%20[1]_low.png" alt="Avatar" class="avatar" style="width:80px;height:80px;margin-bottom:16px" loading="eager">
+<h1>¡No te chispotees! ⚡️</h1>
+<p>Tu responsable quiere comprobar que conoces los básicos de seguridad eléctrica antes de empezar. Responde 5 preguntas sobre PRL en trabajos eléctricos.</p>
+<button class="start-btn" onclick="start()">Empezar quiz</button>
+</div>`;
+}else if(state.phase==='quiz'){
+const q=questions[state.currentQ];
+app.innerHTML=`<div class="hud">
+<span class="progress">${state.currentQ+1}/5</span>
+<img src="https://techkampe.github.io/daily-streak/assets/Avatar%20[1]_low.png" alt="Avatar" class="avatar" loading="lazy">
+</div>
+<div class="content fade-in">
+<div class="question-text">${q.q}</div>
+<div class="options">
+${q.options.map((opt,i)=>`<button class="option-btn" onclick="answer(${i})" aria-label="Opción ${i+1}: ${opt}">${opt}</button>`).join('')}
+</div>
+</div>`;
+}else if(state.phase==='results'){
+app.classList.add('results');
+const score=state.answers.filter(a=>a.correct).length;
+app.innerHTML=`<div class="results-content fade-in">
+<div class="results-header">
+<h2>Resultado Final</h2>
+<div class="score">Has acertado ${score} de 5</div>
+</div>
+${state.answers.map((a,i)=>{
+const q=questions[i];
+return`<div class="result-item">
+<div class="result-q">${i+1}. ${q.q}</div>
+<div class="result-answer ${a.correct?'correct':'wrong'}">Tu respuesta: ${q.options[a.selected]}</div>
+${!a.correct?`<div class="result-answer correct">Correcta: ${q.options[q.correct]}</div>`:''}
+<div class="result-explanation">${q.explanation}</div>
+</div>`;
+}).join('')}
+<div class="advice">
+<h3>Consejo del día</h3>
+<p>La seguridad eléctrica no admite atajos. Siempre sigue las 5 Reglas de Oro y usa tus EPIs.</p>
+</div>
+<button class="reward-btn" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+}
+}
+function start(){
+state.phase='quiz';
+render();
+}
+function answer(selected){
+const q=questions[state.currentQ];
+const correct=selected===q.correct;
+state.answers.push({selected,correct});
+const btns=document.querySelectorAll('.option-btn');
+btns.forEach(btn=>btn.disabled=true);
+btns[selected].classList.add(correct?'correct':'wrong');
+if(!correct){
+btns[q.correct].classList.add('correct');
+}
+setTimeout(()=>{
+state.currentQ++;
+if(state.currentQ<questions.length){
+render();
+}else{
+state.phase='results';
+render();
+}
+},1200);
+}
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+render();
+</script>
+</body>
+</html>
+
