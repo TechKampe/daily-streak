@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>¡No te chispotees! ⚡️ - Kämpe</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;font-family:'Baloo 2',cursive;background:#FFF;color:#1A1B2F;overflow:hidden;overscroll-behavior:none;-webkit-font-smoothing:antialiased}
+body.results-mode{overflow-y:auto}
+.scene{width:100%;position:relative;display:flex;flex-direction:column;padding:env(safe-area-inset-top,80px) env(safe-area-inset-right,16px) env(safe-area-inset-bottom,16px) env(safe-area-inset-left,16px);overflow:hidden}
+@supports(height:100svh){.scene{height:100svh}}
+@supports not(height:100svh){.scene{height:100dvh}}
+@supports not(height:100dvh){.scene{height:100vh}}
+.avatar{position:fixed;bottom:-40px;right:-20px;width:180px;height:180px;opacity:0.15;pointer-events:none;z-index:0;background:url('https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png') no-repeat center;background-size:contain}
+.hud{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;min-height:32px}
+.progress-indicator{font-size:clamp(16px,4vw,20px);font-weight:700;color:#00E6BC;background:#C5FFDF;padding:6px 16px;border-radius:20px}
+.title-block{position:relative;z-index:2;margin-bottom:16px}
+.title-block h1{font-size:clamp(24px,6vw,32px);font-weight:800;color:#1A1B2F;line-height:1.2;margin-bottom:8px}
+.title-block p{font-size:clamp(14px,3.5vw,16px);font-weight:400;color:#1A1B2F;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.content-area{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden}
+.question-wrapper{margin-bottom:20px}
+.question-text{font-size:clamp(16px,4vw,20px);font-weight:700;color:#1A1B2F;line-height:1.3;margin-bottom:16px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.options-container{display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:calc(100svh - 320px)}
+.option-btn{width:100%;min-height:60px;background:#0B214A;color:#00E6BC;border:1px solid #00E6BC;border-radius:24px;font-size:clamp(15px,3.8vw,18px);font-weight:600;font-family:'Baloo 2',cursive;padding:12px 20px;cursor:pointer;box-shadow:0 8px 18px rgba(11,33,74,0.25);transition:all 0.2s;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;touch-action:manipulation}
+.option-btn:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(11,33,74,0.35)}
+.option-btn:active{transform:translateY(0);box-shadow:0 4px 12px rgba(11,33,74,0.2)}
+.option-btn.selected{background:#00E6BC;color:#0B214A}
+.option-btn.correct{background:#04FFB4;color:#0B214A;border-color:#04FFB4}
+.option-btn.incorrect{background:#F9577E;color:#FFF;border-color:#F9577E}
+.cta-btn{width:100%;min-height:56px;background:#0B214A;color:#00E6BC;border:1px solid #00E6BC;border-radius:24px;font-size:clamp(16px,4vw,20px);font-weight:700;font-family:'Baloo 2',cursive;padding:14px 24px;cursor:pointer;box-shadow:0 8px 18px rgba(11,33,74,0.25);transition:all 0.2s;margin-top:auto;touch-action:manipulation;position:relative;z-index:3}
+.cta-btn:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(11,33,74,0.35)}
+.cta-btn:active{transform:translateY(0);box-shadow:0 4px 12px rgba(11,33,74,0.2)}
+.cta-btn:disabled{opacity:0.4;cursor:not-allowed;box-shadow:none}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(26,27,47,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;overflow-y:auto}
+.modal-content{background:#FFF;border-radius:24px;padding:28px 24px;max-width:500px;width:100%;max-height:90svh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.3);border:1px solid #00E6BC}
+.modal-content h2{font-size:clamp(22px,5.5vw,28px);font-weight:800;color:#1A1B2F;margin-bottom:12px;line-height:1.2}
+.modal-content p{font-size:clamp(14px,3.5vw,16px);font-weight:400;color:#1A1B2F;line-height:1.5;margin-bottom:20px}
+.modal-content .tutorial-text{background:#C5FFDF;padding:12px 16px;border-radius:12px;margin-bottom:20px;font-size:clamp(13px,3.3vw,15px)}
+.results-container{padding:24px 20px;max-width:600px;margin:0 auto}
+.results-header{text-align:center;margin-bottom:28px}
+.results-header h2{font-size:clamp(26px,6.5vw,34px);font-weight:800;color:#1A1B2F;margin-bottom:12px}
+.score-display{font-size:clamp(20px,5vw,26px);font-weight:700;color:#00E6BC;background:#C5FFDF;padding:12px 24px;border-radius:20px;display:inline-block}
+.question-review{margin-bottom:24px;background:#FFF;border:1px solid #00E6BC;border-radius:16px;padding:20px;box-shadow:0 4px 12px rgba(11,33,74,0.1)}
+.question-review-header{font-size:clamp(15px,3.8vw,18px);font-weight:700;color:#1A1B2F;margin-bottom:12px;line-height:1.3}
+.answer-row{margin-bottom:8px;padding:10px 12px;border-radius:12px;font-size:clamp(13px,3.3vw,15px);line-height:1.4}
+.answer-row.user{background:#C5FFDF}
+.answer-row.correct{background:#04FFB4;color:#0B214A;font-weight:600}
+.answer-row.incorrect{background:#F9577E;color:#FFF}
+.answer-row strong{font-weight:700}
+.explanation{background:#C5FFDF;padding:12px;border-radius:12px;margin-top:12px;font-size:clamp(13px,3.3vw,15px);line-height:1.4;color:#1A1B2F}
+.advice-box{background:#0B214A;color:#00E6BC;padding:20px;border-radius:16px;margin:28px 0;text-align:center;font-size:clamp(14px,3.5vw,16px);line-height:1.5;font-weight:600;border:1px solid #00E6BC}
+.fadeIn{animation:fadeIn 0.3s ease-in}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.compact .hud{min-height:28px;margin-bottom:8px}
+.compact .title-block{margin-bottom:12px}
+.compact .title-block h1{font-size:clamp(20px,5vw,26px)}
+.compact .title-block p{font-size:clamp(12px,3vw,14px)}
+.compact .question-text{font-size:clamp(14px,3.5vw,17px);margin-bottom:12px}
+.compact .option-btn{min-height:52px;font-size:clamp(13px,3.3vw,16px);padding:10px 16px}
+.compact .options-container{gap:10px}
+@media(max-width:360px){.hud{margin-bottom:8px}.title-block{margin-bottom:12px}.question-text{margin-bottom:12px}.options-container{gap:10px}.option-btn{min-height:52px;font-size:14px;padding:10px 14px}}
+</style>
+</head>
+<body>
+<div class="scene" id="scene">
+<div class="avatar"></div>
+<div class="hud" id="hud">
+<div class="progress-indicator" id="progressIndicator">1/5</div>
+</div>
+<div class="title-block" id="titleBlock">
+<h1 id="mainTitle">¡No te chispotees! ⚡️</h1>
+<p id="mainDesc">Tu primer día de obra: demuestra que conoces los básicos de seguridad eléctrica</p>
+</div>
+<div class="content-area" id="contentArea">
+<div class="question-wrapper" id="questionWrapper"></div>
+<div class="options-container" id="optionsContainer"></div>
+</div>
+<button class="cta-btn" id="ctaBtn" style="display:none">Continuar</button>
+</div>
+<div class="modal" id="introModal">
+<div class="modal-content">
+<h2>¡No te chispotees! ⚡️</h2>
+<p>Eres un aprendiz de electricista en tu primer día de obra. Antes de tocar un solo cable, tu responsable quiere asegurarse de que tienes claros los básicos de seguridad.</p>
+<div class="tutorial-text">
+<strong>Cómo jugar:</strong> Lee cada situación y elige la acción correcta. Responde 5 preguntas sobre PRL en trabajos eléctricos.
+</div>
+<button class="cta-btn" onclick="startQuiz()">Comenzar</button>
+</div>
+</div>
+<script>
+const questions=[
+{q:"Antes de trabajar en un cuadro eléctrico, ¿cuál es el PRIMER paso de las 5 Reglas de Oro?",options:["Verificar ausencia de tensión","Desconectar completamente","Poner candado de bloqueo"],correct:1,explanation:"La primera regla es DESCONECTAR todas las fuentes de alimentación antes de cualquier otra acción."},
+{q:"¿Qué EPI es IMPRESCINDIBLE al trabajar en un cuadro de baja tensión?",options:["Guantes dieléctricos","Casco con barboquejo","Botas de seguridad"],correct:0,explanation:"Los guantes dieléctricos protegen de descargas eléctricas y son obligatorios en trabajos eléctricos."},
+{q:"Ves un cable pelado en el suelo. ¿Qué haces primero?",options:["Lo empujo con el pie","Señalizo y aviso","Lo recojo rápido"],correct:1,explanation:"NUNCA toques un cable sin verificar. Señaliza la zona y avisa al responsable para evaluar el riesgo."},
+{q:"¿Qué símbolo indica 'Riesgo Eléctrico' en obra?",options:["Triángulo amarillo con rayo","Círculo rojo con cruz","Cuadrado azul con bombilla"],correct:0,explanation:"El triángulo amarillo con rayo negro es la señal universal de peligro eléctrico."},
+{q:"Tras desconectar, verificar y bloquear, ¿qué sigue según las 5 Reglas de Oro?",options:["Empezar a trabajar","Poner a tierra y cortocircuito","Llamar al encargado"],correct:1,explanation:"Antes de trabajar, debes poner a tierra y en cortocircuito para eliminar cualquier tensión residual."}
+];
+let currentQuestion=0;
+let userAnswers=[];
+let score=0;
+function startQuiz(){
+document.getElementById('introModal').style.display='none';
+document.body.style.overflow='hidden';
+showQuestion();
+ensureFits();
+}
+function showQuestion(){
+if(currentQuestion>=questions.length){
+showResults();
+return;
+}
+const q=questions[currentQuestion];
+document.getElementById('progressIndicator').textContent=`${currentQuestion+1}/${questions.length}`;
+document.getElementById('mainTitle').textContent='¡No te chispotees! ⚡️';
+document.getElementById('mainDesc').textContent=`Pregunta ${currentQuestion+1} de ${questions.length}`;
+const qWrapper=document.getElementById('questionWrapper');
+qWrapper.innerHTML=`<div class="question-text fadeIn">${q.q}</div>`;
+const optContainer=document.getElementById('optionsContainer');
+optContainer.innerHTML='';
+q.options.forEach((opt,idx)=>{
+const btn=document.createElement('button');
+btn.className='option-btn fadeIn';
+btn.textContent=opt;
+btn.setAttribute('aria-label',`Opción ${idx+1}: ${opt}`);
+btn.style.animationDelay=`${idx*0.05}s`;
+btn.onclick=()=>selectAnswer(idx);
+optContainer.appendChild(btn);
+});
+document.getElementById('ctaBtn').style.display='none';
+ensureFits();
+}
+function selectAnswer(idx){
+const q=questions[currentQuestion];
+userAnswers.push(idx);
+if(idx===q.correct)score++;
+const btns=document.querySelectorAll('.option-btn');
+btns.forEach((btn,i)=>{
+btn.disabled=true;
+if(i===q.correct)btn.classList.add('correct');
+else if(i===idx&&i!==q.correct)btn.classList.add('incorrect');
+});
+setTimeout(()=>{
+currentQuestion++;
+showQuestion();
+},1200);
+}
+function showResults(){
+document.body.classList.add('results-mode');
+document.body.style.overflow='auto';
+const scene=document.getElementById('scene');
+scene.style.overflow='visible';
+scene.style.height='auto';
+let html=`<div class="results-container">
+<div class="results-header">
+<h2>🎯 Resultado Final</h2>
+<div class="score-display">${score} de ${questions.length} correctas</div>
+</div>`;
+questions.forEach((q,i)=>{
+const userAns=userAnswers[i];
+const isCorrect=userAns===q.correct;
+html+=`<div class="question-review fadeIn" style="animation-delay:${i*0.1}s">
+<div class="question-review-header">${i+1}. ${q.q}</div>
+<div class="answer-row user"><strong>Tu respuesta:</strong> ${q.options[userAns]}</div>`;
+if(!isCorrect){
+html+=`<div class="answer-row correct"><strong>✓ Correcta:</strong> ${q.options[q.correct]}</div>`;
+}else{
+html+=`<div class="answer-row correct"><strong>✓ ¡Correcto!</strong></div>`;
+}
+html+=`<div class="explanation">${q.explanation}</div></div>`;
+});
+html+=`<div class="advice-box">💡 <strong>Consejo:</strong> Las 5 Reglas de Oro salvan vidas. Repásalas siempre antes de cualquier trabajo eléctrico.</div>
+<button class="cta-btn" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+scene.innerHTML=html;
+}
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+function ensureFits(){
+const scene=document.getElementById('scene');
+if(!scene||currentQuestion>=questions.length)return;
+const isOverflowing=scene.scrollHeight>scene.clientHeight+5;
+if(isOverflowing){
+scene.classList.add('compact');
+setTimeout(()=>{
+if(scene.scrollHeight>scene.clientHeight+5){
+const scale=Math.max(0.88,scene.clientHeight/scene.scrollHeight);
+scene.style.transform=`scale(${scale})`;
+scene.style.transformOrigin='top center';
+}
+},50);
+}
+}
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,200));
+</script>
+</body>
+</html>
+
