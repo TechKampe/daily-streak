@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¡No te chispotees! ⚡️</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;overflow:hidden;overscroll-behavior:none;background:#fff;font-family:'Baloo 2',sans-serif;color:#1A1B2F;-webkit-font-smoothing:antialiased}
+body{touch-action:pan-y}
+@supports (height:100svh){.scene{height:100svh}}
+@supports not (height:100svh){.scene{height:100dvh}}
+@supports not (height:100dvh){.scene{height:100vh}}
+.scene{width:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);overflow:hidden;position:relative}
+.scene.results{overflow-y:auto}
+.avatar-bg{position:absolute;top:16px;right:16px;width:80px;height:80px;border-radius:50%;overflow:hidden;opacity:0.2;z-index:0;pointer-events:none}
+.avatar-bg img{width:100%;height:100%;object-fit:cover}
+.content{flex:1;display:flex;flex-direction:column;position:relative;z-index:1;padding:16px;overflow:hidden}
+.header{text-align:center;margin-bottom:clamp(12px,3vh,20px)}
+.header h1{font-size:clamp(20px,5vw,28px);font-weight:700;color:#1A1B2F;margin-bottom:8px;line-height:1.2}
+.progress{font-size:clamp(14px,3.5vw,16px);color:#00E6BC;font-weight:600}
+.question-area{flex:1;display:flex;flex-direction:column;justify-content:center;margin-bottom:16px;overflow:hidden}
+.question-text{font-size:clamp(16px,4vw,20px);font-weight:600;color:#1A1B2F;margin-bottom:clamp(16px,4vh,24px);line-height:1.4;text-align:center;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.answers{display:flex;flex-direction:column;gap:12px}
+.answer-btn{background:#0B214A;color:#00E6BC;border:1px solid #00E6BC;border-radius:24px;padding:14px 20px;font-size:clamp(15px,3.8vw,17px);font-weight:600;font-family:'Baloo 2',sans-serif;cursor:pointer;transition:all .2s;box-shadow:0 8px 18px rgba(11,33,74,.25);min-height:44px;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}
+.answer-btn:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(11,33,74,.35)}
+.answer-btn:active{transform:translateY(0)}
+.answer-btn.correct{background:#04FFB4;color:#0B214A;border-color:#04FFB4}
+.answer-btn.incorrect{background:#F9577E;color:#fff;border-color:#F9577E}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(26,27,47,.85);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal-content{background:#fff;border-radius:24px;padding:24px;max-width:440px;width:100%;max-height:90svh;overflow-y:auto;border:1px solid #00E6BC}
+.modal-content h2{font-size:clamp(22px,5.5vw,28px);color:#1A1B2F;margin-bottom:12px;text-align:center}
+.modal-content p{font-size:clamp(14px,3.5vw,16px);color:#1A1B2F;line-height:1.5;margin-bottom:16px}
+.tutorial-highlight{background:#C5FFDF;padding:12px;border-radius:12px;margin:12px 0;font-size:clamp(13px,3.2vw,15px);color:#0B214A}
+.btn-primary{background:#0B214A;color:#00E6BC;border:1px solid #00E6BC;border-radius:24px;padding:14px 28px;font-size:clamp(16px,4vw,18px);font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;transition:all .2s;box-shadow:0 8px 18px rgba(11,33,74,.25);min-height:44px;width:100%;margin-top:8px}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(11,33,74,.35)}
+.btn-primary:active{transform:translateY(0)}
+.results-list{margin:20px 0}
+.result-item{background:#fff;border:1px solid #00E6BC;border-radius:16px;padding:16px;margin-bottom:16px}
+.result-item h3{font-size:clamp(15px,3.8vw,17px);color:#1A1B2F;margin-bottom:8px;font-weight:700}
+.result-answer{font-size:clamp(13px,3.2vw,15px);margin:6px 0;line-height:1.4}
+.result-answer.user{color:#0B214A}
+.result-answer.correct{color:#04FFB4;font-weight:600}
+.result-answer.wrong{color:#F9577E;font-weight:600}
+.result-explanation{font-size:clamp(13px,3.2vw,14px);color:#1A1B2F;background:#C5FFDF;padding:10px;border-radius:8px;margin-top:8px;line-height:1.4}
+.final-advice{background:#C5FFDF;padding:16px;border-radius:16px;margin:20px 0;font-size:clamp(14px,3.5vw,16px);color:#0B214A;line-height:1.5}
+.score-display{text-align:center;font-size:clamp(18px,4.5vw,22px);font-weight:700;color:#00E6BC;margin:16px 0}
+.compact .header h1{font-size:clamp(18px,4.5vw,24px)}
+.compact .question-text{font-size:clamp(14px,3.5vw,18px);margin-bottom:12px}
+.compact .answer-btn{padding:12px 16px;font-size:clamp(14px,3.5vw,16px)}
+.compact .progress{font-size:clamp(12px,3vw,14px)}
+@media (max-height:640px){
+.header{margin-bottom:8px}
+.question-text{margin-bottom:12px;font-size:clamp(14px,3.5vw,17px)}
+.answers{gap:8px}
+.answer-btn{padding:10px 16px;min-height:44px}
+}
+</style>
+</head>
+<body>
+<div class="scene" id="app">
+<div class="avatar-bg"><img src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="eager"></div>
+<div class="content" id="gameContent"></div>
+</div>
+<script>
+const questions=[
+{q:"Antes de empezar cualquier trabajo eléctrico, ¿cuál es la PRIMERA de las 5 Reglas de Oro?",
+answers:["Abrir todas las fuentes de tensión","Verificar ausencia de tensión","Poner a tierra y en cortocircuito"],
+correct:0,
+explanation:"La primera regla es desconectar (abrir todas las fuentes de tensión). Sin esto, el resto de medidas no sirven."},
+{q:"Vas a manipular un cuadro eléctrico. ¿Qué EPI es OBLIGATORIO para protegerte de arco eléctrico?",
+answers:["Guantes dieléctricos","Gafas de sol normales","Casco de obra estándar"],
+correct:0,
+explanation:"Los guantes dieléctricos aislantes son imprescindibles; protegen de descargas eléctricas directas."},
+{q:"Has abierto con corte visible la alimentación. Antes de tocar nada, ¿qué herramienta usas?",
+answers:["Destornillador multiuso","Verificador de ausencia de tensión","Un cable pelado"],
+correct:1,
+explanation:"El verificador (VAT) confirma que no hay tensión residual. Es la 2.ª Regla de Oro: verificar."},
+{q:"¿Qué señalización colocas en la zona de trabajo eléctrico para advertir a otros?",
+answers:["Cono naranja genérico","Señal 'Riesgo Eléctrico' amarilla con rayo","No hace falta señalizar"],
+correct:1,
+explanation:"La señalización específica de Riesgo Eléctrico (amarillo/negro, rayo) evita que alguien entre sin saber."},
+{q:"Terminas el trabajo. ¿Cuándo retiras la puesta a tierra y en cortocircuito?",
+answers:["Justo antes de cerrar el circuito","En cuanto acabo de trabajar","Después de cerrar, al día siguiente"],
+correct:0,
+explanation:"Retiras la PAT justo antes de cerrar el circuito, asegurando que el trabajo esté finalizado y la zona despejada."}
+];
+let currentQ=0;
+let userAnswers=[];
+let stage='tutorial';
+function render(){
+const c=document.getElementById('gameContent');
+if(stage==='tutorial'){
+c.innerHTML=`<div class="modal"><div class="modal-content">
+<h2>¡No te chispotees! ⚡️</h2>
+<p>Eres aprendiz de electricista en tu primer día. Antes de tocar un cable, demuestra que conoces los básicos de seguridad eléctrica.</p>
+<div class="tutorial-highlight">Responde 5 preguntas sobre PRL en trabajos eléctricos. Elige la acción correcta en cada situación.</div>
+<button class="btn-primary" onclick="startGame()">Empezar el reto</button>
+</div></div>`;
+}else if(stage==='game'){
+const q=questions[currentQ];
+c.innerHTML=`<div class="header">
+<h1>¡No te chispotees! ⚡️</h1>
+<div class="progress">${currentQ+1}/${questions.length}</div>
+</div>
+<div class="question-area">
+<div class="question-text">${q.q}</div>
+<div class="answers">
+${q.answers.map((a,i)=>`<button class="answer-btn" onclick="selectAnswer(${i})" aria-label="Opción ${i+1}: ${a}">${a}</button>`).join('')}
+</div>
+</div>`;
+setTimeout(()=>ensureFits(),50);
+}else if(stage==='results'){
+document.getElementById('app').classList.add('results');
+const correct=userAnswers.filter((a,i)=>a===questions[i].correct).length;
+c.innerHTML=`<div class="header"><h1>Resultados ⚡️</h1></div>
+<div class="score-display">Has acertado ${correct} de ${questions.length}</div>
+<div class="results-list">
+${questions.map((q,i)=>{
+const userAns=userAnswers[i];
+const isCorrect=userAns===q.correct;
+return `<div class="result-item">
+<h3>Pregunta ${i+1}</h3>
+<p style="font-size:clamp(13px,3.2vw,15px);color:#1A1B2F;margin-bottom:8px;">${q.q}</p>
+<div class="result-answer user">Tu respuesta: <span class="${isCorrect?'correct':'wrong'}">${q.answers[userAns]}</span></div>
+${!isCorrect?`<div class="result-answer correct">Correcta: ${q.answers[q.correct]}</div>`:''}
+<div class="result-explanation">${q.explanation}</div>
+</div>`;
+}).join('')}
+</div>
+<div class="final-advice"><strong>Consejo:</strong> Memoriza las 5 Reglas de Oro y usa siempre EPIs certificados. La prevención salva vidas.</div>
+<button class="btn-primary" onclick="completeTask()">Ver mi recompensa</button>`;
+}
+}
+function startGame(){
+stage='game';
+render();
+}
+function selectAnswer(idx){
+userAnswers.push(idx);
+const btns=document.querySelectorAll('.answer-btn');
+btns[idx].classList.add(idx===questions[currentQ].correct?'correct':'incorrect');
+btns.forEach(b=>b.disabled=true);
+setTimeout(()=>{
+currentQ++;
+if(currentQ<questions.length){
+render();
+}else{
+stage='results';
+render();
+}
+},600);
+}
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+function ensureFits(){
+const scene=document.querySelector('.scene');
+const content=document.querySelector('.content');
+if(!scene||!content||stage!=='game')return;
+if(content.scrollHeight>content.clientHeight+5){
+scene.classList.add('compact');
+setTimeout(()=>{
+if(content.scrollHeight>content.clientHeight+5){
+const scale=Math.max(0.88,content.clientHeight/content.scrollHeight);
+content.style.transform=`scale(${scale})`;
+content.style.transformOrigin='top center';
+}
+},50);
+}
+}
+window.addEventListener('resize',()=>{if(stage==='game')setTimeout(ensureFits,100)});
+window.addEventListener('orientationchange',()=>{if(stage==='game')setTimeout(ensureFits,200)});
+render();
+</script>
+</body>
+</html>
+
