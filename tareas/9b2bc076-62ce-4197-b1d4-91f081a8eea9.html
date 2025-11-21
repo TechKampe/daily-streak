@@ -1,0 +1,185 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&display=swap" rel="stylesheet"><title>Conexión Maestra: Herramientas ⚡</title><style>
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#1A1B2F;font-family:"Baloo 2",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overscroll-behavior:none}
+:root{--brand:#0B214A;--teal:#00E6BC;--soft:#C5FFDF;--success:#04FFB4;--error:#F9577E;--ui-scale:1;--g:12px;--cardAR:.72;--cellH:120px}
+button{font-family:inherit}
+.scene{position:relative;width:100%;height:100vh;display:flex;align-items:stretch;justify-content:center;touch-action:none}
+@supports(height:100svh){.scene{height:100svh}}
+@supports not (height:100svh){@supports(height:100dvh){.scene{height:100dvh}}}
+.scene .avatar{position:absolute;top:8px;right:8px;width:140px;height:auto;opacity:.16;pointer-events:none;user-select:none;z-index:0;filter:drop-shadow(0 8px 18px rgba(0,0,0,.15))}
+.stage{position:relative;z-index:1;transform:scale(var(--ui-scale));transform-origin:0 0;display:flex;flex-direction:column;gap:10px;width:100%;padding-left:16px;padding-right:16px;padding-bottom:16px;padding-top:calc(env(safe-area-inset-top) + 80px)}
+.hud{display:flex;flex-direction:column;gap:6px}
+.title{margin:0;font-weight:700;letter-spacing:.2px;font-size:clamp(18px,4.2vw,22px);line-height:1.1;color:#1A1B2F}
+.desc{margin:0;font-weight:600;opacity:.9;font-size:clamp(13px,3.6vw,15px);line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tip{align-self:flex-start;background:#C5FFDF;color:#0B214A;border:1px solid #00E6BC;border-radius:12px;padding:6px 10px;font-size:12px;line-height:1;max-width:100%;display:flex;gap:6px}
+.stats{display:flex;gap:8px;align-items:center}
+.stat{background:#C5FFDF;color:#0B214A;border:1px solid #00E6BC;border-radius:12px;padding:6px 10px;font-size:12px;line-height:1;min-height:28px;display:flex;align-items:center}
+.board-wrap{flex:1;min-height:0;display:flex}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--g);width:100%;align-content:center;justify-items:stretch}
+.card{position:relative;perspective:800px;user-select:none}
+.card .inner{position:relative;width:100%;aspect-ratio:var(--cardAR);border-radius:16px;transform-style:preserve-3d;transition:transform .45s ease}
+.card:not(.matched):active .inner{transform:scale(.98) rotateZ(0)}
+.card.flipped .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border:1px solid #00E6BC;border-radius:16px;display:flex;align-items:center;justify-content:center;padding:10px;backface-visibility:hidden}
+.face.back{background:#fff}
+.face.back::before{content:"";position:absolute;inset:0;border-radius:16px;background:radial-gradient(circle at 30% 30%,rgba(0,230,188,.12),transparent 50%),radial-gradient(circle at 70% 70%,rgba(11,33,74,.08),transparent 40%)}
+.face.front{background:#fff;transform:rotateY(180deg)}
+.card.matched .face.front{border-color:#04FFB4;box-shadow:0 0 0 2px rgba(4,255,180,.35) inset,0 8px 18px rgba(11,33,74,.15)}
+.ctxt{font-weight:700;color:#1A1B2F;text-align:center;font-size:clamp(12px,3.6vw,14px);line-height:1.05;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card.matched .ctxt{color:#0B214A}
+.footer{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.btn{background:#0B214A;color:#00E6BC;border:none;border-radius:24px;min-height:44px;padding:10px 16px;font-weight:700;font-size:clamp(14px,4vw,16px);box-shadow:0 8px 18px rgba(11,33,74,.25)}
+.btn:disabled{opacity:.45;box-shadow:none}
+.btn.secondary{background:transparent;color:#0B214A;border:1px solid #00E6BC;box-shadow:none}
+button:focus-visible{outline:2px solid #00E6BC;outline-offset:2px}
+.modal{position:fixed;inset:0;background:rgba(255,255,255,.96);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal .box{max-height:90svh;max-height:90dvh;background:#fff;border:1px solid #00E6BC;border-radius:16px;padding:16px;box-shadow:0 8px 18px rgba(11,33,74,.2);width:min(520px,92%);display:flex;flex-direction:column;gap:12px}
+.mtitle{margin:0;font-size:clamp(18px,4.6vw,22px);color:#1A1B2F}
+.mbody{margin:0;font-size:clamp(14px,4vw,16px);line-height:1.2}
+.mactions{display:flex;gap:8px;justify-content:flex-end}
+html,body.game{overflow:hidden}
+html,body.results-mode{overflow-y:auto}
+.compact .title{font-size:clamp(16px,4vw,18px)}
+.compact .desc{font-size:12px}
+.compact .stats .stat{display:none}
+.compact .board{gap:8px}
+.compact .stage{padding-left:12px;padding-right:12px}
+@media (max-width:340px){.stage{padding-left:12px;padding-right:12px}}
+/* Reserve 100px top-right UI-free zone implicitly by top padding and no controls there */
+.footer .spacer{flex:1}
+.progress{height:6px;background:rgba(11,33,74,.08);border-radius:8px;overflow:hidden;flex:1}
+.progress>i{display:block;height:100%;width:0;background:#04FFB4;transition:width .3s}
+.results{position:fixed;inset:0;background:#fff;z-index:12;display:none;overflow-y:auto;padding:16px;padding-top:calc(env(safe-area-inset-top) + 20px)}
+.results.show{display:block}
+.rhead h2{margin:0 0 6px 0;font-size:clamp(18px,5vw,22px)}
+.rsum{background:#C5FFDF;border:1px solid #00E6BC;border-radius:12px;padding:10px;margin-bottom:10px}
+.pairs{display:grid;grid-template-columns:1fr;gap:10px}
+.pair{border:1px solid #00E6BC;border-radius:12px;padding:10px}
+.pair b{color:#0B214A}
+.small{font-size:12px;color:#1A1B2F;opacity:.9}
+.results .cta{position:sticky;bottom:12px;margin-top:12px}
+</style></head><body class="game">
+<div class="scene" id="scene" aria-live="polite">
+  <img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" aria-hidden="true" loading="eager">
+  <div class="stage" id="stage">
+    <div class="hud">
+      <h1 class="title">Conexión Maestra: Herramientas ⚡</h1>
+      <p class="desc">Estás en tu primer día como ayudante. Encuentra las 4 parejas que unen herramienta y función.</p>
+      <div class="tip" aria-label="Tutorial breve">Toca dos cartas por turno. Si coinciden se quedan. Tienes 12 intentos.</div>
+      <div class="stats">
+        <div class="stat" id="triesLabel" aria-live="polite">Intentos: <span id="tries">12</span></div>
+        <div class="stat" id="pairsLabel" aria-live="polite">Parejas: <span id="found">0</span>/4</div>
+        <div class="progress" aria-label="Progreso parejas"><i id="prog"></i></div>
+      </div>
+    </div>
+    <div class="board-wrap">
+      <div class="board" id="board" role="grid" aria-label="Tablero de memoria"></div>
+    </div>
+    <div class="footer">
+      <button class="btn secondary" id="resetBtn" aria-label="Reiniciar partida">Reiniciar</button>
+      <span class="spacer"></span>
+      <button class="btn" id="startBtn" aria-label="Empezar">Empezar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle" style="display:flex">
+  <div class="box">
+    <h2 class="mtitle" id="introTitle">Listo para conectar pares</h2>
+    <p class="mbody">Destapa cartas y empareja herramienta con su función. Acumula 4 aciertos antes de agotar 12 intentos.</p>
+    <div class="mactions">
+      <button class="btn" id="introStart" aria-label="Comenzar desafío">¡A jugar!</button>
+    </div>
+  </div>
+</div>
+
+<div class="results" id="results" role="dialog" aria-modal="true" aria-labelledby="resTitle">
+  <div class="rhead">
+    <h2 id="resTitle">Resumen de la misión</h2>
+    <div class="rsum" id="rsum"></div>
+  </div>
+  <div class="pairs" id="pairsExpl"></div>
+  <div class="pair">
+    <b>Consejo mnemotécnico</b>
+    <p class="small">Piensa en “PMB-P”: Pelacables quita, Multímetro mide voltaje, Buscapolos busca tensión y Pinza “abraza” la corriente.</p>
+  </div>
+  <div class="cta">
+    <button onclick="completeTask()" class="btn" aria-label="Ver mi recompensa">Ver mi recompensa</button>
+    <script>
+    function completeTask(){
+      if(window.ReactNativeWebView){
+        window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+      }
+    }
+    </script>
+  </div>
+</div>
+
+<script>
+(function(){
+const scene=document.getElementById('scene');const stage=document.getElementById('stage');const boardEl=document.getElementById('board');const triesEl=document.getElementById('tries');const foundEl=document.getElementById('found');const progEl=document.getElementById('prog');const resetBtn=document.getElementById('resetBtn');const startBtn=document.getElementById('startBtn');const intro=document.getElementById('intro');const introStart=document.getElementById('introStart');const results=document.getElementById('results');const rsum=document.getElementById('rsum');const pairsExpl=document.getElementById('pairsExpl');
+let allowInput=false,flipped=[],matched=0,triesLeft=12,attemptsUsed=0,limit=12,deck=[];
+const PAIRS=[
+  {key:'strip',a:'Pelacables',b:'Retirar aislante',ex:'Sirve para quitar el aislamiento del cable sin cortar el cobre; deja el conductor listo para conectar.'},
+  {key:'test',a:'Buscapolos',b:'Detectar tensión',ex:'Pequeño tester que se ilumina al tocar un punto vivo; te dice si hay tensión de forma rápida.'},
+  {key:'volt',a:'Multímetro',b:'Medir voltaje',ex:'Instrumento multifunción; en modo V permite comprobar el voltaje presente en un circuito o toma.'},
+  {key:'amp',a:'Pinza amperimétrica',b:'Medir corriente',ex:'Mide la corriente sin abrir el circuito; solo debes abrazar el conductor con la pinza.'}
+];
+function truncate(t,max){t=(t||'').trim();return t.length>max?t.slice(0,max-1)+'…':t}
+function buildDeck(){
+  deck=[];for(const p of PAIRS){deck.push({id:p.key+'-a',pair:p.key,text:truncate(p.a,48)},{id:p.key+'-b',pair:p.key,text:truncate(p.b,48)})}
+  for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}
+}
+function renderBoard(){
+  boardEl.innerHTML='';deck.forEach((c,i)=>{const card=document.createElement('button');card.className='card';card.setAttribute('data-id',c.id);card.setAttribute('data-pair',c.pair);card.setAttribute('aria-label','Carta oculta');card.style.all='unset';card.style.display='block';card.tabIndex=0;card.role='gridcell';card.innerHTML=`<div class="inner"><div class="face back" aria-hidden="true"></div><div class="face front"><div class="ctxt">${c.text}</div></div></div>`;card.addEventListener('click',()=>onCard(card));boardEl.appendChild(card)});
+}
+function onCard(card){
+  if(!allowInput)return; if(card.classList.contains('flipped')||card.classList.contains('matched'))return;
+  card.classList.add('flipped');flipped.push(card);
+  if(flipped.length===2){allowInput=false;attemptsUsed++;triesLeft=Math.max(0,limit-attemptsUsed);updateStats();const [c1,c2]=flipped;const isMatch=c1.dataset.pair===c2.dataset.pair;
+    if(isMatch){c1.classList.add('matched');c2.classList.add('matched');matched++;setTimeout(()=>{c1.setAttribute('aria-label','Carta emparejada');c2.setAttribute('aria-label','Carta emparejada');flipped=[];allowInput=true;checkEnd();},420)}
+    else{setTimeout(()=>{c1.classList.remove('flipped');c2.classList.remove('flipped');flipped=[];allowInput=true;checkEnd();},920)}
+  }
+}
+function updateStats(){
+  triesEl.textContent=triesLeft;foundEl.textContent=matched;progEl.style.width=(matched/4*100)+'%';
+}
+function checkEnd(){if(matched===4||triesLeft===0){showResults()}}
+function showResults(){
+  document.body.classList.remove('game');document.body.classList.add('results-mode');results.classList.add('show');
+  const success=matched===4;const title=success?'¡Completaste las 4 parejas!':'Fin del intento';
+  rsum.textContent=`${title} • Aciertos: ${matched}/4 • Intentos usados: ${attemptsUsed}/${limit}`;
+  pairsExpl.innerHTML='';PAIRS.forEach(p=>{
+    const good=deck.filter(d=>d.pair===p.key).every(d=>document.querySelector(`[data-id="${d.id}"]`).classList.contains('matched'));
+    const div=document.createElement('div');div.className='pair';
+    div.innerHTML=`<b>${p.a} ↔ ${p.b}</b><p class="small" style="margin:.25rem 0 0;color:${good?'#0B214A':'#1A1B2F'}">${truncate(p.ex,180)}</p>`;
+    pairsExpl.appendChild(div);
+  });
+}
+function resetGame(){
+  matched=0;triesLeft=limit;attemptsUsed=0;flipped=[];allowInput=false;updateStats();buildDeck();renderBoard();ensureFits();setTimeout(()=>{document.querySelectorAll('.card').forEach(c=>c.classList.remove('matched','flipped'));allowInput=true},150)
+}
+function startGame(){intro.style.display='none';document.body.classList.add('game');allowInput=true;ensureFits()}
+resetBtn.addEventListener('click',()=>{resetGame()});startBtn.addEventListener('click',()=>{intro.style.display='flex'});introStart.addEventListener('click',()=>{startGame()});
+buildDeck();renderBoard();updateStats();ensureFits();window.addEventListener('resize',ensureFits);window.addEventListener('orientationchange',ensureFits);
+
+/* Fitting utilities */
+function assertNoOverflow(){return scene.scrollHeight<=scene.clientHeight}
+function applyCompactMode(enable){if(enable)document.body.classList.add('compact');else document.body.classList.remove('compact')}
+function fitBoardToViewport(){
+  const maxTries=[.72,.68,.64,.60];for(let r of maxTries){document.documentElement.style.setProperty('--cardAR',r);if(assertNoOverflow())return true}
+  return false
+}
+function autoscaleUI(){
+  const maxScale=1,minScale=.88;let s=maxScale;let tries=6;while(!assertNoOverflow()&&tries--){const need=scene.clientHeight/scene.scrollHeight;s=Math.max(minScale,Math.min(s,need));document.documentElement.style.setProperty('--ui-scale',s);if(s===minScale)break}
+}
+function ensureFits(){
+  if(results.classList.contains('show'))return;
+  document.documentElement.style.setProperty('--ui-scale','1');document.documentElement.style.setProperty('--cardAR','.72');applyCompactMode(false);
+  if(assertNoOverflow())return;
+  applyCompactMode(true);if(assertNoOverflow())return;
+  if(fitBoardToViewport()&&assertNoOverflow())return;
+  autoscaleUI();
+}
+})();
+</script>
+</body></html>
