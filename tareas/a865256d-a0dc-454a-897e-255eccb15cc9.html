@@ -1,0 +1,133 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&display=swap" rel="stylesheet"><title>Detector de Peligros ⚠️</title><style>
+:root{--deep:#0B214A;--text:#1A1B2F;--turq:#00E6BC;--success:#04FFB4;--error:#F9577E;--soft:#C5FFDF;--ui-scale:1;--hudH:78px;--gap:12px;--cardH:42vh}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:'Baloo 2',system-ui,-apple-system,Segoe UI,Roboto;color:var(--text);background:#fff;overflow:hidden;overscroll-behavior:none}
+body.final{overflow-y:auto}
+button{font-family:inherit}
+.scene{position:relative;isolation:isolate;width:100%;max-width:520px;margin:0 auto;display:flex;align-items:stretch;justify-content:center;touch-action:none;transform-origin:top center}
+@supports(height:100svh){.scene{height:100svh}}
+@supports not (height:100svh){@supports(height:100dvh){.scene{height:100dvh}}}
+@supports not (height:100dvh){.scene{height:100vh}}
+.scene::after{content:"";position:absolute;top:0;right:0;width:100px;height:80px;pointer-events:none}
+.avatar{position:absolute;right:8px;bottom:calc(80px + env(safe-area-inset-bottom,0px));width:140px;opacity:.12;z-index:0;filter:saturate(1.1)}
+.ui{position:relative;z-index:2;display:flex;flex-direction:column;gap:10px;transform:scale(var(--ui-scale));width:100%;padding:calc(80px + env(safe-area-inset-top,0px)) 16px calc(14px + env(safe-area-inset-bottom,0px)) 16px}
+header.hud{display:flex;flex-direction:column;gap:8px;min-height:var(--hudH)}
+.title{font-weight:800;letter-spacing:.2px;color:var(--text);font-size:clamp(18px,4.5vw,22px);margin:0}
+.sub{font-size:12px;color:#0B214A80}
+.progress{height:10px;border:1px solid var(--turq);border-radius:999px;overflow:hidden;background:#fff}
+.progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--success),#00E6BC);width:0%}
+.counter{font-size:12px;color:var(--turq);font-weight:700}
+.gameplay{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+.card{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;min-height:0}
+.badge{font-size:12px;background:#C5FFDF;color:#0B214A;padding:6px 10px;border-radius:12px;border:1px solid #00E6BC;max-width:90%}
+.question{font-size:clamp(18px,5.5vw,24px);line-height:1.15;text-align:center;max-width:92%;margin:0  auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:auto}
+.btn{height:56px;min-height:56px;border-radius:24px;border:1px solid var(--turq);background:var(--deep);color:var(--turq);font-weight:800;font-size:clamp(16px,4.8vw,18px);box-shadow:0 8px 18px rgba(11,33,74,.25);display:flex;align-items:center;justify-content:center;gap:8px;user-select:none}
+.btn:disabled{opacity:.45;box-shadow:none}
+.btn:focus-visible{outline:2px solid var(--turq);outline-offset:2px}
+.pulse{position:absolute;inset:auto 0 -10px 0;margin:auto;width:140px;height:140px;border-radius:999px;background:radial-gradient(circle,rgba(0,230,188,.25) 0%,rgba(0,230,188,0) 70%);animation:pulse .5s ease-out}
+@keyframes pulse{from{transform:scale(.85);opacity:.85}to{transform:scale(1.2);opacity:0}}
+.meta{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
+.meta .counter{padding-left:2px}
+.hidden{display:none}
+.compact .title{font-size:16px}
+.compact .question{font-size:18px}
+.compact .btn{min-height:50px;height:50px}
+.compact header.hud{min-height:64px}
+.modal{position:fixed;inset:0;background:rgba(26,27,47,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal .box{background:#fff;border:1px solid var(--turq);border-radius:16px;max-width:520px;width:100%;max-height:90svh;overflow-y:auto;padding:20px}
+.box h3{margin:0 0 8px;font-size:clamp(18px,5vw,22px)}
+.box p{margin:0 0 14px;font-size:15px}
+.box .cta{margin-top:8px}
+.cta .btn{width:100%}
+.results{padding:6px 0 2px}
+.score{display:flex;align-items:center;gap:10px;background:#C5FFDF;border:1px solid var(--turq);border-radius:12px;padding:10px}
+.list{margin-top:12px;display:flex;flex-direction:column;gap:10px;max-height:60svh;overflow-y:auto}
+.item{border:1px solid var(--turq);border-radius:12px;padding:10px;display:grid;grid-template-columns:1fr;gap:8px}
+.item h4{margin:0;font-size:16px}
+.tag{font-size:12px;padding:4px 8px;border-radius:999px;display:inline-block}
+.ok{background:#E9FFF9;color:#0B214A;border:1px solid var(--success)}
+.bad{background:#FFE6EC;color:#0B214A;border:1px solid var(--error)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.small{font-size:12px;color:#0B214A99}
+.tip{margin:12px 0 6px;padding:10px;background:#C5FFDF;border:1px solid var(--turq);border-radius:12px;font-size:14px}
+.final-cta{position:sticky;bottom:0;background:#fff;padding-top:8px}
+.footer-spacer{height:8px}
+</style></head><body>
+<div class="scene" id="scene">
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 3_low.png" alt="Avatar de Kämpe">
+<div class="ui" id="ui">
+<header class="hud">
+<h1 class="title">Detector de Peligros ⚠️</h1>
+<div class="progress" aria-hidden="true"><i id="bar"></i></div>
+<div class="meta"><span class="sub">Reto diario PRL</span><span class="counter" id="counter">0/8</span></div>
+</header>
+<section class="gameplay" id="game">
+<div class="card" aria-live="polite" aria-atomic="true">
+<span class="badge">Afirmación</span>
+<p id="q" class="question"></p>
+</div>
+<div class="controls">
+<button class="btn" id="trueBtn" aria-label="Verdadero">Verdadero</button>
+<button class="btn" id="falseBtn" aria-label="Falso">Falso</button>
+</div>
+</section>
+<section class="results hidden" id="results" aria-live="polite">
+<div class="score"><strong id="scoreTxt"></strong><span class="small" id="timeTxt"></span></div>
+<div class="tip" id="tip">Consejo: antes de empezar, revisa tus EPIs, mira arriba (cargas) y al suelo (derrames). Lo básico salva manos, pies y cabeza.</div>
+<div class="list" id="list"></div>
+<div class="final-cta">
+<button class="btn" onclick="completeTask()">Ver mi recompensa</button>
+<div class="footer-spacer"></div>
+</div>
+</section>
+</div>
+</div>
+
+<div class="modal" id="intro">
+<div class="box">
+<h3>¿Listo para la obra?</h3>
+<p>Responde Verdadero o Falso. Avanzas solo. La solución se revela al final con un mini repaso.</p>
+<div class="cta"><button class="btn" id="startBtn">Empezar</button></div>
+</div>
+</div>
+
+<script>
+const MAX_LEN=48;
+const dataRaw=[{t:"El casco se usa incluso en tareas breves.",c:true,x:"Los objetos pueden caer en cualquier momento; el casco es obligatorio siempre que estés en obra."},{t:"Las botas de seguridad evitan resbalones y clavos.",c:true,x:"La puntera y la suela anti‑perforación reducen pinchazos y aportan tracción para evitar resbalones."},{t:"Puedes quitarte los guantes para atornillar.",c:false,x:"Usa guantes adecuados cuando sea posible; quítalos solo si aumentan el riesgo de atrapamiento en maquinaria."},{t:"Las cintas de señalización son decorativas.",c:false,x:"Delimitan zonas peligrosas o de acceso restringido. No las cruces sin permiso del encargado."},{t:"Las herramientas con cable se revisan antes de usar.",c:true,x:"Comprueba enchufe, aislamiento y clavijas. Un daño puede causar descarga o incendio."},{t:"Es seguro pasar bajo una carga suspendida.",c:false,x:"Nunca camines bajo cargas: podrían caer o balancearse por viento o fallo del aparejo."},{t:"Tapones auditivos solo con máquinas grandes.",c:false,x:"Protege el oído cuando el nivel supera los límites, también con herramientas medianas como martillos demoledores."},{t:"Un derrame pequeño se limpia sin avisar.",c:false,x:"Señaliza y reporta. Un derrame provoca caídas; sigue el protocolo y usa material absorbente."}];
+const data=dataRaw.map(o=>({text:o.t,short:truncate(o.t,MAX_LEN),correct:o.c,explain:limitExplain(o.x),}));
+let idx=0,answers=[],startAt=0;
+const scene=document.getElementById('scene');
+const ui=document.getElementById('ui');
+const q=document.getElementById('q');
+const bar=document.getElementById('bar');
+const counter=document.getElementById('counter');
+const tBtn=document.getElementById('trueBtn');
+const fBtn=document.getElementById('falseBtn');
+const resEl=document.getElementById('results');
+const list=document.getElementById('list');
+const scoreTxt=document.getElementById('scoreTxt');
+const timeTxt=document.getElementById('timeTxt');
+const intro=document.getElementById('intro');
+const startBtn=document.getElementById('startBtn');
+startBtn.onclick=()=>{intro.classList.add('hidden');start();};
+function start(){startAt=Date.now();idx=0;answers=[];document.documentElement.style.overflow='hidden';document.body.style.overflow='hidden';document.body.classList.remove('final');resEl.classList.add('hidden');document.getElementById('game').classList.remove('hidden');render();ensureFits();}
+function render(){q.textContent=data[idx].short;counter.textContent=(idx+1)+"/"+data.length;bar.style.width=Math.round(((idx)/data.length)*100)+"%";tBtn.disabled=false;fBtn.disabled=false;ensureFits();}
+function pick(val){tBtn.disabled=true;fBtn.disabled=true;flash();const isCorrect=(val===true)===data[idx].correct;answers.push({i:idx,choice:val,correct:isCorrect});setTimeout(()=>{next();},450);}
+function next(){idx++;if(idx<data.length){render();}else{finish();}}
+function finish(){bar.style.width="100%";document.getElementById('game').classList.add('hidden');buildResults();resEl.classList.remove('hidden');document.body.classList.add('final');document.documentElement.style.overflow='auto';document.body.style.overflow='auto';}
+function buildResults(){list.innerHTML="";const total=answers.filter(a=>a.correct).length;scoreTxt.textContent=`Tu puntuación: ${total}/${data.length}`;const sec=Math.max(1,Math.round((Date.now()-startAt)/1000));timeTxt.textContent=`Tiempo: ${sec}s`;answers.forEach(a=>{const d=data[a.i];const item=document.createElement('div');item.className="item";const h=document.createElement('h4');h.textContent=d.text;const g=document.createElement('div');g.className="grid2";const t1=document.createElement('span');t1.className="tag "+(a.correct?"ok":"bad");t1.textContent="Tu respuesta: "+(a.choice?"Verdadero":"Falso");const t2=document.createElement('span');t2.className="tag "+(d.correct?"ok":"bad");t2.textContent="Correcta: "+(d.correct?"Verdadero":"Falso");g.appendChild(t1);g.appendChild(t2);const p=document.createElement('div');p.className="small";p.textContent=d.explain;item.appendChild(h);item.appendChild(g);item.appendChild(p);list.appendChild(item);});}
+function flash(){const pulse=document.createElement('div');pulse.className='pulse';document.querySelector('.card').appendChild(pulse);setTimeout(()=>pulse.remove(),480);}
+tBtn.addEventListener('click',()=>pick(true));fBtn.addEventListener('click',()=>pick(false));
+function truncate(s,n){return s.length>n?s.slice(0,n-1)+"…":s}
+function limitExplain(s){let txt=s.trim();if(txt.length>180)txt=txt.slice(0,177)+"…";return txt}
+function assertNoOverflow(){const sc=scene.scrollHeight<=scene.clientHeight;return sc}
+function applyCompactMode(on){document.body.classList.toggle('compact',!!on)}
+function fitBoardToViewport(step=1){document.documentElement.style.setProperty('--hudH', step>1?'64px':'70px');}
+function autoscaleUI(){let scale=1;let tries=0;while(!assertNoOverflow()&&scale>0.88&&tries<5){scale-=0.03;tries++;}document.documentElement.style.setProperty('--ui-scale',scale.toFixed(2))}
+function ensureFits(){document.documentElement.style.setProperty('--ui-scale',1);applyCompactMode(false);fitBoardToViewport(0);if(!assertNoOverflow()){applyCompactMode(true)}if(!assertNoOverflow()){fitBoardToViewport(2)}if(!assertNoOverflow()){autoscaleUI()}}
+window.addEventListener('resize',ensureFits,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(ensureFits,150));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden) setTimeout(ensureFits,60);});
+function completeTask(){if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}}
+</script>
+</body></html>
