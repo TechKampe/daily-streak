@@ -1,0 +1,168 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><title>Fuga de Paciencia 💧 — Kämpe</title><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700&display=swap" rel="stylesheet"><style>
+:root{--deep:#0B214A;--turq:#00E6BC;--text:#1A1B2F;--info:#C5FFDF;--ok:#04FFB4;--err:#F9577E;--ui-scale:1;--hudH:64px;--btnH:64px;--pad:16px;--radius:16px}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overscroll-behavior:none;background:#fff;color:var(--text);font-family:"Baloo 2",system-ui,-apple-system,Segoe UI,Roboto,Arial;overflow:hidden}
+body.results-mode{overflow-y:auto}
+h1,h2,h3,p{margin:0}
+button{font-family:inherit}
+.safe-corner{position:fixed;top:0;right:0;width:100px;height:80px;pointer-events:none}
+.scene{position:relative;isolation:isolate;transform-origin:top center}
+@supports(height:100svh){.scene{height:100svh}}
+@supports not (height:100svh){@supports(height:100dvh){.scene{height:100dvh}}@supports not (height:100dvh){.scene{height:100vh}}}
+.scene .inner{height:100%;display:grid;grid-template-rows:max(80px,env(safe-area-inset-top)) var(--hudH) 1fr auto max(env(safe-area-inset-bottom),12px);padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right) + 100px)}
+.hud{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--turq);border-radius:12px;padding:8px 12px;gap:8px}
+.title{font-weight:700;font-size:clamp(16px,3.6vw,20px);color:var(--text)}
+.progress{font-size:14px;color:var(--turq);font-weight:700}
+.badge{font-size:12px;color:#0B214A;background:var(--info);padding:2px 8px;border-radius:999px;border:1px solid var(--turq)}
+.chat{position:relative;border:1px solid var(--turq);border-radius:12px;padding:12px;overflow:auto;touch-action:pan-y;background:#fff}
+.row{display:flex;gap:8px;margin:10px 0}
+.row.you{justify-content:flex-end}
+.avatar{width:36px;height:36px;border-radius:50%;flex:0 0 36px;border:1px solid var(--turq);background:#fff}
+.bubble{max-width:76%;border:1px solid var(--turq);border-radius:14px;padding:8px 10px;box-shadow:0 2px 8px rgba(11,33,74,.08)}
+.name{font-size:12px;color:#536;opacity:.8;margin-bottom:2px}
+.txt{font-size:15px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.row.you .bubble{background:#f7fbff;border-color:#BDEFFF}
+.row.reaction.good .bubble{background:var(--info)}
+.row.reaction.bad .bubble{border-color:var(--err);box-shadow:0 0 0 1px rgba(249,87,126,.2)}
+.choices{position:relative;display:grid;gap:8px;margin-top:8px}
+.choices button{height:var(--btnH);border-radius:24px;border:0;background:var(--deep);color:var(--turq);font-weight:700;font-size:clamp(14px,3.6vw,16px);box-shadow:0 8px 18px rgba(11,33,74,.25);padding:0 14px;display:flex;align-items:center;justify-content:center}
+.choices button[disabled]{opacity:.45;box-shadow:none}
+.small{font-size:12px;opacity:.7}
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tips{margin-top:8px;color:#0B214A;background:var(--info);border:1px solid var(--turq);border-radius:12px;padding:8px 10px;font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(26,27,47,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.card{background:#fff;border:1px solid var(--turq);border-radius:16px;max-width:520px;width:100%;max-height:90svh;overflow:auto;padding:20px;box-shadow:0 20px 50px rgba(11,33,74,.25)}
+.card h2{font-size:clamp(18px,5vw,24px);color:var(--text)}
+.card p{margin-top:8px;font-size:15px}
+.card .cta{margin-top:16px;width:100%;height:56px;background:var(--deep);color:var(--turq);border:0;border-radius:24px;box-shadow:0 8px 18px rgba(11,33,74,.25);font-weight:700}
+.results{display:none;padding:24px;max-width:720px;margin:0 auto}
+.results h2{font-size:clamp(20px,5.5vw,28px);margin-bottom:8px}
+.results .sum{margin:8px 0 16px 0;color:#0B214A;background:var(--info);border:1px solid var(--turq);border-radius:12px;padding:10px}
+.res-item{border:1px solid var(--turq);border-radius:12px;padding:10px;margin:8px 0}
+.res-item .tag{font-size:12px;color:#0B214A}
+.res-item .ex{font-size:14px;margin-top:4px}
+.results .actions{position:sticky;bottom:8px;background:#fff;padding-top:8px}
+.results button{width:100%;height:56px;background:var(--deep);color:var(--turq);border:0;border-radius:24px;box-shadow:0 8px 18px rgba(11,33,74,.25);font-weight:700}
+.compact .hud{padding:6px 10px}
+.compact .bubble .txt{-webkit-line-clamp:3}
+.compact{--hudH:56px;--btnH:56px;--ui-scale:.95}
+.scale-wrap{transform:scale(var(--ui-scale))}
+a,button:focus{outline:2px solid var(--turq);outline-offset:2px}
+</style></head><body>
+<div class="safe-corner" aria-hidden="true"></div>
+<div class="scene" id="scene"><div class="inner scale-wrap">
+  <div></div>
+  <div class="hud" aria-live="polite">
+    <div>
+      <div class="title">Fuga de Paciencia 💧</div>
+      <div class="small"><span class="badge">Chatbot</span></div>
+    </div>
+    <div class="progress" id="progress">0/5</div>
+  </div>
+  <div class="chat" id="chat" role="log" aria-live="polite"></div>
+  <div class="choices" id="choices" aria-label="Opciones"></div>
+  <div></div>
+</div></div>
+
+<div class="modal" id="intro">
+  <div class="card" role="dialog" aria-labelledby="t1" aria-modal="true">
+    <h2 id="t1">Fuga de Paciencia 💧</h2>
+    <p class="clamp2">Te enfrentas a tu primer aviso en solitario. Ana te recibe tensa; practicarás escucha activa, empatía y comunicación asertiva para reconducir la situación.</p>
+    <div class="tips">Tutorial: responde con calma y claridad. El chat guarda el historial; elige 1 opción por turno.</div>
+    <button class="cta" id="start" aria-label="Empezar reto">Empezar</button>
+  </div>
+</div>
+
+<section class="results" id="results" aria-live="polite">
+  <h2>Resultados — Fuga de Paciencia 💧</h2>
+  <div class="sum" id="summary"></div>
+  <div id="list"></div>
+  <div class="tips" id="advice"></div>
+  <div class="actions">
+    <button onclick="completeTask()">Ver mi recompensa</button>
+  </div>
+</section>
+
+<script>
+function completeTask(){if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}}
+const avatars={
+ mentor:"https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png",
+ you:"https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png",
+ recruiter:"https://techkampe.github.io/daily-streak/assets/Avatar 3_low.png",
+ client:"https://techkampe.github.io/daily-streak/assets/Avatar 4_low.png"
+};
+const chars={
+ mentor:{id:"mentor",name:"Lucía (Mentora)",avatar:avatars.mentor},
+ you:{id:"you",name:"Alex (Tú)",avatar:avatars.you},
+ client:{id:"client",name:"Ana (Clienta)",avatar:avatars.client}
+};
+const turns=[{
+ id:"saludo",
+ messages:[
+  {speaker:"client",text:"Por fin. La cocina es un caos y nadie responde."},
+  {speaker:"mentor",text:"Respira; preséntate y valida su enfado."}
+ ],
+ options:[
+  {label:"Hola, soy Alex. Perdón por la espera; te ayudo.",type:"correct",reaction:"Vale… gracias. Estoy muy tensa.",reactSpeaker:"client",explanation:"Te presentaste y empatizaste; baja la tensión."},
+  {label:"Hola, vengo por el aviso. ¿Dónde la fuga?",type:"partial",reaction:"Ajá, ven. Pero llevo horas esperando.",reactSpeaker:"client",explanation:"Funcional pero fría; faltó empatía."},
+  {label:"Relájate, no será para tanto.",type:"wrong",reaction:"¿Relajarme? ¡Tengo el suelo empapado!",reactSpeaker:"client",explanation:"Invalidaste su emoción; sube la tensión."}
+ ]},{
+ id:"escucha",
+ messages:[
+  {speaker:"client",text:"Gotea bajo el fregadero. Puse toallas pero sigue."},
+  {speaker:"mentor",text:"Escucha, valida y pide permiso para revisar."}
+ ],
+ options:[
+  {label:"Gracias por contarlo. ¿Puedo ver el fregadero?",type:"correct",reaction:"Sí, pasa. Ojalá lo arregles rápido.",reactSpeaker:"client",explanation:"Validas y pides permiso: cooperación."},
+  {label:"Entiendo. Voy a mirar rápido.",type:"partial",reaction:"Ok, dale.",reactSpeaker:"client",explanation:"Bien, pero faltó pedir permiso/validación."},
+  {label:"Si hay toallas, ya no es urgente.",type:"wrong",reaction:"¡Pues a mí me urge! No me digas eso.",reactSpeaker:"client",explanation:"Minimizaste el problema."}
+ ]},{
+ id:"seguridad",
+ messages:[
+  {speaker:"mentor",text:"Recuerda cerrar llave y vigilar enchufes cercanos."}
+ ],
+ options:[
+  {label:"Cierro la llave y desconecto corriente cercana.",type:"correct",reaction:"Gracias por la seguridad, me tranquiliza.",reactSpeaker:"client",explanation:"Priorizar seguridad evita riesgos."},
+  {label:"Pongo un cubo y trabajo con cuidado.",type:"partial",reaction:"Bueno… si crees que alcanza.",reactSpeaker:"client",explanation:"Mejora, pero falta control de fuentes."},
+  {label:"No corto nada; será rápido.",type:"wrong",reaction:"Eso no me da confianza…",reactSpeaker:"client",explanation:"Saltarse seguridad resta profesionalidad."}
+ ]},{
+ id:"diagnostico",
+ messages:[
+  {speaker:"client",text:"¿Qué es entonces y cuánto tardas?"}
+ ],
+ options:[
+  {label:"Junta del sifón; la cambio y pruebo. 30 min.",type:"correct",reaction:"Bien, claro y directo. Hazlo.",reactSpeaker:"client",explanation:"Explicas causa y pasos con tiempo estimado."},
+  {label:"Parece la junta; la cambiaré. Tardo poco.",type:"partial",reaction:"Vale, pero ¿cuánto es “poco”?",reactSpeaker:"client",explanation:"Falta concreción de tiempo."},
+  {label:"Lo arreglo sin explicar, confía.",type:"wrong",reaction:"Prefiero saber qué harás, por favor.",reactSpeaker:"client",explanation:"Ocultar info genera desconfianza."}
+ ]},{
+ id:"coste",
+ messages:[
+  {speaker:"mentor",text:"Informa coste antes de actuar y pide ok."}
+ ],
+ options:[
+  {label:"Mano de obra + junta: 28€ aprox. ¿Te parece?",type:"correct",reaction:"Sí, adelante. Gracias por avisar.",reactSpeaker:"client",explanation:"Transparencia y acuerdo previo."},
+  {label:"No será mucho; te digo al final.",type:"partial",reaction:"Mmm… prefiero saberlo ahora.",reactSpeaker:"client",explanation:"Ambiguo: puede generar sorpresa."},
+  {label:"No te preocupes por el precio ahora.",type:"wrong",reaction:"Sí me preocupa. Quiero claridad.",reactSpeaker:"client",explanation:"Evitar el tema da mala imagen."}
+ ]}];
+const scene=document.getElementById("scene");
+const chat=document.getElementById("chat");
+const choices=document.getElementById("choices");
+const progress=document.getElementById("progress");
+const intro=document.getElementById("intro");
+const results=document.getElementById("results");
+const state={turn:0,decisions:[],score:0,locked:false};
+function el(tag,cls){const e=document.createElement(tag);if(cls)e.className=cls;return e}
+function addMsg(speakerKey,text,extra={}){const c=chars[speakerKey];const row=el("div","row "+(speakerKey==="you"?"you":"")+(" reaction" in extra?(" reaction "+extra.reaction):""));const av=document.createElement("img");av.src=c.avatar;av.loading="lazy";av.alt=c.name;av.className="avatar";row.appendChild(av);const bub=el("div","bubble");const name=el("div","name");name.textContent=c.name;bub.appendChild(name);const t=el("div","txt");t.textContent=text;bub.appendChild(t);row.appendChild(bub);chat.appendChild(row);chat.scrollTop=chat.scrollHeight}
+function renderTurn(){progress.textContent=(state.turn+1)+"/"+turns.length;const t=turns[state.turn];t.messages.forEach(m=>addMsg(m.speaker,m.text));choices.innerHTML="";t.options.forEach((opt,i)=>{const b=document.createElement("button");b.setAttribute("aria-label",opt.label);b.innerHTML='<span class="clamp2">'+opt.label+'</span>';b.onclick=()=>choose(i);choices.appendChild(b)});ensureFits();chat.scrollTop=chat.scrollHeight}
+function choose(i){if(state.locked)return;state.locked=true;Array.from(choices.children).forEach(b=>b.disabled=true);const t=turns[state.turn];const opt=t.options[i];addMsg("you",opt.label);addMsg(opt.reactSpeaker,opt.reaction,{reaction:opt.type==="wrong"?"bad":"good"});state.decisions.push({id:t.id,choice:opt.label,type:opt.type,explanation:opt.explanation});if(opt.type==="correct")state.score+=2;else if(opt.type==="partial")state.score+=1;setTimeout(()=>{state.turn++;if(state.turn<turns.length){Array.from(choices.children).forEach(b=>b.disabled=false);state.locked=false;renderTurn()}else{finish()}},750)}
+function finish(){document.body.classList.add("results-mode");document.querySelector(".scene").style.display="none";results.style.display="block";const total=state.score,max=turns.length*2;let mood="Cliente calmada y satisfecha ✅";if(total<=3)mood="Cliente insatisfecha ⚠️";else if(total<=6)mood="Cliente neutral 🙂";document.getElementById("summary").textContent=`Impacto: ${mood} — Puntuación ${total}/${max}`;const list=document.getElementById("list");list.innerHTML="";state.decisions.forEach((d,idx)=>{const item=el("div","res-item");const tag=el("div","tag");const map={saludo:"Saludo y tono",escucha:"Escucha y permiso",seguridad:"Seguridad",diagnostico:"Diagnóstico",coste:"Tiempo y coste"};tag.textContent=`${idx+1}. ${map[d.id]} — ${d.type==="correct"?"✔︎ Correcta":d.type==="partial"?"◐ Parcial":"✖︎ Incorrecta"}`;const choice=el("div","ex");choice.textContent=`Tu respuesta: ${d.choice}`;const ex=el("div","ex");ex.textContent=d.explanation;item.appendChild(tag);item.appendChild(choice);item.appendChild(ex);list.appendChild(item)});const advice=document.getElementById("advice");advice.textContent="Consejo: valida la emoción primero, luego explica pasos, tiempo y coste con claridad. Pide permiso antes de actuar y prioriza la seguridad (corta agua y controla enchufes).";window.scrollTo(0,0)}
+function assertNoOverflow(){const s=scene;return s.scrollHeight<=s.clientHeight+1}
+function applyCompactMode(){document.body.classList.add("compact")}
+function fitBoardToViewport(){document.documentElement.style.setProperty("--hudH","52px");document.documentElement.style.setProperty("--btnH","52px")}
+function autoscaleUI(){const s=scene;const ratio=Math.max(.88,Math.min(1,s.clientHeight/s.scrollHeight));document.documentElement.style.setProperty("--ui-scale",ratio.toFixed(3))}
+function resetFit(){document.body.classList.remove("compact");document.documentElement.style.setProperty("--hudH","64px");document.documentElement.style.setProperty("--btnH","64px");document.documentElement.style.setProperty("--ui-scale","1")}
+function ensureFits(){requestAnimationFrame(()=>{resetFit();if(!assertNoOverflow()){applyCompactMode()}if(!assertNoOverflow()){fitBoardToViewport()}if(!assertNoOverflow()){autoscaleUI()}})}
+document.getElementById("start").addEventListener("click",()=>{intro.style.display="none";renderTurn();ensureFits()});
+window.addEventListener("resize",ensureFits,{passive:true});
+window.addEventListener("orientationchange",()=>setTimeout(ensureFits,150),{passive:true});
+</script></body></html>
