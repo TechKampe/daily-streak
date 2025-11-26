@@ -1,0 +1,252 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fichaje Estrella: La Entrevista 💼 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.chat-container{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.chat-history{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;animation:fadeIn .3s ease}
+.chat-bubble.npc{background:var(--surface);align-self:flex-start;border-bottom-left-radius:4px}
+.chat-bubble.player{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-sender{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.chat-sender img{width:24px;height:24px;border-radius:50%;object-fit:cover}
+.chat-options{padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg);border-top:1px solid var(--surface)}
+.chat-options .btn-option{text-align:left;padding:12px 16px;font-size:13px;min-height:44px}
+.reaction{font-style:italic;color:var(--muted);font-size:13px;padding:4px 0}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.intro-card{background:var(--surface);border-radius:16px;padding:16px;margin:12px;text-align:center}
+.intro-card h2{font-size:18px;margin-bottom:8px;color:var(--accent)}
+.intro-card p{font-size:13px;color:var(--muted);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Fichaje Estrella 💼</div>
+<div class="subtitle" id="subtitle">Entrevista de trabajo</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">0/5</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+recruiter:{name:"Laura - Reclutadora",img:"https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png"},
+player:{name:"Tú",img:"https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png"}
+};
+
+const turns=[
+{
+messages:[
+{sender:"recruiter",text:"¡Hola! Soy Laura, del equipo de RRHH de ClimaFrío. 😊"},
+{sender:"recruiter",text:"He visto tu candidatura para aprendiz de climatización. ¿Por qué te interesa este puesto?"}
+],
+options:[
+{text:"Me encanta el sector y quiero aprender de los mejores",score:2,reaction:"¡Esa actitud me gusta! Se nota motivación. 👍"},
+{text:"Busco algo estable con buen sueldo",score:1,reaction:"Entiendo, aunque esperaba más pasión por el oficio."},
+{text:"No sé, vi el anuncio y me apunté",score:0,reaction:"Mmm... necesito ver más interés de tu parte. 🤔"}
+]
+},
+{
+messages:[
+{sender:"recruiter",text:"Veo que no tienes experiencia previa. ¿Cómo crees que puedes aportar al equipo?"}
+],
+options:[
+{text:"Aprendo rápido y no tengo vicios del oficio",score:2,reaction:"¡Buen enfoque! La actitud cuenta mucho aquí. ✨"},
+{text:"Haré lo que me manden sin quejarme",score:1,reaction:"Está bien, pero buscamos gente proactiva también."},
+{text:"Supongo que ya me enseñaréis vosotros",score:0,reaction:"Esperamos iniciativa propia, no solo recibir. 😕"}
+]
+},
+{
+messages:[
+{sender:"recruiter",text:"Imagina que un técnico senior te corrige delante del cliente. ¿Cómo reaccionas?"}
+],
+options:[
+{text:"Agradezco la corrección y aprendo para la próxima",score:2,reaction:"Madurez profesional, eso es clave. 💪"},
+{text:"Me callo pero luego hablo con él en privado",score:1,reaction:"Bueno, al menos no montas un drama."},
+{text:"Le digo que no me corrija delante del cliente",score:0,reaction:"Eso podría generar conflictos innecesarios... 😬"}
+]
+},
+{
+messages:[
+{sender:"recruiter",text:"¿Qué harías si te asignan una tarea que no sabes hacer?"}
+],
+options:[
+{text:"Pregunto cómo hacerla antes de empezar",score:2,reaction:"¡Perfecto! Preguntar evita errores costosos. ✅"},
+{text:"Lo intento solo y si fallo, aviso",score:1,reaction:"Mmm, a veces es mejor preguntar primero."},
+{text:"Busco un tutorial en YouTube",score:0,reaction:"En climatización no todo está en internet... 🙄"}
+]
+},
+{
+messages:[
+{sender:"recruiter",text:"Última pregunta: ¿Dónde te ves en 2 años?"}
+],
+options:[
+{text:"Siendo técnico cualificado y aportando al equipo",score:2,reaction:"¡Me encanta! Visión de futuro clara. 🌟"},
+{text:"Trabajando aquí si todo va bien",score:1,reaction:"Correcto, aunque esperaba más ambición."},
+{text:"No sé, ya veremos qué pasa",score:0,reaction:"Necesitamos gente con objetivos claros. 😐"}
+]
+}
+];
+
+let currentTurn=0,totalScore=0,answers=[],chatHistory=[];
+const scene=document.getElementById('scene'),main=document.getElementById('main'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function showIntro(){
+main.innerHTML=`
+<div class="intro-card">
+<h2>💼 Tu momento ha llegado</h2>
+<p>Estás en la fase final para aprendiz de climatización. La reclutadora quiere conocerte por chat.</p>
+<p style="margin-top:8px"><strong>Elige bien tus respuestas para causar la mejor impresión.</strong></p>
+</div>
+<div class="footer">
+<div class="helper">5 preguntas · 3 minutos</div>
+<button class="cta" onclick="startChat()">Comenzar entrevista</button>
+</div>`;
+ensureFits();
+}
+
+function startChat(){
+renderTurn();
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){showResults();return}
+const turn=turns[currentTurn];
+turn.messages.forEach(m=>{chatHistory.push({type:'npc',sender:m.sender,text:m.text})});
+updateUI();
+}
+
+function updateUI(){
+const turn=turns[currentTurn];
+prog.style.width=((currentTurn)/turns.length*100)+'%';
+counter.textContent=(currentTurn+1)+'/'+turns.length;
+subtitle.textContent='Pregunta '+(currentTurn+1)+' de '+turns.length;
+
+let historyHTML=chatHistory.map(msg=>{
+if(msg.type==='npc'){
+const avatar=avatars[msg.sender];
+return `<div class="chat-bubble npc"><div class="chat-sender"><img src="${avatar.img}" alt="">${avatar.name}</div>${msg.text}</div>`;
+}else if(msg.type==='player'){
+return `<div class="chat-bubble player">${msg.text}</div>`;
+}else if(msg.type==='reaction'){
+return `<div class="reaction">${msg.text}</div>`;
+}
+return '';
+}).join('');
+
+let optionsHTML='';
+if(turn&&!turn.answered){
+optionsHTML=turn.options.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join('');
+}
+
+main.innerHTML=`
+<div class="chat-container">
+<div class="chat-history" id="chatHistory">${historyHTML}</div>
+${optionsHTML?`<div class="chat-options">${optionsHTML}</div>`:''}
+</div>`;
+
+const chatEl=document.getElementById('chatHistory');
+if(chatEl)chatEl.scrollTop=chatEl.scrollHeight;
+ensureFits();
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const option=turn.options[idx];
+turn.answered=true;
+
+chatHistory.push({type:'player',text:option.text});
+chatHistory.push({type:'reaction',text:option.reaction});
+
+totalScore+=option.score;
+answers.push({
+question:turn.messages[turn.messages.length-1].text,
+answer:option.text,
+score:option.score,
+maxScore:2,
+feedback:option.score===2?'Respuesta excelente':option.score===1?'Respuesta aceptable':'Respuesta mejorable'
+});
+
+currentTurn++;
+setTimeout(()=>{
+if(currentTurn<turns.length){
+renderTurn();
+}else{
+updateUI();
+setTimeout(showResults,800);
+}
+},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+
+const maxScore=turns.length*2;
+const pct=Math.round((totalScore/maxScore)*100);
+let verdict='';
+if(pct>=80)verdict='¡Contratado! 🎉 Has demostrado actitud profesional.';
+else if(pct>=50)verdict='Tienes potencial, pero hay margen de mejora.';
+else verdict='Necesitas trabajar tu comunicación en entrevistas.';
+
+const tip=pct>=80?'Sigue mostrando iniciativa y ganas de aprender en cada entrevista.':pct>=50?'Practica respuestas que muestren motivación y visión de futuro.':'Prepara ejemplos concretos de tu actitud proactiva antes de entrevistas.';
+
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">${pct>=80?'¡Excelente entrevista!':pct>=50?'Buena entrevista':'Sigue practicando'}</div>
+<div class="results-score">${totalScore}/${maxScore}</div>
+<div class="results-subtitle">${verdict}</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.score===2?'correct':a.score===1?'':'incorrect'}">
+<div class="result-question">P${i+1}: ${a.question.substring(0,45)}${a.question.length>45?'...':''}</div>
+<div class="result-answer">${a.score===2?'✓':a.score===1?'~':'✗'} ${a.answer.substring(0,40)}${a.answer.length>40?'...':''}</div>
+<div class="result-explanation">${a.feedback}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--accent);color:#fff;border-radius:12px;padding:12px">
+<div class="result-question" style="color:#fff">💡 Consejo práctico</div>
+<div class="result-explanation" style="color:#fff">${tip}</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();showIntro()});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
