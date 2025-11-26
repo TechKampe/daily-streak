@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Inspector de Riesgos: ¡Tu Primera Obra! 👷 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.categories{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.cat-btn{padding:12px 16px;border-radius:12px;font-weight:700;font-size:0.95rem;border:2px solid transparent;cursor:pointer;transition:all 0.2s;min-width:90px;text-align:center}
+.cat-btn[data-cat="danger"]{background:#ffe5e5;color:#c0392b;border-color:#e74c3c}
+.cat-btn[data-cat="disorder"]{background:#fff3e0;color:#e67e22;border-color:#f39c12}
+.cat-btn[data-cat="good"]{background:#e8f5e9;color:#27ae60;border-color:#2ecc71}
+.cat-btn:active{transform:scale(0.95)}
+.cat-btn.flash{animation:flash 0.3s}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:0.5}}
+.item-card{background:var(--surface);border-radius:16px;padding:24px 20px;text-align:center;font-size:1.1rem;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin:16px 0;min-height:60px;display:flex;align-items:center;justify-content:center;transition:all 0.3s}
+.item-card.drop{animation:dropIn 0.4s}
+@keyframes dropIn{0%{opacity:0;transform:translateY(-20px) scale(0.9)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.item-card.exit{animation:exitOut 0.3s forwards}
+@keyframes exitOut{to{opacity:0;transform:scale(0.8)}}
+.result-item{padding:12px;border-radius:10px;margin-bottom:10px;background:var(--surface)}
+.result-item.correct{border-left:4px solid #2ecc71}
+.result-item.incorrect{border-left:4px solid #e74c3c}
+.result-question{font-weight:600;margin-bottom:4px}
+.result-answer{font-size:0.9rem;color:var(--text-secondary)}
+.result-explanation{font-size:0.85rem;color:var(--text-secondary);margin-top:6px;font-style:italic}
+.tip-box{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:16px;border-radius:12px;margin:16px 0;font-size:0.9rem}
+.tip-box strong{display:block;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Inspector de Riesgos 👷</div>
+<div class="subtitle" id="subtitle">Clasifica cada situación</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div class="item-card drop" id="itemCard">Cargando...</div>
+<div class="categories">
+<button class="cat-btn" data-cat="danger" onclick="classify('danger')">🚨 Peligro Inmediato</button>
+<button class="cat-btn" data-cat="disorder" onclick="classify('disorder')">⚠️ Potencial Desorden</button>
+<button class="cat-btn" data-cat="good" onclick="classify('good')">✅ Buena Práctica</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para cada situación</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const items=[
+{text:"Charco de agua cerca de enchufe",correct:"danger",exp:"El agua conduce electricidad, riesgo de electrocución."},
+{text:"Zona de trabajo señalizada",correct:"good",exp:"La señalización previene accidentes y organiza el trabajo."},
+{text:"Herramientas abandonadas en el suelo",correct:"disorder",exp:"Pueden causar tropiezos, hay que guardarlas."},
+{text:"Casco de seguridad puesto",correct:"good",exp:"Protege de impactos y caída de objetos."},
+{text:"Cable pelado visible",correct:"danger",exp:"Riesgo de electrocución o cortocircuito inmediato."},
+{text:"Materiales apilados sin orden",correct:"disorder",exp:"Dificultan el paso y pueden caer."},
+{text:"Extintor accesible y señalizado",correct:"good",exp:"Permite actuar rápido ante un incendio."},
+{text:"Andamio sin barandilla",correct:"danger",exp:"Riesgo de caída desde altura."},
+{text:"Restos de comida en zona de trabajo",correct:"disorder",exp:"Atraen plagas y ensucian el área."},
+{text:"EPIs colocados correctamente",correct:"good",exp:"Los equipos de protección bien usados salvan vidas."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),itemCard=document.getElementById('itemCard'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function render(){
+if(idx>=items.length){showResults();return}
+itemCard.classList.remove('drop','exit');
+void itemCard.offsetWidth;
+itemCard.classList.add('drop');
+itemCard.textContent=items[idx].text;
+progress.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+ensureFits();
+}
+
+function classify(cat){
+const correct=cat===items[idx].correct;
+answers.push({text:items[idx].text,userCat:cat,correctCat:items[idx].correct,correct,exp:items[idx].exp});
+const btn=document.querySelector(`[data-cat="${cat}"]`);
+btn.classList.add('flash');
+setTimeout(()=>btn.classList.remove('flash'),300);
+itemCard.classList.add('exit');
+setTimeout(()=>{idx++;render();},300);
+}
+
+function getCatLabel(cat){
+const labels={danger:'🚨 Peligro Inmediato',disorder:'⚠️ Potencial Desorden',good:'✅ Buena Práctica'};
+return labels[cat]||cat;
+}
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Inspección completada!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Tu respuesta: '+getCatLabel(a.userCat)}</div>
+<div class="result-answer" style="color:#27ae60">Categoría: ${getCatLabel(a.correctCat)}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="tip-box">
+<strong>💡 Consejo para el trabajo:</strong>
+Antes de empezar cualquier tarea, haz un barrido visual de 360°. Identifica peligros inmediatos primero, luego desorden y finalmente valida las buenas prácticas. Este hábito te salvará de muchos accidentes.
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
