@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Detector de Peligros ⚠️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.binary-options{display:flex;gap:12px;width:100%;max-width:320px;margin:0 auto}
+.binary-options .btn-option{flex:1;font-size:1.1rem;padding:16px 8px;min-height:56px}
+.btn-option.selected-true{background:linear-gradient(135deg,#22c55e,#16a34a);border-color:#16a34a;color:#fff}
+.btn-option.selected-false{background:linear-gradient(135deg,#ef4444,#dc2626);border-color:#dc2626;color:#fff}
+.btn-option.feedback-correct{animation:pulse-correct .4s ease}
+.btn-option.feedback-incorrect{animation:shake .4s ease}
+@keyframes pulse-correct{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.statement-card{background:linear-gradient(135deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05));border-radius:16px;padding:20px;margin:12px 0;text-align:center;border:1px solid rgba(255,255,255,0.1)}
+.statement-text{font-size:1.1rem;line-height:1.4;color:#fff}
+.result-item.correct{border-left:4px solid #22c55e}
+.result-item.incorrect{border-left:4px solid #ef4444}
+.result-user{font-size:0.85rem;opacity:0.8;margin-top:4px}
+.tip-box{background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(245,158,11,0.1));border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:16px;margin:16px 0}
+.tip-title{font-weight:700;color:#fbbf24;margin-bottom:8px}
+.tip-text{font-size:0.9rem;color:#fff;opacity:0.9}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Detector de Peligros ⚠️</div>
+<div class="subtitle" id="subtitle">¿Verdadero o Falso?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/8</span>
+</div>
+</div>
+<div class="main">
+<div class="statement-card">
+<div class="statement-text" id="statement">Cargando...</div>
+</div>
+<div class="binary-options" id="options">
+<button class="btn-option" id="btn-true" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btn-false" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Decide si la afirmación es correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🏗️ Tu primer día en obra</div>
+<div class="modal-body">El encargado te lanza 8 reglas de seguridad. Demuestra que conoces lo básico de PRL.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements=[
+{text:"El casco es obligatorio en toda la zona de obra",ans:true,exp:"El casco protege de caídas de objetos y golpes. Es EPI básico obligatorio."},
+{text:"Las botas de seguridad solo son necesarias si hay riesgo de caída",ans:false,exp:"Las botas protegen de aplastamiento, clavos y resbalones, no solo caídas."},
+{text:"Los guantes de trabajo se pueden quitar para trabajar más rápido",ans:false,exp:"Los guantes protegen de cortes y quemaduras. Nunca se deben quitar."},
+{text:"Las señales amarillas indican advertencia de peligro",ans:true,exp:"El amarillo advierte de riesgos. Rojo es prohibición, verde es seguridad."},
+{text:"El chaleco reflectante solo es obligatorio de noche",ans:false,exp:"El chaleco mejora la visibilidad siempre, especialmente con maquinaria cerca."},
+{text:"Antes de usar una herramienta hay que revisar su estado",ans:true,exp:"Revisar herramientas previene accidentes por piezas sueltas o defectuosas."},
+{text:"Los arneses de seguridad son obligatorios a partir de 2 metros de altura",ans:true,exp:"Por normativa, trabajos a más de 2m requieren protección anticaídas."},
+{text:"En caso de duda sobre seguridad, mejor preguntar al encargado",ans:true,exp:"Preguntar evita riesgos. Nunca improvises en temas de seguridad."}
+];
+
+let idx=0,score=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),stmtEl=document.getElementById('statement'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnT=document.getElementById('btn-true'),btnF=document.getElementById('btn-false');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=statements.length){showResults();return}
+const s=statements[idx];locked=false;
+stmtEl.textContent=s.text;
+prog.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+btnT.className='btn-option';btnF.className='btn-option';
+btnT.disabled=false;btnF.disabled=false;
+ensureFits();
+}
+
+function answer(val){
+if(locked)return;locked=true;
+const correct=val===statements[idx].ans;
+if(correct)score++;
+answers.push({text:statements[idx].text,correct,exp:statements[idx].exp,user:val?'Verdadero':'Falso',real:statements[idx].ans?'Verdadero':'Falso'});
+
+if(val){btnT.classList.add('selected-true');btnT.classList.add(correct?'feedback-correct':'feedback-incorrect');}
+else{btnF.classList.add('selected-false');btnF.classList.add(correct?'feedback-correct':'feedback-incorrect');}
+btnT.disabled=true;btnF.disabled=true;
+
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">${score>=6?'¡Buen conocimiento de PRL!':'Repasa las normas de seguridad'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Incorrecto'}</div>
+<div class="result-user">Tu respuesta: ${a.user} | Correcta: ${a.real}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="tip-box">
+<div class="tip-title">💡 Consejo del encargado</div>
+<div class="tip-text">La seguridad no es opcional. Antes de empezar cualquier tarea, revisa tu equipo y el entorno. Si algo no te parece seguro, para y pregunta.</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
