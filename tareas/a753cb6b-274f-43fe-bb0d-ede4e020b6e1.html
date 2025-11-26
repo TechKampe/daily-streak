@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¡Corriente Segura, Futuro Brillante! ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.options{display:flex;flex-direction:column;gap:12px;width:100%;padding:0 8px}
+.btn-option{transition:transform 0.15s ease,box-shadow 0.15s ease}
+.btn-option:active{transform:scale(0.97)}
+.fade-out{opacity:0;transform:translateX(-20px);transition:opacity 0.25s ease,transform 0.25s ease}
+.fade-in{animation:fadeIn 0.3s ease forwards}
+@keyframes fadeIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.result-item{margin-bottom:16px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.05)}
+.result-item.correct{border-left:4px solid #4ade80}
+.result-item.incorrect{border-left:4px solid #f87171}
+.result-question{font-weight:700;margin-bottom:4px}
+.result-answer{font-size:14px;margin-bottom:4px}
+.result-explanation{font-size:13px;opacity:0.8}
+.tip-box{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,191,36,0.05));border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:12px;margin:16px 0}
+.tip-title{font-weight:700;color:#fbbf24;margin-bottom:4px;font-size:14px}
+.tip-text{font-size:13px;opacity:0.9}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¡Corriente Segura! ⚡️</div>
+<div class="subtitle" id="question">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main"><div class="options" id="options"></div></div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la respuesta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">Test de Seguridad ⚡️</div>
+<div class="modal-body">Tu mentor te evalúa antes de tocar cables. Demuestra que conoces los EPIs y las reglas de oro.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startQuiz()">¡Comenzar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{q:"¿Qué guantes protegen de descargas?",opts:["Guantes dieléctricos","Guantes de cuero","Guantes de látex"],ans:0,exp:"Los guantes dieléctricos aíslan de la electricidad y son obligatorios en trabajos eléctricos."},
+{q:"Antes de trabajar en un circuito, ¿qué haces primero?",opts:["Cortar la corriente","Poner guantes","Avisar al jefe"],ans:0,exp:"Siempre se debe cortar la corriente antes de manipular cualquier circuito eléctrico."},
+{q:"¿Con qué verificas ausencia de tensión?",opts:["Multímetro o buscapolos","Destornillador","Probando con la mano"],ans:0,exp:"El multímetro o buscapolos detecta si hay corriente de forma segura."},
+{q:"¿De qué color es el cable de tierra?",opts:["Verde y amarillo","Azul","Marrón"],ans:0,exp:"Por normativa, el cable de tierra siempre es verde y amarillo para identificarlo fácilmente."},
+{q:"¿Qué calzado debes usar?",opts:["Botas con suela aislante","Zapatillas deportivas","Sandalias de obra"],ans:0,exp:"Las botas con suela aislante evitan que la corriente pase a tierra a través de tu cuerpo."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),qEl=document.getElementById('question'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal'),helper=document.getElementById('helper');
+
+function startQuiz(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+qEl.textContent=d.q;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+helper.textContent='Toca una opción para responder';
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option fade-in" onclick="select(${i})" aria-label="Opción: ${o}">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>b.disabled=true);
+const correct=i===data[idx].ans;
+btns[i].classList.add(correct?'correct':'incorrect');
+if(!correct)btns[data[idx].ans].classList.add('correct');
+if(correct)score++;
+answers.push({q:data[idx].q,correct,exp:data[idx].exp,user:data[idx].opts[i],correctAns:data[idx].opts[data[idx].ans]});
+helper.textContent=correct?'¡Correcto! ✓':'Incorrecto ✗';
+setTimeout(()=>{
+opts.classList.add('fade-out');
+setTimeout(()=>{
+opts.classList.remove('fade-out');
+idx++;
+render();
+},250);
+},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Test Completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">${a.correct?'✓ Correcto: '+a.correctAns:'✗ Tu respuesta: '+a.user+' → Correcta: '+a.correctAns}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="tip-box">
+<div class="tip-title">💡 Consejo del mentor</div>
+<div class="tip-text">Nunca asumas que un cable está sin tensión. Verifica SIEMPRE antes de tocar.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
