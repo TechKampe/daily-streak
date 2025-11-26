@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¡Alerta Roja! Misión Electricista ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.scene-card{background:var(--surface);border-radius:16px;padding:16px;margin-bottom:12px;border-left:4px solid var(--accent)}
+.scene-text{font-size:1rem;line-height:1.4;color:var(--ink);margin-bottom:12px}
+.error-options{display:flex;flex-direction:column;gap:8px}
+.error-btn{background:var(--surface);border:2px solid var(--muted);border-radius:12px;padding:14px 16px;font-size:0.95rem;font-family:inherit;color:var(--ink);cursor:pointer;transition:all 0.2s;text-align:left}
+.error-btn:active{transform:scale(0.98)}
+.error-btn.selected{border-color:var(--accent);background:rgba(255,107,107,0.1)}
+.error-btn.correct{border-color:var(--ok);background:rgba(76,175,80,0.15);animation:pulse-ok 0.4s}
+.error-btn.incorrect{border-color:var(--err);background:rgba(255,107,107,0.15);animation:shake 0.4s}
+@keyframes pulse-ok{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fade-out{opacity:0;transition:opacity 0.3s}
+.result-item{margin-bottom:16px;padding:12px;border-radius:12px;background:var(--surface)}
+.result-item.correct{border-left:4px solid var(--ok)}
+.result-item.incorrect{border-left:4px solid var(--err)}
+.result-scene{font-weight:700;margin-bottom:6px;color:var(--ink)}
+.result-choice{font-size:0.9rem;margin-bottom:4px}
+.result-explanation{font-size:0.85rem;color:var(--muted);line-height:1.4}
+.tip-box{background:linear-gradient(135deg,rgba(255,107,107,0.1),rgba(255,193,7,0.1));border-radius:12px;padding:14px;margin:16px 0}
+.tip-title{font-weight:700;color:var(--accent);margin-bottom:6px}
+.tip-text{font-size:0.9rem;color:var(--ink);line-height:1.4}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¡Alerta Roja! ⚡️</div>
+<div class="subtitle" id="subtitle">Detecta el fallo de seguridad</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento incorrecto</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">Misión Electricista ⚡️</div>
+<div class="modal-body">Analiza cada escena y toca el único elemento con fallo de seguridad. ¡Activa tu radar PRL!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{text:"Instalas un enchufe nuevo en la cocina.",items:["Destornillador aislado","Guantes dieléctricos","Cuadro eléctrico conectado","Gafas de protección"],error:2,correct:"Cortar corriente general",exp:"Siempre desconecta el cuadro antes de manipular la instalación."},
+{text:"Cambias una lámpara en el techo del baño.",items:["Escalera metálica en suelo húmedo","Bombilla LED nueva","Interruptor apagado","Cinta aislante"],error:0,correct:"Escalera aislante o suelo seco",exp:"El metal y la humedad conducen electricidad, riesgo de electrocución."},
+{text:"Revisas un cuadro eléctrico antiguo.",items:["Multímetro calibrado","Destornillador con mango roto","Botas aislantes","Linterna"],error:1,correct:"Herramienta con mango íntegro",exp:"Un mango dañado expone al contacto eléctrico directo."},
+{text:"Conectas cables en una regleta nueva.",items:["Pelacables profesional","Cables pelados sin terminal","Cinta aislante homologada","Corriente cortada"],error:1,correct:"Cables con terminales adecuados",exp:"Los cables sin terminal causan falsos contactos y riesgo de incendio."},
+{text:"Instalas un punto de luz en el garaje.",items:["EPI completo","Compañero vigilando","Plano eléctrico actualizado","Trabajar solo sin aviso"],error:3,correct:"Avisar y trabajar acompañado",exp:"En trabajos eléctricos siempre debe haber alguien que pueda auxiliar."}
+];
+let idx=0,answers=[];
+const main=document.getElementById('main'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal'),scene=document.getElementById('scene');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+prog.style.width=((idx)/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+main.innerHTML=`
+<div class="scene-card">
+<div class="scene-text">${s.text}</div>
+<div class="error-options" id="opts">
+${s.items.map((it,i)=>`<button class="error-btn" data-idx="${i}">${it}</button>`).join('')}
+</div>
+</div>`;
+document.querySelectorAll('.error-btn').forEach(b=>b.onclick=()=>selectItem(parseInt(b.dataset.idx)));
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx],btns=document.querySelectorAll('.error-btn');
+btns.forEach(b=>b.disabled=true);
+const isCorrect=i===s.error;
+btns[i].classList.add(isCorrect?'correct':'incorrect');
+if(!isCorrect)btns[s.error].classList.add('correct');
+answers.push({scene:s.text,chosen:s.items[i],correct:s.items[s.error],wasRight:isCorrect,exp:s.exp,solution:s.correct});
+setTimeout(()=>{main.classList.add('fade-out');setTimeout(()=>{main.classList.remove('fade-out');idx++;render();},300);},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.wasRight).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Misión completada!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Fallos detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.wasRight?'correct':'incorrect'}">
+<div class="result-scene">Escena ${i+1}: ${a.scene}</div>
+<div class="result-choice">${a.wasRight?'✓ Detectaste':'✗ Elegiste'}: ${a.chosen}</div>
+${!a.wasRight?`<div class="result-choice">Error real: ${a.correct}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="tip-box">
+<div class="tip-title">💡 Consejo de seguridad</div>
+<div class="tip-text">La atención al detalle salva vidas. Antes de cada tarea, revisa herramientas, entorno y protocolos. Un segundo de verificación evita accidentes graves.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
