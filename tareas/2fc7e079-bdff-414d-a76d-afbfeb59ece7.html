@@ -1,0 +1,114 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Misión: Herramienta Maestra 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Herramienta Maestra 🔧</div>
+<div class="subtitle" id="task">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main"><div class="options" id="options"></div></div>
+<div class="footer">
+<div class="helper">Elige la herramienta correcta</div>
+<button class="cta" id="cta" disabled>Confirmar</button>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">¡Bienvenido, aprendiz! 🔧</div>
+<div class="modal-body">Tu mentor te pone a prueba: elige la herramienta correcta para cada tarea de fontanería.</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">Comenzar</button></div>
+</div>
+</div>
+
+<script>
+const tasks=[
+{task:"Aflojar una tuerca oxidada en un sifón",opts:["🔧 Llave inglesa","🪛 Destornillador","📏 Cinta métrica"],ans:0,why:["Ajustable, ideal para tuercas de distintos tamaños","Solo sirve para tornillos, no tuercas","Mide, no afloja elementos"],tip:"La llave inglesa es imprescindible para tuercas de distintos calibres."},
+{task:"Cortar un tubo de PVC de 32mm",opts:["🪚 Sierra de arco","🔧 Llave grifa","🔥 Soplete"],ans:0,why:["Corte limpio en plástico PVC","Sirve para girar tubos, no cortarlos","Para soldadura de cobre, no PVC"],tip:"Usa sierra de arco o cortatubos para PVC; el soplete derretiría el plástico."},
+{task:"Sellar la rosca de un racor metálico",opts:["🧵 Cinta de teflón","🔨 Martillo","🪠 Desatascador"],ans:0,why:["Sella roscas evitando fugas","Para golpear, no sellar","Desatasca, no sella conexiones"],tip:"El teflón se enrolla en sentido de la rosca para un sellado perfecto."},
+{task:"Apretar un tubo de cobre sin dañarlo",opts:["🔧 Llave grifa","🪓 Hacha","🔩 Alicates"],ans:0,why:["Mordazas acolchadas protegen el tubo","Herramienta de corte bruto","Podrían marcar o aplastar el tubo"],tip:"La llave grifa tiene mordazas diseñadas para tubos redondos."},
+{task:"Desatascar un desagüe obstruido",opts:["🪠 Desatascador","📐 Escuadra","🔦 Linterna"],ans:0,why:["Genera presión para liberar obstrucciones","Sirve para medir ángulos","Ilumina pero no desatasca"],tip:"El desatascador de ventosa es el primer recurso antes de químicos."},
+{task:"Medir la longitud de tubería necesaria",opts:["📏 Cinta métrica","🔧 Llave inglesa","🪚 Sierra de arco"],ans:0,why:["Mide con precisión cualquier longitud","Herramienta de apriete, no medición","Corta, no mide"],tip:"Mide dos veces, corta una: evita desperdiciar material."}
+];
+let idx=0,score=0,sel=-1,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),cta=document.getElementById('cta'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];sel=-1;cta.disabled=true;
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){sel=i;cta.disabled=false;
+opts.querySelectorAll('.btn-option').forEach((b,j)=>{b.classList.toggle('selected',j===i);});}
+
+cta.onclick=()=>{
+const t=tasks[idx],correct=sel===t.ans;
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[sel],correct,correctOpt:t.opts[t.ans],why:t.why,tip:t.tip});
+idx++;render();
+};
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Misión completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Elegiste: '+a.user}</div>
+${!a.correct?`<div class="result-answer" style="opacity:.85">✓ Correcta: ${a.correctOpt}</div>`:''}
+<div class="result-explanation">${a.why.map((w,i)=>`<b>${tasks[answers.indexOf(a)].opts[i].split(' ')[1]}:</b> ${w}`).join(' · ')}</div>
+<div class="result-explanation" style="margin-top:4px"><b>💡 Tip:</b> ${a.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
