@@ -1,0 +1,206 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>El Orden SÍ Altera el Circuito ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.cards-container{display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px;margin:0 auto}
+.card{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:12px;padding:10px 12px;border:2px solid transparent;transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s}
+.card.moving{transform:scale(1.02);box-shadow:0 4px 16px rgba(0,0,0,0.15);border-color:var(--accent)}
+.card-num{min-width:28px;height:28px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.card-text{flex:1;font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-controls{display:flex;flex-direction:column;gap:2px}
+.card-controls .btn-ghost{width:32px;height:28px;padding:0;font-size:16px;border:none;background:var(--surface-alt,#f0f0f0);border-radius:6px;cursor:pointer;transition:background 0.2s}
+.card-controls .btn-ghost:active{background:var(--accent);color:#fff}
+.card-controls .btn-ghost:disabled{opacity:0.3;cursor:not-allowed}
+.intro-text{text-align:center;font-size:14px;color:var(--text-muted);padding:0 8px;line-height:1.4}
+.result-order{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.result-step{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px}
+.result-step.correct{background:rgba(76,175,80,0.15)}
+.result-step.incorrect{background:rgba(244,67,54,0.15)}
+.result-step-num{min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff}
+.result-step.correct .result-step-num{background:#4caf50}
+.result-step.incorrect .result-step-num{background:#f44336}
+.tip-box{background:linear-gradient(135deg,#fff3e0,#ffe0b2);border-radius:10px;padding:12px;margin:12px 0;font-size:13px;line-height:1.4}
+.tip-box strong{color:#e65100}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{id:1,title:"Cambiar un interruptor",steps:[
+{id:"a",text:"Cortar la corriente en el cuadro",order:1},
+{id:"b",text:"Verificar ausencia de tensión",order:2},
+{id:"c",text:"Desconectar cables del interruptor",order:3},
+{id:"d",text:"Instalar el nuevo interruptor",order:4},
+{id:"e",text:"Rearmar el cuadro y probar",order:5}
+],tip:"Nunca manipules cables sin verificar ausencia de tensión con un buscapolos."},
+{id:2,title:"Sustituir un enchufe",steps:[
+{id:"a",text:"Desconectar el diferencial",order:1},
+{id:"b",text:"Comprobar que no hay tensión",order:2},
+{id:"c",text:"Retirar la tapa y desconectar",order:3},
+{id:"d",text:"Conectar el nuevo enchufe",order:4}
+],tip:"Asegúrate de que los cables quedan bien sujetos en las bornas."},
+{id:3,title:"Reparar un punto de luz",steps:[
+{id:"a",text:"Apagar el interruptor general",order:1},
+{id:"b",text:"Usar buscapolos para verificar",order:2},
+{id:"c",text:"Desmontar el portalámparas",order:3},
+{id:"d",text:"Realizar la reparación",order:4},
+{id:"e",text:"Restablecer corriente y probar",order:5}
+],tip:"Un buscapolos es tu mejor aliado antes de tocar cualquier cable."}
+];
+let currentChallenge=0,userOrders=[],results=[],scene=document.getElementById('scene');
+
+function shuffle(arr){return[...arr].sort(()=>Math.random()-0.5)}
+
+function renderIntro(){
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">El Orden SÍ Altera el Circuito ⚡️</div>
+<div class="subtitle">Protocolo de seguridad eléctrica</div>
+</div>
+</div>
+<div class="main" style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:16px;padding:16px">
+<p class="intro-text">Tu encargado quiere validar que conoces el protocolo. Ordena los pasos correctamente en cada reto.</p>
+</div>
+<div class="footer">
+<div class="helper">3 retos · Usa ↑↓ para ordenar</div>
+<button class="cta" id="startBtn">Comenzar</button>
+</div>`;
+document.getElementById('startBtn').onclick=()=>renderChallenge();
+ensureFits();
+}
+
+function renderChallenge(){
+if(currentChallenge>=challenges.length){showResults();return}
+const ch=challenges[currentChallenge];
+const shuffled=shuffle(ch.steps);
+userOrders[currentChallenge]=shuffled.map(s=>s.id);
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">${ch.title}</div>
+<div class="subtitle">Ordena los pasos correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:${(currentChallenge/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main" style="display:flex;flex-direction:column;justify-content:center;padding:8px">
+<div class="cards-container" id="cards"></div>
+</div>
+<div class="footer">
+<div class="helper">Usa las flechas para reordenar</div>
+<button class="cta" id="confirmBtn">Confirmar orden</button>
+</div>`;
+renderCards();
+document.getElementById('confirmBtn').onclick=confirmOrder;
+ensureFits();
+}
+
+function renderCards(){
+const ch=challenges[currentChallenge];
+const order=userOrders[currentChallenge];
+const container=document.getElementById('cards');
+container.innerHTML=order.map((id,i)=>{
+const step=ch.steps.find(s=>s.id===id);
+return`<div class="card" data-id="${id}">
+<span class="card-num">${i+1}</span>
+<span class="card-text">${step.text}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveCard('${id}',-1)" ${i===0?'disabled':''}>↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveCard('${id}',1)" ${i===order.length-1?'disabled':''}>↓</button>
+</div>
+</div>`;
+}).join('');
+}
+
+function moveCard(id,dir){
+const order=userOrders[currentChallenge];
+const idx=order.indexOf(id);
+const newIdx=idx+dir;
+if(newIdx<0||newIdx>=order.length)return;
+const card=document.querySelector(`.card[data-id="${id}"]`);
+card.classList.add('moving');
+setTimeout(()=>card.classList.remove('moving'),200);
+[order[idx],order[newIdx]]=[order[newIdx],order[idx]];
+renderCards();
+}
+
+function confirmOrder(){
+const ch=challenges[currentChallenge];
+const order=userOrders[currentChallenge];
+const correctOrder=ch.steps.slice().sort((a,b)=>a.order-b.order).map(s=>s.id);
+const isCorrect=order.every((id,i)=>id===correctOrder[i]);
+const stepResults=order.map((id,i)=>{
+const step=ch.steps.find(s=>s.id===id);
+const correctPos=correctOrder.indexOf(id);
+return{text:step.text,userPos:i+1,correctPos:correctPos+1,isCorrect:i===correctPos};
+});
+results.push({title:ch.title,correct:isCorrect,stepResults,tip:ch.tip,correctOrder:correctOrder.map(id=>ch.steps.find(s=>s.id===id).text)});
+currentChallenge++;
+renderChallenge();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const totalCorrect=results.filter(r=>r.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${totalCorrect}/${results.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${results.map(r=>`
+<div class="result-item ${r.correct?'correct':'incorrect'}">
+<div class="result-question">${r.title}</div>
+<div class="result-answer">${r.correct?'✓ Orden correcto':'✗ Orden incorrecto'}</div>
+<div class="result-order">
+${r.stepResults.map(s=>`<div class="result-step ${s.isCorrect?'correct':'incorrect'}">
+<span class="result-step-num">${s.userPos}</span>
+<span>${s.text}${!s.isCorrect?' → debía ser '+s.correctPos+'º':''}</span>
+</div>`).join('')}
+</div>
+<div class="tip-box"><strong>⚠️ Consejo:</strong> ${r.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{renderIntro();ensureFits()});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
