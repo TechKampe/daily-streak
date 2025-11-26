@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conecta con el vocabulario correcto ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.cloze-sentence{font-size:1.25rem;line-height:1.6;text-align:center;padding:1rem;color:#1a1a2e}
+.cloze-gap{display:inline-block;min-width:120px;border-bottom:3px dashed #6c5ce7;padding:0 8px;margin:0 4px;transition:all 0.3s ease;color:#6c5ce7;font-weight:700}
+.cloze-gap.filled{border-bottom-style:solid;background:linear-gradient(to top,rgba(108,92,231,0.15) 0%,transparent 100%)}
+.chips-container{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:1rem}
+.chip{padding:12px 20px;border-radius:24px;border:2px solid #e0e0e0;background:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:all 0.2s ease;color:#333}
+.chip:active{transform:scale(0.95)}
+.chip.selected{border-color:#6c5ce7;background:#6c5ce7;color:#fff}
+.chip:disabled{opacity:0.5;cursor:not-allowed}
+.main{display:flex;flex-direction:column;justify-content:center;flex:1;padding:0 1rem}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Conecta con el vocabulario ⚡️</div>
+<div class="subtitle" id="instruction">Completa la frase con el término correcto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="cloze-sentence" id="sentence"></div>
+<div class="chips-container" id="chips"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el término correcto para completar</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{sentence:"Para medir tensión, uso el ___.",gap:"multímetro",opts:["multímetro","buscapolos","pinza amperimétrica"],exp:{correct:"El multímetro mide tensión (voltios).",wrong:{"buscapolos":"Solo detecta presencia de tensión, no la mide.","pinza amperimétrica":"Mide corriente (amperios), no tensión."}}},
+{sentence:"La intensidad se mide en ___.",gap:"amperios",opts:["voltios","amperios","ohmios"],exp:{correct:"El amperio (A) es la unidad de intensidad.",wrong:{"voltios":"El voltio mide tensión, no intensidad.","ohmios":"El ohmio mide resistencia eléctrica."}}},
+{sentence:"El ___ protege contra sobrecargas.",gap:"magnetotérmico",opts:["diferencial","magnetotérmico"],exp:{correct:"El magnetotérmico corta por sobrecarga o cortocircuito.",wrong:{"diferencial":"El diferencial protege contra fugas a tierra."}}},
+{sentence:"El ___ detecta fugas de corriente a tierra.",gap:"diferencial",opts:["diferencial","magnetotérmico"],exp:{correct:"El diferencial compara entrada y salida de corriente.",wrong:{"magnetotérmico":"El magnetotérmico actúa por exceso de corriente."}}},
+{sentence:"Para saber si hay tensión sin medirla, uso el ___.",gap:"buscapolos",opts:["multímetro","buscapolos"],exp:{correct:"El buscapolos indica presencia de fase con su luz.",wrong:{"multímetro":"El multímetro mide el valor exacto, no solo detecta."}}},
+{sentence:"La resistencia eléctrica se mide en ___.",gap:"ohmios",opts:["ohmios","vatios","amperios"],exp:{correct:"El ohmio (Ω) es la unidad de resistencia.",wrong:{"vatios":"El vatio mide potencia eléctrica.","amperios":"El amperio mide intensidad de corriente."}}}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),sentenceEl=document.getElementById('sentence'),chipsEl=document.getElementById('chips'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+const parts=d.sentence.split('___');
+sentenceEl.innerHTML=parts[0]+'<span class="cloze-gap" id="gap">???</span>'+parts[1];
+chipsEl.innerHTML=d.opts.map(o=>`<button class="chip" onclick="selectOpt('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOpt(opt){
+const d=data[idx],gap=document.getElementById('gap'),correct=opt===d.gap;
+gap.textContent=opt;
+gap.classList.add('filled');
+chipsEl.querySelectorAll('.chip').forEach(c=>{c.disabled=true;if(c.textContent===opt)c.classList.add('selected')});
+answers.push({sentence:d.sentence.replace('___',d.gap),user:opt,correct,correctAns:d.gap,exp:correct?d.exp.correct:d.exp.wrong[opt]});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Frases completadas correctamente</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Tu respuesta: '+a.user+' → Correcto: '+a.correctAns}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:#f0f0f0;border-left-color:#6c5ce7">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar el vocabulario evita malentendidos. Multímetro para medir, buscapolos para detectar, diferencial para fugas, magnetotérmico para sobrecargas.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
