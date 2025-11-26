@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EPIs: ¿Check o Next? 🤔 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.tinder-container{position:relative;width:100%;height:280px;display:flex;align-items:center;justify-content:center}
+.tinder-card{position:absolute;width:85%;max-width:300px;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:20px;padding:24px 20px;box-shadow:0 10px 30px rgba(0,0,0,0.3);cursor:grab;user-select:none;touch-action:none;transition:transform 0.1s ease-out;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;border:2px solid rgba(255,255,255,0.1)}
+.tinder-card.dragging{cursor:grabbing;transition:none}
+.tinder-card.exit-left{transform:translateX(-150%) rotate(-30deg);opacity:0;transition:all 0.4s ease-out}
+.tinder-card.exit-right{transform:translateX(150%) rotate(30deg);opacity:0;transition:all 0.4s ease-out}
+.tinder-card-text{font-size:1.1rem;text-align:center;color:#fff;line-height:1.4;font-weight:500}
+.tinder-indicator{position:absolute;top:12px;padding:6px 14px;border-radius:8px;font-weight:700;font-size:0.9rem;opacity:0;transition:opacity 0.2s;text-transform:uppercase}
+.tinder-indicator.left{left:12px;background:#ff6b6b;color:#fff;transform:rotate(-15deg)}
+.tinder-indicator.right{right:12px;background:#51cf66;color:#fff;transform:rotate(15deg)}
+.tinder-card.drag-left .tinder-indicator.left{opacity:1}
+.tinder-card.drag-right .tinder-indicator.right{opacity:1}
+.swipe-buttons{display:flex;gap:24px;justify-content:center;margin-top:16px}
+.swipe-btn{width:60px;height:60px;border-radius:50%;border:none;font-size:1.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s,box-shadow 0.2s}
+.swipe-btn.no{background:linear-gradient(135deg,#ff6b6b,#ee5a5a);box-shadow:0 4px 15px rgba(255,107,107,0.4)}
+.swipe-btn.yes{background:linear-gradient(135deg,#51cf66,#40c057);box-shadow:0 4px 15px rgba(81,207,102,0.4)}
+.swipe-btn:active{transform:scale(0.95)}
+.swipe-hint{display:flex;justify-content:space-between;padding:0 20px;margin-top:8px;font-size:0.75rem;color:rgba(255,255,255,0.6)}
+.tutorial-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.tutorial-box{background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:28px 24px;max-width:320px;text-align:center;border:2px solid rgba(255,255,255,0.1)}
+.tutorial-title{font-size:1.3rem;color:#ffd93d;margin-bottom:12px;font-weight:700}
+.tutorial-text{color:#fff;font-size:0.95rem;line-height:1.5;margin-bottom:20px}
+.tutorial-icons{display:flex;justify-content:center;gap:40px;margin-bottom:20px}
+.tutorial-icon{display:flex;flex-direction:column;align-items:center;gap:6px}
+.tutorial-icon span:first-child{font-size:2rem}
+.tutorial-icon span:last-child{font-size:0.8rem;color:rgba(255,255,255,0.7)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">EPIs: ¿Check o Next? 🤔</div>
+<div class="subtitle" id="subtitle">¿Acción segura u obligatoria?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="tinder-container" id="tinderContainer"></div>
+<div class="swipe-buttons">
+<button class="swipe-btn no" id="btnNo" aria-label="Incorrecto">✗</button>
+<button class="swipe-btn yes" id="btnYes" aria-label="Correcto">✓</button>
+</div>
+<div class="swipe-hint">
+<span>← Incorrecto</span>
+<span>Correcto →</span>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Desliza o pulsa para responder</div>
+</div>
+</div>
+
+<div class="tutorial-overlay" id="tutorial">
+<div class="tutorial-box">
+<div class="tutorial-title">📋 Tu primer día en obra</div>
+<div class="tutorial-text">El jefe quiere comprobar que controlas los EPIs. Decide si cada situación es correcta o incorrecta.</div>
+<div class="tutorial-icons">
+<div class="tutorial-icon"><span>👈</span><span>Incorrecto</span></div>
+<div class="tutorial-icon"><span>👉</span><span>Correcto</span></div>
+</div>
+<button class="cta" id="startBtn">¡Empezar!</button>
+</div>
+</div>
+
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<script>
+const cards=[
+{text:"Usar casco en zona de cargas suspendidas",correct:true,exp:"El casco es obligatorio donde hay riesgo de caída de objetos."},
+{text:"Quitarse los guantes para tener más tacto al soldar",correct:false,exp:"Los guantes protegen de quemaduras. Nunca soldes sin ellos."},
+{text:"Usar gafas de seguridad al cortar con radial",correct:true,exp:"Las gafas evitan lesiones oculares por proyección de partículas."},
+{text:"Usar arnés solo si la altura supera 5 metros",correct:false,exp:"El arnés es obligatorio a partir de 2 metros de altura."},
+{text:"Revisar el estado del arnés antes de usarlo",correct:true,exp:"Revisar el EPI garantiza que funcione correctamente."},
+{text:"Compartir tapones de oído con un compañero",correct:false,exp:"Los EPIs son personales e intransferibles por higiene."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),container=document.getElementById('tinderContainer'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnNo=document.getElementById('btnNo'),btnYes=document.getElementById('btnYes'),tutorial=document.getElementById('tutorial');
+
+function createCard(){
+if(idx>=cards.length){showResults();return}
+const c=cards[idx];
+const card=document.createElement('div');
+card.className='tinder-card';
+card.innerHTML=`<div class="tinder-indicator left">✗</div><div class="tinder-indicator right">✓</div><div class="tinder-card-text">${c.text}</div>`;
+container.innerHTML='';
+container.appendChild(card);
+setupSwipe(card);
+updateProgress();
+}
+
+function updateProgress(){
+prog.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+}
+
+function setupSwipe(card){
+let startX=0,currentX=0,isDragging=false;
+const onStart=(e)=>{isDragging=true;startX=e.type.includes('mouse')?e.clientX:e.touches[0].clientX;card.classList.add('dragging')};
+const onMove=(e)=>{if(!isDragging)return;currentX=(e.type.includes('mouse')?e.clientX:e.touches[0].clientX)-startX;card.style.transform=`translateX(${currentX}px) rotate(${currentX*0.05}deg)`;card.classList.toggle('drag-left',currentX<-30);card.classList.toggle('drag-right',currentX>30)};
+const onEnd=()=>{if(!isDragging)return;isDragging=false;card.classList.remove('dragging','drag-left','drag-right');if(Math.abs(currentX)>80){swipe(currentX>0)}else{card.style.transform=''}};
+card.addEventListener('mousedown',onStart);card.addEventListener('mousemove',onMove);card.addEventListener('mouseup',onEnd);card.addEventListener('mouseleave',onEnd);
+card.addEventListener('touchstart',onStart,{passive:true});card.addEventListener('touchmove',onMove,{passive:true});card.addEventListener('touchend',onEnd);
+}
+
+function swipe(isRight){
+const card=container.querySelector('.tinder-card');
+if(!card)return;
+card.classList.add(isRight?'exit-right':'exit-left');
+const c=cards[idx];
+const userAnswer=isRight;
+answers.push({q:c.text,correct:userAnswer===c.correct,wasCorrect:c.correct,exp:c.exp,userSaid:isRight?'Correcto':'Incorrecto'});
+idx++;
+setTimeout(createCard,400);
+}
+
+btnNo.onclick=()=>swipe(false);
+btnYes.onclick=()=>swipe(true);
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">${score>=4?'¡Buen trabajo, controlas los EPIs!':'Repasa las normas de seguridad'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">${a.correct?'✓ Acertaste':'✗ Dijiste: '+a.userSaid+' (era '+(a.wasCorrect?'Correcto':'Incorrecto')+')'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));}
+}
+
+document.getElementById('startBtn').onclick=()=>{tutorial.classList.add('hidden');createCard()};
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
