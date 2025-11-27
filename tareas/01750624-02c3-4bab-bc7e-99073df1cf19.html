@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¡Corriente Segura, Futuro Brillante! ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¡Corriente Segura! ⚡️</div>
+<div class="subtitle" id="question">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la respuesta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Test de Seguridad ⚡️</div>
+<div class="modal-body">Tu mentor te pone a prueba: 5 preguntas sobre EPIs y reglas de oro para trabajar sin riesgos.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startQuiz()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{q:"¿Qué guantes usas para trabajar con cables bajo tensión?",opts:["Guantes dieléctricos","Guantes de cuero","Guantes de látex"],ans:0,exp:"Los guantes dieléctricos aíslan de la electricidad y son obligatorios para trabajos con tensión."},
+{q:"Antes de tocar un cable, ¿qué debes verificar primero?",opts:["Ausencia de tensión","El color del cable","Si está caliente"],ans:0,exp:"Verificar ausencia de tensión con un detector es la primera regla de oro para evitar electrocuciones."},
+{q:"¿Qué calzado es obligatorio en obra eléctrica?",opts:["Botas con suela aislante","Zapatillas cómodas","Sandalias de seguridad"],ans:0,exp:"Las botas con suela aislante protegen de descargas a tierra y son EPI obligatorio."},
+{q:"Si un compañero sufre una descarga, ¿qué haces primero?",opts:["Cortar la corriente","Tocarlo para apartarlo","Echarle agua"],ans:0,exp:"Primero corta la corriente. Tocar a la víctima sin hacerlo te electrocutaría también."},
+{q:"¿Cada cuánto se revisan los guantes dieléctricos?",opts:["Antes de cada uso","Una vez al año","Nunca, son eternos"],ans:0,exp:"Revisa tus guantes antes de cada uso buscando grietas o agujeros. Tu vida depende de ello."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),qEl=document.getElementById('question'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startQuiz(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+qEl.textContent=d.q;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+helper.textContent='Selecciona la respuesta correcta';
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" aria-label="${o}" onclick="selectAnswer(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectAnswer(i){
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>b.disabled=true);
+const correct=i===data[idx].ans;
+btns[i].classList.add(correct?'correct':'incorrect');
+if(!correct)btns[data[idx].ans].classList.add('correct');
+if(correct)score++;
+answers.push({q:data[idx].q,correct,exp:data[idx].exp,user:data[idx].opts[i],correctAns:data[idx].opts[data[idx].ans]});
+helper.textContent=correct?'¡Correcto! ✓':'Incorrecto ✗';
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Test completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.q}</div>
+<div class="result-answer">Tu respuesta: ${a.user} ${a.correct?'✓':'✗'}</div>
+${!a.correct?`<div class="result-answer">Correcta: ${a.correctAns}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Nunca confíes solo en el interruptor: verifica siempre con detector antes de tocar cualquier cable.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
