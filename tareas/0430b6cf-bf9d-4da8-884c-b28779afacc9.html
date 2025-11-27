@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🗂️ ¿Dónde va esto? Clasifica como un pro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🗂️ ¿Dónde va esto?</div>
+<div class="subtitle" id="instruction">Clasifica cada elemento en su categoría</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div class="results-header" id="item-display">
+<div class="results-title" id="current-item">Destornillador</div>
+<div class="results-subtitle">¿A qué categoría pertenece?</div>
+</div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para clasificar</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">📦 Organiza el almacén</div>
+<div class="modal-body">Es tu primer día. El encargado te pide ordenar el almacén separando elementos según su función: Herramienta, Material o EPI.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<script>
+const items=[
+{name:"Destornillador",category:"Herramienta",exp:"Sirve para apretar o aflojar tornillos."},
+{name:"Casco de seguridad",category:"EPI",exp:"Protege la cabeza de golpes y caídas de objetos."},
+{name:"Tubo de cobre",category:"Material",exp:"Se usa en instalaciones de fontanería y gas."},
+{name:"Guantes aislantes",category:"EPI",exp:"Protegen las manos de descargas eléctricas."},
+{name:"Llave inglesa",category:"Herramienta",exp:"Herramienta ajustable para tuercas y tornillos."},
+{name:"Cinta aislante",category:"Material",exp:"Material para aislar conexiones eléctricas."},
+{name:"Gafas protectoras",category:"EPI",exp:"Protegen los ojos de partículas y salpicaduras."},
+{name:"Cemento cola",category:"Material",exp:"Adhesivo para fijar azulejos y baldosas."},
+{name:"Multímetro",category:"Herramienta",exp:"Instrumento para medir tensión, corriente y resistencia."},
+{name:"Chaleco reflectante",category:"EPI",exp:"Aumenta la visibilidad del trabajador."}
+];
+const categories=["Herramienta","Material","EPI"];
+const catEmojis={"Herramienta":"🔧","Material":"📦","EPI":"🦺"};
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),itemEl=document.getElementById('current-item'),catsEl=document.getElementById('categories'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),itemDisplay=document.getElementById('item-display');
+
+function startGame(){
+modal.classList.remove('active');
+renderCategories();
+render();
+}
+
+function renderCategories(){
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="classify('${c}')">${catEmojis[c]} ${c}</button>`).join('');
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+itemEl.textContent=item.name;
+prog.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+itemDisplay.classList.remove('correct','incorrect');
+catsEl.querySelectorAll('.btn-option').forEach(b=>{b.classList.remove('selected','correct','incorrect');b.disabled=false;});
+ensureFits();
+}
+
+function classify(cat){
+const item=items[idx];
+const correct=cat===item.category;
+answers.push({name:item.name,userCat:cat,correctCat:item.category,correct,exp:item.exp});
+catsEl.querySelectorAll('.btn-option').forEach(b=>{
+b.disabled=true;
+if(b.textContent.includes(cat)){
+b.classList.add(correct?'correct':'incorrect');
+}
+if(!correct&&b.textContent.includes(item.category)){
+b.classList.add('correct');
+}
+});
+itemDisplay.classList.add(correct?'correct':'incorrect');
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">🗂️ ¡Almacén organizado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctCat:'✗ '+a.userCat+' → '+a.correctCat}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo profesional</div>
+<div class="result-explanation">Antes de cada jornada, revisa mentalmente: ¿qué herramientas necesito?, ¿qué materiales voy a usar?, ¿llevo todos mis EPIs? Esto ahorra tiempo y previene accidentes.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();modal.classList.add('active');});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
