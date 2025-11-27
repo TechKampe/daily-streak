@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Inspector de Riesgos: ¡Tu Primera Obra! 👷 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Inspector de Riesgos 👷</div>
+<div class="subtitle" id="subtitle">Clasifica cada situación</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="card" id="item-card" style="text-align:center;padding:24px 16px;margin-bottom:16px;">
+<span class="card-text" id="item-text" style="font-size:1.1rem;"></span>
+</div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca la categoría correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">¡Tu Primera Obra! 👷</div>
+<div class="modal-body">Es tu primer día. Tu mentor quiere evaluar tu ojo crítico. Clasifica cada situación según su riesgo.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const categories = ['Peligro Inmediato', 'Potencial Desorden', 'Buena Práctica'];
+const items = [
+{text:'Charco cerca de enchufe',cat:0,exp:'Agua + electricidad = riesgo de electrocución.'},
+{text:'Zona de trabajo señalizada',cat:2,exp:'La señalización previene accidentes.'},
+{text:'Herramientas abandonadas',cat:1,exp:'Pueden causar tropiezos o pérdidas.'},
+{text:'Casco puesto correctamente',cat:2,exp:'Protege de golpes en la cabeza.'},
+{text:'Cables pelados expuestos',cat:0,exp:'Riesgo de descarga eléctrica grave.'},
+{text:'Escombros apilados sin orden',cat:1,exp:'Dificultan el paso y pueden caer.'},
+{text:'Arnés bien ajustado',cat:2,exp:'Previene caídas en altura.'},
+{text:'Andamio sin barandilla',cat:0,exp:'Riesgo de caída desde altura.'},
+{text:'Materiales sin etiquetar',cat:1,exp:'Genera confusión y posibles errores.'},
+{text:'Extintor accesible y visible',cat:2,exp:'Permite actuar rápido ante fuego.'}
+];
+
+let idx=0,answers=[],score=0;
+const scene=document.getElementById('scene'),main=document.getElementById('main'),itemText=document.getElementById('item-text'),categoriesEl=document.getElementById('categories'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal'),itemCard=document.getElementById('item-card');
+
+function startGame(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+itemText.textContent=item.text;
+progress.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+itemCard.classList.remove('correct','incorrect');
+itemCard.style.transform='';
+itemCard.style.opacity='1';
+categoriesEl.innerHTML=categories.map((c,i)=>`<button class="btn-option" onclick="selectCat(${i})">${c}</button>`).join('');
+ensureFits();
+}
+
+function selectCat(catIdx){
+const item=items[idx];
+const correct=catIdx===item.cat;
+if(correct)score++;
+answers.push({text:item.text,userCat:catIdx,correctCat:item.cat,correct,exp:item.exp});
+const btns=categoriesEl.querySelectorAll('.btn-option');
+btns.forEach((b,i)=>{
+if(i===item.cat)b.classList.add('correct');
+else if(i===catIdx&&!correct)b.classList.add('incorrect');
+b.disabled=true;
+});
+itemCard.classList.add(correct?'correct':'incorrect');
+itemCard.style.transform='scale(0.95)';
+setTimeout(()=>{
+itemCard.style.opacity='0';
+setTimeout(()=>{idx++;render();},150);
+},400);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Inspección Completa!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.correct?'✓ '+categories[a.correctCat]:'✗ '+categories[a.userCat]+' → '+categories[a.correctCat]}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--surface-alt);border-left:4px solid var(--accent);">
+<div class="result-question">💡 Consejo del mentor</div>
+<div class="result-explanation">Antes de actuar, pregúntate: ¿puede dañar a alguien ahora? Eso es peligro inmediato. ¿Puede causar problemas después? Potencial desorden. ¿Mejora la seguridad? Buena práctica.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();modal.classList.add('active');});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
