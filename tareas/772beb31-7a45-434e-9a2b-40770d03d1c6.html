@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Conecta el Taller: Herramientas y Funciones - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-grid{display:grid;grid-template-columns:repeat(var(--grid-cols,2),1fr);gap:8px;padding:8px;width:100%;max-width:360px;margin:0 auto}
+.memory-card{aspect-ratio:1;perspective:600px;cursor:pointer;min-height:70px}
+.memory-card-inner{position:relative;width:100%;height:100%;transition:transform 0.5s;transform-style:preserve-3d;border-radius:12px}
+.memory-card.flipped .memory-card-inner{transform:rotateY(180deg)}
+.memory-card.matched .memory-card-inner{transform:rotateY(180deg) scale(1.05)}
+.memory-card-front,.memory-card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;box-sizing:border-box;font-family:'Baloo 2',sans-serif;font-weight:700}
+.memory-card-front{background:#00E6BC;color:#0B214A;font-size:28px}
+.memory-card-back{background:#00E6BC;color:#0B214A;transform:rotateY(180deg);font-size:11px;line-height:1.2;word-break:break-word}
+.memory-card.matched .memory-card-back{background:#10b981;box-shadow:0 0 12px rgba(16,185,129,0.5)}
+.memory-card.no-match .memory-card-back{background:#f87171}
+.attempts-badge{background:#0B214A;color:#fff;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:700}
+.results-pair{background:rgba(0,230,188,0.1);border-radius:12px;padding:12px;margin-bottom:12px}
+.results-pair-title{font-weight:700;color:#0B214A;margin-bottom:4px;font-size:14px}
+.results-pair-explanation{font-size:13px;color:#444;line-height:1.4}
+.tip-box{background:#0B214A;color:#fff;border-radius:12px;padding:12px;margin:16px 0;font-size:13px;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Conecta el Taller</div>
+<div class="subtitle" id="subtitle">Empareja herramientas con su función</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="attempts-badge" id="attempts">Intentos: 12</span>
+</div>
+</div>
+<div class="main">
+<div class="memory-grid" id="grid" style="--grid-cols:4"></div>
+</div>
+<div class="footer">
+<div class="helper">Destapa 2 cartas y busca parejas</div>
+<span class="badge" id="pairs-found">Parejas: 0/4</span>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,a:"Llave inglesa",b:"Ajustar tuercas",exp:"La llave inglesa tiene mordazas ajustables para apretar o aflojar tuercas de distintos tamaños."},
+{id:2,a:"Nivel de burbuja",b:"Comprobar horizontalidad",exp:"La burbuja centrada indica que la superficie está perfectamente nivelada."},
+{id:3,a:"Flexómetro",b:"Medir distancias",exp:"Es la cinta métrica retráctil esencial para tomar medidas precisas en obra."},
+{id:4,a:"Destornillador",b:"Apretar tornillos",exp:"Transmite el giro manual al tornillo gracias a su punta que encaja en la cabeza."}
+];
+let cards=[],flipped=[],matched=[],attempts=12,canFlip=true;
+const grid=document.getElementById('grid'),prog=document.getElementById('progress'),attEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs-found'),scene=document.getElementById('scene'),subtitle=document.getElementById('subtitle');
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+function init(){
+cards=[];
+pairs.forEach(p=>{cards.push({pairId:p.id,text:p.a,type:'a'});cards.push({pairId:p.id,text:p.b,type:'b'})});
+shuffle(cards);
+renderGrid();
+ensureFits();
+fitBoardToViewport();
+}
+
+function renderGrid(){
+grid.innerHTML=cards.map((c,i)=>`<div class="memory-card" data-idx="${i}"><div class="memory-card-inner"><div class="memory-card-front">?</div><div class="memory-card-back">${c.text}</div></div></div>`).join('');
+grid.querySelectorAll('.memory-card').forEach(el=>el.addEventListener('click',()=>flipCard(parseInt(el.dataset.idx))));
+}
+
+function flipCard(idx){
+if(!canFlip||flipped.includes(idx)||matched.includes(idx)||flipped.length>=2)return;
+const el=grid.children[idx];
+el.classList.add('flipped');
+flipped.push(idx);
+if(flipped.length===2){
+canFlip=false;
+attempts--;
+attEl.textContent='Intentos: '+attempts;
+checkMatch();
+}
+}
+
+function checkMatch(){
+const[i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+const isMatch=c1.pairId===c2.pairId&&c1.type!==c2.type;
+setTimeout(()=>{
+const el1=grid.children[i1],el2=grid.children[i2];
+if(isMatch){
+el1.classList.add('matched');el2.classList.add('matched');
+matched.push(i1,i2);
+pairsEl.textContent='Parejas: '+(matched.length/2)+'/4';
+prog.style.width=(matched.length/8*100)+'%';
+}else{
+el1.classList.add('no-match');el2.classList.add('no-match');
+setTimeout(()=>{el1.classList.remove('flipped','no-match');el2.classList.remove('flipped','no-match')},600);
+}
+flipped=[];
+canFlip=true;
+if(matched.length===8||attempts<=0)endGame();
+},800);
+}
+
+function endGame(){
+canFlip=false;
+setTimeout(showResults,500);
+}
+
+function showResults(){
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const won=matched.length===8;
+const pairsFound=matched.length/2;
+let html=`<div class="results-header"><div class="results-title">${won?'¡Taller superado!':'Fin del reto'}</div><div class="results-score">${pairsFound}/4</div><div class="results-subtitle">Parejas encontradas</div></div><div class="results-list">`;
+pairs.forEach(p=>{
+const found=matched.some(m=>cards[m].pairId===p.id);
+html+=`<div class="results-pair"><div class="results-pair-title">${found?'✓':'-'} ${p.a} ↔ ${p.b}</div><div class="results-pair-explanation">${p.exp}</div></div>`;
+});
+html+=`<div class="tip-box">💡 <strong>Consejo:</strong> Agrupa mentalmente las herramientas por tipo de acción: ajustar, medir, comprobar. Así recordarás su función al instante.</div></div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+scene.innerHTML=html;
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const g=document.querySelector('.memory-grid');
+if(!g)return;
+const availH=scene.clientHeight-180;
+const rows=2,cols=4;
+const cellH=Math.floor((availH-(rows-1)*8)/rows);
+const maxH=Math.min(cellH,90);
+g.style.setProperty('--cellH',maxH+'px');
+g.querySelectorAll('.memory-card').forEach(c=>c.style.height=maxH+'px');
+}
+
+window.addEventListener('load',()=>{init()});
+window.addEventListener('resize',()=>{ensureFits();fitBoardToViewport()});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ensureFits();fitBoardToViewport()},100));
+</script>
+</body>
+</html>
