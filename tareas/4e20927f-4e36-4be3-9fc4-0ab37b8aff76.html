@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Ordena y Conquista: Protocolos Pro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Ordena y Conquista</div>
+<div class="modal-body">Primer día en obra. Demuestra que conoces los protocolos de seguridad ordenando los pasos correctamente.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+<script>
+const challenges=[
+{title:"5 Reglas de Oro",steps:[
+{id:1,text:"Desconectar la fuente de tensión",pos:1},
+{id:2,text:"Bloqueo y señalización",pos:2},
+{id:3,text:"Verificar ausencia de tensión",pos:3},
+{id:4,text:"Puesta a tierra y cortocircuito",pos:4},
+{id:5,text:"Delimitar zona de trabajo",pos:5}
+],tip:"Nunca saltes la verificación de ausencia de tensión. Es la causa principal de accidentes."},
+{title:"Verificar con Polímetro",steps:[
+{id:1,text:"Seleccionar escala de tensión AC",pos:1},
+{id:2,text:"Verificar estado del polímetro",pos:2},
+{id:3,text:"Medir en punto conocido con tensión",pos:3},
+{id:4,text:"Medir en el punto a intervenir",pos:4},
+{id:5,text:"Confirmar de nuevo en punto con tensión",pos:5}
+],tip:"Siempre verifica el polímetro antes y después en un punto con tensión conocida."},
+{title:"Reconexión Segura",steps:[
+{id:1,text:"Retirar herramientas y materiales",pos:1},
+{id:2,text:"Despejar zona de trabajo",pos:2},
+{id:3,text:"Retirar puesta a tierra",pos:3},
+{id:4,text:"Quitar bloqueo y señalización",pos:4},
+{id:5,text:"Reconectar la fuente de tensión",pos:5}
+],tip:"Nunca reconectes sin asegurarte de que todos los compañeros han salido de la zona."}
+];
+let currentChallenge=0,userOrder=[],results=[];
+const scene=document.getElementById('scene'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');renderChallenge();}
+
+function shuffle(arr){
+const a=[...arr];
+for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+return a;
+}
+
+function renderChallenge(){
+const c=challenges[currentChallenge];
+userOrder=shuffle(c.steps.map(s=>s.id));
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Protocolos Pro</div>
+<div class="subtitle">${c.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(currentChallenge/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main" id="cards"></div>
+<div class="footer">
+<div class="helper">Usa ↑↓ para ordenar los pasos</div>
+<button class="cta" id="cta" onclick="confirmOrder()">Confirmar orden</button>
+</div>`;
+renderCards();
+ensureFits();
+}
+
+function renderCards(){
+const c=challenges[currentChallenge];
+const container=document.getElementById('cards');
+container.innerHTML=userOrder.map((id,i)=>{
+const step=c.steps.find(s=>s.id===id);
+return`<div class="card" data-idx="${i}">
+<span class="card-num">${i+1}</span>
+<span class="card-text">${step.text}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveUp(${i})" ${i===0?'disabled':''}>↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveDown(${i})" ${i===userOrder.length-1?'disabled':''}>↓</button>
+</div>
+</div>`;
+}).join('');
+}
+
+function moveUp(idx){
+if(idx<=0)return;
+[userOrder[idx-1],userOrder[idx]]=[userOrder[idx],userOrder[idx-1]];
+animateSwap(idx,idx-1);
+renderCards();
+}
+
+function moveDown(idx){
+if(idx>=userOrder.length-1)return;
+[userOrder[idx],userOrder[idx+1]]=[userOrder[idx+1],userOrder[idx]];
+animateSwap(idx,idx+1);
+renderCards();
+}
+
+function animateSwap(a,b){
+const cards=document.querySelectorAll('.card');
+if(cards[a])cards[a].style.transform='scale(1.02)';
+if(cards[b])cards[b].style.transform='scale(1.02)';
+setTimeout(()=>{
+if(cards[a])cards[a].style.transform='';
+if(cards[b])cards[b].style.transform='';
+},150);
+}
+
+function confirmOrder(){
+const c=challenges[currentChallenge];
+const correctOrder=c.steps.map(s=>s.id);
+const isCorrect=userOrder.every((id,i)=>id===correctOrder[i]);
+results.push({
+title:c.title,
+userOrder:[...userOrder],
+correctOrder,
+steps:c.steps,
+correct:isCorrect,
+tip:c.tip
+});
+currentChallenge++;
+if(currentChallenge<challenges.length){
+renderChallenge();
+}else{
+showResults();
+}
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=results.filter(r=>r.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${results.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${results.map(r=>`
+<div class="result-item ${r.correct?'correct':'incorrect'}">
+<div class="result-question">${r.title}</div>
+<div class="result-answer">${r.correct?'✓ Orden correcto':'✗ Orden incorrecto'}</div>
+<div class="result-explanation">
+<strong>Tu orden:</strong> ${r.userOrder.map(id=>r.steps.find(s=>s.id===id).text.substring(0,20)+'...').join(' → ')}<br>
+<strong>Correcto:</strong> ${r.correctOrder.map(id=>r.steps.find(s=>s.id===id).text.substring(0,20)+'...').join(' → ')}<br>
+<strong>💡 Tip:</strong> ${r.tip}
+</div>
+</div>
+`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
