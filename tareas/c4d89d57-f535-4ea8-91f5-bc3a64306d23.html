@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Conceptos Eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-grid{display:grid;grid-template-columns:repeat(var(--grid-cols,2),1fr);gap:8px;padding:8px;width:100%;max-width:400px;margin:0 auto}
+.memory-card{aspect-ratio:1;perspective:1000px;cursor:pointer;min-height:var(--cellH,80px)}
+.memory-card-inner{position:relative;width:100%;height:100%;transition:transform 0.5s;transform-style:preserve-3d}
+.memory-card.flipped .memory-card-inner{transform:rotateY(180deg)}
+.memory-card-front,.memory-card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;box-sizing:border-box;font-family:'Baloo 2',cursive;font-weight:700}
+.memory-card-front{background:#00E6BC;color:#0B214A;font-size:clamp(20px,5vw,32px)}
+.memory-card-back{background:#00E6BC;color:#0B214A;transform:rotateY(180deg);font-size:clamp(11px,2.8vw,14px);line-height:1.2;word-break:break-word}
+.memory-card.matched .memory-card-front,.memory-card.matched .memory-card-back{background:#10b981;opacity:0.8}
+.memory-card.matched{pointer-events:none}
+@keyframes matchPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.memory-card.match-anim .memory-card-inner{animation:matchPulse 0.4s ease}
+.attempts-display{text-align:center;font-family:'Baloo 2',cursive;color:#0B214A;font-size:14px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta Conceptos</div>
+<div class="subtitle" id="subtitle">Empareja términos eléctricos</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Parejas</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">0/4</span>
+</div>
+</div>
+<div class="main">
+<div class="memory-grid" id="grid" style="--grid-cols:4"></div>
+<div class="attempts-display" id="attempts">Intentos: 0/12</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Destapa 2 cartas para encontrar parejas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,term:"Voltímetro",def:"Mide tensión eléctrica",link:"El voltímetro es el instrumento básico para medir diferencia de potencial en voltios."},
+{id:2,term:"Fase",def:"Cable con corriente activa",link:"La fase transporta la corriente eléctrica desde la red hasta los aparatos."},
+{id:3,term:"Diferencial",def:"Protege contra fugas",link:"El diferencial detecta fugas de corriente y corta el suministro para evitar electrocuciones."},
+{id:4,term:"Empalme",def:"Unión de dos cables",link:"Un empalme bien hecho garantiza continuidad eléctrica y seguridad en la instalación."}
+];
+const maxAttempts=12;
+let cards=[],flipped=[],matched=0,attempts=0,canFlip=true,results=[];
+const grid=document.getElementById('grid'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),attemptsEl=document.getElementById('attempts'),helper=document.getElementById('helper'),scene=document.getElementById('scene'),subtitle=document.getElementById('subtitle');
+
+function init(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.term,type:'term'});
+cards.push({pairId:p.id,text:p.def,type:'def'});
+});
+shuffle(cards);
+renderGrid();
+ensureFits();
+fitBoardToViewport();
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
+
+function renderGrid(){
+grid.innerHTML=cards.map((c,i)=>`
+<div class="memory-card" data-idx="${i}" onclick="flipCard(${i})">
+<div class="memory-card-inner">
+<div class="memory-card-front">?</div>
+<div class="memory-card-back">${c.text}</div>
+</div>
+</div>`).join('');
+}
+
+function flipCard(idx){
+if(!canFlip)return;
+const card=grid.children[idx];
+if(card.classList.contains('flipped')||card.classList.contains('matched'))return;
+if(flipped.length>=2)return;
+card.classList.add('flipped');
+flipped.push(idx);
+if(flipped.length===2){
+canFlip=false;
+attempts++;
+attemptsEl.textContent=`Intentos: ${attempts}/${maxAttempts}`;
+checkMatch();
+}
+}
+
+function checkMatch(){
+const [i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+const isMatch=c1.pairId===c2.pairId&&c1.type!==c2.type;
+setTimeout(()=>{
+const card1=grid.children[i1],card2=grid.children[i2];
+if(isMatch){
+card1.classList.add('matched','match-anim');
+card2.classList.add('matched','match-anim');
+matched++;
+const pair=pairs.find(p=>p.id===c1.pairId);
+results.push({term:pair.term,def:pair.def,link:pair.link});
+prog.style.width=(matched/pairs.length*100)+'%';
+counter.textContent=`${matched}/${pairs.length}`;
+helper.textContent='¡Pareja encontrada!';
+if(matched===pairs.length){
+setTimeout(showResults,600);
+return;
+}
+}else{
+card1.classList.remove('flipped');
+card2.classList.remove('flipped');
+helper.textContent='No coinciden, ¡sigue intentando!';
+}
+flipped=[];
+canFlip=true;
+if(attempts>=maxAttempts&&matched<pairs.length){
+setTimeout(showResults,400);
+}
+},isMatch?400:1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const won=matched===pairs.length;
+const missingPairs=pairs.filter(p=>!results.find(r=>r.term===p.term));
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">${won?'¡Excelente trabajo!':'¡Buen intento!'}</div>
+<div class="results-score">${matched}/${pairs.length}</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${results.map(r=>`<div class="result-item correct">
+<div class="result-question">${r.term} ↔ ${r.def}</div>
+<div class="result-explanation">${r.link}</div>
+</div>`).join('')}
+${missingPairs.map(p=>`<div class="result-item incorrect">
+<div class="result-question">${p.term} ↔ ${p.def}</div>
+<div class="result-explanation">${p.link}</div>
+</div>`).join('')}
+<div class="result-item" style="background:#f0f9ff;border-left:4px solid #0B214A">
+<div class="result-question">💡 Consejo de memorización</div>
+<div class="result-explanation">Asocia cada herramienta con su función principal. Visualiza usándola en una obra real para fijar el concepto.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const g=document.querySelector('.memory-grid');
+if(!g)return;
+const availableHeight=scene.clientHeight-220;
+const cols=4,rows=2;
+const cellHeight=Math.floor((availableHeight-(rows-1)*8)/rows);
+document.documentElement.style.setProperty('--cellH',Math.max(60,Math.min(cellHeight,100))+'px');
+}
+
+window.addEventListener('load',()=>{ensureFits();fitBoardToViewport();});
+window.addEventListener('resize',()=>{ensureFits();fitBoardToViewport();});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ensureFits();fitBoardToViewport();},100));
+init();
+</script>
+</body>
+</html>
