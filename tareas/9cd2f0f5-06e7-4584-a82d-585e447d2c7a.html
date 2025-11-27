@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fichaje Estrella: La Entrevista 💼 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Fichaje Estrella: La Entrevista 💼</div>
+<div class="subtitle" id="subtitle">Entrevista de trabajo</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">0/5</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="chat-container" id="chat"></div>
+</div>
+<div class="footer" id="footer">
+<div class="helper" id="helper">Lee y elige tu respuesta</div>
+<div class="options" id="options"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+recruiter:{name:"Laura - Reclutadora",img:"https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png"},
+player:{name:"Tú",img:"https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png"}
+};
+const turns=[
+{speaker:"recruiter",msgs:["¡Hola! Soy Laura, del equipo de selección de ClimaFrío. 👋","He visto tu candidatura para aprendiz de climatización. ¿Por qué te interesa este sector?"],
+opts:[
+{text:"Me gusta trabajar con las manos y el clima tiene futuro",score:2,reaction:"¡Genial! Eso es justo lo que buscamos. 💪"},
+{text:"Busco cualquier trabajo estable",score:1,reaction:"Entiendo, pero buscamos gente con vocación..."},
+{text:"No sé, me lo recomendaron",score:0,reaction:"Hmm, necesitamos más motivación que eso. 🤔"}
+]},
+{speaker:"recruiter",msgs:["Veo que no tienes experiencia previa en climatización.","¿Cómo piensas compensar esa falta de experiencia?"],
+opts:[
+{text:"Aprendo rápido y no me da miedo preguntar",score:2,reaction:"¡Esa actitud es oro! Los mejores técnicos empezaron así. ⭐"},
+{text:"Espero que me enseñéis todo",score:1,reaction:"Claro, pero también valoramos la iniciativa propia..."},
+{text:"Ya iré aprendiendo sobre la marcha",score:0,reaction:"Necesitamos gente más proactiva, la verdad. 😕"}
+]},
+{speaker:"recruiter",msgs:["Imagina que estás en una instalación y no sabes cómo seguir.","¿Qué harías?"],
+opts:[
+{text:"Paro, consulto el manual y pregunto al encargado",score:2,reaction:"¡Perfecto! Seguridad primero, siempre. ✅"},
+{text:"Intento solucionarlo yo mismo como pueda",score:0,reaction:"Ojo, eso puede ser peligroso en climatización... ⚠️"},
+{text:"Espero a que alguien me diga qué hacer",score:1,reaction:"Mejor preguntar activamente que quedarse parado..."}
+]},
+{speaker:"recruiter",msgs:["¿Qué horario podrías hacer?","A veces hay urgencias fuera de horario."],
+opts:[
+{text:"Tengo flexibilidad y puedo adaptarme",score:2,reaction:"¡Genial! La flexibilidad es clave en este sector. 🙌"},
+{text:"Solo mañanas, tengo otros compromisos",score:1,reaction:"Entendido, aunque limita algunas opciones..."},
+{text:"El horario es lo más importante para mí",score:0,reaction:"En este trabajo la disponibilidad es importante... 🤷"}
+]},
+{speaker:"recruiter",msgs:["Última pregunta: ¿dónde te ves en 2 años?"],
+opts:[
+{text:"Como técnico cualificado, quizá especializado",score:2,reaction:"¡Me encanta! Buscamos gente con visión. 🚀"},
+{text:"En esta empresa si me tratáis bien",score:1,reaction:"Bien, aunque esperaba más ambición profesional..."},
+{text:"No lo he pensado mucho la verdad",score:0,reaction:"Planificar tu carrera es importante... 📋"}
+]}
+];
+let turnIdx=0,answers=[],chatHistory=[];
+const scene=document.getElementById('scene'),chat=document.getElementById('chat'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),subtitle=document.getElementById('subtitle');
+
+function addMessage(speaker,text,isPlayer=false){
+const msg=document.createElement('div');
+msg.className='chat-msg '+(isPlayer?'player':'npc');
+msg.innerHTML=`<img class="chat-avatar" src="${avatars[speaker].img}" alt=""><div class="chat-bubble"><div class="chat-name">${avatars[speaker].name}</div><div class="chat-text">${text}</div></div>`;
+chat.appendChild(msg);
+chatHistory.push({speaker,text,isPlayer});
+chat.scrollTop=chat.scrollHeight;
+}
+
+function addReaction(text){
+const msg=document.createElement('div');
+msg.className='chat-msg npc reaction';
+msg.innerHTML=`<img class="chat-avatar" src="${avatars.recruiter.img}" alt=""><div class="chat-bubble reaction-bubble"><div class="chat-text">${text}</div></div>`;
+chat.appendChild(msg);
+chat.scrollTop=chat.scrollHeight;
+}
+
+function renderTurn(){
+if(turnIdx>=turns.length){showResults();return}
+const t=turns[turnIdx];
+subtitle.textContent=`Turno ${turnIdx+1} de ${turns.length}`;
+prog.style.width=((turnIdx)/turns.length*100)+'%';
+counter.textContent=`${turnIdx}/${turns.length}`;
+t.msgs.forEach(m=>addMessage('recruiter',m));
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="selectOpt(${i})">${o.text}</button>`).join('');
+helper.textContent='Elige tu respuesta';
+ensureFits();
+}
+
+function selectOpt(i){
+const t=turns[turnIdx],opt=t.opts[i];
+answers.push({q:t.msgs[t.msgs.length-1],chosen:opt.text,score:opt.score,reaction:opt.reaction,maxScore:2});
+addMessage('player',opt.text,true);
+opts.innerHTML='';
+helper.textContent='...';
+setTimeout(()=>{
+addReaction(opt.reaction);
+setTimeout(()=>{turnIdx++;renderTurn();},800);
+},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const total=answers.reduce((a,b)=>a+b.score,0),max=answers.length*2;
+let nivel='Necesitas mejorar 📚';
+if(total>=8)nivel='¡Contratado! 🎉';
+else if(total>=5)nivel='Buen intento 👍';
+const tips=[
+"Muestra siempre motivación real por el oficio.",
+"Destaca tu actitud proactiva ante la falta de experiencia.",
+"La seguridad y preguntar a tiempo son clave.",
+"La flexibilidad suma puntos en oficios técnicos.",
+"Tener metas claras demuestra compromiso."
+];
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">${nivel}</div>
+<div class="results-score">${total}/${max}</div>
+<div class="results-subtitle">Puntos obtenidos</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.score===2?'correct':a.score===1?'partial':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">Tu respuesta: ${a.chosen}</div>
+<div class="result-explanation">${a.reaction} — ${tips[i]}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip"><strong>Consejo:</strong> En una entrevista real, prepara ejemplos concretos de tu actitud y ganas de aprender. ¡La actitud lo es todo!</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function showIntro(){
+const modal=document.createElement('div');
+modal.className='modal-backdrop active';
+modal.id='intro-modal';
+modal.innerHTML=`<div class="modal"><div class="modal-title">¡Tu momento de brillar! 💼</div><div class="modal-body">Estás en la fase final para aprendiz de climatización. Responde a Laura, la reclutadora, y demuestra tu potencial.</div><div class="modal-actions"><button class="cta" onclick="startGame()">¡Empezar!</button></div></div>`;
+document.body.appendChild(modal);
+}
+
+function startGame(){
+document.getElementById('intro-modal').remove();
+renderTurn();
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}}
+
+window.addEventListener('load',()=>{ensureFits();showIntro();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.chat-container{display:flex;flex-direction:column;gap:10px;padding:8px 0;overflow-y:auto;max-height:calc(100svh - 220px);scrollbar-width:thin;}
+.chat-msg{display:flex;gap:8px;align-items:flex-start;max-width:92%;}
+.chat-msg.player{flex-direction:row-reverse;align-self:flex-end;}
+.chat-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.chat-bubble{background:var(--surface);border-radius:14px;padding:8px 12px;box-shadow:0 1px 2px #0001;}
+.chat-msg.player .chat-bubble{background:var(--accent);color:#fff;}
+.chat-name{font-size:11px;font-weight:700;opacity:.7;margin-bottom:2px;}
+.chat-msg.player .chat-name{text-align:right;}
+.chat-text{font-size:14px;line-height:1.35;}
+.reaction-bubble{background:var(--surface);border-left:3px solid var(--accent);}
+.options{display:flex;flex-direction:column;gap:8px;width:100%;}
+.results-tip{background:var(--surface);border-radius:12px;padding:12px;margin:8px 16px;font-size:13px;line-height:1.4;}
+.result-item.partial{border-left:3px solid orange;}
+#footer{padding-bottom:env(safe-area-inset-bottom,12px);}
+</style>
+</body>
+</html>
