@@ -1,0 +1,243 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conecta con el vocabulario correcto ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Conecta con el vocabulario ⚡️</div>
+<div class="subtitle">Completa cada frase con el término correcto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="cloze-container"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Elige el término que completa la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Vocabulario del Electricista</div>
+<div class="modal-body">Tu mentor quiere comprobar que dominas la jerga básica. Completa 6 frases eligiendo el término correcto.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const clozes = [
+  {
+    sentence: "Para medir tensión, uso el ___.",
+    blank: "___",
+    options: ["multímetro", "buscapolos", "alicates"],
+    answer: 0,
+    explanations: [
+      "✓ Correcto: El multímetro mide tensión, corriente y resistencia.",
+      "✗ El buscapolos solo detecta presencia de fase, no mide valores.",
+      "✗ Los alicates son herramientas de corte, no de medición."
+    ]
+  },
+  {
+    sentence: "La unidad de la intensidad eléctrica es el ___.",
+    blank: "___",
+    options: ["voltio", "amperio", "ohmio"],
+    answer: 1,
+    explanations: [
+      "✗ El voltio mide tensión, no intensidad.",
+      "✓ Correcto: El amperio (A) es la unidad de intensidad.",
+      "✗ El ohmio mide resistencia eléctrica."
+    ]
+  },
+  {
+    sentence: "El ___ protege contra sobrecargas y cortocircuitos.",
+    blank: "___",
+    options: ["diferencial", "magnetotérmico", "enchufe"],
+    answer: 1,
+    explanations: [
+      "✗ El diferencial protege contra fugas a tierra, no sobrecargas.",
+      "✓ Correcto: El magnetotérmico corta ante sobrecargas y cortocircuitos.",
+      "✗ El enchufe es un punto de conexión, no un elemento de protección."
+    ]
+  },
+  {
+    sentence: "Para detectar si un cable tiene fase, uso el ___.",
+    blank: "___",
+    options: ["multímetro", "buscapolos", "destornillador"],
+    answer: 1,
+    explanations: [
+      "✗ El multímetro sirve, pero el buscapolos es más rápido y práctico.",
+      "✓ Correcto: El buscapolos indica presencia de fase con su luz.",
+      "✗ El destornillador no detecta corriente eléctrica."
+    ]
+  },
+  {
+    sentence: "El ___ protege a las personas contra contactos indirectos.",
+    blank: "___",
+    options: ["diferencial", "magnetotérmico", "fusible"],
+    answer: 0,
+    explanations: [
+      "✓ Correcto: El diferencial detecta fugas a tierra y protege personas.",
+      "✗ El magnetotérmico protege la instalación, no específicamente personas.",
+      "✗ El fusible protege contra sobreintensidades, no contactos."
+    ]
+  },
+  {
+    sentence: "La resistencia eléctrica se mide en ___.",
+    blank: "___",
+    options: ["voltios", "amperios", "ohmios"],
+    answer: 2,
+    explanations: [
+      "✗ Los voltios miden tensión o diferencia de potencial.",
+      "✗ Los amperios miden intensidad de corriente.",
+      "✓ Correcto: El ohmio (Ω) es la unidad de resistencia."
+    ]
+  }
+];
+
+let currentIndex = 0;
+let answers = [];
+let score = 0;
+
+const scene = document.getElementById('scene');
+const clozeContainer = document.getElementById('cloze-container');
+const optionsContainer = document.getElementById('options');
+const progressBar = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const modal = document.getElementById('modal');
+
+function startGame() {
+  modal.classList.remove('active');
+  renderCloze();
+}
+
+function renderCloze() {
+  if (currentIndex >= clozes.length) {
+    showResults();
+    return;
+  }
+
+  const cloze = clozes[currentIndex];
+  progressBar.style.width = (currentIndex / clozes.length * 100) + '%';
+  counter.textContent = (currentIndex + 1) + '/' + clozes.length;
+
+  clozeContainer.innerHTML = `<div class="result-question" style="font-size:1.15rem;text-align:center;padding:1rem;line-height:1.5">${cloze.sentence.replace(cloze.blank, '<span style="border-bottom:3px solid var(--accent);padding:0 0.5rem;color:var(--accent);font-weight:700">___</span>')}</div>`;
+
+  optionsContainer.innerHTML = cloze.options.map((opt, i) => 
+    `<button class="btn-option" onclick="selectOption(${i})">${opt}</button>`
+  ).join('');
+
+  ensureFits();
+}
+
+function selectOption(index) {
+  const cloze = clozes[currentIndex];
+  const isCorrect = index === cloze.answer;
+  
+  if (isCorrect) score++;
+  
+  answers.push({
+    sentence: cloze.sentence,
+    blank: cloze.blank,
+    userAnswer: cloze.options[index],
+    correctAnswer: cloze.options[cloze.answer],
+    correct: isCorrect,
+    explanation: cloze.explanations[index],
+    allExplanations: cloze.explanations,
+    options: cloze.options,
+    answerIndex: cloze.answer
+  });
+
+  const buttons = optionsContainer.querySelectorAll('.btn-option');
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === cloze.answer) btn.classList.add('correct');
+    if (i === index && !isCorrect) btn.classList.add('incorrect');
+  });
+
+  const sentenceEl = clozeContainer.querySelector('.result-question');
+  sentenceEl.innerHTML = cloze.sentence.replace(cloze.blank, 
+    `<span style="border-bottom:3px solid ${isCorrect ? 'var(--ok)' : 'var(--err)'};padding:0 0.5rem;color:${isCorrect ? 'var(--ok)' : 'var(--err)'};font-weight:700">${cloze.options[index]}</span>`
+  );
+
+  setTimeout(() => {
+    currentIndex++;
+    renderCloze();
+  }, 800);
+}
+
+function showResults() {
+  setTimeout(() => {
+    document.documentElement.classList.replace('gameplay', 'results');
+    scene.classList.replace('gameplay', 'results');
+
+    scene.innerHTML = `
+      <div class="results-header">
+        <div class="results-title">¡Vocabulario completado!</div>
+        <div class="results-score">${score}/${clozes.length}</div>
+        <div class="results-subtitle">Términos correctos</div>
+      </div>
+      <div class="results-list">
+        ${answers.map((a, i) => `
+          <div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+            <div class="result-question">${a.sentence.replace(a.blank, '<strong>' + a.correctAnswer + '</strong>')}</div>
+            <div class="result-answer">${a.correct ? '✓ Correcto' : '✗ Tu respuesta: ' + a.userAnswer}</div>
+            <div class="result-explanation">${a.correct ? a.explanation : a.allExplanations[a.answerIndex]}</div>
+            ${!a.correct ? `<div class="result-explanation" style="opacity:0.8;font-size:0.85rem">${a.explanation}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+      <div class="result-item" style="background:var(--glass);margin-top:0.5rem">
+        <div class="result-question">💡 Consejo final</div>
+        <div class="result-explanation">Dominar el vocabulario técnico evita errores y malentendidos. Usa siempre los términos precisos: multímetro para medir, buscapolos para detectar fase, diferencial para proteger personas y magnetotérmico para proteger la instalación.</div>
+      </div>
+      <div class="footer">
+        <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+      </div>
+    `;
+  }, 500);
+}
+
+function completeTask() {
+  if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+      action: 'TASK_COMPLETED'
+    }));
+  }
+}
+
+function ensureFits() {
+  scene.classList.remove('compact', 'compact-xs');
+  document.documentElement.style.setProperty('--ui-scale', 1);
+  if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+  if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+  if (scene.scrollHeight > scene.clientHeight) {
+    document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+  }
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
