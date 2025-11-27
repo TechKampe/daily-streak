@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Quién manda aquí? 👷 Roles en obra - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Quién manda aquí? 👷</div>
+<div class="subtitle" id="subtitle">Asigna cada tarea al rol correcto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/8</span>
+</div>
+</div>
+<div class="main">
+<div class="item-display" id="itemDisplay"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el rol responsable de esta tarea</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Primer día en obra 🏗️</div>
+<div class="modal-body">El encargado quiere saber si distingues quién hace qué. Asigna cada tarea al rol correcto: Jefe de obra, Oficial o Peón.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const items = [
+  { task: "Firma el parte diario", correct: "Jefe de obra", exp: "El jefe de obra valida y firma la documentación oficial." },
+  { task: "Mezcla el mortero", correct: "Peón", exp: "Preparar materiales es tarea del peón de apoyo." },
+  { task: "Replantea según planos", correct: "Oficial", exp: "El oficial interpreta planos y ejecuta el replanteo técnico." },
+  { task: "Supervisa la seguridad", correct: "Jefe de obra", exp: "La seguridad en obra es responsabilidad del jefe de obra." },
+  { task: "Carga material al tajo", correct: "Peón", exp: "El transporte de materiales corresponde al peón." },
+  { task: "Ejecuta la tabiquería", correct: "Oficial", exp: "Levantar tabiques requiere la técnica del oficial." },
+  { task: "Limpia la zona de trabajo", correct: "Peón", exp: "Mantener el orden y limpieza es tarea del peón." },
+  { task: "Valida los acabados", correct: "Jefe de obra", exp: "El jefe de obra supervisa y aprueba la calidad final." }
+];
+
+const categories = ["Jefe de obra", "Oficial", "Peón"];
+let idx = 0, answers = [];
+const scene = document.getElementById('scene');
+const itemDisplay = document.getElementById('itemDisplay');
+const categoriesEl = document.getElementById('categories');
+const progress = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const modal = document.getElementById('modal');
+
+function startGame() {
+  modal.classList.remove('active');
+  render();
+}
+
+function render() {
+  if (idx >= items.length) { showResults(); return; }
+  const item = items[idx];
+  progress.style.width = (idx / items.length * 100) + '%';
+  counter.textContent = (idx + 1) + '/' + items.length;
+  itemDisplay.innerHTML = `<div class="task-item">${item.task}</div>`;
+  categoriesEl.innerHTML = categories.map(cat => 
+    `<button class="btn-option" onclick="selectCategory('${cat}')">${cat}</button>`
+  ).join('');
+  ensureFits();
+}
+
+function selectCategory(cat) {
+  const item = items[idx];
+  const correct = cat === item.correct;
+  const buttons = categoriesEl.querySelectorAll('.btn-option');
+  buttons.forEach(btn => {
+    btn.disabled = true;
+    if (btn.textContent === item.correct) btn.classList.add('correct');
+    if (btn.textContent === cat && !correct) btn.classList.add('incorrect');
+  });
+  answers.push({ task: item.task, user: cat, correct: item.correct, ok: correct, exp: item.exp });
+  setTimeout(() => { idx++; render(); }, 600);
+}
+
+function showResults() {
+  setTimeout(() => {
+    document.documentElement.classList.replace('gameplay', 'results');
+    scene.classList.replace('gameplay', 'results');
+    const score = answers.filter(a => a.ok).length;
+    scene.innerHTML = `
+      <div class="results-header">
+        <div class="results-title">¡Completado!</div>
+        <div class="results-score">${score}/${items.length}</div>
+        <div class="results-subtitle">Asignaciones correctas</div>
+      </div>
+      <div class="results-list">
+        ${answers.map(a => `
+          <div class="result-item ${a.ok ? 'correct' : 'incorrect'}">
+            <div class="result-question">${a.task}</div>
+            <div class="result-answer">${a.ok ? '✓ ' + a.correct : '✗ Dijiste: ' + a.user + ' → Correcto: ' + a.correct}</div>
+            <div class="result-explanation">${a.exp}</div>
+          </div>
+        `).join('')}
+        <div class="result-item">
+          <div class="result-question">💡 Consejo práctico</div>
+          <div class="result-explanation">En obra, pregunta al oficial dudas técnicas, al peón sobre materiales disponibles, y al jefe de obra temas de seguridad, plazos o permisos.</div>
+        </div>
+      </div>
+      <div class="footer">
+        <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+      </div>`;
+  }, 500);
+}
+
+function completeTask() {
+  if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+  }
+}
+
+function ensureFits() {
+  scene.classList.remove('compact', 'compact-xs');
+  document.documentElement.style.setProperty('--ui-scale', 1);
+  if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+  if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+  if (scene.scrollHeight > scene.clientHeight) {
+    document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+  }
+}
+
+window.addEventListener('load', () => { modal.classList.add('active'); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
