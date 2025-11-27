@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas en acción - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="tools"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la herramienta adecuada</div>
+<button class="cta" id="cta" disabled>Confirmar</button>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="intro-modal">
+<div class="modal">
+<div class="modal-title">🔧 Tu primera semana</div>
+<div class="modal-body">El técnico principal te pone a prueba. Elige la herramienta correcta para cada tarea.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const tasks=[
+{task:"Apretar un tornillo de cabeza plana en una tapa",tools:["🔧 Llave inglesa","🪛 Destornillador plano","🔩 Alicates"],ans:1,correct:"Destornillador plano",why:"La llave inglesa es para tuercas hexagonales. Los alicates dañarían la cabeza del tornillo."},
+{task:"Cortar un cable eléctrico de 2.5mm",tools:["✂️ Tijeras","🔪 Cúter","🔩 Alicates de corte"],ans:2,correct:"Alicates de corte",why:"Las tijeras no cortan cable grueso. El cúter es peligroso y poco preciso para cables."},
+{task:"Medir la longitud de una tubería de 3 metros",tools:["📐 Escuadra","📏 Flexómetro","⚖️ Nivel de burbuja"],ans:1,correct:"Flexómetro",why:"La escuadra mide ángulos. El nivel comprueba horizontalidad, no mide longitudes."},
+{task:"Apretar un tornillo Allen en un mueble",tools:["🔑 Llave Allen","🪛 Destornillador estrella","🪛 Destornillador plano"],ans:0,correct:"Llave Allen",why:"Los tornillos Allen tienen cabeza hexagonal hueca. Los destornilladores no encajan."},
+{task:"Comprobar si un estante está horizontal",tools:["📏 Flexómetro","⚖️ Nivel de burbuja","📐 Escuadra"],ans:1,correct:"Nivel de burbuja",why:"El flexómetro mide distancias. La escuadra comprueba ángulos de 90°, no horizontalidad."},
+{task:"Cortar una varilla de madera fina",tools:["🪚 Sierra de mano","🔪 Cúter","✂️ Tijeras"],ans:0,correct:"Sierra de mano",why:"El cúter no corta madera. Las tijeras no tienen fuerza para madera, solo papel o tela."}
+];
+let idx=0,sel=-1,answers=[];
+const scene=document.getElementById('scene'),toolsEl=document.getElementById('tools'),cta=document.getElementById('cta'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),introModal=document.getElementById('intro-modal');
+
+function startGame(){introModal.classList.remove('active');render();}
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];sel=-1;cta.disabled=true;
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+helper.textContent="Selecciona la herramienta adecuada";
+toolsEl.innerHTML=t.tools.map((tool,i)=>`<button class="btn-option" onclick="selectTool(${i})">${tool}</button>`).join('');
+ensureFits();
+}
+
+function selectTool(i){
+sel=i;cta.disabled=false;
+toolsEl.querySelectorAll('.btn-option').forEach((b,j)=>b.classList.toggle('selected',j===i));
+}
+
+cta.onclick=()=>{
+if(sel===-1)return;
+const t=tasks[idx];
+const correct=sel===t.ans;
+const btns=toolsEl.querySelectorAll('.btn-option');
+btns[t.ans].classList.add('correct');
+if(!correct)btns[sel].classList.add('incorrect');
+answers.push({task:t.task,userChoice:t.tools[sel],correct,correctTool:t.correct,why:t.why});
+cta.disabled=true;
+setTimeout(()=>{idx++;render();},600);
+};
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+const tips=`<div class="result-item"><div class="result-question">💡 Consejos prácticos</div><div class="result-explanation">• Destornillador: plano para ranuras, estrella para cruciformes.<br>• Llave Allen: tornillos hexagonales huecos (muebles, bicicletas).<br>• Flexómetro: medir longitudes. Nivel: comprobar horizontalidad.<br>• Alicates de corte: cables y alambres. Sierra: madera y plástico.</div></div>`;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctTool:'✗ Elegiste: '+a.userChoice+' → Correcta: '+a.correctTool}</div>
+<div class="result-explanation">${a.why}</div>
+</div>`).join('')}
+${tips}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();introModal.classList.add('active');});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
