@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conexión Maestra: Herramientas ⚡ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-grid{display:grid;grid-template-columns:repeat(var(--grid-cols,2),1fr);gap:8px;width:100%;max-width:360px;margin:0 auto;padding:8px}
+.memory-card{aspect-ratio:1;perspective:600px;cursor:pointer;min-height:var(--cellH,80px)}
+.memory-card-inner{position:relative;width:100%;height:100%;transition:transform 0.5s;transform-style:preserve-3d}
+.memory-card.flipped .memory-card-inner{transform:rotateY(180deg)}
+.memory-card-front,.memory-card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;box-sizing:border-box;font-family:'Baloo 2',sans-serif;font-weight:700}
+.memory-card-front{background:#00E6BC;color:#0B214A;font-size:24px}
+.memory-card-back{background:#00E6BC;color:#0B214A;transform:rotateY(180deg);font-size:clamp(10px,2.5vw,14px);line-height:1.2;word-break:break-word}
+.memory-card.matched .memory-card-inner{transform:rotateY(180deg)}
+.memory-card.matched .memory-card-back{background:#10b981;color:#fff}
+.memory-card.flipped:not(.matched){animation:pulse 0.3s}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.memory-card.matched{pointer-events:none}
+.stats{display:flex;justify-content:center;gap:16px;margin:8px 0;font-family:'Baloo 2',sans-serif;font-size:14px;color:#0B214A}
+.stat{background:#e0f2fe;padding:4px 12px;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Conexión Maestra ⚡</div>
+<div class="subtitle" id="subtitle">Encuentra las 4 parejas herramienta-función</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Parejas</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">0/4</span>
+</div>
+</div>
+<div class="stats">
+<div class="stat" id="attempts">Intentos: 0/12</div>
+</div>
+<div class="main">
+<div class="memory-grid" id="grid" style="--grid-cols:4"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca 2 cartas para emparejarlas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Tu Primer Día</div>
+<div class="modal-body">Tu mentor te pide herramientas por su función. Encuentra las 4 parejas destapando cartas de 2 en 2. ¡Tienes 12 intentos!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<script>
+const pairs=[
+{id:1,tool:"Pelacables",func:"Retirar aislante",exp:"El pelacables retira el aislante sin dañar el conductor."},
+{id:2,tool:"Buscapolos",func:"Detectar tensión",exp:"El buscapolos indica si hay corriente en un punto."},
+{id:3,tool:"Multímetro",func:"Medir voltaje",exp:"El multímetro mide tensión, corriente y resistencia."},
+{id:4,tool:"Alicates",func:"Cortar cables",exp:"Los alicates de corte seccionan cables con precisión."}
+];
+let cards=[],flipped=[],matched=0,attempts=0,maxAttempts=12,canFlip=true;
+const grid=document.getElementById('grid'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),attemptsEl=document.getElementById('attempts'),helper=document.getElementById('helper'),scene=document.getElementById('scene'),modal=document.getElementById('modal'),subtitle=document.getElementById('subtitle');
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+function initCards(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.tool,type:'tool'});
+cards.push({pairId:p.id,text:p.func,type:'func'});
+});
+shuffle(cards);
+}
+
+function renderGrid(){
+grid.innerHTML=cards.map((c,i)=>`
+<div class="memory-card" data-index="${i}" data-pair="${c.pairId}" onclick="flipCard(${i})">
+<div class="memory-card-inner">
+<div class="memory-card-front">?</div>
+<div class="memory-card-back">${c.text}</div>
+</div>
+</div>`).join('');
+fitBoardToViewport();
+ensureFits();
+}
+
+function flipCard(i){
+if(!canFlip||flipped.includes(i)||document.querySelectorAll('.memory-card')[i].classList.contains('matched'))return;
+const card=document.querySelectorAll('.memory-card')[i];
+card.classList.add('flipped');
+flipped.push(i);
+if(flipped.length===2){
+canFlip=false;
+attempts++;
+attemptsEl.textContent=`Intentos: ${attempts}/${maxAttempts}`;
+checkMatch();
+}
+}
+
+function checkMatch(){
+const[a,b]=flipped;
+const cardEls=document.querySelectorAll('.memory-card');
+const pairA=cards[a].pairId,pairB=cards[b].pairId;
+if(pairA===pairB&&cards[a].type!==cards[b].type){
+cardEls[a].classList.add('matched');
+cardEls[b].classList.add('matched');
+matched++;
+progress.style.width=(matched/pairs.length*100)+'%';
+counter.textContent=`${matched}/${pairs.length}`;
+helper.textContent='¡Pareja encontrada! 🎉';
+flipped=[];
+canFlip=true;
+if(matched===pairs.length){
+helper.textContent='¡Todas las parejas encontradas!';
+setTimeout(showResults,800);
+}
+}else{
+helper.textContent='No coinciden, inténtalo de nuevo';
+setTimeout(()=>{
+cardEls[a].classList.remove('flipped');
+cardEls[b].classList.remove('flipped');
+flipped=[];
+canFlip=true;
+if(attempts>=maxAttempts&&matched<pairs.length){
+helper.textContent='Se acabaron los intentos';
+setTimeout(showResults,800);
+}else{
+helper.textContent='Toca 2 cartas para emparejarlas';
+}
+},1000);
+}
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const won=matched===pairs.length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">${won?'¡Misión Cumplida!':'¡Buen intento!'}</div>
+<div class="results-score">${matched}/${pairs.length}</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${pairs.map(p=>`<div class="result-item correct">
+<div class="result-question">${p.tool} ↔ ${p.func}</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo mnemotécnico</div>
+<div class="result-explanation">Asocia cada herramienta con una acción: Pela-cables pela, Busca-polos busca, Multi-metro mide múltiples cosas, Ali-cates corta.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function startGame(){
+modal.classList.remove('active');
+initCards();
+renderGrid();
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const g=document.querySelector('.memory-grid');
+if(!g)return;
+const availableHeight=scene.clientHeight-220;
+const cols=4,rows=2;
+const cellHeight=Math.floor((availableHeight-(rows-1)*8)/rows);
+document.documentElement.style.setProperty('--cellH',Math.max(60,Math.min(cellHeight,100))+'px');
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',()=>{fitBoardToViewport();ensureFits();});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{fitBoardToViewport();ensureFits();},100));
+</script>
+</body>
+</html>
