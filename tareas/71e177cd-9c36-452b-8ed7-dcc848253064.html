@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¡Alerta Roja! Misión Electricista ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¡Alerta Roja! ⚡️</div>
+<div class="subtitle" id="subtitle">Detecta el fallo de seguridad</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div id="scene-text" style="text-align:center;padding:8px 0;font-size:1rem;line-height:1.4"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento incorrecto</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Misión Electricista ⚡️</div>
+<div class="modal-body">Analiza 5 escenas de trabajo eléctrico. En cada una hay un fallo de seguridad. ¡Activa tu radar PRL!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{text:"Instalando un enchufe en el salón. La corriente general está cortada.",
+items:["Destornillador con mango roto","Guantes aislantes","Verificador de tensión","Caja de empalmes"],
+error:0,
+exp:"Un destornillador dañado puede provocar descargas. Usa herramientas en buen estado."},
+{text:"Reparando la caja de fusibles del cuadro eléctrico.",
+items:["Gafas de protección","Alfombra aislante","Trabajar con corriente activa","Herramientas homologadas"],
+error:2,
+exp:"Siempre corta la corriente antes de manipular el cuadro eléctrico."},
+{text:"Cambiando una lámpara en el techo del baño húmedo.",
+items:["Escalera de aluminio","Guantes aislantes","Cortar corriente","Linterna auxiliar"],
+error:0,
+exp:"El aluminio conduce electricidad. Usa escaleras de fibra o madera en zonas húmedas."},
+{text:"Tendiendo cable nuevo por la canaleta del pasillo.",
+items:["Cable de sección correcta","Pelacables profesional","Empalmes sin aislante","Cinta aislante homologada"],
+error:2,
+exp:"Los empalmes siempre deben aislarse para evitar cortocircuitos y descargas."},
+{text:"Comprobando la toma de tierra de la vivienda.",
+items:["Multímetro digital","Zapatos con suela de goma","Suelo mojado","Informe de mediciones"],
+error:2,
+exp:"Trabajar sobre suelo mojado aumenta el riesgo de electrocución. Seca la zona primero."}
+];
+
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),sceneText=document.getElementById('scene-text'),helper=document.getElementById('helper'),subtitle=document.getElementById('subtitle'),modal=document.getElementById('modal');
+
+function startGame(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+prog.style.width=((idx)/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+sceneText.textContent=s.text;
+helper.textContent='Toca el elemento incorrecto';
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(j===s.error?'correct':'incorrect');
+if(j===s.error&&j!==i)b.classList.add('correct');
+});
+answers.push({scene:s.text,chosen:s.items[i],correct:s.items[s.error],isCorrect:i===s.error,exp:s.exp});
+setTimeout(()=>{idx++;render();},900);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Misión completada!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Fallos detectados</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene.substring(0,40)}...</div>
+<div class="result-answer">${a.isCorrect?'✓ Correcto: ':'✗ Elegiste: '}${a.chosen}</div>
+${!a.isCorrect?`<div class="result-answer">→ Error real: ${a.correct}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="border-left:3px solid var(--accent)">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">La atención al detalle salva vidas. Antes de cada tarea, revisa herramientas, corta la corriente y asegura tu entorno.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();modal.classList.add('active');});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
