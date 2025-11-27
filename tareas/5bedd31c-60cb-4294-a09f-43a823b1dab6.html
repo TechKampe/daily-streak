@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conecta con el vocabulario correcto ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Conecta con el vocabulario ⚡️</div>
+<div class="subtitle">Completa la frase con el término correcto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="cloze-container"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona el término que completa la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 Vocabulario del electricista</div>
+<div class="modal-body">Tu mentor quiere asegurarse de que dominas la jerga básica. Completa cada frase con el término correcto.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const clozeData = [
+{
+sentence: "Para medir tensión, uso el ___.",
+blank: "multímetro",
+options: ["multímetro", "buscapolos", "pinza amperimétrica"],
+explanation: "El multímetro mide tensión (voltios). El buscapolos detecta fase y la pinza mide corriente sin cortar el cable."
+},
+{
+sentence: "El ___ protege contra contactos indirectos.",
+blank: "diferencial",
+options: ["diferencial", "magnetotérmico", "fusible"],
+explanation: "El diferencial detecta fugas a tierra. El magnetotérmico protege contra sobrecargas y el fusible contra cortocircuitos."
+},
+{
+sentence: "La intensidad eléctrica se mide en ___.",
+blank: "amperios",
+options: ["voltios", "amperios", "ohmios"],
+explanation: "Los amperios (A) miden intensidad. Los voltios miden tensión y los ohmios miden resistencia."
+},
+{
+sentence: "Para detectar si un cable tiene fase uso el ___.",
+blank: "buscapolos",
+options: ["multímetro", "buscapolos", "polímetro"],
+explanation: "El buscapolos indica presencia de fase con una luz. El multímetro mide valores exactos de tensión."
+},
+{
+sentence: "El cable de tierra es de color ___.",
+blank: "verde/amarillo",
+options: ["azul", "marrón", "verde/amarillo"],
+explanation: "Verde/amarillo es tierra por normativa. El azul es neutro y el marrón es fase."
+},
+{
+sentence: "El ___ protege contra sobrecargas y cortocircuitos.",
+blank: "magnetotérmico",
+options: ["diferencial", "magnetotérmico", "interruptor"],
+explanation: "El magnetotérmico corta por exceso de corriente. El diferencial protege personas y el interruptor solo abre/cierra."
+}
+];
+
+let currentIndex = 0;
+let answers = [];
+let score = 0;
+
+const scene = document.getElementById('scene');
+const clozeContainer = document.getElementById('cloze-container');
+const optionsContainer = document.getElementById('options');
+const progressBar = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const modal = document.getElementById('modal');
+
+function startGame() {
+modal.classList.remove('active');
+renderCloze();
+}
+
+function renderCloze() {
+if (currentIndex >= clozeData.length) {
+showResults();
+return;
+}
+
+const data = clozeData[currentIndex];
+const sentenceWithBlank = data.sentence.replace('___', '<span class="cloze-blank">___</span>');
+
+clozeContainer.innerHTML = `<div class="cloze-sentence">${sentenceWithBlank}</div>`;
+
+optionsContainer.innerHTML = data.options.map((opt, i) =>
+`<button class="btn-option" onclick="selectOption(${i})">${opt}</button>`
+).join('');
+
+progressBar.style.width = (currentIndex / clozeData.length * 100) + '%';
+counter.textContent = (currentIndex + 1) + '/' + clozeData.length;
+
+ensureFits();
+}
+
+function selectOption(index) {
+const data = clozeData[currentIndex];
+const selectedAnswer = data.options[index];
+const isCorrect = selectedAnswer === data.blank;
+
+if (isCorrect) score++;
+
+answers.push({
+sentence: data.sentence,
+correct: isCorrect,
+userAnswer: selectedAnswer,
+correctAnswer: data.blank,
+explanation: data.explanation
+});
+
+const buttons = optionsContainer.querySelectorAll('.btn-option');
+buttons.forEach((btn, i) => {
+btn.disabled = true;
+if (i === index) {
+btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+}
+if (data.options[i] === data.blank && !isCorrect) {
+btn.classList.add('correct');
+}
+});
+
+const blankSpan = clozeContainer.querySelector('.cloze-blank');
+if (blankSpan) {
+blankSpan.textContent = selectedAnswer;
+blankSpan.classList.add(isCorrect ? 'correct' : 'incorrect');
+}
+
+setTimeout(() => {
+currentIndex++;
+renderCloze();
+}, 800);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+
+scene.innerHTML = `
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${clozeData.length}</div>
+<div class="results-subtitle">Frases correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a => `
+<div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+<div class="result-question">${a.sentence.replace('___', '<strong>' + a.correctAnswer + '</strong>')}</div>
+<div class="result-answer">${a.correct ? '✓ Correcto' : '✗ Tu respuesta: ' + a.userAnswer}</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Dominar la terminología evita malentendidos peligrosos. Usa siempre el nombre exacto de cada herramienta y componente.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({
+action: 'TASK_COMPLETED'
+}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+}
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
