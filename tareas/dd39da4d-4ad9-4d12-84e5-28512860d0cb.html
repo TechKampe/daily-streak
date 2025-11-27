@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Misión: Herramienta Maestra 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Misión: Herramienta Maestra 🔧</div>
+<div class="subtitle" id="taskDesc">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Elige la herramienta correcta</div>
+<button class="cta" id="cta" disabled>Confirmar</button>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">¡Bienvenido, aprendiz! 🔧</div>
+<div class="modal-body">Tu mentor te pone a prueba: elige la herramienta correcta para cada avería. ¡Demuestra tu profesionalidad!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const tasks=[
+{task:"Aflojar una tuerca oxidada en un sifón",tools:["🔧 Llave inglesa","🪛 Destornillador plano","🪚 Sierra de arco"],ans:0,correct:"Llave inglesa",why:"La llave inglesa ajusta su apertura para agarrar tuercas. El destornillador es para tornillos y la sierra para cortar."},
+{task:"Cortar un tubo de PVC de 32mm",tools:["🪚 Sierra de arco","🔧 Llave Stillson","🔩 Alicates"],ans:0,correct:"Sierra de arco",why:"La sierra corta plástico limpiamente. La Stillson es para girar tubos y los alicates no cortan PVC."},
+{task:"Sellar la rosca de un grifo nuevo",tools:["🧵 Cinta de teflón","🔨 Martillo","📏 Metro flexible"],ans:0,correct:"Cinta de teflón",why:"El teflón sella roscas evitando fugas. El martillo y metro no sellan conexiones."},
+{task:"Apretar tubo de cobre sin dañarlo",tools:["🪛 Destornillador","🔧 Llave Stillson","🔩 Alicates pico loro"],ans:2,correct:"Alicates pico loro",why:"Los alicates pico loro sujetan tubos sin aplastarlos. La Stillson puede marcar el cobre y el destornillador no sujeta."},
+{task:"Desatascar un desagüe obstruido",tools:["🔧 Llave inglesa","🐍 Desatascador espiral","🪚 Sierra de arco"],ans:1,correct:"Desatascador espiral",why:"El espiral rompe obstrucciones en tuberías. Las llaves y sierras no sirven para desatascar."},
+{task:"Cortar rosca en tubo de acero",tools:["🔩 Terraja","🧵 Cinta teflón","🔨 Martillo"],ans:0,correct:"Terraja",why:"La terraja crea roscas en metal. El teflón solo sella y el martillo no corta roscas."}
+];
+let idx=0,sel=-1,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),cta=document.getElementById('cta'),taskEl=document.getElementById('taskDesc'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),introModal=document.getElementById('introModal');
+
+function startGame(){introModal.classList.remove('active');render();}
+window.addEventListener('load',()=>{introModal.classList.add('active');ensureFits();});
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];sel=-1;cta.disabled=true;
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+helper.textContent='Elige la herramienta correcta';
+opts.innerHTML=t.tools.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+sel=i;cta.disabled=false;
+opts.querySelectorAll('.btn-option').forEach((b,j)=>b.classList.toggle('selected',j===i));
+}
+
+cta.onclick=()=>{
+if(sel===-1)return;
+const t=tasks[idx];
+const correct=sel===t.ans;
+const chosen=t.tools[sel];
+answers.push({task:t.task,chosen,correct,correctTool:t.correct,why:t.why});
+opts.querySelectorAll('.btn-option').forEach((b,j)=>{
+b.classList.remove('selected');
+if(j===t.ans)b.classList.add('correct');
+else if(j===sel&&!correct)b.classList.add('incorrect');
+b.disabled=true;
+});
+cta.disabled=true;
+helper.textContent=correct?'¡Correcto! 👍':'Incorrecto 😕';
+setTimeout(()=>{idx++;render();},900);
+};
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Misión completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.chosen:'✗ Elegiste: '+a.chosen}</div>
+<div class="result-explanation"><strong>Correcta:</strong> ${a.correctTool}. ${a.why}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip" style="padding:16px;margin:8px 16px;border-radius:12px;background:rgba(255,255,255,0.1);">
+<strong>💡 Consejo práctico:</strong> Antes de cada trabajo, revisa tus herramientas. La llave inglesa para tuercas, sierra para cortes, teflón para sellar roscas, alicates para sujetar y terraja para crear roscas.
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
