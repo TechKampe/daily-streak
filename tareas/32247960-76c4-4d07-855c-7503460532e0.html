@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Errores de Novato - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneTitle">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div id="sceneDesc"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">🔍 Tu primera semana</div>
+<div class="modal-body">Tu supervisor te pone a prueba. Identifica el error en cada escena tocando el elemento incorrecto.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{title:"Preparando material",desc:"Vas a instalar un enchufe. Tu compañero ha dejado preparado:",items:["Destornillador aislado","Cables pelados","Guantes de trabajo","Caja de conexiones sin tapa"],error:3,exp:"La caja sin tapa expone conexiones y riesgo de contacto accidental."},
+{title:"Subiendo a la escalera",desc:"Necesitas acceder al techo. Observas la situación:",items:["Escalera apoyada en pared lisa","Compañero sujetando la base","Calzado con suela antideslizante"],error:0,exp:"La escalera en pared lisa puede resbalar. Debe tener topes o superficie rugosa."},
+{title:"Conectando cables",desc:"Terminas una conexión eléctrica y observas:",items:["Cables identificados por color","Conexiones con regleta","Cuadro sin desconectar"],error:2,exp:"Trabajar con el cuadro conectado es riesgo de electrocución grave."},
+{title:"Atendiendo al cliente",desc:"Primera visita a un domicilio. Tu compañero saluda:",items:["Buenos días, soy Juan de Instalaciones XYZ","¿Qué tal,
+
+ dónde está el problema?","Aquí traigo el presupuesto firmado"],error:1,exp:"Tutear y ser informal en primera visita resta profesionalidad y confianza."},
+{title:"Organizando zona de trabajo",desc:"Terminas la jornada y revisas el espacio:",items:["Herramientas guardadas en caja","Restos de cables recogidos","Zona señalizada con cinta","Escombros junto a material limpio"],error:3,exp:"Mezclar escombros con material limpio contamina y daña componentes."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),titleEl=document.getElementById('sceneTitle'),descEl=document.getElementById('sceneDesc'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),introModal=document.getElementById('introModal');
+
+function startGame(){introModal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+titleEl.textContent=s.title;
+descEl.textContent=s.desc;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(i===s.error?'correct':'incorrect');});
+answers.push({scene:s.title,chosen:s.items[i],correct:s.items[s.error],isCorrect:i===s.error,exp:s.exp});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Inspección completada!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.scene}</div>
+<div class="result-answer">${a.isCorrect?'✓ Correcto':'✗ Elegiste: '+a.chosen}</div>
+${!a.isCorrect?`<div class="result-answer">Error real: ${a.correct}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Revisa dos veces antes de actuar. Un segundo de atención evita accidentes y errores costosos.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}}
+
+window.addEventListener('load',()=>{introModal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
