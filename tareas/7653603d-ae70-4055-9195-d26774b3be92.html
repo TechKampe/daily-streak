@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conecta con el vocabulario correcto ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Conecta con el vocabulario ⚡️</div>
+<div class="subtitle" id="instruction">Completa la frase con el término correcto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="cloze-card">
+<span class="card-text" id="cloze-text"></span>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Elige el término que completa la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const clozes=[
+{sentence:"Para medir tensión, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","pinza amperimétrica"],exp:"El multímetro mide tensión (voltios). El buscapolos detecta fase y la pinza mide corriente."},
+{sentence:"El ___ protege contra sobrecargas.",blank:"magnetotérmico",opts:["diferencial","magnetotérmico","fusible"],exp:"El magnetotérmico protege de sobrecargas y cortocircuitos. El diferencial protege a personas."},
+{sentence:"La intensidad se mide en ___.",blank:"amperios",opts:["voltios","amperios","ohmios"],exp:"Los amperios miden intensidad. Los voltios miden tensión y los ohmios, resistencia."},
+{sentence:"El cable azul es el ___.",blank:"neutro",opts:["fase","neutro","tierra"],exp:"Por normativa: azul=neutro, marrón/negro/gris=fase, verde-amarillo=tierra."},
+{sentence:"El ___ detecta fugas a tierra.",blank:"diferencial",opts:["diferencial","magnetotérmico","contactor"],exp:"El diferencial detecta fugas de corriente. Protege a las personas de electrocución."},
+{sentence:"La tensión doméstica es de 230 ___.",blank:"voltios",opts:["voltios","amperios","vatios"],exp:"La tensión doméstica en España es 230V. Los amperios miden corriente, los vatios potencia."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),clozeText=document.getElementById('cloze-text'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper');
+
+function render(){
+if(idx>=clozes.length){showResults();return}
+const c=clozes[idx];
+prog.style.width=((idx)/clozes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+clozes.length;
+const parts=c.sentence.split('___');
+clozeText.innerHTML=parts[0]+'<span class="blank-slot" id="blank">___</span>'+(parts[1]||'');
+opts.innerHTML=c.opts.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o}</button>`).join('');
+helper.textContent='Elige el término que completa la frase';
+ensureFits();
+}
+
+function selectOption(i){
+const c=clozes[idx];
+const chosen=c.opts[i];
+const correct=chosen===c.blank;
+const blank=document.getElementById('blank');
+blank.textContent=chosen;
+blank.style.textDecoration='underline';
+blank.style.fontWeight='700';
+opts.querySelectorAll('.btn-option').forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(c.opts[j]===c.blank&&!correct)b.classList.add('correct');
+});
+answers.push({sentence:c.sentence,blank:c.blank,chosen,correct,exp:c.exp,opts:c.opts});
+helper.textContent=correct?'¡Correcto!':'Incorrecto';
+setTimeout(()=>{idx++;render();},900);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Reto completado!</div>
+<div class="results-score">${score}/${clozes.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>{
+const wrongOpts=a.opts.filter(o=>o!==a.blank).map(o=>`"${o}"`).join(' y ');
+return `<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.blank+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Respondiste: '+a.chosen:'✗ Respondiste: '+a.chosen}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`;
+}).join('')}
+<div class="result-item" style="background:var(--surface2)">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar la terminología eléctrica es clave para comunicarte con tu mentor y evitar errores peligrosos. Repasa estos términos hasta que los uses con naturalidad.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
