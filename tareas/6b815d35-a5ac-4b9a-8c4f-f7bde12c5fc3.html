@@ -1,0 +1,291 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 El Cliente Difícil: Misión Fontanería - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.chat-container{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.chat-history{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;animation:fadeIn 0.3s ease}
+.chat-bubble.npc{background:var(--surface);align-self:flex-start;border-bottom-left-radius:4px}
+.chat-bubble.player{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-sender{font-size:11px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.chat-sender img{width:24px;height:24px;border-radius:50%;object-fit:cover}
+.chat-options{padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg);border-top:1px solid var(--surface)}
+.chat-options .btn-option{text-align:left;padding:12px 16px;font-size:13px;min-height:44px}
+.reaction{font-style:italic;opacity:0.9;font-size:13px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.decision-item{background:var(--surface);border-radius:12px;padding:12px;margin-bottom:8px}
+.decision-item.correct{border-left:4px solid var(--ok)}
+.decision-item.partial{border-left:4px solid #f5a623}
+.decision-item.incorrect{border-left:4px solid var(--err)}
+.decision-label{font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:4px}
+.decision-text{font-size:13px;margin-bottom:6px}
+.decision-exp{font-size:12px;opacity:0.8}
+.tip-box{background:linear-gradient(135deg,var(--accent),#6c5ce7);color:#fff;border-radius:12px;padding:16px;margin:16px 0}
+.tip-box h4{margin:0 0 8px;font-size:14px}
+.tip-box p{margin:0;font-size:13px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 El Cliente Difícil</div>
+<div class="subtitle" id="subtitle">Misión Fontanería</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">Intro</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+mentor:"https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png",
+cliente:"https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png",
+companero:"https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png"
+};
+const turns=[
+{
+msgs:[
+{sender:"mentor",name:"Carlos (Mentor)",text:"¡Ey! Ya llegaste al domicilio. Recuerda: primera impresión cuenta. ¿Cómo vas a saludar al cliente?"}
+],
+options:[
+{text:"Buenos días, soy técnico de FontaRápid. Vengo a revisar la fuga.",score:"correct",reaction:"😊 Perfecto, profesional y directo."},
+{text:"Hola, ¿qué tal? Me dijeron que hay una fuga o algo así...",score:"partial",reaction:"😐 Algo informal, pero funciona."},
+{text:"¿Qué pasa? Aquí el fontanero.",score:"incorrect",reaction:"😬 Demasiado informal, el cliente frunce el ceño."}
+],
+feedback:{
+correct:"El saludo profesional genera confianza inmediata.",
+partial:"Un saludo informal puede funcionar, pero resta profesionalidad.",
+incorrect:"Un saludo descuidado confirma los prejuicios del cliente."
+}
+},
+{
+msgs:[
+{sender:"cliente",name:"Sr. Martínez (Cliente)",text:"Por fin llegan. El anterior me dejó todo peor. La fuga está en el baño, lleva días así."},
+{sender:"mentor",name:"Carlos (Mentor)",text:"🔔 Cuidado, está a la defensiva. Muestra empatía y pide ver el problema."}
+],
+options:[
+{text:"Entiendo su frustración. Permítame revisar y le explico qué encuentro.",score:"correct",reaction:"😌 El cliente se relaja un poco."},
+{text:"Bueno, vamos a ver qué hicieron mal los otros.",score:"partial",reaction:"🤨 No le gusta que critiques sin ver."},
+{text:"Tranquilo, esto lo arreglo en 5 minutos.",score:"incorrect",reaction:"😠 Prometer sin ver es muy arriesgado."}
+],
+feedback:{
+correct:"Mostrar empatía y no prometer antes de diagnosticar es clave.",
+partial:"Criticar a otros técnicos puede sonar poco profesional.",
+incorrect:"Prometer tiempos sin diagnóstico genera falsas expectativas."
+}
+},
+{
+msgs:[
+{sender:"companero",name:"Luis (Compañero)",text:"Tío, ¿cómo va? Vi que te tocó el cliente complicado. Si necesitas ayuda, escríbeme."},
+{sender:"cliente",name:"Sr. Martínez (Cliente)",text:"¿Y bien? ¿Qué tiene la tubería? Explíqueme qué pasa."}
+],
+options:[
+{text:"La junta del sifón está desgastada. Es como un tapón que sella, y con el tiempo pierde hermeticidad.",score:"correct",reaction:"😊 Ah, ahora lo entiendo. Gracias por explicar."},
+{text:"El sifón tiene la junta de estanqueidad deteriorada por fatiga del material.",score:"partial",reaction:"😕 ¿Puede decirlo más sencillo?"},
+{text:"Está roto. Hay que cambiarlo y ya.",score:"incorrect",reaction:"😒 ¿Pero qué está roto exactamente?"}
+],
+feedback:{
+correct:"Usar lenguaje técnico con analogías ayuda al cliente a entender.",
+partial:"Demasiado técnico sin explicación genera desconfianza.",
+incorrect:"Ser vago no transmite competencia profesional."
+}
+},
+{
+msgs:[
+{sender:"cliente",name:"Sr. Martínez (Cliente)",text:"¿Y cuánto me va a costar esto? El otro me cobró 80€ y no arregló nada."},
+{sender:"mentor",name:"Carlos (Mentor)",text:"🔔 Momento crítico. Justifica el precio con transparencia."}
+],
+options:[
+{text:"El recambio cuesta 12€ y la mano de obra son 45€. Le dejo factura detallada con garantía.",score:"correct",reaction:"😊 Vale, al menos sé lo que pago. Adelante."},
+{text:"Unos 60€ más o menos, depende de lo que encuentre.",score:"partial",reaction:"🤔 ¿Puede ser más concreto?"},
+{text:"Es lo que cuesta, si quiere busque otro.",score:"incorrect",reaction:"😡 ¿Perdone? Qué falta de respeto."}
+],
+feedback:{
+correct:"Desglosar el precio y ofrecer garantía genera confianza.",
+partial:"Rangos imprecisos generan desconfianza en clientes difíciles.",
+incorrect:"Responder a la defensiva destruye cualquier relación comercial."
+}
+},
+{
+msgs:[
+{sender:"companero",name:"Luis (Compañero)",text:"¿Terminaste? Recuerda cerrar bien: tarjeta, seguimiento, todo eso."},
+{sender:"cliente",name:"Sr. Martínez (Cliente)",text:"Bueno, parece que ya no gotea. ¿Algo más que deba saber?"}
+],
+options:[
+{text:"Aquí tiene mi tarjeta. Si nota algo en 48h, llámeme sin coste. Gracias por confiar en nosotros.",score:"correct",reaction:"😊 Muy bien, gracias. Le llamaré si necesito algo más."},
+{text:"Ya está. Si pasa algo, llame a la empresa.",score:"partial",reaction:"😐 Vale... supongo que está bien."},
+{text:"Listo. Adiós.",score:"incorrect",reaction:"😒 Ni una tarjeta... en fin."}
+],
+feedback:{
+correct:"Ofrecer seguimiento y dejar contacto fideliza al cliente.",
+partial:"Derivar a la empresa es correcto pero impersonal.",
+incorrect:"Una despedida fría desperdicia la oportunidad de fidelizar."
+}
+}
+];
+let currentTurn=0,chatHistory=[],answers=[];
+const main=document.getElementById('main'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function render(){
+if(currentTurn===0&&chatHistory.length===0){showIntro();return}
+if(currentTurn>=turns.length){showResults();return}
+const turn=turns[currentTurn];
+progress.style.width=((currentTurn)/turns.length*100)+'%';
+counter.textContent=`${currentTurn+1}/${turns.length}`;
+subtitle.textContent="Elige tu respuesta";
+let html=`<div class="chat-container"><div class="chat-history" id="chatHistory">`;
+chatHistory.forEach(m=>{
+if(m.type==='npc'){
+html+=`<div class="chat-bubble npc"><div class="chat-sender"><img src="${avatars[m.sender]}" alt="">${m.name}</div>${m.text}</div>`;
+}else if(m.type==='player'){
+html+=`<div class="chat-bubble player">${m.text}</div>`;
+}else if(m.type==='reaction'){
+html+=`<div class="chat-bubble npc reaction">${m.text}</div>`;
+}
+});
+html+=`</div><div class="chat-options" id="chatOptions">`;
+turn.options.forEach((opt,i)=>{
+html+=`<button class="btn-option" onclick="selectOption(${i})">${opt.text}</button>`;
+});
+html+=`</div></div>`;
+main.innerHTML=html;
+turn.msgs.forEach(m=>{
+if(!chatHistory.find(h=>h.text===m.text)){
+chatHistory.push({type:'npc',sender:m.sender,name:m.name,text:m.text});
+}
+});
+updateChatDisplay();
+scrollChatToBottom();
+ensureFits();
+}
+
+function updateChatDisplay(){
+const container=document.getElementById('chatHistory');
+if(!container)return;
+let html='';
+chatHistory.forEach(m=>{
+if(m.type==='npc'){
+html+=`<div class="chat-bubble npc"><div class="chat-sender"><img src="${avatars[m.sender]}" alt="">${m.name}</div>${m.text}</div>`;
+}else if(m.type==='player'){
+html+=`<div class="chat-bubble player">${m.text}</div>`;
+}else if(m.type==='reaction'){
+html+=`<div class="chat-bubble npc reaction">${m.text}</div>`;
+}
+});
+container.innerHTML=html;
+}
+
+function scrollChatToBottom(){
+const container=document.getElementById('chatHistory');
+if(container)container.scrollTop=container.scrollHeight;
+}
+
+function showIntro(){
+main.innerHTML=`
+<div class="modal-backdrop active">
+<div class="modal">
+<div class="modal-title">🔧 Tu Primera Misión</div>
+<div class="modal-body">Es tu primera semana como ayudante. Te envían solo a casa de un cliente impaciente. ¡Demuestra tus habilidades de comunicación!</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">¡Empezar!</button></div>
+</div>
+</div>`;
+}
+
+function startGame(){
+turns[0].msgs.forEach(m=>{
+chatHistory.push({type:'npc',sender:m.sender,name:m.name,text:m.text});
+});
+render();
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const opt=turn.options[idx];
+chatHistory.push({type:'player',text:opt.text});
+chatHistory.push({type:'reaction',text:opt.reaction});
+answers.push({turn:currentTurn+1,choice:opt.text,score:opt.score,feedback:turn.feedback[opt.score]});
+document.getElementById('chatOptions').innerHTML=`<button class="cta" onclick="nextTurn()">Continuar</button>`;
+updateChatDisplay();
+scrollChatToBottom();
+}
+
+function nextTurn(){
+currentTurn++;
+if(currentTurn<turns.length){
+turns[currentTurn].msgs.forEach(m=>{
+chatHistory.push({type:'npc',sender:m.sender,name:m.name,text:m.text});
+});
+}
+render();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+document.getElementById('scene').classList.replace('gameplay','results');
+const correctCount=answers.filter(a=>a.score==='correct').length;
+let decisionsHtml='';
+answers.forEach((a,i)=>{
+const labels={correct:'✓ Correcta',partial:'~ Parcial',incorrect:'✗ Mejorable'};
+decisionsHtml+=`
+<div class="decision-item ${a.score}">
+<div class="decision-label">Turno ${a.turn}: ${labels[a.score]}</div>
+<div class="decision-text">"${a.choice.substring(0,60)}${a.choice.length>60?'...':''}"</div>
+<div class="decision-exp">${a.feedback}</div>
+</div>`;
+});
+main.innerHTML=`
+<div style="padding:16px">
+<div class="results-header">
+<div class="results-title">¡Misión Completada!</div>
+<div class="results-score">${correctCount}/${turns.length}</div>
+<div class="results-subtitle">Decisiones óptimas</div>
+</div>
+<h4 style="margin:16px 0 8px;font-size:14px">📋 Tus decisiones:</h4>
+${decisionsHtml}
+<div class="tip-box">
+<h4>💡 Consejo Pro</h4>
+<p>Un cliente difícil bien atendido se convierte en el mejor embajador de tu trabajo. La clave: empatía, transparencia en precios y seguimiento post-servicio.</p>
+</div>
+<div class="footer" style="position:relative;padding:0;margin-top:16px">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
