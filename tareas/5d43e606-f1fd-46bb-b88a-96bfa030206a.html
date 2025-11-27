@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Detector de Peligros ⚠️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Detector de Peligros ⚠️</div>
+<div class="subtitle" id="statement">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/8</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options">
+<button class="btn-option" id="btnTrue" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btnFalse" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper">¿Verdadero o Falso? Decide rápido.</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">⚠️ Primer día en obra</div>
+<div class="modal-body">El encargado te lanza reglas de seguridad. Demuestra que conoces lo básico de PRL. ¿Verdadero o Falso?</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements = [
+  {text: "El casco es obligatorio en toda la obra", correct: true, exp: "Correcto. El casco protege de caídas de objetos y golpes en altura."},
+  {text: "Puedo usar zapatillas deportivas si son cómodas", correct: false, exp: "Falso. El calzado de seguridad con puntera reforzada es obligatorio."},
+  {text: "Los guantes solo son necesarios para electricistas", correct: false, exp: "Falso. Cada tarea requiere guantes específicos según el riesgo."},
+  {text: "Las señales amarillas indican advertencia de peligro", correct: true, exp: "Correcto. El amarillo señaliza riesgos y precauciones."},
+  {text: "Puedo quitar las protecciones de máquinas si molestan", correct: false, exp: "Falso. Las protecciones son obligatorias y salvan vidas."},
+  {text: "El arnés es obligatorio a partir de 2 metros de altura", correct: true, exp: "Correcto. A partir de 2m se considera trabajo en altura."},
+  {text: "Las gafas de seguridad evitan lesiones oculares graves", correct: true, exp: "Correcto. Protegen de partículas, salpicaduras y proyecciones."},
+  {text: "En caso de duda, mejor actuar sin preguntar", correct: false, exp: "Falso. Ante la duda, siempre consulta al encargado."}
+];
+
+let idx = 0, answers = [], score = 0;
+const scene = document.getElementById('scene');
+const stEl = document.getElementById('statement');
+const prog = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const btnTrue = document.getElementById('btnTrue');
+const btnFalse = document.getElementById('btnFalse');
+const modal = document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame() {
+  modal.classList.remove('active');
+  render();
+}
+
+function render() {
+  if (idx >= statements.length) {
+    showResults();
+    return;
+  }
+  const s = statements[idx];
+  stEl.textContent = s.text;
+  prog.style.width = ((idx / statements.length) * 100) + '%';
+  counter.textContent = (idx + 1) + '/' + statements.length;
+  btnTrue.classList.remove('selected', 'correct', 'incorrect');
+  btnFalse.classList.remove('selected', 'correct', 'incorrect');
+  btnTrue.disabled = false;
+  btnFalse.disabled = false;
+  ensureFits();
+}
+
+function answer(userAnswer) {
+  const s = statements[idx];
+  const isCorrect = userAnswer === s.correct;
+  if (isCorrect) score++;
+  
+  answers.push({
+    text: s.text,
+    userAnswer: userAnswer,
+    correct: s.correct,
+    isCorrect: isCorrect,
+    exp: s.exp
+  });
+
+  btnTrue.disabled = true;
+  btnFalse.disabled = true;
+
+  if (userAnswer) {
+    btnTrue.classList.add('selected');
+    btnTrue.classList.add(isCorrect ? 'correct' : 'incorrect');
+  } else {
+    btnFalse.classList.add('selected');
+    btnFalse.classList.add(isCorrect ? 'correct' : 'incorrect');
+  }
+
+  setTimeout(() => {
+    idx++;
+    render();
+  }, 400);
+}
+
+function showResults() {
+  setTimeout(() => {
+    document.documentElement.classList.replace('gameplay', 'results');
+    scene.classList.replace('gameplay', 'results');
+    
+    let resultsHTML = `
+      <div class="results-header">
+        <div class="results-title">¡Inspección completada!</div>
+        <div class="results-score">${score}/${statements.length}</div>
+        <div class="results-subtitle">Respuestas correctas</div>
+      </div>
+      <div class="results-list">
+    `;
+    
+    answers.forEach(a => {
+      const userText = a.userAnswer ? 'Verdadero' : 'Falso';
+      const correctText = a.correct ? 'Verdadero' : 'Falso';
+      resultsHTML += `
+        <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+          <div class="result-question">${a.text}</div>
+          <div class="result-answer">Tu respuesta: ${userText} ${a.isCorrect ? '✓' : '✗ (Era: ' + correctText + ')'}</div>
+          <div class="result-explanation">${a.exp}</div>
+        </div>
+      `;
+    });
+    
+    resultsHTML += `
+      </div>
+      <div class="results-tip">
+        <strong>💡 Consejo:</strong> Antes de empezar cualquier tarea, revisa siempre que llevas todos los EPIs necesarios. ¡Tu seguridad es lo primero!
+      </div>
+      <div class="footer">
+        <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+      </div>
+    `;
+    
+    scene.innerHTML = resultsHTML;
+  }, 500);
+}
+
+function completeTask() {
+  if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+      action: 'TASK_COMPLETED'
+    }));
+  }
+}
+
+function ensureFits() {
+  scene.classList.remove('compact', 'compact-xs');
+  document.documentElement.style.setProperty('--ui-scale', 1);
+  if (scene.scrollHeight > scene.clientHeight) {
+    scene.classList.add('compact');
+  }
+  if (scene.scrollHeight > scene.clientHeight) {
+    scene.classList.add('compact-xs');
+  }
+  if (scene.scrollHeight > scene.clientHeight) {
+    const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+    document.documentElement.style.setProperty('--ui-scale', scale);
+  }
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
