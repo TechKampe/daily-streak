@@ -1,0 +1,214 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EPIs: ¿Correcto o incorrecto? 🤔 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">EPIs: ¿Correcto o incorrecto? 🤔</div>
+<div class="subtitle" id="subtitle">Desliza para responder</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="tinder-card">
+<div class="card-content" id="card-content"></div>
+<div class="swipe-indicator left" id="indicator-left">❌</div>
+<div class="swipe-indicator right" id="indicator-right">✅</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">← Incorrecto | Correcto →</div>
+<div class="tinder-buttons">
+<button class="cta tinder-btn incorrect" id="btn-incorrect">❌ Incorrecto</button>
+<button class="cta tinder-btn correct" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primer día en obra 👷</div>
+<div class="modal-body">El jefe quiere comprobar que controlas la seguridad. Desliza a la derecha si la acción es correcta, o a la izquierda si es incorrecta.</div>
+<div class="modal-actions">
+<button class="cta" id="start-btn">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Usar el casco sin ajustar la correa",correct:false,exp:"El casco debe estar siempre bien ajustado para protegerte de impactos."},
+{text:"Ponerse gafas de seguridad al usar la radial",correct:true,exp:"Las gafas protegen tus ojos de chispas y partículas proyectadas."},
+{text:"Quitarse los guantes para tener mejor agarre",correct:false,exp:"Los guantes protegen de cortes y quemaduras. Usa los adecuados al trabajo."},
+{text:"Usar arnés al trabajar a más de 2m de altura",correct:true,exp:"El arnés es obligatorio en trabajos en altura para evitar caídas mortales."},
+{text:"Compartir el casco con un compañero",correct:false,exp:"Cada trabajador debe tener su propio EPI correctamente ajustado."},
+{text:"Revisar el estado del arnés antes de usarlo",correct:true,exp:"Inspeccionar los EPIs garantiza que funcionen correctamente."}
+];
+let idx=0,answers=[],startX=0,startY=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('tinder-card'),cardContent=document.getElementById('card-content'),indicatorL=document.getElementById('indicator-left'),indicatorR=document.getElementById('indicator-right'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle'),helper=document.getElementById('helper'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect'),container=document.getElementById('tinder-container');
+
+document.getElementById('start-btn').onclick=()=>{modal.classList.remove('active');renderCard();};
+btnCorrect.onclick=()=>answer(true);
+btnIncorrect.onclick=()=>answer(false);
+
+function renderCard(){
+if(idx>=cards.length){showResults();return;}
+const c=cards[idx];
+cardContent.textContent=c.text;
+progress.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+card.style.transition='none';
+indicatorL.style.opacity='0';
+indicatorR.style.opacity='0';
+ensureFits();
+}
+
+function answer(userSaidCorrect){
+const c=cards[idx];
+const isRight=userSaidCorrect===c.correct;
+answers.push({text:c.text,userAnswer:userSaidCorrect,correctAnswer:c.correct,isRight,exp:c.exp});
+const dir=userSaidCorrect?1:-1;
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+card.style.transform=`translateX(${dir*400}px) rotate(${dir*30}deg)`;
+card.style.opacity='0';
+idx++;
+setTimeout(renderCard,300);
+}
+
+card.addEventListener('touchstart',e=>{
+isDragging=true;
+startX=e.touches[0].clientX;
+startY=e.touches[0].clientY;
+card.style.transition='none';
+},{passive:true});
+
+card.addEventListener('touchmove',e=>{
+if(!isDragging)return;
+currentX=e.touches[0].clientX-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+indicatorL.style.opacity=currentX<-30?Math.min(1,Math.abs(currentX)/100):'0';
+indicatorR.style.opacity=currentX>30?Math.min(1,currentX/100):'0';
+},{passive:true});
+
+card.addEventListener('touchend',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(currentX>80){answer(true);}
+else if(currentX<-80){answer(false);}
+else{
+card.style.transition='transform 0.3s ease';
+card.style.transform='translateX(0) rotate(0deg)';
+indicatorL.style.opacity='0';
+indicatorR.style.opacity='0';
+}
+currentX=0;
+});
+
+card.addEventListener('mousedown',e=>{
+isDragging=true;
+startX=e.clientX;
+card.style.transition='none';
+e.preventDefault();
+});
+
+document.addEventListener('mousemove',e=>{
+if(!isDragging)return;
+currentX=e.clientX-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+indicatorL.style.opacity=currentX<-30?Math.min(1,Math.abs(currentX)/100):'0';
+indicatorR.style.opacity=currentX>30?Math.min(1,currentX/100):'0';
+});
+
+document.addEventListener('mouseup',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(currentX>80){answer(true);}
+else if(currentX<-80){answer(false);}
+else{
+card.style.transition='transform 0.3s ease';
+card.style.transform='translateX(0) rotate(0deg)';
+indicatorL.style.opacity='0';
+indicatorR.style.opacity='0';
+}
+currentX=0;
+});
+
+function showResults(){
+const score=answers.filter(a=>a.isRight).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Evaluación completada! 👷</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">${score>=5?'¡Excelente control de seguridad!':score>=3?'Buen trabajo, sigue aprendiendo':'Repasa los EPIs, ¡la seguridad es primero!'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isRight?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.isRight?'✓ Acertaste':`✗ Dijiste ${a.userAnswer?'Correcto':'Incorrecto'}, era ${a.correctAnswer?'Correcto':'Incorrecto'}`}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-message">¡La seguridad en obra depende de ti! Usa siempre tus EPIs correctamente. 💪</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;position:relative;touch-action:none;user-select:none;}
+.tinder-card{background:var(--surface);border-radius:20px;padding:32px 24px;min-height:180px;max-width:300px;width:100%;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 4px 20px rgba(0,0,0,0.15);cursor:grab;}
+.tinder-card:active{cursor:grabbing;}
+.card-content{font-size:1.25rem;text-align:center;font-weight:600;color:var(--text);line-height:1.4;}
+.swipe-indicator{position:absolute;top:50%;transform:translateY(-50%);font-size:3rem;opacity:0;transition:opacity 0.15s;pointer-events:none;}
+.swipe-indicator.left{left:16px;}
+.swipe-indicator.right{right:16px;}
+.tinder-buttons{display:flex;gap:12px;width:100%;}
+.tinder-btn{flex:1;font-size:1rem;padding:14px 8px;}
+.tinder-btn.incorrect{background:var(--incorrect);color:#fff;}
+.tinder-btn.correct{background:var(--correct);color:#fff;}
+.results-message{text-align:center;padding:16px;font-weight:600;color:var(--primary);}
+</style>
+</body>
+</html>
