@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¡Alerta Roja! Misión Electricista ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¡Alerta Roja! ⚡️</div>
+<div class="subtitle" id="subtitle">Detecta el fallo de seguridad</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div id="scene-text" style="text-align:center;margin-bottom:12px;font-size:1rem;line-height:1.4"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento incorrecto</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Misión Electricista ⚡️</div>
+<div class="modal-body">Analiza 5 escenas y detecta el único fallo de seguridad en cada una. ¡Activa tu radar PRL!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{text:"Vas a cambiar un enchufe en la cocina.",items:["Destornillador aislado","Guantes dieléctricos","Cuadro eléctrico encendido","Calzado con suela aislante"],error:2,exp:"Siempre corta la corriente general antes de manipular instalaciones eléctricas."},
+{text:"Instalas una lámpara nueva en el baño.",items:["Escalera metálica sobre baldosas húmedas","Luminaria IP44","Cable de sección adecuada","Regleta de conexión"],error:0,exp:"Nunca uses escaleras metálicas en superficies húmedas: riesgo de electrocución."},
+{text:"Revisas el cuadro eléctrico de un taller.",items:["Multímetro homologado","Destornillador con mango agrietado","EPI completo","Zona señalizada"],error:1,exp:"Las herramientas dañadas pierden su aislamiento y pueden causar descargas."},
+{text:"Tiras cable nuevo por una canaleta.",items:["Guía pasacables","Cable de color normalizado","Trabajar solo sin avisar","Cinta aislante"],error:2,exp:"Siempre informa a un compañero antes de trabajar en instalaciones eléctricas."},
+{text:"Compruebas tensión en un cuadro industrial.",items:["Verificador de ausencia de tensión","Guantes clase 00","Tocar bornes con la mano","Pantalla facial"],error:2,exp:"Nunca toques bornes directamente; usa siempre herramientas y EPI adecuados."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),sceneText=document.getElementById('scene-text'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return;}
+const s=scenes[idx];
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+sceneText.textContent=s.text;
+opts.innerHTML=s.items.map((it,i)=>`<button class="btn-option" data-idx="${i}">${it}</button>`).join('');
+opts.querySelectorAll('.btn-option').forEach(b=>b.onclick=()=>selectItem(parseInt(b.dataset.idx)));
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const correct=i===s.error;
+answers.push({scene:s.text,chosen:s.items[i],correctItem:s.items[s.error],correct,exp:s.exp});
+opts.querySelectorAll('.btn-option').forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===s.error&&!correct)b.classList.add('correct');
+});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Misión completada!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Fallos detectados</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene}</div>
+<div class="result-answer">Elegiste: ${a.chosen} ${a.correct?'✓':'✗'}</div>
+${!a.correct?`<div class="result-answer">Correcto: ${a.correctItem}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="border-left:3px solid var(--accent)">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">La atención al detalle y la comunicación con tu equipo son claves para prevenir accidentes. Revisa siempre tus herramientas y EPIs antes de empezar.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
