@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle" id="statement">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options">
+<button class="btn-option" id="btnTrue" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btnFalse" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Tu primer día: ¿vienes preparado o con mitos?</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">⚡ Primer día de aprendiz</div>
+<div class="modal-body">El oficial te lanza afirmaciones rápidas sobre seguridad. Decide si son verdaderas o falsas.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{statement:"Los guantes de látex protegen igual que los dieléctricos",correct:false,exp:"Los guantes de látex NO aíslan. Solo los dieléctricos certificados protegen contra descargas."},
+{statement:"Siempre hay que verificar ausencia de tensión antes de tocar",correct:true,exp:"Correcto. Es obligatorio usar un detector de tensión antes de manipular cualquier conductor."},
+{statement:"Un circuito desconectado del cuadro ya es seguro sin más",correct:false,exp:"Falso. Puede haber tensión residual o alimentación desde otro punto. Siempre verifica."},
+{statement:"La madera húmeda conduce electricidad",correct:true,exp:"Verdadero. La humedad convierte materiales aislantes en conductores peligrosos."},
+{statement:"Con zapatillas de goma estás protegido contra descargas",correct:false,exp:"Falso. El calzado común no es EPI. Solo el calzado dieléctrico certificado protege."},
+{statement:"Trabajar con una sola mano reduce el riesgo de electrocución",correct:true,exp:"Correcto. Evita que la corriente atraviese el corazón si tocas un conductor activo."},
+{statement:"12V no puede causar daño a una persona",correct:false,exp:"Falso. En condiciones húmedas o con heridas, incluso baja tensión puede ser peligrosa."}
+];
+let idx=0,answers=[],score=0;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),stmtEl=document.getElementById('statement'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnTrue=document.getElementById('btnTrue'),btnFalse=document.getElementById('btnFalse');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+stmtEl.textContent=d.statement;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+btnTrue.classList.remove('selected','correct','incorrect');
+btnFalse.classList.remove('selected','correct','incorrect');
+btnTrue.disabled=false;
+btnFalse.disabled=false;
+ensureFits();
+}
+
+function answer(userAnswer){
+btnTrue.disabled=true;
+btnFalse.disabled=true;
+const d=data[idx];
+const isCorrect=userAnswer===d.correct;
+if(isCorrect)score++;
+answers.push({statement:d.statement,userAnswer,correct:d.correct,isCorrect,exp:d.exp});
+if(userAnswer){
+btnTrue.classList.add('selected');
+btnTrue.classList.add(isCorrect?'correct':'incorrect');
+}else{
+btnFalse.classList.add('selected');
+btnFalse.classList.add(isCorrect?'correct':'incorrect');
+}
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.statement}</div>
+<div class="result-answer">Tú: ${a.userAnswer?'Verdadero':'Falso'} ${a.isCorrect?'✓':'✗'} | Correcta: ${a.correct?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo clave</div>
+<div class="result-explanation">Antes de tocar cualquier conductor, usa SIEMPRE un detector de tensión homologado. "Verificar ausencia de tensión" es el paso que salva vidas.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
