@@ -1,0 +1,139 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🗂️ ¿Dónde va cada cosa? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🗂️ ¿Dónde va cada cosa?</div>
+<div class="subtitle" id="currentItem">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/9</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría donde pertenece este elemento</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🗂️ Primer día de ayudante</div>
+<div class="modal-body">El encargado quiere ver si sabes clasificar. Asigna cada elemento a su categoría: Seguridad, Herramientas o Trato al cliente.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Vamos!</button>
+</div>
+</div>
+</div>
+<script>
+const items=[
+{name:"Casco",cat:"Seguridad",exp:"Protege la cabeza de golpes y caídas de objetos."},
+{name:"Destornillador",cat:"Herramientas",exp:"Herramienta básica para apretar o aflojar tornillos."},
+{name:"Saludo cordial",cat:"Trato al cliente",exp:"Primera impresión positiva con el cliente."},
+{name:"Guantes",cat:"Seguridad",exp:"Protegen las manos de cortes y materiales peligrosos."},
+{name:"Taladro",cat:"Herramientas",exp:"Herramienta eléctrica para perforar materiales."},
+{name:"Escucha activa",cat:"Trato al cliente",exp:"Entender las necesidades del cliente es clave."},
+{name:"Gafas protectoras",cat:"Seguridad",exp:"Protegen los ojos de partículas y salpicaduras."},
+{name:"Flexómetro",cat:"Herramientas",exp:"Cinta métrica para medir distancias con precisión."},
+{name:"Puntualidad",cat:"Trato al cliente",exp:"Llegar a tiempo demuestra profesionalidad."}
+];
+const categories=["Seguridad","Herramientas","Trato al cliente"];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),catEl=document.getElementById('categories'),itemEl=document.getElementById('currentItem'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const it=items[idx];
+itemEl.textContent=it.name;
+prog.style.width=(idx/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+catEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="assign('${c}')">${c}</button>`).join('');
+ensureFits();
+}
+
+function assign(cat){
+const it=items[idx];
+const correct=cat===it.cat;
+const btns=catEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+if(b.textContent===cat){
+b.classList.add(correct?'correct':'incorrect');
+b.style.transform='scale(1.05)';
+}
+if(b.textContent===it.cat&&!correct){
+b.classList.add('correct');
+}
+b.disabled=true;
+});
+answers.push({name:it.name,userCat:cat,correctCat:it.cat,correct,exp:it.exp});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Clasificación completada!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Asignaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctCat:'✗ Dijiste: '+a.userCat+' → Era: '+a.correctCat}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo del encargado</div>
+<div class="result-explanation">En el tajo: primero asegura tu seguridad, luego prepara las herramientas y siempre mantén buen trato con el cliente. Así trabajarás de forma ordenada y profesional.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
