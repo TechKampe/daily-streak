@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Dónde va esto? 🧰 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Dónde va esto? 🧰</div>
+<div class="subtitle" id="subtitle">Clasifica cada elemento en su categoría</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="item-display" id="itemDisplay"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca la categoría correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Primer día de trabajo 👷</div>
+<div class="modal-body">Demuestra que sabes distinguir qué elementos pertenecen a Seguridad, Herramientas o Trato al cliente.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>
+</div>
+<script>
+const items=[
+{name:"Casco",category:"Seguridad",exp:"El casco es EPI obligatorio en obra para proteger la cabeza."},
+{name:"Saludo cordial",category:"Trato al cliente",exp:"Un saludo cordial genera confianza y profesionalidad."},
+{name:"Destornillador",category:"Herramientas",exp:"El destornillador es herramienta básica de trabajo."},
+{name:"Guantes",category:"Seguridad",exp:"Los guantes protegen las manos de cortes y químicos."},
+{name:"Presupuesto claro",category:"Trato al cliente",exp:"Un presupuesto claro evita malentendidos con el cliente."},
+{name:"Taladro",category:"Herramientas",exp:"El taladro es herramienta eléctrica fundamental."},
+{name:"Gafas protectoras",category:"Seguridad",exp:"Las gafas protegen los ojos de partículas y salpicaduras."},
+{name:"Escucha activa",category:"Trato al cliente",exp:"Escuchar al cliente ayuda a entender sus necesidades."},
+{name:"Nivel de burbuja",category:"Herramientas",exp:"El nivel asegura que las instalaciones queden rectas."},
+{name:"Chaleco reflectante",category:"Seguridad",exp:"El chaleco aumenta la visibilidad y seguridad en obra."}
+];
+const categories=["Seguridad","Herramientas","Trato al cliente"];
+const catIcons={"Seguridad":"🛡️","Herramientas":"🔧","Trato al cliente":"🤝"};
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),main=document.getElementById('main'),itemDisplay=document.getElementById('itemDisplay'),catsEl=document.getElementById('categories'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal'),subtitle=document.getElementById('subtitle');
+
+modal.classList.add('active');
+
+function startGame(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+prog.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+subtitle.textContent='¿A qué categoría pertenece?';
+itemDisplay.innerHTML=`<div class="item-card" id="itemCard">${item.name}</div>`;
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCategory('${c}')">${catIcons[c]} ${c}</button>`).join('');
+helper.textContent='Toca la categoría correcta';
+ensureFits();
+}
+
+function selectCategory(cat){
+const item=items[idx];
+const correct=cat===item.category;
+const btns=catsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+if(b.textContent.includes(cat)){
+b.classList.add(correct?'correct':'incorrect');
+}
+if(b.textContent.includes(item.category)&&!correct){
+b.classList.add('correct');
+}
+b.disabled=true;
+});
+const card=document.getElementById('itemCard');
+if(card){
+card.style.transform='scale(0.9)';
+card.style.opacity='0.7';
+setTimeout(()=>{
+card.style.transform='scale(1)';
+card.style.opacity='1';
+},150);
+}
+answers.push({item:item.name,selected:cat,correct:item.category,isCorrect:correct,exp:item.exp});
+helper.textContent=correct?'¡Correcto! ✓':'Incorrecto ✗';
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Clasificación completada!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Asignaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.item}</div>
+<div class="result-answer">${a.isCorrect?'✓ '+a.correct:'✗ Elegiste: '+a.selected+' → Correcto: '+a.correct}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo profesional</div>
+<div class="result-explanation">En el trabajo, agrupa mentalmente: lo que te protege (EPI), lo que usas (herramientas) y cómo te comunicas (cliente). Así actuarás con agilidad.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
