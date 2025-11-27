@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle" id="subtitle">Seguridad eléctrica básica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="statement-card">
+<span class="card-text" id="statement">Cargando afirmación...</span>
+</div>
+<div class="options" id="options">
+<button class="btn-option" id="btn-true" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btn-false" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Tu primer día: demuestra lo que sabes</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const statements=[
+{text:"230V domésticos no pueden matar a una persona",ans:false,exp:"230V pueden ser letales. Basta con 50mA atravesando el corazón para provocar fibrilación."},
+{text:"Los guantes de trabajo normales protegen de descargas",ans:false,exp:"Solo los guantes dieléctricos homologados aíslan. Los de trabajo común no ofrecen protección eléctrica."},
+{text:"Siempre hay que verificar ausencia de tensión antes de trabajar",ans:true,exp:"Es la regla de oro. Nunca confíes en que el circuito está desconectado sin comprobarlo tú mismo."},
+{text:"Trabajar con manos mojadas aumenta el riesgo de electrocución",ans:true,exp:"El agua reduce la resistencia de la piel, facilitando el paso de corriente a través del cuerpo."},
+{text:"Un diferencial y un fusible cumplen la misma función",ans:false,exp:"El diferencial protege a personas (detecta fugas). El fusible protege la instalación de sobrecargas."},
+{text:"Si un compañero sufre descarga, debo apartarlo con las manos",ans:false,exp:"Nunca toques directamente. Corta la corriente o usa material aislante para separarlo."},
+{text:"Los cuadros eléctricos deben estar siempre señalizados",ans:true,exp:"La señalización de riesgo eléctrico es obligatoria para prevenir accidentes y cumplir normativa."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),stEl=document.getElementById('statement'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),btnT=document.getElementById('btn-true'),btnF=document.getElementById('btn-false');
+
+function render(){
+if(idx>=statements.length){showResults();return}
+const s=statements[idx];
+stEl.textContent=s.text;
+prog.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+btnT.classList.remove('selected','correct','incorrect');
+btnF.classList.remove('selected','correct','incorrect');
+btnT.disabled=false;btnF.disabled=false;
+helper.textContent='¿Verdadero o Falso?';
+ensureFits();
+}
+
+function answer(userAns){
+btnT.disabled=true;btnF.disabled=true;
+const correct=userAns===statements[idx].ans;
+answers.push({text:statements[idx].text,userAns,correctAns:statements[idx].ans,correct,exp:statements[idx].exp});
+if(userAns){
+btnT.classList.add('selected');
+btnT.classList.add(correct?'correct':'incorrect');
+}else{
+btnF.classList.add('selected');
+btnF.classList.add(correct?'correct':'incorrect');
+}
+helper.textContent=correct?'¡Correcto!':'Incorrecto';
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tú: ${a.userAns?'Verdadero':'Falso'} · Correcta: ${a.correctAns?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo del oficial</div>
+<div class="result-explanation">Regla de oro: SIEMPRE verifica ausencia de tensión con un comprobador antes de tocar cualquier conductor. Nunca confíes en que otro lo haya desconectado.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
