@@ -1,0 +1,226 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Completa el Manual del Técnico - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Manual del Técnico</div>
+<div class="subtitle" id="instruction">Completa la frase correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="cloze-container"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Tu primer día</div>
+<div class="modal-body">Es tu primer día como ayudante de fontanero. Revisa el manual básico completando cada frase con la herramienta o material correcto.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const clozes = [
+  {
+    sentence: "Para cortar tubería de cobre uso el ___.",
+    options: ["Cortatubos", "Sierra de calar", "Tijera"],
+    answer: 0,
+    explanation: "El cortatubos hace cortes limpios y precisos en cobre. La sierra de calar es para madera/plástico y la tijera no corta metal."
+  },
+  {
+    sentence: "El material que sella uniones roscadas es ___.",
+    options: ["Teflón", "Silicona", "Masilla"],
+    answer: 0,
+    explanation: "La cinta de teflón sella roscas evitando fugas. La silicona es para juntas fijas y la masilla para sellados decorativos."
+  },
+  {
+    sentence: "Para desatascar sin químicos uso el ___.",
+    options: ["Desatascador", "Soplete", "Nivel"],
+    answer: 0,
+    explanation: "El desatascador (ventosa) genera presión mecánica. El soplete es para soldar y el nivel para medir horizontalidad."
+  },
+  {
+    sentence: "Para unir tubos de PVC aplico ___.",
+    options: ["Pegamento PVC", "Soldadura", "Teflón"],
+    answer: 0,
+    explanation: "El pegamento PVC fusiona químicamente el plástico. La soldadura es para metal y el teflón para roscas."
+  },
+  {
+    sentence: "Para medir el diámetro de un tubo uso el ___.",
+    options: ["Calibre", "Flexómetro", "Nivel"],
+    answer: 0,
+    explanation: "El calibre (pie de rey) mide con precisión milimétrica. El flexómetro mide longitudes y el nivel comprueba horizontalidad."
+  },
+  {
+    sentence: "Para doblar tubería de cobre sin aplastarla uso el ___.",
+    options: ["Muelle doblador", "Martillo", "Alicates"],
+    answer: 0,
+    explanation: "El muelle doblador mantiene la forma circular del tubo. El martillo lo abollaría y los alicates lo aplastarían."
+  }
+];
+
+let currentIndex = 0;
+let score = 0;
+let answers = [];
+let selected = -1;
+
+const scene = document.getElementById('scene');
+const clozeContainer = document.getElementById('cloze-container');
+const optionsContainer = document.getElementById('options');
+const progressBar = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const helper = document.getElementById('helper');
+const modal = document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame() {
+  modal.classList.remove('active');
+  renderCloze();
+}
+
+function renderCloze() {
+  if (currentIndex >= clozes.length) {
+    showResults();
+    return;
+  }
+
+  selected = -1;
+  const cloze = clozes[currentIndex];
+  
+  progressBar.style.width = (currentIndex / clozes.length * 100) + '%';
+  counter.textContent = (currentIndex + 1) + '/' + clozes.length;
+  helper.textContent = 'Selecciona la palabra correcta';
+
+  const parts = cloze.sentence.split('___');
+  clozeContainer.innerHTML = `
+    <div class="result-question" style="font-size:1.1rem;text-align:center;padding:16px;line-height:1.5;">
+      ${parts[0]}<span id="blank" style="border-bottom:2px dashed var(--accent);padding:0 8px;min-width:80px;display:inline-block;">___</span>${parts[1] || ''}
+    </div>
+  `;
+
+  optionsContainer.innerHTML = cloze.options.map((opt, i) => 
+    `<button class="btn-option" onclick="selectOption(${i})">${opt}</button>`
+  ).join('');
+
+  ensureFits();
+}
+
+function selectOption(index) {
+  selected = index;
+  const cloze = clozes[currentIndex];
+  const correct = index === cloze.answer;
+  
+  document.getElementById('blank').textContent = cloze.options[index];
+  document.getElementById('blank').style.borderBottom = 'none';
+  document.getElementById('blank').style.fontWeight = '700';
+  document.getElementById('blank').style.color = correct ? 'var(--ok)' : 'var(--err)';
+
+  const buttons = optionsContainer.querySelectorAll('.btn-option');
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === index) {
+      btn.classList.add(correct ? 'correct' : 'incorrect');
+    }
+    if (i === cloze.answer && !correct) {
+      btn.classList.add('correct');
+    }
+  });
+
+  if (correct) score++;
+  answers.push({
+    sentence: cloze.sentence,
+    userAnswer: cloze.options[index],
+    correctAnswer: cloze.options[cloze.answer],
+    correct: correct,
+    explanation: cloze.explanation
+  });
+
+  helper.textContent = correct ? '¡Correcto!' : 'Incorrecto';
+
+  setTimeout(() => {
+    currentIndex++;
+    renderCloze();
+  }, 1200);
+}
+
+function showResults() {
+  setTimeout(() => {
+    document.documentElement.classList.replace('gameplay', 'results');
+    scene.classList.replace('gameplay', 'results');
+
+    scene.innerHTML = `
+      <div class="results-header">
+        <div class="results-title">¡Manual completado!</div>
+        <div class="results-score">${score}/${clozes.length}</div>
+        <div class="results-subtitle">Respuestas correctas</div>
+      </div>
+      <div class="results-list">
+        ${answers.map(a => `
+          <div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+            <div class="result-question">${a.sentence.replace('___', '<strong>' + a.correctAnswer + '</strong>')}</div>
+            <div class="result-answer">${a.correct ? '✓ Correcto' : '✗ Tu respuesta: ' + a.userAnswer}</div>
+            <div class="result-explanation">${a.explanation}</div>
+          </div>
+        `).join('')}
+        <div class="result-item" style="background:var(--surface2);border-left:4px solid var(--accent);">
+          <div class="result-question">💡 Consejo final</div>
+          <div class="result-explanation">Dominar la terminología técnica te permite comunicarte eficazmente con el equipo y evitar errores en obra. ¡Sigue practicando!</div>
+        </div>
+      </div>
+      <div class="footer">
+        <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+      </div>
+    `;
+  }, 500);
+}
+
+function completeTask() {
+  if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+      action: 'TASK_COMPLETED'
+    }));
+  }
+}
+
+function ensureFits() {
+  scene.classList.remove('compact', 'compact-xs');
+  document.documentElement.style.setProperty('--ui-scale', 1);
+  if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+  if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+  if (scene.scrollHeight > scene.clientHeight) {
+    document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+  }
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
