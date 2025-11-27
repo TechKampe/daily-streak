@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fichaje Estrella: La Entrevista 💼 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Fichaje Estrella 💼</div>
+<div class="subtitle" id="subtitle">Entrevista de trabajo</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">0/5</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="chat-container" id="chat-container"></div>
+</div>
+<div class="footer" id="footer">
+<div class="helper" id="helper">Elige tu respuesta</div>
+<div class="options" id="options"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+recruiter:{name:"Laura - Reclutadora",img:"https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png"},
+player:{name:"Tú",img:"https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png"}
+};
+const turns=[
+{
+messages:[
+{from:"recruiter",text:"¡Hola! Soy Laura del equipo de RRHH de ClimaFrío. 👋"},
+{from:"recruiter",text:"Estás en la fase final para aprendiz de climatización. ¿Listo para unas preguntas rápidas?"}
+],
+options:[
+{text:"¡Claro! Estoy muy motivado 💪",score:2,reaction:"¡Genial! Me encanta esa actitud. 😊"},
+{text:"Sí, adelante",score:1,reaction:"Perfecto, empecemos entonces."},
+{text:"Supongo que sí...",score:0,reaction:"Hmm, espero que te animes. 🤔"}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"Cuéntame, ¿por qué quieres trabajar en climatización?"}
+],
+options:[
+{text:"Me apasiona la técnica y resolver problemas reales",score:2,reaction:"¡Eso es lo que buscamos! La pasión se nota. ✨"},
+{text:"Busco un trabajo estable con futuro",score:1,reaction:"Es un sector con mucha demanda, buena visión."},
+{text:"Necesito dinero urgente",score:0,reaction:"Entiendo, pero buscamos compromiso a largo plazo. 😕"}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"Veo que no tienes experiencia previa. ¿Cómo piensas compensarlo?"}
+],
+options:[
+{text:"Aprendo rápido y no me da miedo preguntar",score:2,reaction:"Excelente actitud. Los mejores técnicos nunca dejan de aprender. 👏"},
+{text:"Haré cursos por mi cuenta",score:1,reaction:"La formación continua es importante, bien."},
+{text:"Ya iré aprendiendo sobre la marcha",score:0,reaction:"Necesitamos algo más de iniciativa... 🤨"}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"Imagina que un cliente se queja porque tardaste más de lo esperado. ¿Qué haces?"}
+],
+options:[
+{text:"Me disculpo y explico qué causó el retraso",score:2,reaction:"Perfecto. Comunicación honesta, eso genera confianza. 💯"},
+{text:"Le digo que estas cosas pasan",score:1,reaction:"Hmm, podrías ser más empático con el cliente."},
+{text:"No es mi culpa si el trabajo era complicado",score:0,reaction:"Cuidado, esa actitud puede costarte clientes. 😬"}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"Última pregunta: ¿Dónde te ves en 2 años?"}
+],
+options:[
+{text:"Dominando instalaciones y ayudando a nuevos aprendices",score:2,reaction:"¡Me encanta! Visión de crecimiento y equipo. 🌟"},
+{text:"Siendo un buen técnico de climatización",score:1,reaction:"Bien, aunque podrías ser más ambicioso."},
+{text:"No lo sé, depende de cómo vaya",score:0,reaction:"Buscamos gente con metas claras... 😐"}
+]
+}
+];
+let currentTurn=0,answers=[],chatHistory=[];
+const scene=document.getElementById('scene'),chatContainer=document.getElementById('chat-container'),optionsEl=document.getElementById('options'),helper=document.getElementById('helper'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function renderChat(){
+chatContainer.innerHTML=chatHistory.map(m=>`
+<div class="chat-bubble ${m.from==='player'?'player':'npc'}">
+<div class="bubble-header">
+<img src="${avatars[m.from].img}" class="bubble-avatar" alt="">
+<span class="bubble-name">${avatars[m.from].name}</span>
+</div>
+<div class="bubble-text">${m.text}</div>
+</div>
+`).join('');
+chatContainer.scrollTop=chatContainer.scrollHeight;
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){showResults();return}
+const turn=turns[currentTurn];
+turn.messages.forEach(m=>chatHistory.push(m));
+renderChat();
+progress.style.width=((currentTurn)/turns.length*100)+'%';
+counter.textContent=`${currentTurn}/${turns.length}`;
+subtitle.textContent=`Pregunta ${currentTurn+1} de ${turns.length}`;
+helper.textContent="Elige tu respuesta";
+optionsEl.innerHTML=turn.options.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const opt=turn.options[idx];
+chatHistory.push({from:"player",text:opt.text});
+chatHistory.push({from:"recruiter",text:opt.reaction});
+answers.push({question:turn.messages[turn.messages.length-1].text,answer:opt.text,score:opt.score,maxScore:2});
+currentTurn++;
+renderChat();
+optionsEl.innerHTML='';
+helper.textContent="Continuando...";
+setTimeout(()=>{
+if(currentTurn<turns.length){
+renderTurn();
+}else{
+progress.style.width='100%';
+counter.textContent=`${turns.length}/${turns.length}`;
+showResults();
+}
+},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const totalScore=answers.reduce((a,b)=>a+b.score,0);
+const maxScore=answers.length*2;
+const pct=Math.round(totalScore/maxScore*100);
+let verdict="",tip="";
+if(pct>=80){verdict="¡Impresionante! Tienes madera de profesional. 🌟";tip="Sigue mostrando esa actitud proactiva en entrevistas reales.";}
+else if(pct>=50){verdict="Bien, pero puedes mejorar tu comunicación. 👍";tip="Practica respuestas que muestren iniciativa y compromiso.";}
+else{verdict="Necesitas trabajar tu actitud profesional. 💪";tip="Prepara ejemplos concretos de tu motivación y metas.";}
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">Entrevista completada</div>
+<div class="results-score">${totalScore}/${maxScore}</div>
+<div class="results-subtitle">${verdict}</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.score===2?'correct':a.score===1?'partial':'incorrect'}">
+<div class="result-question">${i+1}. ${a.question.substring(0,50)}...</div>
+<div class="result-answer">${a.score===2?'✓ Excelente':a.score===1?'◐ Mejorable':'✗ Poco profesional'}: ${a.answer.substring(0,40)}...</div>
+<div class="result-explanation">${getExplanation(i,a.score)}</div>
+</div>
+`).join('')}
+<div class="result-item" style="background:var(--surface-alt);border-left:3px solid var(--accent)">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">${tip}</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function getExplanation(idx,score){
+const explanations=[
+["Mostrar entusiasmo desde el inicio marca la diferencia.","Funciona, pero podrías mostrar más energía.","La falta de entusiasmo es una señal negativa."],
+["La pasión genuina por el oficio es tu mejor carta.","La estabilidad es válida, pero añade motivación personal.","Evita respuestas que solo hablen de dinero."],
+["Reconocer que aprendes rápido compensa la inexperiencia.","Está bien, pero sé más específico en tu plan.","Demuestra iniciativa, no esperes a que todo venga solo."],
+["Disculparte y explicar genera confianza con el cliente.","Podrías ser más empático y ofrecer soluciones.","Nunca culpes al trabajo, asume responsabilidad."],
+["Tener metas claras demuestra compromiso y visión.","Bien, pero amplía tu horizonte profesional.","Prepara siempre una respuesta sobre tus objetivos."]
+];
+return explanations[idx][2-score];
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();renderTurn();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.chat-container{display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:calc(100svh - 280px);padding:8px;scroll-behavior:smooth;}
+.chat-bubble{display:flex;flex-direction:column;padding:10px 12px;border-radius:12px;max-width:85%;animation:fadeIn 0.3s ease;}
+.chat-bubble.npc{background:var(--surface-alt);align-self:flex-start;border-bottom-left-radius:4px;}
+.chat-bubble.player{background:var(--accent);color:var(--bg);align-self:flex-end;border-bottom-right-radius:4px;}
+.bubble-header{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.bubble-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;}
+.bubble-name{font-size:0.75rem;font-weight:700;opacity:0.8;}
+.bubble-text{font-size:0.9rem;line-height:1.3;}
+.chat-bubble.player .bubble-header{flex-direction:row-reverse;}
+.chat-bubble.player .bubble-name{color:var(--bg);}
+#options{display:flex;flex-direction:column;gap:8px;width:100%;}
+#options .btn-option{font-size:0.85rem;padding:12px;text-align:left;}
+.result-item.partial{border-left-color:var(--warn);}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</body>
+</html>
