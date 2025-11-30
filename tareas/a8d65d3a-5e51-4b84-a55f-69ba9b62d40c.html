@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¡Ojo de Halcón en la Obra! 🦅 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¡Ojo de Halcón en la Obra! 🦅</div>
+<div class="subtitle" id="subtitle">Encuentra el error en cada escena</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div id="scene-text"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento incorrecto</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🦅 ¡Atención, aprendiz!</div>
+<div class="modal-body">Tu encargado quiere probar tu ojo. Verás 5 escenas de obra: toca el único elemento que sea un error o peligro.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<script>
+const scenes=[
+{text:"Llegada a obra. El encargado revisa los EPIs del equipo.",items:["Casco de seguridad","Botas con puntera","Chanclas de playa","Chaleco reflectante"],error:2,exp:"Las chanclas no protegen los pies. En obra son obligatorias las botas de seguridad."},
+{text:"Un compañero prepara el taladro para perforar hormigón.",items:["Gafas de protección","Guantes de trabajo","Taladro conectado","Cable pelado en el enchufe"],error:3,exp:"Un cable pelado es riesgo de electrocución. Debe repararse antes de usar."},
+{text:"Zona de excavación junto a la acera.",items:["Vallas de señalización","Cinta de balizamiento","Cartel de peligro","Zanja sin cubrir ni señal"],error:3,exp:"Una zanja sin protección puede causar caídas graves a peatones y trabajadores."},
+{text:"Almacén de materiales al final de la jornada.",items:["Sacos de cemento apilados","Herramientas recogidas","Bidón de disolvente junto al radiador","Extintores accesibles"],error:2,exp:"El disolvente es inflamable. Nunca debe estar cerca de fuentes de calor."},
+{text:"Trabajo en altura: instalación de canalón en tejado.",items:["Arnés de seguridad","Línea de vida anclada","Casco con barbuquejo","Trabajador sin arnés en el borde"],error:3,exp:"Trabajar en altura sin arnés es una de las principales causas de accidentes mortales."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),sceneText=document.getElementById('scene-text'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+sceneText.innerHTML=`<p style="text-align:center;margin:0 0 12px;font-size:15px;line-height:1.4">${s.text}</p>`;
+opts.innerHTML=s.items.map((it,i)=>`<button class="btn-option" onclick="selectItem(${i})">${it}</button>`).join('');
+helper.textContent='Toca el elemento incorrecto';
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const correct=i===s.error;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(correct?'correct':'incorrect');if(j===s.error&&!correct)b.classList.add('correct');});
+answers.push({scene:s.text,chosen:s.items[i],correct:s.items[s.error],ok:correct,exp:s.exp});
+setTimeout(()=>{idx++;render();},700);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.ok).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">🦅 ¡Reto completado!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.ok?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}</div>
+<div class="result-answer">${a.ok?'✓ Correcto: ':'✗ Elegiste: '}${a.chosen}</div>
+${!a.ok?`<div class="result-answer">→ Error real: ${a.correct}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--surface2)">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Desarrolla el hábito de escanear tu entorno antes de empezar cada tarea. Un segundo de atención puede evitar un accidente grave.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
