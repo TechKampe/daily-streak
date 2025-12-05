@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas en acción - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Elige la herramienta correcta para cada tarea</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Apretar un tornillo de cabeza en cruz",tools:["Destornillador estrella","Llave inglesa","Alicates"],ans:0,tip:"El destornillador estrella encaja en tornillos Phillips.",wrong:["La llave inglesa es para tuercas hexagonales.","Los alicates dañarían la cabeza del tornillo."]},
+{task:"Medir el largo de una tubería de 2 metros",tools:["Flexómetro","Nivel de burbuja","Escuadra"],ans:0,tip:"El flexómetro mide longitudes hasta 5-8 metros.",wrong:["El nivel verifica horizontalidad, no mide distancias.","La escuadra mide ángulos, no longitudes largas."]},
+{task:"Cortar un cable eléctrico fino",tools:["Alicates de corte","Sierra de mano","Llave Allen"],ans:0,tip:"Los alicates de corte son precisos para cables.",wrong:["La sierra es para madera o metal grueso.","La llave Allen ajusta tornillos hexagonales."]},
+{task:"Apretar un tornillo con cabeza hexagonal hueca",tools:["Llave Allen","Destornillador plano","Alicates"],ans:0,tip:"La llave Allen entra en huecos hexagonales internos.",wrong:["El destornillador plano no encaja en hexágonos.","Los alicates no acceden al hueco interior."]},
+{task:"Verificar si un estante está nivelado",tools:["Nivel de burbuja","Flexómetro","Destornillador"],ans:0,tip:"El nivel de burbuja indica horizontalidad perfecta.",wrong:["El flexómetro solo mide longitud.","El destornillador fija tornillos, no nivela."]},
+{task:"Cortar un listón de madera delgado",tools:["Sierra de mano","Cúter","Tijeras"],ans:0,tip:"La sierra de mano corta madera con precisión.",wrong:["El cúter es para cartón o materiales finos.","Las tijeras no cortan madera."]}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+const indices=[0,1,2];
+shuffle(indices);
+opts.innerHTML=indices.map(i=>`<button class="btn-option" data-idx="${i}">${t.tools[i]}</button>`).join('');
+opts.querySelectorAll('.btn-option').forEach(b=>b.onclick=()=>select(parseInt(b.dataset.idx),b));
+ensureFits();
+}
+
+function select(i,btn){
+opts.querySelectorAll('.btn-option').forEach(b=>b.disabled=true);
+const t=tasks[idx];
+const correct=i===t.ans;
+btn.classList.add(correct?'correct':'incorrect');
+btn.innerHTML=(correct?'✓ ':'✗ ')+t.tools[i];
+if(!correct){
+opts.querySelectorAll('.btn-option').forEach(b=>{
+if(parseInt(b.dataset.idx)===t.ans){b.classList.add('correct');b.innerHTML='✓ '+t.tools[t.ans]}
+});
+}
+answers.push({task:t.task,user:t.tools[i],correct,ans:t.tools[t.ans],tip:t.tip,wrong:t.wrong,userIdx:i});
+setTimeout(()=>{idx++;render()},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Elegiste: '+a.user}</div>
+${!a.correct?`<div class="result-explanation">Correcta: ${a.ans}. ${a.wrong[a.userIdx===1?0:a.userIdx===2?1:0]}</div>`:''}
+<div class="result-explanation">${a.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits()});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
