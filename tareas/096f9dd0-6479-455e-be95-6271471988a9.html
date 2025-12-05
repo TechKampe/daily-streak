@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conexión Maestra: Herramientas ⚡ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+:root{--card-bg:#00E6BC;--card-text:#0B214A;--card-back:#e0e0e0;}
+.memory-grid{display:grid;grid-template-columns:repeat(var(--grid-cols,2),1fr);gap:8px;width:100%;max-width:400px;margin:0 auto;padding:8px;}
+.memory-card{aspect-ratio:1;perspective:1000px;cursor:pointer;min-height:70px;}
+.memory-card-inner{position:relative;width:100%;height:100%;transition:transform 0.5s;transform-style:preserve-3d;border-radius:12px;}
+.memory-card.flipped .memory-card-inner{transform:rotateY(180deg);}
+.memory-card-front,.memory-card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;box-sizing:border-box;font-family:'Baloo 2',cursive;font-weight:700;}
+.memory-card-front{background:var(--card-back);color:#666;font-size:2rem;}
+.memory-card-back{background:var(--card-bg);color:var(--card-text);transform:rotateY(180deg);font-size:clamp(0.7rem,2.5vw,0.9rem);line-height:1.2;word-break:break-word;}
+.memory-card.matched .memory-card-inner{box-shadow:0 0 12px 4px rgba(0,230,188,0.6);}
+.memory-card.matched{pointer-events:none;}
+.attempts-badge{background:var(--card-bg);color:var(--card-text);padding:4px 12px;border-radius:20px;font-weight:700;font-size:0.9rem;}
+.pair-explanation{background:rgba(0,230,188,0.15);border-radius:12px;padding:12px;margin-bottom:12px;}
+.pair-explanation .pair-title{font-weight:700;color:var(--card-text);margin-bottom:4px;}
+.pair-explanation .pair-desc{font-size:0.85rem;color:#444;}
+.tip-box{background:linear-gradient(135deg,#00E6BC 0%,#00c9a7 100%);color:var(--card-text);padding:16px;border-radius:12px;margin:16px 0;}
+.tip-box .tip-title{font-weight:700;margin-bottom:8px;}
+.tip-box .tip-text{font-size:0.9rem;}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Conexión Maestra ⚡</div>
+<div class="subtitle" id="subtitle">Encuentra las 4 parejas herramienta-función</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Parejas</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="attempts-badge" id="attempts">Intentos: 12</span>
+</div>
+</div>
+<div class="main">
+<div class="memory-grid" id="grid" style="--grid-cols:4"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca 2 cartas para emparejar</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">🔧 Tu primer día</div>
+<div class="modal-body">Tu mentor te pide herramientas por su función. ¡Encuentra las 4 parejas antes de agotar los 12 intentos!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const pairs=[
+{tool:"Pelacables",func:"Retirar aislante",exp:"El pelacables corta la cubierta sin dañar el conductor interior."},
+{tool:"Buscapolos",func:"Detectar tensión",exp:"El buscapolos indica si hay corriente en un punto del circuito."},
+{tool:"Multímetro",func:"Medir voltaje",exp:"El multímetro mide tensión, corriente y resistencia eléctrica."},
+{tool:"Alicates",func:"Cortar cables",exp:"Los alicates de corte seccionan conductores de forma limpia."}
+];
+let cards=[],flipped=[],matched=0,attempts=12,canFlip=true,gameStarted=false;
+
+function shuffleArray(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+function createCards(){
+cards=[];
+pairs.forEach((p,i)=>{
+cards.push({id:i*2,pairId:i,text:p.tool,type:'tool'});
+cards.push({id:i*2+1,pairId:i,text:p.func,type:'func'});
+});
+shuffleArray(cards);
+}
+
+function renderGrid(){
+const grid=document.getElementById('grid');
+grid.innerHTML=cards.map(c=>`
+<div class="memory-card" data-id="${c.id}" data-pair="${c.pairId}" onclick="flipCard(this)">
+<div class="memory-card-inner">
+<div class="memory-card-front">?</div>
+<div class="memory-card-back">${c.text}</div>
+</div>
+</div>`).join('');
+fitBoardToViewport();
+}
+
+function flipCard(el){
+if(!canFlip||el.classList.contains('flipped')||el.classList.contains('matched'))return;
+el.classList.add('flipped');
+flipped.push(el);
+if(flipped.length===2){
+canFlip=false;
+attempts--;
+updateUI();
+const p1=parseInt(flipped[0].dataset.pair);
+const p2=parseInt(flipped[1].dataset.pair);
+if(p1===p2){
+setTimeout(()=>{
+flipped.forEach(c=>c.classList.add('matched'));
+flipped=[];
+matched++;
+canFlip=true;
+updateUI();
+if(matched===pairs.length)showResults();
+},600);
+}else{
+setTimeout(()=>{
+flipped.forEach(c=>c.classList.remove('flipped'));
+flipped=[];
+canFlip=true;
+if(attempts<=0)showResults();
+},1000);
+}
+}
+}
+
+function updateUI(){
+document.getElementById('progress').style.width=(matched/pairs.length*100)+'%';
+document.getElementById('attempts').textContent='Intentos: '+attempts;
+document.getElementById('helper').textContent=matched===pairs.length?'¡Todas encontradas!':attempts<=0?'Sin intentos':'Toca 2 cartas para emparejar';
+}
+
+function startGame(){
+document.getElementById('introModal').classList.remove('active');
+gameStarted=true;
+createCards();
+renderGrid();
+updateUI();
+ensureFits();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+document.getElementById('scene').classList.replace('gameplay','results');
+const won=matched===pairs.length;
+document.getElementById('scene').innerHTML=`
+<div class="results-header">
+<div class="results-title">${won?'¡Conexión Maestra!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/${pairs.length}</div>
+<div class="results-subtitle">Parejas encontradas</div>
+</div>
+<div class="results-list">
+${pairs.map(p=>`<div class="pair-explanation">
+<div class="pair-title">🔧 ${p.tool} ↔ ${p.func}</div>
+<div class="pair-desc">${p.exp}</div>
+</div>`).join('')}
+<div class="tip-box">
+<div class="tip-title">💡 Consejo mnemotécnico</div>
+<div class="tip-text">Asocia cada herramienta con su acción: "PELAcables PELA aislante", "BUSCApolos BUSCA tensión", "MULTÍmetro mide MÚLTIples valores".</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const grid=document.querySelector('.memory-grid');
+if(!grid)return;
+const scene=document.getElementById('scene');
+const hud=document.querySelector('.hud');
+const footer=document.querySelector('.footer');
+const hudH=hud?hud.offsetHeight:100;
+const footerH=footer?footer.offsetHeight:60;
+const availableHeight=scene.clientHeight-hudH-footerH-40;
+const cols=4,rows=2;
+const cellHeight=Math.floor((availableHeight-(rows-1)*8)/rows);
+const maxCellHeight=Math.min(cellHeight,100);
+document.documentElement.style.setProperty('--cellH',maxCellHeight+'px');
+grid.querySelectorAll('.memory-card').forEach(c=>{c.style.height=maxCellHeight+'px';c.style.minHeight=maxCellHeight+'px';});
+}
+
+window.addEventListener('load',()=>{document.getElementById('introModal').classList.add('active');ensureFits();});
+window.addEventListener('resize',()=>{ensureFits();if(gameStarted)fitBoardToViewport();});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ensureFits();if(gameStarted)fitBoardToViewport();},100));
+</script>
+</body>
+</html>
