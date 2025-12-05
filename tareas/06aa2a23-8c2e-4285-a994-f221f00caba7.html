@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EPIs: ¿Correcto o incorrecto? 🤔 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">EPIs: ¿Correcto o incorrecto? 🤔</div>
+<div class="subtitle" id="subtitle">Evalúa cada situación de seguridad</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="tinder-card">
+<div class="tinder-indicator tinder-indicator-left" id="indicator-left">❌</div>
+<div class="tinder-indicator tinder-indicator-right" id="indicator-right">✅</div>
+<div class="tinder-card-content" id="card-content"></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o usa los botones</div>
+<div class="tinder-buttons">
+<button class="cta tinder-btn-incorrect" id="btn-incorrect">❌ Incorrecto</button>
+<button class="cta tinder-btn-correct" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primer día de prácticas 👷</div>
+<div class="modal-body">El jefe quiere comprobar que controlas lo básico de EPIs. Desliza derecha si es correcto, izquierda si es incorrecto.</div>
+<div class="modal-actions">
+<button class="cta" id="start-btn">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{text:"Usar el casco sin ajustar el arnés interior",correct:false,exp:"El casco debe ajustarse correctamente para proteger ante impactos."},
+{text:"Quitarse las gafas de seguridad para ver mejor al soldar",correct:false,exp:"Las gafas protegen de chispas y radiación. Nunca se quitan durante el trabajo."},
+{text:"Usar guantes aislantes al manipular cables eléctricos",correct:true,exp:"Los guantes aislantes previenen descargas eléctricas mortales."},
+{text:"Trabajar en altura sin arnés porque es solo un momento",correct:false,exp:"El arnés es obligatorio siempre en altura, sin importar la duración."},
+{text:"Revisar el estado del EPI antes de cada uso",correct:true,exp:"Inspeccionar los EPIs garantiza que funcionan correctamente."},
+{text:"Usar botas de seguridad con puntera reforzada en obra",correct:true,exp:"Las botas protegen de aplastamientos y objetos punzantes."}
+];
+let idx=0,score=0,answers=[],startX=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('tinder-card'),cardContent=document.getElementById('card-content'),indicatorLeft=document.getElementById('indicator-left'),indicatorRight=document.getElementById('indicator-right'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect'),helper=document.getElementById('helper');
+
+document.getElementById('start-btn').onclick=()=>{modal.classList.remove('active');render();};
+modal.classList.add('active');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+cardContent.textContent=d.text;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+card.classList.remove('swiping-left','swiping-right');
+indicatorLeft.style.opacity='0';
+indicatorRight.style.opacity='0';
+ensureFits();
+}
+
+function handleAnswer(isCorrect){
+const d=data[idx];
+const userCorrect=isCorrect===d.correct;
+if(userCorrect)score++;
+answers.push({text:d.text,userAnswer:isCorrect,wasCorrect:d.correct,gotIt:userCorrect,exp:d.exp});
+const direction=isCorrect?1:-1;
+card.style.transform=`translateX(${direction*400}px) rotate(${direction*30}deg)`;
+card.style.opacity='0';
+setTimeout(()=>{idx++;render();},300);
+}
+
+btnCorrect.onclick=()=>handleAnswer(true);
+btnIncorrect.onclick=()=>handleAnswer(false);
+
+card.addEventListener('touchstart',e=>{
+isDragging=true;startX=e.touches[0].clientX;currentX=0;
+},{passive:true});
+
+card.addEventListener('touchmove',e=>{
+if(!isDragging)return;
+currentX=e.touches[0].clientX-startX;
+const rotation=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotation}deg)`;
+indicatorLeft.style.opacity=currentX<-30?Math.min(1,Math.abs(currentX)/100):'0';
+indicatorRight.style.opacity=currentX>30?Math.min(1,currentX/100):'0';
+},{passive:true});
+
+card.addEventListener('touchend',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(currentX>80){handleAnswer(true);}
+else if(currentX<-80){handleAnswer(false);}
+else{card.style.transform='translateX(0) rotate(0deg)';indicatorLeft.style.opacity='0';indicatorRight.style.opacity='0';}
+});
+
+card.addEventListener('mousedown',e=>{
+isDragging=true;startX=e.clientX;currentX=0;
+});
+
+document.addEventListener('mousemove',e=>{
+if(!isDragging)return;
+currentX=e.clientX-startX;
+const rotation=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotation}deg)`;
+indicatorLeft.style.opacity=currentX<-30?Math.min(1,Math.abs(currentX)/100):'0';
+indicatorRight.style.opacity=currentX>30?Math.min(1,currentX/100):'0';
+});
+
+document.addEventListener('mouseup',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(currentX>80){handleAnswer(true);}
+else if(currentX<-80){handleAnswer(false);}
+else{card.style.transform='translateX(0) rotate(0deg)';indicatorLeft.style.opacity='0';indicatorRight.style.opacity='0';}
+});
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const pct=Math.round(score/data.length*100);
+let msg=pct>=80?'¡Excelente! Dominas la seguridad con EPIs 🏆':pct>=50?'Buen trabajo, pero repasa algunos conceptos 👍':'Necesitas repasar el uso de EPIs ⚠️';
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">${msg}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.gotIt?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.gotIt?'✓ Acertaste':'✗ Fallaste'} (Era: ${a.wasCorrect?'Correcto':'Incorrecto'})</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;padding:1rem;touch-action:none;}
+.tinder-card{position:relative;width:100%;max-width:300px;min-height:180px;background:linear-gradient(135deg,#fff 0%,#f8f9fa 100%);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;padding:1.5rem;cursor:grab;transition:transform 0.3s ease,opacity 0.3s ease;user-select:none;}
+.tinder-card:active{cursor:grabbing;}
+.tinder-card-content{font-size:1.1rem;font-weight:600;text-align:center;color:#1a1a2e;line-height:1.4;}
+.tinder-indicator{position:absolute;top:50%;transform:translateY(-50%);font-size:3rem;opacity:0;transition:opacity 0.2s ease;pointer-events:none;}
+.tinder-indicator-left{left:1rem;}
+.tinder-indicator-right{right:1rem;}
+.tinder-buttons{display:flex;gap:0.75rem;width:100%;}
+.tinder-btn-incorrect,.tinder-btn-correct{flex:1;font-size:0.9rem;padding:0.75rem 0.5rem;}
+.tinder-btn-incorrect{background:linear-gradient(135deg,#ff6b6b 0%,#ee5a5a 100%);}
+.tinder-btn-correct{background:linear-gradient(135deg,#51cf66 0%,#40c057 100%);}
+</style>
+</body>
+</html>
