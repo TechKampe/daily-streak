@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conexión Maestra: Herramientas ⚡ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Conexión Maestra ⚡</div>
+<div class="subtitle" id="subtitle">Encuentra las 4 parejas herramienta-función</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Intentos</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">0/10</span>
+</div>
+</div>
+<div class="main">
+<div class="memory-grid" id="grid" style="--grid-cols:2"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca una carta para empezar</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primer día ⚡</div>
+<div class="modal-body">Tu mentor pide herramientas por su función. Encuentra las 4 parejas en máximo 10 intentos.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const pairs=[
+{id:1,tool:"Pelacables",func:"Retirar aislante",exp:"El pelacables tiene cuchillas calibradas para cortar solo el aislante sin dañar el conductor."},
+{id:2,tool:"Buscapolos",func:"Detectar tensión",exp:"El buscapolos se ilumina al tocar un cable con corriente, indicando presencia de tensión."},
+{id:3,tool:"Multímetro",func:"Medir voltaje",exp:"El multímetro es el instrumento básico para medir tensión, corriente y resistencia."},
+{id:4,tool:"Alicates",func:"Cortar cables",exp:"Los alicates de corte diagonal son esenciales para seccionar cables de forma limpia."}
+];
+
+let cards=[],flipped=[],matched=[],attempts=0,maxAttempts=10,locked=false,gameStarted=false;
+const grid=document.getElementById('grid'),counter=document.getElementById('counter'),progress=document.getElementById('progress'),helper=document.getElementById('helper'),subtitle=document.getElementById('subtitle'),modal=document.getElementById('modal'),scene=document.getElementById('scene');
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+function initCards(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.tool,type:'tool'});
+cards.push({pairId:p.id,text:p.func,type:'func'});
+});
+shuffle(cards);
+}
+
+function renderGrid(){
+grid.innerHTML=cards.map((c,i)=>`
+<div class="memory-card" data-idx="${i}" onclick="flipCard(${i})">
+<div class="memory-card-front">?</div>
+<div class="memory-card-back">${c.text}</div>
+</div>`).join('');
+fitBoardToViewport();
+}
+
+function flipCard(idx){
+if(locked||!gameStarted)return;
+const card=grid.children[idx];
+if(card.classList.contains('flipped')||card.classList.contains('matched'))return;
+card.classList.add('flipped');
+flipped.push(idx);
+if(flipped.length===2){
+attempts++;
+updateUI();
+checkMatch();
+}
+}
+
+function checkMatch(){
+locked=true;
+const[i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+grid.children[i1].classList.add('matched');
+grid.children[i2].classList.add('matched');
+matched.push(c1.pairId);
+helper.textContent=`¡Pareja encontrada! ${matched.length}/4`;
+flipped=[];
+locked=false;
+if(matched.length===4)setTimeout(showResults,600);
+}else{
+helper.textContent="No coinciden, observa bien...";
+setTimeout(()=>{
+grid.children[i1].classList.remove('flipped');
+grid.children[i2].classList.remove('flipped');
+flipped=[];
+locked=false;
+if(attempts>=maxAttempts&&matched.length<4){
+showResults();
+}else{
+helper.textContent=`Intentos restantes: ${maxAttempts-attempts}`;
+}
+},2000);
+}
+}
+
+function updateUI(){
+counter.textContent=`${attempts}/${maxAttempts}`;
+progress.style.width=`${(attempts/maxAttempts)*100}%`;
+}
+
+function startGame(){
+modal.classList.remove('active');
+gameStarted=true;
+initCards();
+renderGrid();
+helper.textContent="Toca una carta para empezar";
+ensureFits();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const won=matched.length===4;
+const missing=pairs.filter(p=>!matched.includes(p.id));
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">${won?'¡Excelente trabajo!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched.length}/4</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${pairs.map(p=>`<div class="result-item ${matched.includes(p.id)?'correct':'incorrect'}">
+<div class="result-question">${p.tool} ↔ ${p.func}</div>
+<div class="result-answer">${matched.includes(p.id)?'✓ Encontrada':'✗ No encontrada'}</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo mnemotécnico</div>
+<div class="result-explanation">Piensa en la acción: PELAcables PELA aislante, BUSCApolos BUSCA tensión, MULTÍmetro mide MÚLTIples valores.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const g=document.querySelector('.memory-grid');
+if(!g)return;
+const availableHeight=scene.clientHeight-220;
+const cols=2,rows=4;
+const cellHeight=Math.floor((availableHeight-(rows-1)*8)/rows);
+document.documentElement.style.setProperty('--cellH',Math.min(cellHeight,100)+'px');
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',()=>{ensureFits();fitBoardToViewport();});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ensureFits();fitBoardToViewport();},100));
+</script>
+</body>
+</html>
