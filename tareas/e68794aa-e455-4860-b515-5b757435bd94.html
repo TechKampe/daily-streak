@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Ojo de Halcón: Caza el Fallo - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Ojo de Halcón</div>
+<div class="subtitle" id="subtitle">Encuentra el error en cada escena</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div id="scene-text"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento incorrecto</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔍 Prueba de Ojo Crítico</div>
+<div class="modal-body">Tu jefe te pone a prueba: detecta el error en cada situación antes de salir a campo.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes = [
+{
+text: "Conexión de enchufe en cocina:",
+items: ["Cable 2.5mm² para horno", "Destornillador sin aislar", "Circuito desconectado", "Guantes aislantes"],
+error: 1,
+exp: "Nunca uses destornillador sin aislar cerca de tensión. Riesgo de electrocución."
+},
+{
+text: "Instalación de punto de luz:",
+items: ["Verificar ausencia de tensión", "Cable azul para neutro", "Cable verde para fase"],
+error: 2,
+exp: "El verde/amarillo es tierra, no fase. La fase es marrón o negro."
+},
+{
+text: "Revisión de cuadro eléctrico:",
+items: ["Diferencial de 30mA", "Magnetotérmico adecuado", "Trabajar con tensión activa"],
+error: 2,
+exp: "Siempre cortar la tensión antes de manipular el cuadro. Es norma básica de seguridad."
+},
+{
+text: "Cableado de toma de corriente:",
+items: ["Pelar cables con alicates", "Conexiones firmes", "Cable 1.5mm² para aire acondicionado", "Comprobar polaridad"],
+error: 2,
+exp: "El aire acondicionado requiere mínimo 2.5mm². Sección insuficiente causa sobrecalentamiento."
+},
+{
+text: "Preparación para intervención:",
+items: ["Casco de seguridad", "Botas con suela aislante", "Trabajar sin gafas protectoras", "Guantes dieléctricos"],
+error: 2,
+exp: "Las gafas protegen de chispas y fragmentos. EPI incompleto es riesgo grave."
+}
+];
+
+let idx = 0, answers = [], score = 0;
+const scene = document.getElementById('scene');
+const opts = document.getElementById('options');
+const sceneText = document.getElementById('scene-text');
+const prog = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const subtitle = document.getElementById('subtitle');
+const helper = document.getElementById('helper');
+const modal = document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame() {
+modal.classList.remove('active');
+render();
+}
+
+function render() {
+if (idx >= scenes.length) { showResults(); return; }
+const s = scenes[idx];
+prog.style.width = (idx / scenes.length * 100) + '%';
+counter.textContent = (idx + 1) + '/' + scenes.length;
+subtitle.textContent = s.text;
+sceneText.innerHTML = '';
+opts.innerHTML = s.items.map((item, i) =>
+`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`
+).join('');
+ensureFits();
+}
+
+function selectItem(i) {
+const btns = opts.querySelectorAll('.btn-option');
+btns.forEach(b => b.disabled = true);
+btns[i].classList.add('selected');
+const correct = i === scenes[idx].error;
+if (correct) score++;
+setTimeout(() => {
+btns[i].classList.add(correct ? 'correct' : 'incorrect');
+if (!correct) btns[scenes[idx].error].classList.add('correct');
+}, 200);
+answers.push({
+scene: scenes[idx].text,
+items: scenes[idx].items,
+selected: i,
+correctIdx: scenes[idx].error,
+correct: correct,
+exp: scenes[idx].exp
+});
+setTimeout(() => { idx++; render(); }, 900);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+scene.innerHTML = `
+<div class="results-header">
+<div class="results-title">🔍 ¡Prueba completada!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a, i) => `
+<div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+<div class="result-question">Escena ${i + 1}: ${a.scene}</div>
+<div class="result-answer">${a.correct ? '✓ Correcto' : '✗ Elegiste: ' + a.items[a.selected]}</div>
+${!a.correct ? `<div class="result-answer">Error real: ${a.items[a.correctIdx]}</div>` : ''}
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo del día</div>
+<div class="result-explanation">Revisa dos veces antes de actuar. Un segundo de atención puede evitar un accidente grave.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+}
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
