@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Misión: Herramienta Maestra 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Misión: Herramienta Maestra 🔧</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Elige la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">¡Bienvenido, aprendiz! 🔧</div>
+<div class="modal-body">Tu mentor te pone a prueba: elige la herramienta correcta para cada tarea de fontanería. ¡Demuestra tu profesionalidad!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const tasks=[
+{task:"Aflojar una tuerca oxidada en un grifo antiguo",tools:["🔧 Llave inglesa","🪛 Destornillador plano","📏 Flexómetro"],correct:0,why:["Idónea para tuercas de distintos tamaños","No sirve para tuercas, solo tornillos","Es para medir, no para aflojar"]},
+{task:"Cortar un tubo de PVC de 50mm para el desagüe",tools:["🪚 Sierra para metales","✂️ Cortatubos PVC","🔨 Martillo"],correct:1,why:["Funciona pero deja corte irregular","Corte limpio y preciso en PVC","No corta, solo golpea"]},
+{task:"Sellar la rosca de un racor para evitar fugas",tools:["🧵 Cinta de teflón","🩹 Cinta aislante","📎 Abrazadera"],correct:0,why:["Sella roscas herméticamente","No resiste presión ni agua","Sujeta pero no sella roscas"]},
+{task:"Desatascar un sifón de lavabo obstruido",tools:["🔩 Llave grifa","🪠 Desatascador ventosa","🔧 Llave fija"],correct:1,why:["Afloja pero no desatasca","Genera presión para liberar tapón","No sirve para desatascar"]},
+{task:"Apretar la tuerca de un flexo de ducha",tools:["🔧 Llave inglesa","✂️ Tijeras","🪛 Destornillador estrella"],correct:0,why:["Ajusta tuercas hexagonales","No sirve para tuercas","Solo para tornillos de estrella"]},
+{task:"Medir el diámetro de una tubería a sustituir",tools:["📏 Calibre pie de rey","🔧 Llave inglesa","🔨 Martillo"],correct:0,why:["Mide con precisión milimétrica","Es para apretar, no medir","No mide, solo golpea"]}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.tools.map((tool,i)=>`<button class="btn-option" onclick="select(${i})">${tool}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx],correct=i===t.correct;
+if(correct)score++;
+answers.push({task:t.task,tools:t.tools,correct:t.correct,selected:i,isCorrect:correct,why:t.why});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===t.correct)b.classList.add('correct');
+if(j===i&&!correct)b.classList.add('incorrect');
+if(j===i)b.innerHTML=(correct?'✓ ':'✗ ')+t.tools[j];
+});
+setTimeout(()=>{idx++;render();},2000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Misión completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.isCorrect?'✓ Correcto: ':'✗ Elegiste: '}${a.tools[a.selected]}</div>
+${!a.isCorrect?`<div class="result-answer">Correcta: ${a.tools[a.correct]}</div>`:''}
+<div class="result-explanation"><strong>${a.tools[0]}:</strong> ${a.why[0]}<br><strong>${a.tools[1]}:</strong> ${a.why[1]}<br><strong>${a.tools[2]}:</strong> ${a.why[2]}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip" style="padding:16px;background:var(--surface);border-radius:12px;margin:16px;">
+<strong>💡 Consejo práctico:</strong> Cada herramienta tiene su momento: la llave inglesa para tuercas, el cortatubos para PVC, la cinta teflón para roscas y el desatascador para sifones. ¡Usar la correcta ahorra tiempo y evita daños!
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
