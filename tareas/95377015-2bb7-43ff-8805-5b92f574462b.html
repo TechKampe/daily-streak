@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fichaje Estrella: La Entrevista 💼 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Fichaje Estrella 💼</div>
+<div class="subtitle" id="subtitle">Entrevista de trabajo</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">0/5</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="chat-container" id="chat-container"></div>
+</div>
+<div class="footer" id="footer">
+<div class="helper" id="helper">Elige tu respuesta</div>
+<div class="options" id="options"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+recruiter:{name:"Marta (Reclutadora)",img:"https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png"},
+player:{name:"Tú",img:"https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png"}
+};
+
+const turns=[
+{
+messages:[
+{from:"recruiter",text:"¡Hola! Soy Marta, del equipo de RRHH de ClimaFrío. 👋"},
+{from:"recruiter",text:"Estás en la fase final para el puesto de aprendiz. ¿Listo para charlar?"}
+],
+options:[
+{text:"¡Claro! Estoy muy motivado 💪",score:2,reaction:"¡Genial! Me encanta esa actitud. 😊"},
+{text:"Sí, aunque estoy algo nervioso",score:1,reaction:"Tranquilo, es normal. Vamos paso a paso."},
+{text:"Supongo que sí...",score:0,reaction:"Hmm, esperaba más entusiasmo... Bueno, sigamos."}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"Cuéntame, ¿por qué te interesa la climatización?"}
+],
+options:[
+{text:"Me gusta resolver problemas técnicos y tiene futuro",score:2,reaction:"¡Exacto! Es un sector con mucha demanda. 👍"},
+{text:"Busco un trabajo estable",score:1,reaction:"Entiendo, aunque esperaba algo más de pasión..."},
+{text:"No sé, necesito currar en algo",score:0,reaction:"Mmm... la motivación es clave aquí. 🤔"}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"Veo que no tienes experiencia previa. ¿Cómo compensarías eso?"}
+],
+options:[
+{text:"Aprendo rápido y estoy haciendo cursos",score:2,reaction:"¡Eso demuestra iniciativa! Me gusta. ✨"},
+{text:"Pues aprendiendo en el trabajo",score:1,reaction:"Claro, aunque valoramos la proactividad."},
+{text:"Ya aprenderé, supongo",score:0,reaction:"Necesitamos gente más comprometida... 😕"}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"Imagina que un cliente se queja de tu trabajo. ¿Qué harías?"}
+],
+options:[
+{text:"Escucho, pido disculpas y busco solución",score:2,reaction:"¡Perfecto! Eso es profesionalidad. 🌟"},
+{text:"Le explico que soy aprendiz",score:1,reaction:"Entiendo, pero hay que dar la cara siempre."},
+{text:"No es mi culpa si soy nuevo",score:0,reaction:"Esa actitud no funciona con clientes... 😬"}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"Última pregunta: ¿qué esperas aprender en este puesto?"}
+],
+options:[
+{text:"Dominar instalaciones y trato al cliente",score:2,reaction:"¡Excelente visión! Has estado genial. 🎉"},
+{text:"Lo básico para empezar",score:1,reaction:"Bien, aunque podrías aspirar a más."},
+{text:"Lo que me enseñéis, supongo",score:0,reaction:"Esperaba más ambición de tu parte... 😅"}
+]
+}
+];
+
+let currentTurn=0,selectedOption=-1,answers=[],score=0;
+const scene=document.getElementById('scene'),chatContainer=document.getElementById('chat-container'),optionsEl=document.getElementById('options'),progressBar=document.getElementById('progress'),counterEl=document.getElementById('counter'),helperEl=document.getElementById('helper'),subtitleEl=document.getElementById('subtitle');
+
+function addMessage(from,text,isPlayer=false){
+const msg=document.createElement('div');
+msg.className='chat-message '+(isPlayer?'player':'npc');
+msg.innerHTML=`
+<img class="chat-avatar" src="${avatars[from].img}" alt="">
+<div class="chat-bubble">
+<div class="chat-name">${avatars[from].name}</div>
+<div class="chat-text">${text}</div>
+</div>`;
+chatContainer.appendChild(msg);
+chatContainer.scrollTop=chatContainer.scrollHeight;
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){showResults();return}
+const turn=turns[currentTurn];
+turn.messages.forEach(m=>addMessage(m.from,m.text));
+selectedOption=-1;
+optionsEl.innerHTML=turn.options.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join('');
+progressBar.style.width=((currentTurn)/turns.length*100)+'%';
+counterEl.textContent=(currentTurn+1)+'/'+turns.length;
+helperEl.textContent='Elige tu respuesta';
+ensureFits();
+}
+
+function selectOption(i){
+selectedOption=i;
+const btns=optionsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.classList.toggle('selected',j===i);b.disabled=true;});
+const turn=turns[currentTurn];
+const opt=turn.options[i];
+answers.push({q:turn.messages[turn.messages.length-1].text,answer:opt.text,score:opt.score,reaction:opt.reaction});
+score+=opt.score;
+addMessage('player',opt.text,true);
+setTimeout(()=>{
+addMessage('recruiter',opt.reaction);
+setTimeout(()=>{
+currentTurn++;
+if(currentTurn<turns.length){
+optionsEl.innerHTML='';
+renderTurn();
+}else{
+optionsEl.innerHTML='<button class="cta" onclick="showResults()">Ver resultados</button>';
+}
+},800);
+},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const maxScore=turns.length*2;
+const pct=Math.round((score/maxScore)*100);
+let verdict='';
+if(pct>=80)verdict='¡Impresionante! Tienes madera de profesional. 🌟';
+else if(pct>=50)verdict='Buen intento, pero puedes mejorar tu comunicación. 💪';
+else verdict='Necesitas trabajar tu actitud en entrevistas. 📚';
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">Entrevista completada</div>
+<div class="results-score">${score}/${maxScore}</div>
+<div class="results-subtitle">${verdict}</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.score===2?'correct':a.score===1?'partial':'incorrect'}">
+<div class="result-question">${i+1}. ${a.q}</div>
+<div class="result-answer">Tu respuesta: ${a.answer}</div>
+<div class="result-explanation">${a.score===2?'✓ Respuesta ideal':a.score===1?'◐ Aceptable, pero mejorable':'✗ Evita esta actitud'}</div>
+</div>`).join('')}
+<div class="result-item advice">
+<div class="result-question">💡 Consejo profesional</div>
+<div class="result-explanation">En entrevistas, muestra siempre entusiasmo, iniciativa y ganas de aprender. La actitud cuenta tanto como los conocimientos técnicos.</div>
+</div>
+</div>
+<div class="footer fixed-footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function showIntro(){
+const modal=document.createElement('div');
+modal.className='modal-backdrop active';
+modal.id='intro-modal';
+modal.innerHTML=`
+<div class="modal">
+<div class="modal-title">💼 Tu entrevista</div>
+<div class="modal-body">Estás en la fase final para aprendiz de climatización. Marta quiere conocerte. ¡Demuestra tu potencial!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Vamos allá!</button>
+</div>
+</div>`;
+document.body.appendChild(modal);
+}
+
+function startGame(){
+document.getElementById('intro-modal').remove();
+renderTurn();
+}
+
+window.addEventListener('load',()=>{ensureFits();showIntro();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.chat-container{display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1;padding:8px 0;max-height:calc(100svh - 220px);}
+.chat-message{display:flex;gap:8px;align-items:flex-start;max-width:90%;}
+.chat-message.player{flex-direction:row-reverse;align-self:flex-end;}
+.chat-message.player .chat-bubble{background:var(--accent);color:#fff;}
+.chat-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.chat-bubble{background:var(--card);border-radius:16px;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+.chat-name{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px;}
+.chat-message.player .chat-name{color:rgba(255,255,255,0.8);}
+.chat-text{font-size:14px;line-height:1.4;}
+#options{display:flex;flex-direction:column;gap:8px;width:100%;}
+#options .btn-option{font-size:13px;padding:12px 16px;text-align:left;}
+.results-list{display:flex;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;}
+.result-item{background:var(--card);border-radius:12px;padding:12px 16px;}
+.result-item.correct{border-left:4px solid var(--ok);}
+.result-item.partial{border-left:4px solid #f59e0b;}
+.result-item.incorrect{border-left:4px solid var(--err);}
+.result-item.advice{border-left:4px solid var(--accent);background:linear-gradient(135deg,var(--card),rgba(99,102,241,0.1));}
+.result-question{font-weight:700;font-size:13px;margin-bottom:6px;}
+.result-answer{font-size:12px;color:var(--muted);margin-bottom:4px;}
+.result-explanation{font-size:12px;line-height:1.4;}
+.fixed-footer{position:sticky;bottom:0;background:var(--bg);padding:16px;margin-top:auto;}
+.main{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+</style>
+</body>
+</html>
