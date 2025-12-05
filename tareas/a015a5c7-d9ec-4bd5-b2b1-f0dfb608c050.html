@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Conceptos Eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;max-width:320px;margin:0 auto;padding:8px}
+.memory-card{position:relative;aspect-ratio:1.4;cursor:pointer;perspective:1000px;min-height:70px}
+.memory-card-inner{position:relative;width:100%;height:100%;transition:transform 0.5s;transform-style:preserve-3d;border-radius:12px}
+.memory-card.flipped .memory-card-inner{transform:rotateY(180deg)}
+.memory-card-front,.memory-card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:8px;box-sizing:border-box;text-align:center;font-family:'Baloo 2',cursive;font-weight:700}
+.memory-card-front{background:#00E6BC;color:#0B214A;font-size:2rem}
+.memory-card-back{background:#00E6BC;color:#0B214A;transform:rotateY(180deg);font-size:0.85rem;line-height:1.2}
+.memory-card.matched .memory-card-inner{opacity:0.7;pointer-events:none}
+.memory-card.matched .memory-card-back{background:#4ade80}
+.memory-card.highlight .memory-card-back{animation:pulse 0.4s ease-in-out 2}
+@keyframes pulse{0%,100%{transform:rotateY(180deg) scale(1)}50%{transform:rotateY(180deg) scale(1.05)}}
+.attempts-badge{background:#0B214A;color:#fff;padding:4px 12px;border-radius:20px;font-size:0.9rem;font-weight:700}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta los Conceptos</div>
+<div class="subtitle">Empareja términos eléctricos</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Parejas</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge attempts-badge" id="attempts">Intentos: 0/12</span>
+</div>
+</div>
+<div class="main">
+<div class="memory-grid" id="grid"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Destapa 2 cartas para emparejar</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">🔌 Reto del Almacén</div>
+<div class="modal-body">Estás organizando el inventario. Empareja cada término eléctrico con su definición. Tienes 12 intentos. ¡Demuestra lo que sabes!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const pairs=[
+{id:1,term:"Voltímetro",def:"Mide tensión eléctrica"},
+{id:2,term:"Fase",def:"Cable con corriente activa"},
+{id:3,term:"Diferencial",def:"Protege contra fugas"},
+{id:4,term:"Empalme",def:"Unión de dos cables"}
+];
+
+let cards=[],flipped=[],matched=0,attempts=0,maxAttempts=12,canFlip=true,gameOver=false;
+const grid=document.getElementById('grid'),progress=document.getElementById('progress'),attemptsEl=document.getElementById('attempts'),helper=document.getElementById('helper'),introModal=document.getElementById('introModal');
+
+function initCards(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({id:p.id,type:'term',text:p.term,pairId:p.id});
+cards.push({id:p.id,type:'def',text:p.def,pairId:p.id});
+});
+cards=cards.sort(()=>Math.random()-0.5);
+}
+
+function renderGrid(){
+grid.innerHTML=cards.map((c,i)=>`
+<div class="memory-card" data-index="${i}" onclick="flipCard(${i})">
+<div class="memory-card-inner">
+<div class="memory-card-front">?</div>
+<div class="memory-card-back">${c.text}</div>
+</div>
+</div>`).join('');
+}
+
+function flipCard(i){
+if(!canFlip||gameOver)return;
+const card=grid.children[i];
+if(card.classList.contains('flipped')||card.classList.contains('matched'))return;
+if(flipped.length>=2)return;
+card.classList.add('flipped');
+flipped.push(i);
+if(flipped.length===2){
+canFlip=false;
+attempts++;
+attemptsEl.textContent=`Intentos: ${attempts}/${maxAttempts}`;
+setTimeout(checkMatch,800);
+}
+}
+
+function checkMatch(){
+const[i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+const card1=grid.children[i1],card2=grid.children[i2];
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+card1.classList.add('matched','highlight');
+card2.classList.add('matched','highlight');
+matched++;
+progress.style.width=(matched/pairs.length*100)+'%';
+helper.textContent=`¡Pareja encontrada! (${matched}/${pairs.length})`;
+if(matched===pairs.length){
+gameOver=true;
+setTimeout(showResults,800);
+}
+}else{
+helper.textContent='No coinciden, ¡sigue intentando!';
+setTimeout(()=>{
+card1.classList.remove('flipped');
+card2.classList.remove('flipped');
+},500);
+}
+flipped=[];
+if(attempts>=maxAttempts&&matched<pairs.length){
+gameOver=true;
+setTimeout(showResults,800);
+}
+setTimeout(()=>{canFlip=true;},600);
+}
+
+function startGame(){
+introModal.classList.remove('active');
+initCards();
+renderGrid();
+ensureFits();
+fitBoardToViewport();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+document.getElementById('scene').classList.replace('gameplay','results');
+const won=matched===pairs.length;
+const scene=document.getElementById('scene');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">${won?'¡Excelente!':'¡Buen intento!'}</div>
+<div class="results-score">${matched}/${pairs.length}</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${pairs.map(p=>`<div class="result-item correct">
+<div class="result-question">${p.term} ↔ ${p.def}</div>
+<div class="result-explanation">${getExplanation(p.id)}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo de memorización</div>
+<div class="result-explanation">Asocia cada herramienta con su acción principal. Practica nombrando el instrumento cuando lo veas en el taller.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function getExplanation(id){
+const exp={
+1:"El voltímetro es el instrumento básico para medir diferencia de potencial en circuitos.",
+2:"El cable de fase transporta la corriente eléctrica activa desde la red.",
+3:"El interruptor diferencial detecta fugas y corta el circuito para protegerte.",
+4:"Un empalme correcto garantiza continuidad eléctrica segura entre cables."
+};
+return exp[id]||'';
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const g=document.querySelector('.memory-grid');
+if(!g)return;
+const scene=document.getElementById('scene');
+const availableHeight=scene.clientHeight-180;
+const rows=4;
+const cellHeight=Math.floor((availableHeight-(rows-1)*8)/rows);
+document.documentElement.style.setProperty('--cellH',Math.min(cellHeight,90)+'px');
+g.querySelectorAll('.memory-card').forEach(c=>{c.style.minHeight=Math.min(cellHeight,90)+'px';});
+}
+
+window.addEventListener('load',()=>{introModal.classList.add('active');ensureFits();});
+window.addEventListener('resize',()=>{ensureFits();fitBoardToViewport();});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ensureFits();fitBoardToViewport();},100));
+</script>
+</body>
+</html>
