@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Conceptos Eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;max-width:320px;margin:0 auto}
+.memory-card{height:var(--cellH,65px);border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;box-sizing:border-box;cursor:pointer;transition:background .2s,border .2s;font-family:'Baloo 2',sans-serif;font-weight:500;user-select:none;border:2px solid transparent}
+.memory-card.hidden{background:#00E6BC;color:#0B214A;font-size:18px;font-weight:700}
+.memory-card.revealed{background:#fff;color:#0B214A;font-size:12px;line-height:1.2}
+.memory-card.matched{background:#fff;border:2px solid #00E6BC;pointer-events:none}
+.memory-card.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.stats{display:flex;justify-content:center;gap:16px;font-size:13px;color:#0B214A;font-weight:500;margin-bottom:8px}
+.stats span{background:#E8F9F6;padding:4px 10px;border-radius:12px}
+.intro-text{font-size:12px;color:#5a6c7d;text-align:center;margin-bottom:8px;line-height:1.3}
+.result-pair{background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:8px}
+.result-pair-title{font-weight:700;color:#0B214A;font-size:14px;margin-bottom:4px}
+.result-pair-desc{font-size:12px;color:#5a6c7d;line-height:1.3}
+.result-pair-tip{font-size:11px;color:#00E6BC;font-weight:500;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta los Conceptos</div>
+<div class="subtitle">Empareja términos eléctricos</div>
+</div>
+</div>
+<div class="main">
+<div class="stats">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="intro-text">Toca 2 cartas para encontrar parejas de términos técnicos</div>
+<div class="memory-grid" id="grid"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">¡Demuestra que conoces la terminología!</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const pairsData=[
+{id:1,term:"Fase",def:"Cable con corriente",tip:"Recuerda: Fase = Fuego, lleva la energía activa"},
+{id:2,term:"Neutro",def:"Retorno de corriente",tip:"El neutro cierra el circuito, es el 'regreso'"},
+{id:3,term:"Diferencial",def:"Protege de contactos",tip:"Salta cuando hay fuga, te salva la vida"},
+{id:4,term:"Toma de tierra",def:"Deriva al suelo",tip:"Color verde/amarillo, evacua fallos"}
+];
+let cards=[],firstCard=null,secondCard=null,attempts=0,matchedPairs=0,locked=false;
+const maxAttempts=10,totalPairs=4;
+const grid=document.getElementById('grid'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs'),helperEl=document.getElementById('helper'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairsData.forEach(p=>{
+cards.push({pairId:p.id,text:p.term,type:'term'});
+cards.push({pairId:p.id,text:p.def,type:'def'});
+});
+shuffle(cards);
+renderGrid();
+fitBoardToViewport();
+ensureFits();
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}}
+
+function renderGrid(){
+grid.innerHTML='';
+cards.forEach((c,i)=>{
+const div=document.createElement('div');
+div.className='memory-card hidden';
+div.dataset.index=i;
+div.textContent='?';
+div.onclick=()=>handleClick(i,div);
+grid.appendChild(div);
+});
+}
+
+function handleClick(index,el){
+if(locked||el.classList.contains('matched')||el.classList.contains('revealed'))return;
+revealCard(el,index);
+if(!firstCard){firstCard={el,index}}
+else if(firstCard.index!==index){
+secondCard={el,index};
+attempts++;
+attemptsEl.textContent=`Intento ${attempts}/10`;
+checkMatch();
+}
+}
+
+function revealCard(el,index){
+el.classList.remove('hidden');
+el.classList.add('revealed');
+el.textContent=cards[index].text;
+}
+
+function hideCard(el,index){
+el.classList.remove('revealed');
+el.classList.add('hidden');
+el.textContent='?';
+}
+
+function checkMatch(){
+locked=true;
+const c1=cards[firstCard.index],c2=cards[secondCard.index];
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+firstCard.el.classList.add('matched');
+secondCard.el.classList.add('matched');
+matchedPairs++;
+pairsEl.textContent=`${matchedPairs}/4 parejas`;
+helperEl.textContent='¡Pareja encontrada! 🎉';
+resetTurn();
+if(matchedPairs===totalPairs)endGame(true);
+}else{
+helperEl.textContent='No coinciden, ¡fíjate bien!';
+firstCard.el.classList.add('shake');
+secondCard.el.classList.add('shake');
+setTimeout(()=>{
+firstCard.el.classList.remove('shake');
+secondCard.el.classList.remove('shake');
+hideCard(firstCard.el,firstCard.index);
+hideCard(secondCard.el,secondCard.index);
+resetTurn();
+if(attempts>=maxAttempts&&matchedPairs<totalPairs)endGame(false);
+},2000);
+}
+}
+
+function resetTurn(){firstCard=null;secondCard=null;locked=false}
+
+function endGame(won){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const missing=pairsData.filter(p=>!Array.from(grid.children).some(c=>c.classList.contains('matched')&&cards[c.dataset.index].pairId===p.id));
+const foundPairs=pairsData.filter(p=>!missing.includes(p));
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">${won?'¡Excelente trabajo!':'¡Buen intento!'}</div>
+<div class="results-score">${matchedPairs}/${totalPairs}</div>
+<div class="results-subtitle">${won?'Todas las parejas encontradas':'Parejas encontradas en '+attempts+' intentos'}</div>
+</div>
+<div class="results-list">
+${pairsData.map(p=>`
+<div class="result-pair">
+<div class="result-pair-title">${p.term} ↔ ${p.def}</div>
+<div class="result-pair-desc">${p.term==='Fase'?'La fase es el conductor activo que transporta la corriente eléctrica al receptor.':p.term==='Neutro'?'El neutro permite el retorno de la corriente, cerrando el circuito eléctrico.':p.term==='Diferencial'?'El diferencial detecta fugas de corriente y desconecta para evitar electrocuciones.':'La toma de tierra deriva las corrientes de fallo al suelo, protegiendo personas y equipos.'}</div>
+<div class="result-pair-tip">💡 ${p.tip}</div>
+</div>
+`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function fitBoardToViewport(){
+const availableHeight=scene.clientHeight-180;
+const rows=4;
+const cellHeight=Math.floor((availableHeight-(rows-1)*8)/rows);
+document.documentElement.style.setProperty('--cellH',Math.min(Math.max(cellHeight,55),70)+'px');
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{init();fitBoardToViewport();ensureFits()});
+window.addEventListener('resize',()=>{fitBoardToViewport();ensureFits()});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{fitBoardToViewport();ensureFits()},100));
+init();
+</script>
+</body>
+</html>
