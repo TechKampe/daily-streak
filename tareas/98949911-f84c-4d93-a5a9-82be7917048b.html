@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Conceptos Eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px;width:100%;max-width:320px;margin:0 auto}
+.memory-card{height:70px;perspective:1000px;cursor:pointer}
+.memory-card-inner{position:relative;width:100%;height:100%;transition:transform 0.5s;transform-style:preserve-3d}
+.memory-card.flipped .memory-card-inner{transform:rotateY(180deg)}
+.memory-card-front,.memory-card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;box-sizing:border-box}
+.memory-card-front{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.memory-card-back{background:#fff;color:#0B214A;font-size:12px;transform:rotateY(180deg);line-height:1.2}
+.memory-card.matched .memory-card-back{border:3px solid #00E6BC}
+.memory-card.shake{animation:shake 0.5s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.stats-row{display:flex;justify-content:space-between;padding:8px 16px;font-size:14px;color:#0B214A}
+.stats-item{background:rgba(255,255,255,0.9);padding:4px 12px;border-radius:12px;font-weight:500}
+.memory-card.locked{pointer-events:none}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta los Conceptos</div>
+<div class="subtitle">Empareja términos eléctricos</div>
+</div>
+</div>
+<div class="stats-row">
+<span class="stats-item" id="attempts">Intento 0/10</span>
+<span class="stats-item" id="pairs">0/4 parejas</span>
+</div>
+<div class="main">
+<div class="memory-grid" id="grid"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca 2 cartas para encontrar parejas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,term:"Fase",def:"Cable con corriente",tip:"La fase lleva la electricidad activa. ¡Nunca la toques sin protección!"},
+{id:2,term:"Neutro",def:"Retorno de corriente",tip:"El neutro cierra el circuito. Sin él, no hay flujo eléctrico."},
+{id:3,term:"Toma de tierra",def:"Deriva al suelo",tip:"Protege de descargas. Es el cable verde/amarillo."},
+{id:4,term:"Diferencial",def:"Protege contactos",tip:"Detecta fugas y corta la corriente en milisegundos."}
+];
+let cards=[],firstCard=null,secondCard=null,attempts=0,matched=0,locked=false;
+const maxAttempts=10,totalPairs=4;
+const grid=document.getElementById('grid'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.term,type:'term'});
+cards.push({pairId:p.id,text:p.def,type:'def'});
+});
+shuffle(cards);
+renderGrid();
+ensureFits();
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}}
+
+function renderGrid(){
+grid.innerHTML=cards.map((c,i)=>`
+<div class="memory-card" data-index="${i}" data-pair="${c.pairId}" onclick="flipCard(${i})">
+<div class="memory-card-inner">
+<div class="memory-card-front">?</div>
+<div class="memory-card-back">${c.text}</div>
+</div>
+</div>`).join('');
+}
+
+function flipCard(index){
+if(locked)return;
+const card=grid.children[index];
+if(card.classList.contains('flipped')||card.classList.contains('matched'))return;
+card.classList.add('flipped');
+if(!firstCard){
+firstCard={index,pairId:cards[index].pairId,el:card};
+}else{
+secondCard={index,pairId:cards[index].pairId,el:card};
+attempts++;
+updateStats();
+checkMatch();
+}
+}
+
+function checkMatch(){
+locked=true;
+grid.querySelectorAll('.memory-card').forEach(c=>c.classList.add('locked'));
+if(firstCard.pairId===secondCard.pairId){
+firstCard.el.classList.add('matched');
+secondCard.el.classList.add('matched');
+matched++;
+updateStats();
+resetTurn();
+if(matched===totalPairs){
+setTimeout(showResults,600);
+}
+}else{
+firstCard.el.classList.add('shake');
+secondCard.el.classList.add('shake');
+setTimeout(()=>{
+firstCard.el.classList.remove('flipped','shake');
+secondCard.el.classList.remove('flipped','shake');
+resetTurn();
+if(attempts>=maxAttempts){
+setTimeout(showResults,300);
+}
+},2000);
+}
+}
+
+function resetTurn(){
+firstCard=null;secondCard=null;locked=false;
+grid.querySelectorAll('.memory-card').forEach(c=>c.classList.remove('locked'));
+}
+
+function updateStats(){
+attemptsEl.textContent=`Intento ${attempts}/${maxAttempts}`;
+pairsEl.textContent=`${matched}/${totalPairs} parejas`;
+}
+
+function showResults(){
+const won=matched===totalPairs;
+const foundPairs=pairs.filter(p=>Array.from(grid.querySelectorAll('.matched')).some(c=>parseInt(c.dataset.pair)===p.id));
+const missedPairs=pairs.filter(p=>!foundPairs.includes(p));
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">${won?'¡Excelente trabajo!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/${totalPairs}</div>
+<div class="results-subtitle">parejas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${won?`<div class="result-item correct"><div class="result-explanation">Has demostrado conocer la terminología eléctrica básica. ¡Estás listo para la obra!</div></div>`:`<div class="result-item incorrect"><div class="result-question">Parejas que faltaban:</div>${missedPairs.map(p=>`<div class="result-answer">${p.term} ↔ ${p.def}</div>`).join('')}</div>`}
+${pairs.map(p=>`<div class="result-item ${foundPairs.includes(p)?'correct':'incorrect'}">
+<div class="result-question">${p.term} ↔ ${p.def}</div>
+<div class="result-explanation">💡 ${p.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const availableHeight=scene.clientHeight-200;
+const rows=4;
+const cellHeight=Math.floor((availableHeight-(rows-1)*8)/rows);
+document.documentElement.style.setProperty('--cellH',Math.min(70,cellHeight)+'px');
+}
+
+window.addEventListener('load',()=>{init();fitBoardToViewport()});
+window.addEventListener('resize',()=>{ensureFits();fitBoardToViewport()});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ensureFits();fitBoardToViewport()},100));
+</script>
+</body>
+</html>
