@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Misión: Herramienta Maestra 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Misión: Herramienta Maestra 🔧</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Elige la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">Misión: Herramienta Maestra 🔧</div>
+<div class="modal-body">Tu mentor te pone a prueba: elige la herramienta correcta para cada avería. ¡Demuestra tu profesionalidad!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const tasks=[
+{task:"Aflojar una tuerca oxidada en un sifón",opts:["Llave inglesa","Destornillador","Cinta métrica"],ans:0,exp:"La llave inglesa ajusta su apertura para aflojar tuercas. El destornillador es para tornillos y la cinta métrica solo mide.",tip:"Usa llave inglesa para tuercas de distintos tamaños."},
+{task:"Cortar un tramo de tubería de PVC de 32mm",opts:["Cortatubos","Alicates","Llave Stillson"],ans:0,exp:"El cortatubos hace cortes limpios en PVC. Los alicates deforman el tubo y la Stillson es para girar, no cortar.",tip:"El cortatubos garantiza cortes rectos y sin rebabas."},
+{task:"Sellar la rosca de un racor metálico",opts:["Teflón","Masilla epoxi","Silicona"],ans:0,exp:"El teflón sella roscas metálicas evitando fugas. La masilla es para reparaciones y la silicona no resiste presión en roscas.",tip:"Enrolla teflón en sentido de la rosca (horario)."},
+{task:"Desatascar un fregadero obstruido",opts:["Desatascador ventosa","Llave de grifo","Nivel de burbuja"],ans:0,exp:"La ventosa genera presión para desatascar. La llave de grifo desmonta grifos y el nivel comprueba horizontalidad.",tip:"Cubre el rebosadero para mayor succión."},
+{task:"Apretar el prensaestopas de un grifo",opts:["Llave Stillson","Cortatubos","Flexómetro"],ans:0,exp:"La Stillson agarra y gira piezas cilíndricas. El cortatubos corta tubos y el flexómetro mide distancias.",tip:"La Stillson es ideal para tubos y racores redondos."},
+{task:"Medir el diámetro interior de una tubería",opts:["Calibre","Llave inglesa","Teflón"],ans:0,exp:"El calibre mide diámetros con precisión. La llave afloja tuercas y el teflón sella roscas.",tip:"El calibre mide interiores, exteriores y profundidades."}
+];
+
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const btns=opts.querySelectorAll('.btn-option');
+const correct=i===tasks[idx].ans;
+btns[i].classList.add(correct?'correct':'incorrect');
+if(!correct)btns[tasks[idx].ans].classList.add('correct');
+btns.forEach(b=>b.disabled=true);
+answers.push({task:tasks[idx].task,user:tasks[idx].opts[i],correct,correctAns:tasks[idx].opts[tasks[idx].ans],exp:tasks[idx].exp,tip:tasks[idx].tip});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Misión completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Elegiste: '+a.user+' → Correcta: '+a.correctAns}</div>
+<div class="result-explanation">${a.exp}</div>
+<div class="result-explanation"><strong>Consejo:</strong> ${a.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
