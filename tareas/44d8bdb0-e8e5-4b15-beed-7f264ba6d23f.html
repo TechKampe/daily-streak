@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>El Orden SÍ Altera el Circuito ⚡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">El Orden SÍ Altera el Circuito ⚡️</div>
+<div class="subtitle" id="subtitle">Ordena los pasos correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">Reto 1/3</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+<div class="footer">
+<div class="helper" id="helper">Usa ↑↓ o arrastra para ordenar</div>
+<button class="cta" id="cta">Confirmar orden</button>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Tu Primera Intervención</div>
+<div class="modal-body">Un cliente necesita cambiar un interruptor. Demuestra que conoces el protocolo de seguridad ordenando los pasos correctamente.</div>
+<div class="modal-actions">
+<button class="cta" onclick="closeModal()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const challenges=[
+{steps:["Cortar la corriente en el cuadro","Verificar ausencia de tensión","Retirar el interruptor antiguo","Conectar el nuevo interruptor","Rearmar el cuadro eléctrico"],correct:[0,1,2,3,4],tip:"Siempre verifica ausencia de tensión antes de tocar cualquier cable."},
+{steps:["Localizar el cuadro eléctrico","Identificar el diferencial correcto","Bajar el diferencial","Comprobar que no hay tensión","Iniciar el trabajo"],correct:[0,1,2,3,4],tip:"Nunca asumas que no hay tensión: compruébalo siempre."},
+{steps:["Avisar que vas a trabajar","Cortar alimentación general","Usar detector de tensión","Señalizar la zona de trabajo","Realizar la reparación"],correct:[0,1,2,3,4],tip:"Comunicar tus acciones previene accidentes con compañeros."}
+];
+let idx=0,results=[],dragIdx=null;
+
+function closeModal(){document.getElementById('modal').classList.remove('active');}
+document.getElementById('modal').classList.add('active');
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function render(){
+if(idx>=challenges.length){showResults();return;}
+const c=challenges[idx];
+const shuffled=shuffle(c.steps.map((s,i)=>({text:s,origIdx:i})));
+document.getElementById('progress').style.width=((idx)/challenges.length*100)+'%';
+document.getElementById('counter').textContent=`Reto ${idx+1}/${challenges.length}`;
+document.getElementById('subtitle').textContent='Ordena los pasos correctamente';
+document.getElementById('helper').textContent='Usa ↑↓ o arrastra para ordenar';
+document.getElementById('cta').textContent='Confirmar orden';
+document.getElementById('cta').onclick=confirm;
+const main=document.getElementById('main');
+main.innerHTML=`<div class="cards" id="cards">${shuffled.map((s,i)=>`<div class="card" data-orig="${s.origIdx}" draggable="true"><span class="card-num">${i+1}</span><span class="card-text">${s.text}</span><div class="card-controls"><button class="btn-ghost" aria-label="Subir" onclick="move(${i},-1)">↑</button><button class="btn-ghost" aria-label="Bajar" onclick="move(${i},1)">↓</button></div></div>`).join('')}</div>`;
+setupDrag();
+ensureFits();
+}
+
+function move(i,dir){
+const cards=document.getElementById('cards');
+const children=[...cards.children];
+const newIdx=i+dir;
+if(newIdx<0||newIdx>=children.length)return;
+const el=children[i];
+el.classList.add('dragging');
+setTimeout(()=>el.classList.remove('dragging'),200);
+if(dir<0)cards.insertBefore(el,children[newIdx]);
+else cards.insertBefore(children[newIdx],el);
+updateNums();
+}
+
+function updateNums(){
+const cards=document.querySelectorAll('#cards .card');
+cards.forEach((c,i)=>c.querySelector('.card-num').textContent=i+1);
+}
+
+function setupDrag(){
+const cards=document.getElementById('cards');
+let dragged=null;
+cards.querySelectorAll('.card').forEach((card,i)=>{
+card.addEventListener('dragstart',e=>{dragged=card;card.classList.add('dragging');});
+card.addEventListener('dragend',()=>{dragged.classList.remove('dragging');dragged=null;updateNums();});
+card.addEventListener('dragover',e=>{e.preventDefault();if(dragged&&dragged!==card){const rect=card.getBoundingClientRect();const mid=rect.top+rect.height/2;if(e.clientY<mid)cards.insertBefore(dragged,card);else cards.insertBefore(dragged,card.nextSibling);}});
+card.addEventListener('touchstart',e=>{dragIdx=i;card.classList.add('dragging');},{passive:true});
+card.addEventListener('touchmove',e=>{
+e.preventDefault();
+const touch=e.touches[0];
+const el=document.elementFromPoint(touch.clientX,touch.clientY);
+if(el&&el.closest&&el.closest('.card')&&el.closest('.card')!==card){
+const target=el.closest('.card');
+const rect=target.getBoundingClientRect();
+const mid=rect.top+rect.height/2;
+if(touch.clientY<mid)cards.insertBefore(card,target);
+else cards.insertBefore(card,target.nextSibling);
+}
+},{passive:false});
+card.addEventListener('touchend',()=>{card.classList.remove('dragging');updateNums();});
+});
+}
+
+function confirm(){
+const cards=[...document.querySelectorAll('#cards .card')];
+const userOrder=cards.map(c=>parseInt(c.dataset.orig));
+const c=challenges[idx];
+const isCorrect=userOrder.every((v,i)=>v===c.correct[i]);
+results.push({challenge:c,userOrder,isCorrect});
+idx++;
+render();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+document.getElementById('scene').classList.replace('gameplay','results');
+const score=results.filter(r=>r.isCorrect).length;
+let html=`<div class="results-header"><div class="results-title">¡Completado!</div><div class="results-score">${score}/${results.length}</div><div class="results-subtitle">Secuencias correctas</div></div><div class="results-list">`;
+results.forEach((r,i)=>{
+const c=r.challenge;
+if(r.isCorrect){
+html+=`<div class="result-item correct"><div class="result-question">Reto ${i+1}: ✓ Correcto</div><div class="result-answer">${c.steps.join(' → ')}</div><div class="result-explanation">¡Perfecto! Conoces el protocolo.</div></div>`;
+}else{
+html+=`<div class="result-item incorrect"><div class="result-question">Reto ${i+1}: ✗ Incorrecto</div><div class="result-answer">Tu orden: ${r.userOrder.map(j=>c.steps[j]).join(' → ')}</div><div class="result-explanation">Orden correcto: ${c.steps.join(' → ')}</div></div>`;
+}
+html+=`<div class="result-item"><div class="result-explanation">💡 ${c.tip}</div></div>`;
+});
+html+=`</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+document.getElementById('scene').innerHTML=html;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
