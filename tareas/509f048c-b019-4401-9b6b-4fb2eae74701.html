@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Conecta el Taller: Herramientas y Funciones - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Conecta el Taller</div>
+<div class="subtitle" id="subtitle">Empareja herramientas con su función</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Parejas</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">Intento 0/12</span>
+</div>
+</div>
+<div class="main">
+<div class="memory-grid" style="--grid-cols:2" id="grid"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Destapa 2 cartas para buscar parejas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primer día en el taller</div>
+<div class="modal-body">El encargado te reta: demuestra que conoces las herramientas básicas. Encuentra las 4 parejas en máximo 12 intentos.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const pairs=[
+{id:1,a:"Llave inglesa",b:"Ajustar tuercas",exp:"La llave inglesa tiene mordazas ajustables para apretar o aflojar tuercas de distintos tamaños."},
+{id:2,a:"Nivel de burbuja",b:"Comprobar horizontalidad",exp:"La burbuja centrada indica que la superficie está perfectamente horizontal o vertical."},
+{id:3,a:"Flexómetro",b:"Medir distancias",exp:"El flexómetro es la cinta métrica enrollable, esencial para tomar medidas precisas."},
+{id:4,a:"Destornillador",b:"Apretar tornillos",exp:"El destornillador transmite el giro de tu mano al tornillo para fijarlo o extraerlo."}
+];
+
+let cards=[],flipped=[],matched=[],attempts=0,locked=false,gameStarted=false;
+const maxAttempts=12,totalPairs=4;
+const grid=document.getElementById('grid'),counter=document.getElementById('counter'),progress=document.getElementById('progress'),helper=document.getElementById('helper'),modal=document.getElementById('modal'),scene=document.getElementById('scene');
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+function initCards(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.a,type:'a'});
+cards.push({pairId:p.id,text:p.b,type:'b'});
+});
+shuffle(cards);
+}
+
+function renderGrid(){
+grid.innerHTML=cards.map((c,i)=>`
+<div class="memory-card" data-index="${i}" data-pair="${c.pairId}" onclick="flipCard(${i})">
+<div class="memory-card-front">?</div>
+<div class="memory-card-back">${c.text}</div>
+</div>`).join('');
+fitBoardToViewport();
+ensureFits();
+}
+
+function flipCard(i){
+if(locked||!gameStarted)return;
+const card=grid.children[i];
+if(card.classList.contains('flipped')||card.classList.contains('matched'))return;
+card.classList.add('flipped');
+flipped.push(i);
+if(flipped.length===2){
+locked=true;
+attempts++;
+updateUI();
+checkMatch();
+}
+}
+
+function checkMatch(){
+const[i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+const card1=grid.children[i1],card2=grid.children[i2];
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+setTimeout(()=>{
+card1.classList.add('matched');
+card2.classList.add('matched');
+matched.push(c1.pairId);
+flipped=[];
+locked=false;
+updateUI();
+if(matched.length===totalPairs)endGame(true);
+},400);
+}else{
+setTimeout(()=>{
+card1.classList.remove('flipped');
+card2.classList.remove('flipped');
+flipped=[];
+locked=false;
+if(attempts>=maxAttempts&&matched.length<totalPairs)endGame(false);
+},2000);
+}
+}
+
+function updateUI(){
+counter.textContent=`Intento ${attempts}/${maxAttempts}`;
+progress.style.width=(matched.length/totalPairs*100)+'%';
+helper.textContent=matched.length===totalPairs?'¡Todas las parejas encontradas!':`Parejas: ${matched.length}/${totalPairs}`;
+}
+
+function endGame(won){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const foundPairs=pairs.filter(p=>matched.includes(p.id));
+const missedPairs=pairs.filter(p=>!matched.includes(p.id));
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">${won?'🎉 ¡Excelente!':'😅 ¡Casi lo logras!'}</div>
+<div class="results-score">${matched.length}/${totalPairs}</div>
+<div class="results-subtitle">${won?`Completado en ${attempts} intentos`:'Parejas encontradas'}</div>
+</div>
+<div class="results-list">
+${foundPairs.map(p=>`<div class="result-item correct">
+<div class="result-question">${p.a} ↔ ${p.b}</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`).join('')}
+${missedPairs.map(p=>`<div class="result-item incorrect">
+<div class="result-question">${p.a} ↔ ${p.b}</div>
+<div class="result-answer">No encontrada</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo de memorización</div>
+<div class="result-explanation">Visualiza cada herramienta en acción: la llave girando, el nivel con su burbuja, el flexómetro extendiéndose.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function startGame(){
+modal.classList.remove('active');
+gameStarted=true;
+initCards();
+renderGrid();
+updateUI();
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const g=document.querySelector('.memory-grid');
+if(!g)return;
+const availableHeight=scene.clientHeight-200;
+const cols=2,rows=4;
+const cellHeight=Math.floor((availableHeight-(rows-1)*8)/rows);
+document.documentElement.style.setProperty('--cellH',Math.min(cellHeight,100)+'px');
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',()=>{ensureFits();fitBoardToViewport();});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ensureFits();fitBoardToViewport();},100));
+</script>
+</body>
+</html>
