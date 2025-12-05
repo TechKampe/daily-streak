@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Conceptos Eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta los Conceptos</div>
+<div class="subtitle" id="subtitle">Encuentra las 4 parejas</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Intentos</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">0/10</span>
+</div>
+</div>
+<div class="main">
+<div class="memory-grid" id="grid" style="--grid-cols:2"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca 2 cartas para emparejarlas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 Inventario Eléctrico</div>
+<div class="modal-body">Estás en el almacén organizando material. Demuestra que conoces la terminología emparejando cada término con su significado.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const pairs=[
+{id:1,term:"Voltímetro",def:"Mide tensión eléctrica",exp:"El voltímetro es el instrumento básico para medir diferencia de potencial (voltios) en un circuito."},
+{id:2,term:"Fase",def:"Cable con corriente activa",exp:"El cable de fase transporta la corriente eléctrica y suele ser de color marrón o negro."},
+{id:3,term:"Diferencial",def:"Protege contra fugas",exp:"El interruptor diferencial detecta fugas de corriente y corta el suministro para evitar electrocuciones."},
+{id:4,term:"Empalme",def:"Unión de dos cables",exp:"Un empalme conecta dos conductores y debe aislarse correctamente para evitar cortocircuitos."}
+];
+
+let cards=[],flipped=[],matched=[],attempts=0,maxAttempts=10,locked=false,gameStarted=false;
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+function createCards(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({id:p.id,type:'term',text:p.term,pairId:p.id});
+cards.push({id:p.id,type:'def',text:p.def,pairId:p.id});
+});
+shuffle(cards);
+}
+
+function renderGrid(){
+const grid=document.getElementById('grid');
+grid.innerHTML=cards.map((c,i)=>`
+<div class="memory-card" data-index="${i}" onclick="flipCard(${i})">
+<div class="memory-card-front">?</div>
+<div class="memory-card-back">${c.text}</div>
+</div>`).join('');
+fitBoardToViewport();
+}
+
+function flipCard(i){
+if(locked||!gameStarted)return;
+const card=document.querySelector(`.memory-card[data-index="${i}"]`);
+if(card.classList.contains('flipped')||card.classList.contains('matched'))return;
+if(flipped.length>=2)return;
+
+card.classList.add('flipped');
+flipped.push(i);
+
+if(flipped.length===2){
+attempts++;
+updateUI();
+checkMatch();
+}
+}
+
+function checkMatch(){
+locked=true;
+const[i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+const card1=document.querySelector(`.memory-card[data-index="${i1}"]`);
+const card2=document.querySelector(`.memory-card[data-index="${i2}"]`);
+
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+setTimeout(()=>{
+card1.classList.add('matched');
+card2.classList.add('matched');
+matched.push(c1.pairId);
+flipped=[];
+locked=false;
+if(matched.length===4)endGame(true);
+},400);
+}else{
+setTimeout(()=>{
+card1.classList.remove('flipped');
+card2.classList.remove('flipped');
+flipped=[];
+locked=false;
+if(attempts>=maxAttempts)endGame(false);
+},2000);
+}
+}
+
+function updateUI(){
+document.getElementById('counter').textContent=`${attempts}/${maxAttempts}`;
+document.getElementById('progress').style.width=`${(attempts/maxAttempts)*100}%`;
+document.getElementById('helper').textContent=matched.length===4?'¡Completado!':`Parejas: ${matched.length}/4`;
+}
+
+function endGame(won){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+document.getElementById('scene').classList.replace('gameplay','results');
+const found=pairs.filter(p=>matched.includes(p.id));
+const missing=pairs.filter(p=>!matched.includes(p.id));
+
+document.getElementById('scene').innerHTML=`
+<div class="results-header">
+<div class="results-title">${won?'¡Excelente!':'¡Casi lo logras!'}</div>
+<div class="results-score">${matched.length}/4</div>
+<div class="results-subtitle">Parejas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${found.map(p=>`<div class="result-item correct">
+<div class="result-question">${p.term} ↔ ${p.def}</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`).join('')}
+${missing.map(p=>`<div class="result-item incorrect">
+<div class="result-question">${p.term} ↔ ${p.def}</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo de memorización</div>
+<div class="result-explanation">Asocia cada herramienta con su acción: el voltímetro "voltea" números, la fase es "activa", el diferencial "diferencia" fugas.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function startGame(){
+document.getElementById('modal').classList.remove('active');
+gameStarted=true;
+createCards();
+renderGrid();
+updateUI();
+ensureFits();
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const grid=document.querySelector('.memory-grid');
+if(!grid)return;
+const scene=document.getElementById('scene');
+const availableHeight=scene.clientHeight-200;
+const rows=4;
+const cellHeight=Math.floor((availableHeight-(rows-1)*8)/rows);
+document.documentElement.style.setProperty('--cellH',Math.min(cellHeight,100)+'px');
+}
+
+window.addEventListener('load',()=>{
+document.getElementById('modal').classList.add('active');
+ensureFits();
+});
+window.addEventListener('resize',()=>{ensureFits();fitBoardToViewport();});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ensureFits();fitBoardToViewport();},100));
+</script>
+</body>
+</html>
