@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conexión Maestra: Herramientas ⚡ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Conexión Maestra ⚡</div>
+<div class="subtitle">Encuentra las 4 parejas herramienta-función</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Parejas</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">0/4</span>
+</div>
+</div>
+<div class="main">
+<div class="memory-grid" id="grid" style="--grid-cols:2"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca una carta para empezar</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Tu primer día</div>
+<div class="modal-body">Tu mentor te pide herramientas por su función. Encuentra las 4 parejas destapando cartas de dos en dos.</div>
+<div class="modal-actions">
+<button class="cta" onclick="closeModal()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const pairs=[
+{id:1,a:"Pelacables",b:"Retirar aislante",exp:"El pelacables retira el aislante sin dañar el conductor."},
+{id:2,a:"Buscapolos",b:"Detectar tensión",exp:"El buscapolos indica si hay corriente en un punto."},
+{id:3,a:"Multímetro",b:"Medir voltaje",exp:"El multímetro mide tensión, corriente y resistencia."},
+{id:4,a:"Alicates",b:"Cortar cables",exp:"Los alicates de corte seccionan cables con precisión."}
+];
+
+let cards=[],flipped=[],matched=[],locked=false,moves=0;
+const grid=document.getElementById('grid'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.a,type:'a'});
+cards.push({pairId:p.id,text:p.b,type:'b'});
+});
+shuffle(cards);
+render();
+modal.classList.add('active');
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+function render(){
+grid.innerHTML=cards.map((c,i)=>`
+<div class="memory-card" data-index="${i}">
+<div class="memory-card-front">?</div>
+<div class="memory-card-back">${c.text}</div>
+</div>`).join('');
+grid.querySelectorAll('.memory-card').forEach(card=>{
+card.addEventListener('click',()=>flipCard(card));
+});
+ensureFits();
+fitBoardToViewport();
+}
+
+function flipCard(card){
+if(locked)return;
+const idx=parseInt(card.dataset.index);
+if(flipped.includes(idx)||matched.includes(idx))return;
+card.classList.add('flipped');
+flipped.push(idx);
+if(flipped.length===2){
+locked=true;
+checkMatch();
+}
+}
+
+function checkMatch(){
+const[i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+const cardEls=grid.querySelectorAll('.memory-card');
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+matched.push(i1,i2);
+cardEls[i1].classList.add('matched');
+cardEls[i2].classList.add('matched');
+helper.textContent="¡Pareja encontrada!";
+updateProgress();
+flipped=[];
+locked=false;
+if(matched.length===8)setTimeout(showResults,600);
+}else{
+helper.textContent="No es pareja. Observa 2 seg...";
+setTimeout(()=>{
+cardEls[i1].classList.remove('flipped');
+cardEls[i2].classList.remove('flipped');
+flipped=[];
+locked=false;
+helper.textContent="Sigue buscando parejas";
+},2000);
+}
+moves++;
+}
+
+function updateProgress(){
+const found=matched.length/2;
+prog.style.width=(found/4*100)+'%';
+counter.textContent=found+'/4';
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">4/4</div>
+<div class="results-subtitle">Parejas encontradas en ${moves} movimientos</div>
+</div>
+<div class="results-list">
+${pairs.map(p=>`<div class="result-item correct">
+<div class="result-question">${p.a} ↔ ${p.b}</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:#f0f4ff">
+<div class="result-question">💡 Consejo mnemotécnico</div>
+<div class="result-explanation">PBMA: Pela-Busca-Mide-Alicates = Retira-Detecta-Voltaje-Corta</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function closeModal(){modal.classList.remove('active');}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const g=document.querySelector('.memory-grid');
+if(!g)return;
+const availableHeight=scene.clientHeight-180;
+const rows=4,cols=2;
+const cellHeight=Math.floor((availableHeight-(rows-1)*8)/rows);
+document.documentElement.style.setProperty('--cellH',Math.min(cellHeight,100)+'px');
+}
+
+window.addEventListener('load',()=>{ensureFits();fitBoardToViewport();});
+window.addEventListener('resize',()=>{ensureFits();fitBoardToViewport();});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ensureFits();fitBoardToViewport();},100));
+init();
+</script>
+</body>
+</html>
