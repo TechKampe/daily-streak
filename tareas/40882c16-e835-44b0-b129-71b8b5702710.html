@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Paso a paso: Domina el protocolo - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{title:"Protocolo antes de intervenir",steps:["Cortar el suministro eléctrico","Verificar ausencia de tensión","Señalizar la zona de trabajo","Realizar la intervención"],correct:[0,1,2,3],tip:"Nunca toques un circuito sin verificar ausencia de tensión con un detector homologado.",why:"Este orden garantiza tu seguridad: primero eliminas el riesgo, luego lo verificas, después avisas a otros y finalmente trabajas."},
+{title:"Presentarse a un cliente",steps:["Llamar antes de llegar","Identificarte con nombre y empresa","Explicar el trabajo a realizar","Pedir permiso para acceder"],correct:[0,1,2,3],tip:"La puntualidad y una buena presentación generan confianza profesional.",why:"Avisar, identificarte, explicar y pedir permiso demuestra profesionalidad y respeto por el cliente."},
+{title:"Recoger herramientas al finalizar",steps:["Verificar que no queda tensión","Recoger herramientas y materiales","Limpiar la zona de trabajo","Informar al cliente del trabajo"],correct:[0,1,2,3],tip:"Cuenta siempre tus herramientas antes y después; evitarás pérdidas y accidentes.",why:"Verificar seguridad primero, luego recoger, limpiar y finalmente comunicar cierra el trabajo de forma profesional."}
+];
+let currentChallenge=0,userOrders=[],score=0;
+const scene=document.getElementById('scene');
+let draggedIdx=null;
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function renderChallenge(){
+const ch=challenges[currentChallenge];
+const shuffled=shuffle(ch.steps.map((s,i)=>({text:s,origIdx:i})));
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Paso a paso</div>
+<div class="subtitle">${ch.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(currentChallenge/3)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/3</span>
+</div>
+</div>
+<div class="main">
+<div class="cards" id="cards">
+${shuffled.map((s,i)=>`<div class="card" data-idx="${i}" data-orig="${s.origIdx}" draggable="true">
+<span class="card-num">${i+1}</span>
+<span class="card-text">${s.text}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveCard(${i},-1)">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveCard(${i},1)">↓</button>
+</div>
+</div>`).join('')}
+</div>
+</div>
+<div class="footer">
+<div class="helper">Ordena los pasos con ↑↓ o arrastrando</div>
+<button class="cta" id="cta" onclick="confirmOrder()">Confirmar orden</button>
+</div>`;
+setupDrag();
+ensureFits();
+}
+
+function moveCard(idx,dir){
+const cards=document.getElementById('cards');
+const items=[...cards.children];
+const newIdx=idx+dir;
+if(newIdx<0||newIdx>=items.length)return;
+const card=items[idx];
+card.style.transform=dir<0?'translateY(-8px)':'translateY(8px)';
+setTimeout(()=>{card.style.transform='';},150);
+if(dir<0)cards.insertBefore(items[idx],items[newIdx]);
+else cards.insertBefore(items[newIdx],items[idx]);
+updateNumbers();
+}
+
+function updateNumbers(){
+const cards=document.querySelectorAll('#cards .card');
+cards.forEach((c,i)=>{c.querySelector('.card-num').textContent=i+1;c.dataset.idx=i;});
+}
+
+function setupDrag(){
+const cards=document.getElementById('cards');
+cards.addEventListener('dragstart',e=>{
+if(e.target.classList.contains('card')){
+draggedIdx=+e.target.dataset.idx;
+e.target.classList.add('dragging');
+}
+});
+cards.addEventListener('dragend',e=>{
+e.target.classList.remove('dragging');
+draggedIdx=null;
+});
+cards.addEventListener('dragover',e=>{e.preventDefault();});
+cards.addEventListener('drop',e=>{
+e.preventDefault();
+const target=e.target.closest('.card');
+if(!target||draggedIdx===null)return;
+const targetIdx=+target.dataset.idx;
+if(draggedIdx===targetIdx)return;
+const items=[...cards.children];
+const dragged=items[draggedIdx];
+if(draggedIdx<targetIdx)cards.insertBefore(dragged,items[targetIdx].nextSibling);
+else cards.insertBefore(dragged,items[targetIdx]);
+updateNumbers();
+});
+}
+
+function confirmOrder(){
+const cards=[...document.querySelectorAll('#cards .card')];
+const userOrder=cards.map(c=>+c.dataset.orig);
+const ch=challenges[currentChallenge];
+const isCorrect=userOrder.every((v,i)=>v===ch.correct[i]);
+if(isCorrect)score++;
+userOrders.push({challenge:ch,userOrder,isCorrect});
+showFeedback(ch,userOrder,isCorrect);
+}
+
+function showFeedback(ch,userOrder,isCorrect){
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">${isCorrect?'✓ ¡Correcto!':'✗ Incorrecto'}</div>
+<div class="subtitle">${ch.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${((currentChallenge+1)/3)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/3</span>
+</div>
+</div>
+<div class="main">
+${isCorrect?`<div class="result-item correct"><div class="result-question">Tu orden fue correcto:</div><div class="result-answer">${ch.steps.join(' → ')}</div></div>`:`<div class="result-item incorrect"><div class="result-question">Tu orden:</div><div class="result-answer">${userOrder.map(i=>ch.steps[i]).join(' → ')}</div></div><div class="result-item correct"><div class="result-question">Orden correcto:</div><div class="result-answer">${ch.steps.join(' → ')}</div></div>`}
+<div class="result-item"><div class="result-explanation">${ch.why}</div></div>
+<div class="result-item"><div class="result-question">💡 Consejo:</div><div class="result-explanation">${ch.tip}</div></div>
+</div>
+<div class="footer">
+<button class="cta" onclick="nextChallenge()">${currentChallenge<2?'Siguiente reto':'Ver resultados'}</button>
+</div>`;
+ensureFits();
+}
+
+function nextChallenge(){
+currentChallenge++;
+if(currentChallenge>=3)showResults();
+else renderChallenge();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/3</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${userOrders.map((o,i)=>`<div class="result-item ${o.isCorrect?'correct':'incorrect'}">
+<div class="result-question">Reto ${i+1}: ${o.challenge.title}</div>
+<div class="result-answer">${o.isCorrect?'✓ Orden correcto':'✗ Orden incorrecto'}</div>
+<div class="result-explanation">${o.challenge.why}</div>
+</div>`).join('')}
+<div class="result-item"><div class="result-question">🎯 Recuerda</div><div class="result-explanation">El orden en los procedimientos técnicos no es capricho: cada paso prepara el siguiente y garantiza seguridad.</div></div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{renderChallenge();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
