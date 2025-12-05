@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Conceptos Eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+:root{--primary:#00E6BC;--text-dark:#0B214A}
+.memory-grid{display:grid;gap:8px;padding:8px;width:100%;max-width:360px;margin:0 auto}
+.memory-card{aspect-ratio:1;perspective:1000px;cursor:pointer;min-height:70px}
+.memory-card-inner{position:relative;width:100%;height:100%;transition:transform 0.5s;transform-style:preserve-3d}
+.memory-card.flipped .memory-card-inner{transform:rotateY(180deg)}
+.memory-card-front,.memory-card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box;text-align:center;font-family:'Baloo 2',sans-serif;font-weight:700}
+.memory-card-front{background:var(--primary);color:var(--text-dark);font-size:1.8rem}
+.memory-card-back{background:#fff;color:var(--text-dark);transform:rotateY(180deg);font-size:0.75rem;line-height:1.2;border:3px solid var(--primary);word-break:break-word}
+.memory-card.matched .memory-card-back{background:var(--primary);color:#fff;border-color:var(--primary)}
+.memory-card.matched{pointer-events:none;transform:scale(1.02)}
+.memory-card.highlight{animation:pulse 0.4s ease}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.attempts{font-family:'Baloo 2',sans-serif;font-size:1rem;color:var(--text-dark);text-align:center;margin:8px 0;font-weight:700}
+.main{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:8px}
+.result-pair{background:#f8f9fa;border-radius:12px;padding:12px;margin-bottom:12px}
+.result-pair-title{font-weight:700;color:var(--primary);margin-bottom:4px;font-size:0.95rem}
+.result-pair-explanation{font-size:0.85rem;color:var(--text-dark);line-height:1.4}
+.tip-box{background:var(--primary);color:#fff;border-radius:12px;padding:16px;margin:16px 0;text-align:center}
+.tip-box-title{font-weight:700;font-size:1rem;margin-bottom:8px}
+.tip-box-text{font-size:0.9rem;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta los Conceptos</div>
+<div class="subtitle" id="subtitle">Empareja términos eléctricos</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Parejas</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">0/4</span>
+</div>
+</div>
+<div class="main">
+<div class="attempts" id="attempts">Intentos: 10</div>
+<div class="memory-grid" id="grid" style="--grid-cols:4"></div>
+</div>
+<div class="footer">
+<div class="helper">Destapa 2 cartas para emparejar</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 ¡Organiza el almacén!</div>
+<div class="modal-body">El encargado te reta: demuestra que conoces la terminología eléctrica emparejando cada término con su definición.</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">¡Empezar!</button></div>
+</div>
+</div>
+<script>
+const pairs=[
+{term:"Fase",def:"Cable con corriente",exp:"La fase es el conductor activo que transporta la corriente eléctrica desde la red."},
+{term:"Neutro",def:"Retorno de corriente",exp:"El neutro cierra el circuito devolviendo la corriente al transformador."},
+{term:"Toma tierra",def:"Deriva al suelo",exp:"La toma de tierra protege derivando corrientes de fuga al suelo."},
+{term:"Diferencial",def:"Protege contactos",exp:"El diferencial detecta fugas y corta el circuito protegiendo de electrocución."}
+];
+let cards=[],flipped=[],matched=0,attempts=10,canFlip=true,gameStarted=false;
+const grid=document.getElementById('grid'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),attemptsEl=document.getElementById('attempts'),modal=document.getElementById('modal'),scene=document.getElementById('scene');
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function createCards(){
+cards=[];
+pairs.forEach((p,i)=>{
+cards.push({id:i,type:'term',text:p.term,pairId:i});
+cards.push({id:i,type:'def',text:p.def,pairId:i});
+});
+shuffle(cards);
+}
+
+function renderGrid(){
+grid.innerHTML='';
+cards.forEach((c,idx)=>{
+const card=document.createElement('div');
+card.className='memory-card';
+card.dataset.idx=idx;
+card.innerHTML=`<div class="memory-card-inner"><div class="memory-card-front">?</div><div class="memory-card-back">${c.text}</div></div>`;
+card.onclick=()=>flipCard(idx);
+grid.appendChild(card);
+});
+fitBoardToViewport();
+}
+
+function flipCard(idx){
+if(!canFlip||flipped.includes(idx))return;
+const cardEl=grid.children[idx];
+if(cardEl.classList.contains('matched')||cardEl.classList.contains('flipped'))return;
+cardEl.classList.add('flipped');
+flipped.push(idx);
+if(flipped.length===2){
+canFlip=false;
+attempts--;
+attemptsEl.textContent='Intentos: '+attempts;
+checkMatch();
+}
+}
+
+function checkMatch(){
+const[i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+const el1=grid.children[i1],el2=grid.children[i2];
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+setTimeout(()=>{
+el1.classList.add('matched','highlight');
+el2.classList.add('matched','highlight');
+matched++;
+updateProgress();
+flipped=[];
+canFlip=true;
+if(matched===pairs.length)endGame(true);
+else if(attempts<=0)endGame(false);
+},600);
+}else{
+setTimeout(()=>{
+el1.classList.remove('flipped');
+el2.classList.remove('flipped');
+flipped=[];
+canFlip=true;
+if(attempts<=0)endGame(false);
+},1000);
+}
+}
+
+function updateProgress(){
+prog.style.width=(matched/pairs.length*100)+'%';
+counter.textContent=matched+'/'+pairs.length;
+}
+
+function endGame(won){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">${won?'¡Excelente!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/${pairs.length}</div>
+<div class="results-subtitle">Parejas encontradas</div>
+</div>
+<div class="results-list">
+${pairs.map(p=>`<div class="result-pair">
+<div class="result-pair-title">${p.term} ↔ ${p.def}</div>
+<div class="result-pair-explanation">${p.exp}</div>
+</div>`).join('')}
+<div class="tip-box">
+<div class="tip-box-title">💡 Consejo de memorización</div>
+<div class="tip-box-text">Asocia cada término con su función en el circuito. Visualiza el recorrido de la corriente: entra por fase, trabaja, y vuelve por neutro.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function startGame(){
+modal.classList.remove('active');
+gameStarted=true;
+createCards();
+renderGrid();
+updateProgress();
+ensureFits();
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.85,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function fitBoardToViewport(){
+const availH=scene.clientHeight-180;
+const rows=2,cols=4,gap=8;
+const cellH=Math.min(90,Math.floor((availH-gap)/rows));
+document.documentElement.style.setProperty('--cellH',cellH+'px');
+grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+grid.style.gridTemplateRows=`repeat(${rows},${cellH}px)`;
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits()});
+window.addEventListener('resize',()=>{ensureFits();if(gameStarted)fitBoardToViewport()});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ensureFits();if(gameStarted)fitBoardToViewport()},100));
+</script>
+</body>
+</html>
