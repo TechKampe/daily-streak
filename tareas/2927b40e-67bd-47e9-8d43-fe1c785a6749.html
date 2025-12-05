@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Ordena y Conquista: Protocolos Pro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y Conquista</div>
+<div class="subtitle" id="subtitle">Ordena los pasos correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">Reto 1/3</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+<div class="footer">
+<div class="helper" id="helper">Usa ↑↓ o arrastra para ordenar</div>
+<button class="cta" id="cta">Confirmar orden</button>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">⚡ Primer día en obra</div>
+<div class="modal-body">Tu supervisor quiere ver si conoces los protocolos. Ordena cada secuencia correctamente.</div>
+<div class="modal-actions">
+<button class="cta" onclick="closeModal()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const challenges=[
+{title:"5 Reglas de Oro",steps:["Desconectar la fuente de energía","Bloquear los dispositivos de corte","Verificar ausencia de tensión","Poner a tierra y en cortocircuito","Delimitar y señalizar la zona"],correct:[0,1,2,3,4],tip:"Las 5 reglas de oro salvan vidas. Nunca alteres el orden.",why:"Este orden garantiza que primero se aísla la energía, luego se previene la reconexión, se confirma que no hay tensión, se protege contra tensiones inducidas y finalmente se avisa a terceros."},
+{title:"Verificar ausencia de tensión",steps:["Comprobar que el polímetro funciona","Seleccionar la escala de voltaje AC","Medir entre fases y neutro","Medir entre fases y tierra","Confirmar 0V en todos los puntos"],correct:[0,1,2,3,4],tip:"Siempre verifica tu instrumento antes de confiar en él.",why:"Primero validamos el equipo, luego configuramos correctamente, medimos fase-neutro, después fase-tierra para descartar derivaciones, y finalmente confirmamos ausencia total."},
+{title:"Reconexión segura",steps:["Retirar señalización y barreras","Quitar puestas a tierra","Desbloquear dispositivos de corte","Avisar al personal del área","Reconectar la alimentación"],correct:[0,1,2,3,4],tip:"La reconexión es inversa a la desconexión. Avisa siempre antes de energizar.",why:"Se retira la protección física, luego las tierras, se liberan los bloqueos, se avisa para que nadie esté en riesgo y finalmente se energiza de forma segura."}
+];
+let idx=0,userOrders=[],dragIdx=null;
+const scene=document.getElementById('scene'),main=document.getElementById('main'),cta=document.getElementById('cta'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+function closeModal(){modal.classList.remove('active');render();}
+function shuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function render(){
+if(idx>=challenges.length){showResults();return;}
+const c=challenges[idx];
+subtitle.textContent=c.title;
+counter.textContent=`Reto ${idx+1}/3`;
+prog.style.width=((idx)/3*100)+'%';
+helper.textContent='Usa ↑↓ o arrastra para ordenar';
+cta.textContent='Confirmar orden';
+cta.onclick=confirm;
+if(!userOrders[idx])userOrders[idx]=shuffle([...Array(c.steps.length).keys()]);
+renderCards();
+ensureFits();
+}
+
+function renderCards(){
+const c=challenges[idx],order=userOrders[idx];
+main.innerHTML=`<div class="cards-container" id="cards">${order.map((stepIdx,pos)=>`
+<div class="card" data-pos="${pos}" draggable="true">
+<span class="card-num">${pos+1}</span>
+<span class="card-text">${c.steps[stepIdx]}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="move(${pos},-1)">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="move(${pos},1)">↓</button>
+</div>
+</div>`).join('')}</div>`;
+setupDrag();
+}
+
+function move(pos,dir){
+const order=userOrders[idx],newPos=pos+dir;
+if(newPos<0||newPos>=order.length)return;
+[order[pos],order[newPos]]=[order[newPos],order[pos]];
+renderCards();
+}
+
+function setupDrag(){
+const cards=document.querySelectorAll('.card');
+cards.forEach(card=>{
+card.addEventListener('dragstart',e=>{dragIdx=+card.dataset.pos;card.classList.add('dragging');});
+card.addEventListener('dragend',()=>{card.classList.remove('dragging');dragIdx=null;});
+card.addEventListener('dragover',e=>{e.preventDefault();});
+card.addEventListener('drop',e=>{
+e.preventDefault();
+const dropPos=+card.dataset.pos;
+if(dragIdx!==null&&dragIdx!==dropPos){
+const order=userOrders[idx],[item]=order.splice(dragIdx,1);
+order.splice(dropPos,0,item);
+renderCards();
+}
+});
+card.addEventListener('touchstart',e=>{dragIdx=+card.dataset.pos;card.classList.add('dragging');},{passive:true});
+card.addEventListener('touchmove',e=>{
+const touch=e.touches[0];
+const elem=document.elementFromPoint(touch.clientX,touch.clientY);
+if(elem&&elem.closest('.card')){
+const target=elem.closest('.card'),tPos=+target.dataset.pos;
+if(tPos!==dragIdx){
+const order=userOrders[idx],[item]=order.splice(dragIdx,1);
+order.splice(tPos,0,item);
+dragIdx=tPos;
+renderCards();
+}
+}
+},{passive:true});
+card.addEventListener('touchend',()=>{card.classList.remove('dragging');dragIdx=null;},{passive:true});
+});
+}
+
+function confirm(){
+idx++;
+if(idx<challenges.length){render();}
+else{showResults();}
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+let html=`<div class="results-header"><div class="results-title">¡Protocolos revisados!</div><div class="results-subtitle">Revisa tu desempeño</div></div><div class="results-list">`;
+challenges.forEach((c,i)=>{
+const user=userOrders[i],correct=c.correct,isCorrect=user.every((v,j)=>v===correct[j]);
+html+=`<div class="result-item ${isCorrect?'correct':'incorrect'}">
+<div class="result-question">${c.title}</div>`;
+if(isCorrect){
+html+=`<div class="result-answer">✓ ¡Orden correcto!</div>
+<div class="result-explanation">${c.steps.map((s,j)=>`${j+1}. ${s}`).join(' → ')}</div>`;
+}else{
+html+=`<div class="result-answer">✗ Tu orden:</div>
+<div class="result-explanation">${user.map((si,j)=>`${j+1}. ${c.steps[si]}`).join(' → ')}</div>
+<div class="result-answer" style="margin-top:8px">✓ Orden correcto:</div>
+<div class="result-explanation">${c.steps.map((s,j)=>`${j+1}. ${s}`).join(' → ')}</div>`;
+}
+html+=`<div class="result-explanation" style="margin-top:8px"><strong>¿Por qué?</strong> ${c.why}</div>
+<div class="result-explanation" style="margin-top:4px">💡 <em>${c.tip}</em></div></div>`;
+});
+html+=`</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+scene.innerHTML=html;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
