@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Ordena y Domina: Protocolos de Taller - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{title:"Bloqueo y etiquetado",steps:["Identificar el equipo a intervenir","Cortar suministro eléctrico","Colocar candado y etiqueta personal","Verificar ausencia de tensión","Iniciar la reparación"],correct:[0,1,2,3,4],tip:"Nunca trabajes sin verificar ausencia de tensión con equipo calibrado."},
+{title:"Cierre de jornada",steps:["Apagar equipos y herramientas","Limpiar área de trabajo","Guardar herramientas en su lugar","Revisar que no queden residuos","Reportar novedades al encargado"],correct:[0,1,2,3,4],tip:"El orden al cerrar previene accidentes al día siguiente."},
+{title:"Reportar incidente menor",steps:["Asegurar la zona del incidente","Atender primeros auxilios si aplica","Informar al encargado de turno","Documentar lo ocurrido por escrito","Colaborar en la investigación"],correct:[0,1,2,3,4],tip:"Reportar incidentes menores evita que se conviertan en mayores."}
+];
+let idx=0,userOrders=[],dragIdx=-1;
+const scene=document.getElementById('scene');
+
+function shuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function render(){
+if(idx>=challenges.length){showResults();return;}
+const c=challenges[idx];
+if(!c.shuffled)c.shuffled=shuffle(c.steps.map((_,i)=>i));
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y Domina</div>
+<div class="subtitle">${c.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(idx/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${idx+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main">
+<div class="card-list" id="cards">${c.shuffled.map((si,i)=>`
+<div class="card" data-pos="${i}" draggable="true">
+<span class="card-num">${i+1}</span>
+<span class="card-text">${c.steps[si]}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="move(${i},-1)">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="move(${i},1)">↓</button>
+</div>
+</div>`).join('')}</div>
+</div>
+<div class="footer">
+<div class="helper">Ordena los pasos con ↑↓ o arrastrando</div>
+<button class="cta" id="cta" onclick="confirm()">Confirmar orden</button>
+</div>`;
+bindDrag();
+ensureFits();
+}
+
+function move(pos,dir){
+const c=challenges[idx],arr=c.shuffled,np=pos+dir;
+if(np<0||np>=arr.length)return;
+[arr[pos],arr[np]]=[arr[np],arr[pos]];
+render();
+}
+
+function bindDrag(){
+const cards=document.querySelectorAll('.card');
+cards.forEach(card=>{
+card.addEventListener('dragstart',e=>{dragIdx=+card.dataset.pos;card.classList.add('dragging');});
+card.addEventListener('dragend',()=>{card.classList.remove('dragging');dragIdx=-1;});
+card.addEventListener('dragover',e=>{e.preventDefault();});
+card.addEventListener('drop',e=>{
+e.preventDefault();
+const toIdx=+card.dataset.pos;
+if(dragIdx!==-1&&dragIdx!==toIdx){
+const arr=challenges[idx].shuffled;
+const item=arr.splice(dragIdx,1)[0];
+arr.splice(toIdx,0,item);
+render();
+}
+});
+card.addEventListener('touchstart',e=>{dragIdx=+card.dataset.pos;card.classList.add('dragging');},{passive:true});
+card.addEventListener('touchend',()=>{card.classList.remove('dragging');dragIdx=-1;},{passive:true});
+});
+}
+
+function confirm(){
+const c=challenges[idx];
+const userOrder=c.shuffled.slice();
+const correct=c.correct.every((v,i)=>userOrder[i]===v);
+userOrders.push({title:c.title,user:userOrder,correct,steps:c.steps,rightOrder:c.correct,tip:c.tip});
+idx++;
+render();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=userOrders.filter(o=>o.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Sesión completada!</div>
+<div class="results-score">${score}/${challenges.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">${userOrders.map(o=>`
+<div class="result-item ${o.correct?'correct':'incorrect'}">
+<div class="result-question">${o.title}</div>
+${o.correct?`<div class="result-answer">✓ ¡Orden correcto!</div><div class="result-explanation">${o.steps.map((_,i)=>`${i+1}. ${o.steps[o.rightOrder[i]]}`).join('<br>')}</div>`:`
+<div class="result-answer">Tu orden:</div>
+<div class="result-explanation">${o.user.map((si,i)=>`${i+1}. ${o.steps[si]}`).join('<br>')}</div>
+<div class="result-answer" style="margin-top:8px">Orden correcto:</div>
+<div class="result-explanation">${o.rightOrder.map((si,i)=>`${i+1}. ${o.steps[si]}`).join('<br>')}</div>`}
+<div class="result-explanation" style="margin-top:8px;font-weight:600">💡 ${o.tip}</div>
+</div>`).join('')}</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
