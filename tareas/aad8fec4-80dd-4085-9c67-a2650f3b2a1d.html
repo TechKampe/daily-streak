@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Paso a paso: domina el protocolo - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{title:"Preparación antes de intervención eléctrica",steps:["Informar al supervisor de la intervención","Cortar suministro en el cuadro eléctrico","Verificar ausencia de tensión con polímetro","Señalizar zona y colocar candado de bloqueo","Preparar herramientas aisladas necesarias"],correct:[0,1,2,3,4],tip:"Siempre verifica ausencia de tensión DESPUÉS de cortar. Nunca confíes solo en el interruptor."},
+{title:"Atención a cliente con avería",steps:["Escuchar descripción completa del problema","Confirmar síntomas y hacer preguntas clave","Inspeccionar visualmente la instalación","Informar diagnóstico y presupuesto al cliente","Ejecutar reparación tras aprobación"],correct:[0,1,2,3,4],tip:"Un buen diagnóstico ahorra tiempo. Escucha antes de actuar."},
+{title:"Protocolo de cierre de jornada en obra",steps:["Recoger y limpiar herramientas utilizadas","Clasificar residuos en contenedores adecuados","Desconectar equipos eléctricos temporales","Revisar que no queden materiales peligrosos","Cerrar y asegurar accesos al área de trabajo"],correct:[0,1,2,3,4],tip:"Una obra limpia previene accidentes al día siguiente."}
+];
+let currentChallenge=0,userOrders=[],draggedIdx=null;
+
+function shuffle(arr){
+const a=[...arr];
+for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+return a;
+}
+
+function renderChallenge(){
+const ch=challenges[currentChallenge];
+const shuffled=shuffle([...Array(ch.steps.length).keys()]);
+const scene=document.getElementById('scene');
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Paso a paso</div>
+<div class="subtitle">${ch.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(currentChallenge/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main">
+<div class="cards" id="cards">${shuffled.map((idx,pos)=>`
+<div class="card" data-idx="${idx}" draggable="true">
+<span class="card-num">${pos+1}</span>
+<span class="card-text">${ch.steps[idx]}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveCard(${pos},-1)">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveCard(${pos},1)">↓</button>
+</div>
+</div>`).join('')}</div>
+</div>
+<div class="footer">
+<div class="helper">Ordena los pasos usando ↑↓ o arrastrando</div>
+<button class="cta" id="cta" onclick="confirmOrder()">Confirmar orden</button>
+</div>`;
+setupDrag();
+ensureFits();
+}
+
+function getCardOrder(){
+return[...document.querySelectorAll('.card')].map(c=>parseInt(c.dataset.idx));
+}
+
+function updateCardNumbers(){
+document.querySelectorAll('.card').forEach((c,i)=>c.querySelector('.card-num').textContent=i+1);
+}
+
+function moveCard(pos,dir){
+const cards=document.getElementById('cards');
+const children=[...cards.children];
+const newPos=pos+dir;
+if(newPos<0||newPos>=children.length)return;
+const card=children[pos];
+card.style.transform=`translateY(${dir*20}px)`;
+setTimeout(()=>{
+card.style.transform='';
+if(dir===-1)cards.insertBefore(card,children[newPos]);
+else cards.insertBefore(children[newPos],card);
+updateCardNumbers();
+},150);
+}
+
+function setupDrag(){
+const cards=document.getElementById('cards');
+let dragEl=null,placeholder=null;
+cards.querySelectorAll('.card').forEach(card=>{
+card.addEventListener('dragstart',e=>{
+dragEl=card;
+card.classList.add('dragging');
+e.dataTransfer.effectAllowed='move';
+});
+card.addEventListener('dragend',()=>{
+if(dragEl)dragEl.classList.remove('dragging');
+if(placeholder&&placeholder.parentNode)placeholder.parentNode.removeChild(placeholder);
+dragEl=null;placeholder=null;
+updateCardNumbers();
+});
+card.addEventListener('dragover',e=>{
+e.preventDefault();
+if(!dragEl||dragEl===card)return;
+const rect=card.getBoundingClientRect();
+const mid=rect.top+rect.height/2;
+if(e.clientY<mid)cards.insertBefore(dragEl,card);
+else cards.insertBefore(dragEl,card.nextSibling);
+});
+card.addEventListener('touchstart',e=>{
+dragEl=card;
+card.classList.add('dragging');
+},{passive:true});
+card.addEventListener('touchmove',e=>{
+if(!dragEl)return;
+const touch=e.touches[0];
+const el=document.elementFromPoint(touch.clientX,touch.clientY);
+const target=el?.closest('.card');
+if(target&&target!==dragEl){
+const rect=target.getBoundingClientRect();
+const mid=rect.top+rect.height/2;
+if(touch.clientY<mid)cards.insertBefore(dragEl,target);
+else cards.insertBefore(dragEl,target.nextSibling);
+}
+},{passive:true});
+card.addEventListener('touchend',()=>{
+if(dragEl)dragEl.classList.remove('dragging');
+dragEl=null;
+updateCardNumbers();
+});
+});
+}
+
+function confirmOrder(){
+const ch=challenges[currentChallenge];
+const order=getCardOrder();
+const isCorrect=order.every((v,i)=>v===ch.correct[i]);
+userOrders.push({order,correct:ch.correct,isCorrect,title:ch.title,steps:ch.steps,tip:ch.tip});
+currentChallenge++;
+if(currentChallenge<challenges.length){
+setTimeout(renderChallenge,500);
+}else{
+showResults();
+}
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+const scene=document.getElementById('scene');
+scene.classList.replace('gameplay','results');
+const correctCount=userOrders.filter(o=>o.isCorrect).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${correctCount}/${challenges.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${userOrders.map((o,i)=>`
+<div class="result-item ${o.isCorrect?'correct':'incorrect'}">
+<div class="result-question">Reto ${i+1}: ${o.title}</div>
+<div class="result-answer">
+${o.isCorrect?'✓ ¡Orden correcto!':`✗ Tu orden: ${o.order.map(x=>x+1).join(' → ')}`}
+</div>
+${!o.isCorrect?`<div class="result-explanation">Orden correcto: ${o.correct.map(x=>x+1).join(' → ')}</div>`:''}
+<div class="result-explanation">💡 ${o.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function showIntro(){
+const scene=document.getElementById('scene');
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Evaluación de procedimientos</div>
+<div class="modal-body">Tu supervisor evaluará si conoces los protocolos básicos. Ordena cada secuencia correctamente.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>`;
+}
+
+function startGame(){
+document.getElementById('modal').classList.remove('active');
+renderChallenge();
+}
+
+window.addEventListener('load',()=>{showIntro();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
