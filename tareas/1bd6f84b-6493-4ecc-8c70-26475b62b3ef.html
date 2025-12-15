@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obra en Acción - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="subtitle">Detecta el error en cada escena</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔍 Supervisor Junior</div>
+<div class="modal-body">Revisa 5 situaciones de las cámaras de seguridad. Detecta el error o riesgo en cada escena antes de firmar el parte.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{desc:"Un operario trabaja en el andamio bajo la lluvia",opts:["Radial conectada","Casco puesto","Arnés enganchado","Botas de seguridad"],error:0,exp:"Nunca uses herramientas eléctricas en superficies mojadas. Riesgo de electrocución."},
+{desc:"Albañil corta baldosas con la radial",opts:["Gafas protectoras","Guantes de cuero","Sin mascarilla","Disco adecuado"],error:2,exp:"El corte de baldosas genera polvo de sílice. La mascarilla FFP2 es obligatoria."},
+{desc:"Operario sube materiales por escalera de mano",opts:["Escalera bien apoyada","Manos ocupadas con carga","Casco colocado","Zona despejada"],error:1,exp:"Siempre mantén 3 puntos de apoyo en escaleras. Usa cuerdas o poleas para subir materiales."},
+{desc:"Electricista manipula cuadro eléctrico",opts:["Guantes aislantes","Herramienta aislada","Cuadro sin señalizar","Compañero vigilando"],error:2,exp:"Todo cuadro en intervención debe tener señalización de 'Trabajos en curso' visible."},
+{desc:"Peón retira escombros de la zona de trabajo",opts:["Casco bien ajustado","Chaleco reflectante","Guantes de obra","Casco hacia atrás"],error:3,exp:"El casco debe estar bien ajustado y orientado. Hacia atrás no protege la frente de impactos."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),main=document.getElementById('main'),modal=document.getElementById('modal'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle'),helper=document.getElementById('helper');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+subtitle.textContent=s.desc;
+main.innerHTML=`<div class="options" id="options">${s.opts.map((o,i)=>`<button class="btn-option" data-idx="${i}">${o}</button>`).join('')}</div>`;
+document.querySelectorAll('.btn-option').forEach(btn=>{
+btn.onclick=()=>selectOption(parseInt(btn.dataset.idx));
+});
+ensureFits();
+}
+
+function selectOption(i){
+const s=scenes[idx];
+const correct=i===s.error;
+const btns=document.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===s.error&&!correct)b.classList.add('correct');
+});
+answers.push({desc:s.desc,chosen:s.opts[i],correct:s.opts[s.error],isCorrect:correct,exp:s.exp});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">🔍 Revisión completada</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.desc}</div>
+<div class="result-answer">${a.isCorrect?'✓ '+a.chosen:'✗ Elegiste: '+a.chosen+' → Correcto: '+a.correct}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo del encargado</div>
+<div class="result-explanation">La atención al detalle salva vidas. Antes de actuar, observa 5 segundos tu entorno. Detectar un riesgo a tiempo evita accidentes graves.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
