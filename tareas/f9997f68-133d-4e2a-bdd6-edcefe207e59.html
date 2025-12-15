@@ -1,0 +1,179 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🧠 Memoria Técnica: Conecta el Oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px;width:100%;max-width:320px;margin:0 auto}
+.mem-card{height:70px;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;box-sizing:border-box;cursor:pointer;transition:transform 0.2s ease,background 0.2s ease;user-select:none;-webkit-tap-highlight-color:transparent}
+.mem-card.hidden-card{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.mem-card.revealed{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2;font-weight:500}
+.mem-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;line-height:1.2;font-weight:500}
+.mem-card.shake{animation:shake 0.5s ease}
+.mem-card.pop{animation:pop 0.2s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats-row{display:flex;justify-content:space-between;font-size:14px;color:#0B214A;padding:0 8px;margin-bottom:8px}
+.pair-explanation{background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:8px}
+.pair-explanation strong{color:#00E6BC}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🧠 Memoria Técnica</div>
+<div class="subtitle">Conecta herramienta con función</div>
+</div>
+</div>
+<div class="stats-row">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="memory-board" id="board"></div>
+<div class="footer">
+<div class="helper">Toca 2 cartas para emparejar</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,a:"Multímetro",b:"Medir voltaje",exp:"El multímetro es esencial para comprobar tensión en circuitos."},
+{id:2,a:"Llave inglesa",b:"Ajustar tuercas",exp:"La llave inglesa se adapta a diferentes tamaños de tuerca."},
+{id:3,a:"Nivel de burbuja",b:"Comprobar horizontalidad",exp:"El nivel asegura que las instalaciones queden rectas."},
+{id:4,a:"Destornillador",b:"Apretar tornillos",exp:"Herramienta básica para fijar elementos con tornillos."}
+];
+let cards=[],firstCard=null,secondCard=null,locked=false,attempts=0,matched=0,maxAttempts=10;
+const board=document.getElementById('board'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.a,type:'a'});
+cards.push({pairId:p.id,text:p.b,type:'b'});
+});
+shuffle(cards);
+renderBoard();
+ensureFits();
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+function renderBoard(){
+board.innerHTML='';
+cards.forEach((c,i)=>{
+const div=document.createElement('div');
+div.className='mem-card hidden-card';
+div.dataset.index=i;
+div.textContent='?';
+div.onclick=()=>handleClick(i,div);
+board.appendChild(div);
+});
+}
+
+function handleClick(index,el){
+if(locked)return;
+if(el.classList.contains('revealed')||el.classList.contains('matched'))return;
+if(firstCard&&firstCard.index===index)return;
+el.classList.remove('hidden-card');
+el.classList.add('revealed','pop');
+el.textContent=cards[index].text;
+if(!firstCard){
+firstCard={index,el,pairId:cards[index].pairId};
+}else{
+secondCard={index,el,pairId:cards[index].pairId};
+locked=true;
+attempts++;
+attemptsEl.textContent=`Intento ${attempts}/${maxAttempts}`;
+checkMatch();
+}
+}
+
+function checkMatch(){
+if(firstCard.pairId===secondCard.pairId){
+setTimeout(()=>{
+firstCard.el.classList.remove('revealed');
+firstCard.el.classList.add('matched');
+secondCard.el.classList.remove('revealed');
+secondCard.el.classList.add('matched');
+matched++;
+pairsEl.textContent=`${matched}/4 parejas`;
+resetTurn();
+if(matched===4)endGame(true);
+else if(attempts>=maxAttempts)endGame(false);
+},300);
+}else{
+setTimeout(()=>{
+firstCard.el.classList.add('shake');
+secondCard.el.classList.add('shake');
+},200);
+setTimeout(()=>{
+firstCard.el.classList.remove('revealed','shake');
+firstCard.el.classList.add('hidden-card');
+firstCard.el.textContent='?';
+secondCard.el.classList.remove('revealed','shake');
+secondCard.el.classList.add('hidden-card');
+secondCard.el.textContent='?';
+resetTurn();
+if(attempts>=maxAttempts)endGame(false);
+},2000);
+}
+}
+
+function resetTurn(){firstCard=null;secondCard=null;locked=false;}
+
+function endGame(won){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const matchedIds=[];
+document.querySelectorAll('.mem-card.matched').forEach(el=>{
+const idx=parseInt(el.dataset.index);
+if(!matchedIds.includes(cards[idx].pairId))matchedIds.push(cards[idx].pairId);
+});
+let html=`<div class="results-header">
+<div class="results-title">${won?'¡Excelente memoria!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/4</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div><div class="results-list">`;
+pairs.forEach(p=>{
+const found=matchedIds.includes(p.id);
+html+=`<div class="pair-explanation">
+<div><strong>${p.a}</strong> → ${p.b}</div>
+<div style="font-size:12px;margin-top:4px;color:#666">${found?'✓ ':''} ${p.exp}</div>
+</div>`;
+});
+if(!won)html+=`<div class="helper" style="text-align:center;margin:12px 0">¡No te rindas! La práctica hace al maestro.</div>`;
+html+=`</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+scene.innerHTML=html;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{init();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+init();
+</script>
+</body>
+</html>
