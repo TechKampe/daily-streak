@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle" id="statement">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options">
+<button class="btn-option" id="btnTrue" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btnFalse" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">¿Es verdadera o falsa esta afirmación?</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">Primera semana de aprendiz ⚡</div>
+<div class="modal-body">El oficial te pone a prueba antes de dejarte tocar el cuadro eléctrico. Decide si cada afirmación es verdadera o falsa.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements = [
+{text:"Los guantes aislantes protegen de descargas eléctricas",ans:true,exp:"Los guantes aislantes son un EPI esencial para trabajos eléctricos."},
+{text:"La corriente doméstica (230V) no puede matar",ans:false,exp:"230V pueden ser mortales. Bastan 30mA para producir fibrilación."},
+{text:"Siempre hay que cortar el suministro antes de intervenir",ans:true,exp:"Es la primera regla de oro: desconectar antes de manipular."},
+{text:"El cable azul es siempre el neutro en España",ans:true,exp:"Por normativa, el azul identifica el conductor neutro."},
+{text:"Si un compañero se electrocuta, debo tocarlo para separarlo",ans:false,exp:"Nunca toques directamente. Corta la corriente o usa material aislante."},
+{text:"Las herramientas con mango de plástico siempre son aislantes",ans:false,exp:"Solo las certificadas como aislantes garantizan protección."},
+{text:"Verificar ausencia de tensión es opcional si corté el interruptor",ans:false,exp:"Siempre hay que verificar con un detector. Puede haber derivaciones."}
+];
+
+let idx=0, answers=[], score=0, canAnswer=true;
+const scene=document.getElementById('scene'),
+stmtEl=document.getElementById('statement'),
+prog=document.getElementById('progress'),
+counter=document.getElementById('counter'),
+helper=document.getElementById('helper'),
+btnTrue=document.getElementById('btnTrue'),
+btnFalse=document.getElementById('btnFalse'),
+introModal=document.getElementById('introModal');
+
+function startGame(){
+introModal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=statements.length){showResults();return}
+const s=statements[idx];
+canAnswer=true;
+stmtEl.textContent=s.text;
+prog.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+helper.textContent='¿Es verdadera o falsa esta afirmación?';
+btnTrue.classList.remove('selected','correct','incorrect');
+btnFalse.classList.remove('selected','correct','incorrect');
+btnTrue.disabled=false;
+btnFalse.disabled=false;
+ensureFits();
+}
+
+function answer(userAns){
+if(!canAnswer)return;
+canAnswer=false;
+const s=statements[idx];
+const correct=userAns===s.ans;
+if(correct)score++;
+answers.push({text:s.text,userAns,correctAns:s.ans,correct,exp:s.exp});
+
+if(userAns){
+btnTrue.classList.add('selected');
+btnTrue.classList.add(correct?'correct':'incorrect');
+}else{
+btnFalse.classList.add('selected');
+btnFalse.classList.add(correct?'correct':'incorrect');
+}
+btnTrue.disabled=true;
+btnFalse.disabled=true;
+helper.textContent=correct?'¡Bien hecho!':'Respuesta registrada';
+
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAns?'Verdadero':'Falso'} ${a.correct?'✓':'✗'}<br>Correcta: ${a.correctAns?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="border-left:4px solid var(--accent)">
+<div class="result-question">💡 Consejo del oficial</div>
+<div class="result-explanation">Regla de oro: siempre verifica ausencia de tensión antes de tocar cualquier instalación, aunque hayas cortado el suministro.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{introModal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
