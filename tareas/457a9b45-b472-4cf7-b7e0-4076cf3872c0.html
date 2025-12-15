@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Ordena y Conquista: Protocolo de Obra - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{title:"Cortar suministro de agua",steps:["Localizar llave de paso general","Cerrar la llave de paso","Verificar que no sale agua del grifo","Realizar la intervención","Reabrir paso y comprobar"],correct:[0,1,2,3,4],tip:"Nunca asumas que el agua está cortada, verifica siempre abriendo un grifo."},
+{title:"Sellar una junta roscada",steps:["Limpiar la rosca del residuo anterior","Aplicar teflón en sentido de la rosca","Dar 8-10 vueltas de teflón","Enroscar la pieza a mano primero","Apretar con llave sin pasarse"],correct:[0,1,2,3,4],tip:"El teflón se aplica en sentido horario mirando la rosca de frente."},
+{title:"Detectar fuga en tubería vista",steps:["Secar completamente la zona","Observar visualmente las juntas","Pasar papel seco por uniones","Marcar puntos húmedos encontrados","Confirmar origen con presión"],correct:[0,1,2,3,4],tip:"Una tubería mojada no indica dónde está la fuga, seca primero."}
+];
+let currentChallenge=0,userOrders=[],draggedIdx=null;
+
+function shuffle(arr){
+const a=[...arr];
+for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+return a;
+}
+
+function renderChallenge(){
+const c=challenges[currentChallenge];
+const shuffled=shuffle([...Array(c.steps.length).keys()]);
+const scene=document.getElementById('scene');
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y Conquista</div>
+<div class="subtitle">${c.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i style="width:${(currentChallenge/challenges.length)*100}%"></i></div>
+</div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main">
+<div class="cards" id="cards">
+${shuffled.map((origIdx,i)=>`
+<div class="card" data-orig="${origIdx}" draggable="true">
+<span class="card-num">${i+1}</span>
+<span class="card-text">${c.steps[origIdx]}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveCard(${i},-1)">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveCard(${i},1)">↓</button>
+</div>
+</div>
+`).join('')}
+</div>
+</div>
+<div class="footer">
+<div class="helper">Ordena los pasos del procedimiento</div>
+<button class="cta" id="confirmBtn" onclick="confirmOrder()">Confirmar orden</button>
+</div>`;
+setupDragDrop();
+ensureFits();
+}
+
+function moveCard(idx,dir){
+const cards=document.getElementById('cards');
+const children=[...cards.children];
+const newIdx=idx+dir;
+if(newIdx<0||newIdx>=children.length)return;
+const card=children[idx];
+card.style.transform=dir<0?'translateY(-8px)':'translateY(8px)';
+card.style.transition='transform 0.15s';
+setTimeout(()=>{
+card.style.transform='';
+if(dir<0)cards.insertBefore(card,children[newIdx]);
+else cards.insertBefore(children[newIdx],card);
+updateNumbers();
+},150);
+}
+
+function updateNumbers(){
+const cards=document.querySelectorAll('#cards .card');
+cards.forEach((c,i)=>c.querySelector('.card-num').textContent=i+1);
+}
+
+function setupDragDrop(){
+const cards=document.getElementById('cards');
+let dragEl=null;
+cards.querySelectorAll('.card').forEach((card,i)=>{
+card.addEventListener('dragstart',e=>{
+dragEl=card;
+draggedIdx=i;
+card.classList.add('dragging');
+e.dataTransfer.effectAllowed='move';
+});
+card.addEventListener('dragend',()=>{
+card.classList.remove('dragging');
+dragEl=null;
+draggedIdx=null;
+});
+card.addEventListener('dragover',e=>{
+e.preventDefault();
+e.dataTransfer.dropEffect='move';
+});
+card.addEventListener('drop',e=>{
+e.preventDefault();
+if(!dragEl||dragEl===card)return;
+const allCards=[...cards.children];
+const dropIdx=allCards.indexOf(card);
+if(draggedIdx<dropIdx)cards.insertBefore(dragEl,card.nextSibling);
+else cards.insertBefore(dragEl,card);
+updateNumbers();
+});
+card.addEventListener('touchstart',handleTouchStart,{passive:false});
+card.addEventListener('touchmove',handleTouchMove,{passive:false});
+card.addEventListener('touchend',handleTouchEnd,{passive:false});
+});
+}
+
+let touchCard=null,touchStartY=0,touchClone=null,touchOrigIdx=0;
+function handleTouchStart(e){
+touchCard=e.currentTarget;
+touchStartY=e.touches[0].clientY;
+touchOrigIdx=[...touchCard.parentElement.children].indexOf(touchCard);
+touchCard.classList.add('dragging');
+}
+function handleTouchMove(e){
+if(!touchCard)return;
+e.preventDefault();
+const touch=e.touches[0];
+const cards=document.getElementById('cards');
+const allCards=[...cards.children];
+const overCard=document.elementFromPoint(touch.clientX,touch.clientY)?.closest('.card');
+if(overCard&&overCard!==touchCard){
+const overIdx=allCards.indexOf(overCard);
+const currentIdx=allCards.indexOf(touchCard);
+if(currentIdx<overIdx)cards.insertBefore(touchCard,overCard.nextSibling);
+else cards.insertBefore(touchCard,overCard);
+updateNumbers();
+}
+}
+function handleTouchEnd(){
+if(touchCard)touchCard.classList.remove('dragging');
+touchCard=null;
+}
+
+function confirmOrder(){
+const cards=[...document.querySelectorAll('#cards .card')];
+const userOrder=cards.map(c=>parseInt(c.dataset.orig));
+userOrders.push(userOrder);
+const c=challenges[currentChallenge];
+const isCorrect=userOrder.every((v,i)=>v===c.correct[i]);
+showFeedback(isCorrect,userOrder,c);
+}
+
+function showFeedback(isCorrect,userOrder,challenge){
+const scene=document.getElementById('scene');
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y Conquista</div>
+<div class="subtitle">${challenge.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i style="width:${((currentChallenge+1)/challenges.length)*100}%"></i></div>
+</div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main">
+<div class="result-item ${isCorrect?'correct':'incorrect'}">
+<div class="result-question">${isCorrect?'✓ ¡Orden correcto!':'✗ Orden incorrecto'}</div>
+${isCorrect?`
+<div class="result-answer">Tu secuencia es la correcta</div>
+`:`
+<div class="result-answer">Tu orden: ${userOrder.map(i=>i+1).join(' → ')}</div>
+<div class="result-answer">Correcto: ${challenge.correct.map(i=>i+1).join(' → ')}</div>
+`}
+<div class="result-explanation">💡 ${challenge.tip}</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="nextChallenge()">${currentChallenge<challenges.length-1?'Siguiente reto':'Ver resultados'}</button>
+</div>`;
+ensureFits();
+}
+
+function nextChallenge(){
+currentChallenge++;
+if(currentChallenge>=challenges.length)showResults();
+else renderChallenge();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+const scene=document.getElementById('scene');
+scene.classList.replace('gameplay','results');
+let correctCount=0;
+challenges.forEach((c,i)=>{
+if(userOrders[i]&&userOrders[i].every((v,j)=>v===c.correct[j]))correctCount++;
+});
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${correctCount}/${challenges.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${challenges.map((c,i)=>{
+const userOrder=userOrders[i]||[];
+const isCorrect=userOrder.every((v,j)=>v===c.correct[j]);
+return`<div class="result-item ${isCorrect?'correct':'incorrect'}">
+<div class="result-question">${c.title}</div>
+<div class="result-answer">${isCorrect?'✓ Correcto':'✗ Incorrecto'}</div>
+<div class="result-explanation">💡 ${c.tip}</div>
+</div>`;
+}).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function showIntro(){
+const scene=document.getElementById('scene');
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primer día en obra</div>
+<div class="modal-body">El oficial te pide demostrar que conoces el orden de los procedimientos básicos de fontanería. ¡Ordena cada secuencia correctamente!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>`;
+}
+
+function startGame(){
+renderChallenge();
+}
+
+window.addEventListener('load',()=>{showIntro();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
