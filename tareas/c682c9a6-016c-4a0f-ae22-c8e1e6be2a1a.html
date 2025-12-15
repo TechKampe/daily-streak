@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Voltios bajo control - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Voltios bajo control</div>
+<div class="subtitle" id="question">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la respuesta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">🔌 Tu primer día</div>
+<div class="modal-body">El oficial te pide que demuestres tus conocimientos básicos de electricidad antes de tocar ningún cable. ¡Demuestra lo que sabes!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{q:"¿Qué tipo de corriente hay en los enchufes de casa?",opts:["Corriente alterna (CA)","Corriente continua (CC)","Corriente mixta"],ans:0,exp:"En España los enchufes suministran corriente alterna a 230V. Es fundamental saberlo para elegir herramientas compatibles."},
+{q:"¿Qué protege el diferencial?",opts:["Contra sobrecargas","Contra fugas a tierra","Contra cortocircuitos"],ans:1,exp:"El diferencial detecta fugas de corriente y corta el suministro, protegiendo a las personas de electrocución."},
+{q:"¿Qué mide un amperímetro?",opts:["Voltaje","Intensidad de corriente","Resistencia"],ans:1,exp:"El amperímetro mide amperios (intensidad). Saber cuánta corriente circula evita sobrecargar circuitos."},
+{q:"¿De qué color es el cable de tierra?",opts:["Azul","Marrón","Verde y amarillo"],ans:2,exp:"El cable de tierra es verde/amarillo por normativa. Confundirlo puede provocar accidentes graves."},
+{q:"¿Cuál es el voltaje estándar doméstico en España?",opts:["110V","230V","380V"],ans:1,exp:"En España el voltaje doméstico es 230V. Conectar aparatos de 110V sin transformador los dañaría."}
+];
+
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene');
+const opts=document.getElementById('options');
+const qEl=document.getElementById('question');
+const prog=document.getElementById('progress');
+const counter=document.getElementById('counter');
+const introModal=document.getElementById('introModal');
+
+function startGame(){
+introModal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+qEl.textContent=d.q;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" aria-label="${o}" onclick="selectAnswer(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectAnswer(i){
+const btns=opts.querySelectorAll('.btn-option');
+const correct=i===data[idx].ans;
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i){
+b.classList.add(correct?'correct':'incorrect');
+}
+if(j===data[idx].ans&&!correct){
+b.classList.add('correct');
+}
+});
+if(correct)score++;
+answers.push({
+q:data[idx].q,
+correct,
+exp:data[idx].exp,
+user:data[idx].opts[i],
+correctAns:data[idx].opts[data[idx].ans]
+});
+setTimeout(()=>{
+idx++;
+render();
+},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const percentage=Math.round((score/data.length)*100);
+let mensaje="";
+if(percentage>=80)mensaje="¡Excelente! Estás listo para empezar.";
+else if(percentage>=60)mensaje="Buen inicio, pero repasa los fallos.";
+else mensaje="Necesitas repasar antes de tocar cables.";
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">⚡ ¡Quiz completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">${mensaje}</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.q}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Tu respuesta: '+a.user}</div>
+${!a.correct?`<div class="result-answer" style="opacity:0.8">✓ Correcta: ${a.correctAns}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--surface-alt)">
+<div class="result-question">💡 Consejo de seguridad</div>
+<div class="result-explanation">Antes de tocar cualquier cable, verifica SIEMPRE que el circuito está desconectado usando un buscapolos.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+const scale=Math.max(0.88,scene.clientHeight/scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale',scale);
+}
+}
+
+window.addEventListener('load',()=>{
+introModal.classList.add('active');
+ensureFits();
+});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
