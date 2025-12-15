@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 📋 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle">Primer día como aprendiz eléctrico</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="cloze-container">
+<p id="cloze-text"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona el término correcto</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{text:"Para medir tensión en un circuito, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","pinza amperimétrica"],exp:"El multímetro mide tensión, corriente y resistencia. El buscapolos solo detecta fase y la pinza mide corriente sin cortar el cable."},
+{text:"Para detectar si un cable tiene fase, uso el ___.",blank:"buscapolos",opts:["buscapolos","multímetro","pelacables"],exp:"El buscapolos detecta presencia de fase con su luz. El multímetro mide valores y el pelacables quita aislante."},
+{text:"Para cortar cables de forma limpia, uso los ___.",blank:"alicates de corte",opts:["alicates de corte","pelacables","destornillador"],exp:"Los alicates de corte están diseñados para cortar. El pelacables retira aislante y el destornillador fija tornillos."},
+{text:"Para retirar el aislante de un conductor, uso el ___.",blank:"pelacables",opts:["pelacables","alicates","cúter"],exp:"El pelacables tiene calibres para no dañar el cobre. Los alicates cortan y el cúter puede dañar el conductor."},
+{text:"Para trabajar en un cuadro con tensión, uso guantes ___.",blank:"aislantes",opts:["aislantes","de trabajo","de látex"],exp:"Los guantes aislantes protegen de descargas. Los de trabajo son mecánicos y los de látex no aíslan electricidad."},
+{text:"Para verificar la conexión a tierra, mido la ___ del circuito.",blank:"continuidad",opts:["continuidad","tensión","potencia"],exp:"La continuidad verifica que el cable de tierra está conectado. La tensión mide voltaje y la potencia es V×I."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),clozeText=document.getElementById('cloze-text'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+const parts=d.text.split('___');
+clozeText.innerHTML=parts[0]+'<span class="cloze-blank">______</span>'+(parts[1]||'');
+optsEl.innerHTML=d.opts.map(o=>`<button class="btn-option" onclick="selectOpt('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOpt(opt){
+const d=data[idx];
+const correct=opt===d.blank;
+answers.push({text:d.text,blank:d.blank,user:opt,correct,exp:d.exp});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===opt)b.classList.add(correct?'correct':'incorrect');
+if(b.textContent===d.blank&&!correct)b.classList.add('correct');
+});
+const blankSpan=clozeText.querySelector('.cloze-blank');
+if(blankSpan){
+blankSpan.textContent=opt;
+blankSpan.classList.add(correct?'correct':'incorrect');
+}
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Términos correctos</div>
+</div>
+<div class="results-list">
+${answers.map(a=>{
+const filled=a.text.replace('___',`<strong>${a.blank}</strong>`);
+return `<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${filled}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Respondiste: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`;
+}).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Usar la terminología precisa evita confusiones en obra y previene accidentes. Cada herramienta tiene su función específica.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
