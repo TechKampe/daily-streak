@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Seguro o riesgo? ⚡ Desliza tu instinto - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguro o riesgo? ⚡</div>
+<div class="subtitle" id="subtitle">Desliza tu instinto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o usa los botones</div>
+<div class="tinder-buttons" id="tinder-buttons">
+<button class="cta" id="btn-incorrect" style="background:#e74c3c;flex:1">❌ Incorrecto</button>
+<button class="cta" id="btn-correct" style="background:#27ae60;flex:1">✅ Correcto</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">⚡ Primera semana de ayudante</div>
+<div class="modal-body">Tu jefe te deja solo 5 min. Desliza derecha si es SEGURO, izquierda si es PELIGROSO.</div>
+<div class="modal-actions">
+<button class="cta" id="start-btn">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const cards=[
+{text:"Trabajar en el cuadro sin desconectar la corriente",safe:false,exp:"Siempre corta la corriente antes de manipular. Riesgo de electrocución."},
+{text:"Usar destornillador con mango aislado",safe:true,exp:"Las herramientas aisladas protegen contra descargas eléctricas."},
+{text:"Comprobar ausencia de tensión antes de tocar cables",safe:true,exp:"Verificar con un buscapolos es obligatorio antes de manipular."},
+{text:"Tocar cables con las manos húmedas",safe:false,exp:"El agua conduce electricidad. Riesgo grave de electrocución."},
+{text:"Señalizar la zona de trabajo con cinta",safe:true,exp:"Señalizar evita que otros toquen la instalación mientras trabajas."},
+{text:"Usar escalera metálica cerca de líneas activas",safe:false,exp:"El metal conduce electricidad. Usa escaleras de fibra o madera."}
+];
+let idx=0,answers=[],startX=0,startY=0,currentCard=null,isDragging=false;
+const scene=document.getElementById('scene'),container=document.getElementById('tinder-container'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect'),startBtn=document.getElementById('start-btn'),buttons=document.getElementById('tinder-buttons');
+
+function createCard(index){
+if(index>=cards.length)return null;
+const card=document.createElement('div');
+card.className='tinder-card';
+card.innerHTML=`<div class="tinder-card-content">${cards[index].text}</div>`;
+card.style.cssText='position:absolute;width:90%;max-width:300px;min-height:180px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:16px;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;color:#fff;font-size:1.1rem;font-weight:700;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.25);cursor:grab;user-select:none;touch-action:none;transition:transform 0.1s ease;left:50%;top:50%;transform:translate(-50%,-50%)';
+return card;
+}
+
+function renderCard(){
+container.innerHTML='';
+if(idx>=cards.length){showResults();return}
+currentCard=createCard(idx);
+if(currentCard){
+container.appendChild(currentCard);
+addCardListeners(currentCard);
+}
+prog.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+ensureFits();
+}
+
+function addCardListeners(card){
+card.addEventListener('mousedown',onStart);
+card.addEventListener('touchstart',onStart,{passive:false});
+document.addEventListener('mousemove',onMove);
+document.addEventListener('touchmove',onMove,{passive:false});
+document.addEventListener('mouseup',onEnd);
+document.addEventListener('touchend',onEnd);
+}
+
+function onStart(e){
+if(!currentCard)return;
+isDragging=true;
+currentCard.style.transition='none';
+currentCard.style.cursor='grabbing';
+const point=e.touches?e.touches[0]:e;
+startX=point.clientX;
+startY=point.clientY;
+}
+
+function onMove(e){
+if(!isDragging||!currentCard)return;
+e.preventDefault();
+const point=e.touches?e.touches[0]:e;
+const dx=point.clientX-startX;
+const dy=point.clientY-startY;
+const rotate=dx*0.1;
+currentCard.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${rotate}deg)`;
+if(dx>50)currentCard.style.boxShadow='0 8px 24px rgba(39,174,96,0.5)';
+else if(dx<-50)currentCard.style.boxShadow='0 8px 24px rgba(231,76,60,0.5)';
+else currentCard.style.boxShadow='0 8px 24px rgba(0,0,0,0.25)';
+}
+
+function onEnd(e){
+if(!isDragging||!currentCard)return;
+isDragging=false;
+currentCard.style.cursor='grab';
+const point=e.changedTouches?e.changedTouches[0]:e;
+const dx=point.clientX-startX;
+if(Math.abs(dx)>80){
+swipeCard(dx>0);
+}else{
+currentCard.style.transition='transform 0.3s ease';
+currentCard.style.transform='translate(-50%,-50%) rotate(0deg)';
+currentCard.style.boxShadow='0 8px 24px rgba(0,0,0,0.25)';
+}
+}
+
+function swipeCard(isRight){
+if(!currentCard)return;
+const dir=isRight?1:-1;
+currentCard.style.transition='transform 0.4s ease, opacity 0.4s ease';
+currentCard.style.transform=`translate(calc(-50% + ${dir*400}px), -50%) rotate(${dir*30}deg)`;
+currentCard.style.opacity='0';
+const userSafe=isRight;
+const correct=userSafe===cards[idx].safe;
+answers.push({q:cards[idx].text,userSafe,correct,exp:cards[idx].exp,actualSafe:cards[idx].safe});
+setTimeout(()=>{idx++;renderCard();},400);
+}
+
+btnCorrect.onclick=()=>{if(idx<cards.length)swipeCard(true);};
+btnIncorrect.onclick=()=>{if(idx<cards.length)swipeCard(false);};
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">⚡ ¡Completado!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">${score>=4?'¡Buen instinto de seguridad!':'Repasa las normas de PRL'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">Tu respuesta: ${a.userSafe?'✅ Seguro':'❌ Peligroso'} ${a.correct?'✓':'✗'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+startBtn.onclick=()=>{
+modal.classList.remove('active');
+renderCard();
+};
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
