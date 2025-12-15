@@ -1,0 +1,137 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Mito o Realidad: Seguridad Eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Mito o Realidad</div>
+<div class="subtitle" id="subtitle">¿Verdadero o Falso?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="statement-card">
+<span class="card-text" id="statement">Cargando...</span>
+</div>
+<div class="options" id="options">
+<button class="btn-option" id="btn-true" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btn-false" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Pulsa Verdadero o Falso según tu criterio</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const statements=[
+{text:"La madera nunca conduce electricidad",correct:false,exp:"La madera húmeda puede conducir electricidad. Solo la madera seca y tratada es aislante."},
+{text:"Con guantes de goma domésticos puedo manipular cuadros eléctricos",correct:false,exp:"Los guantes domésticos no tienen certificación dieléctrica. Se requieren guantes homologados clase 00 o superior."},
+{text:"Antes de trabajar hay que verificar ausencia de tensión",correct:true,exp:"Es una de las 5 reglas de oro. Siempre verificar con equipo adecuado antes de tocar."},
+{text:"Un diferencial protege contra todos los riesgos eléctricos",correct:false,exp:"El diferencial protege contra contactos indirectos, pero no contra cortocircuitos ni sobrecargas."},
+{text:"Los cables de colores siempre indican su función correctamente",correct:false,exp:"En instalaciones antiguas o mal ejecutadas, los colores pueden estar intercambiados. Siempre verificar."},
+{text:"Se puede trabajar en tensión si tengo experiencia",correct:false,exp:"Los trabajos en tensión requieren formación específica, EPIs homologados y autorización escrita."},
+{text:"El agua destilada no conduce electricidad",correct:true,exp:"El agua pura (destilada) es aislante. Son las sales disueltas las que la hacen conductora."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),statement=document.getElementById('statement'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnTrue=document.getElementById('btn-true'),btnFalse=document.getElementById('btn-false');
+
+function render(){
+if(idx>=statements.length){showResults();return}
+const s=statements[idx];
+statement.textContent=s.text;
+prog.style.width=(idx/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+btnTrue.classList.remove('selected','correct','incorrect');
+btnFalse.classList.remove('selected','correct','incorrect');
+btnTrue.disabled=false;
+btnFalse.disabled=false;
+ensureFits();
+}
+
+function answer(userAnswer){
+btnTrue.disabled=true;
+btnFalse.disabled=true;
+const correct=userAnswer===statements[idx].correct;
+if(userAnswer){
+btnTrue.classList.add('selected');
+}else{
+btnFalse.classList.add('selected');
+}
+answers.push({
+text:statements[idx].text,
+userAnswer:userAnswer,
+correctAnswer:statements[idx].correct,
+isCorrect:correct,
+exp:statements[idx].exp
+});
+setTimeout(()=>{
+idx++;
+render();
+},400);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">⚡ ¡Prueba completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">"${a.text}"</div>
+<div class="result-answer">Tu respuesta: ${a.userAnswer?'Verdadero':'Falso'} ${a.isCorrect?'✓':'✗'} | Correcta: ${a.correctAnswer?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--surface-alt);border-left:4px solid var(--accent)">
+<div class="result-question">💡 Consejo: Las 5 Reglas de Oro</div>
+<div class="result-explanation">1. Desconectar 2. Bloquear 3. Verificar ausencia de tensión 4. Puesta a tierra 5. Señalizar. ¡Nunca las olvides!</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
