@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Swipe Eléctrico: ¿Mito o Realidad? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 Swipe Eléctrico</div>
+<div class="modal-body">Desliza a la derecha si es CORRECTO o a la izquierda si es INCORRECTO. ¡Demuestra cuánto sabes!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Swipe Eléctrico ⚡️</div>
+<div class="subtitle">¿Mito o Realidad?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="cardArea">
+<div class="swipe-container" id="swipeContainer">
+<div class="swipe-card" id="currentCard"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o usa los botones</div>
+<div class="swipe-buttons" id="swipeButtons">
+<button class="cta" id="btnIncorrect" onclick="handleSwipe('left')">❌ Incorrecto</button>
+<button class="cta" id="btnCorrect" onclick="handleSwipe('right')">✅ Correcto</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Los guantes de látex protegen de descargas eléctricas",answer:false,exp:"Falso. Los guantes de látex NO aíslan. Se necesitan guantes dieléctricos homologados para trabajos eléctricos."},
+{text:"El agua destilada no conduce electricidad",answer:true,exp:"Correcto. El agua pura no conduce, pero el agua del grifo sí por las sales disueltas."},
+{text:"Un cable caído siempre está sin tensión",answer:false,exp:"Falso y muy peligroso. Nunca asumas que un cable caído está desenergizado. Puede matar."},
+{text:"Los enchufes sobrecargados pueden provocar incendios",answer:true,exp:"Correcto. La sobrecarga genera calor excesivo que puede iniciar un incendio eléctrico."},
+{text:"La corriente alterna es menos peligrosa que la continua",answer:false,exp:"Falso. La CA es más peligrosa porque provoca fibrilación cardíaca con más facilidad."},
+{text:"12 voltios nunca pueden hacer daño",answer:false,exp:"Falso. 12V pueden ser letales en condiciones de baja resistencia, como piel mojada o heridas."}
+];
+let idx=0,score=0,answers=[],startX=0,startY=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('currentCard'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),container=document.getElementById('swipeContainer');
+
+function startGame(){modal.classList.remove('active');renderCard();}
+
+function renderCard(){
+if(idx>=cards.length){showResults();return}
+card.textContent=cards[idx].text;
+card.className='swipe-card';
+card.style.transform='';
+card.style.opacity='1';
+prog.style.width=(idx/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+ensureFits();
+}
+
+function handleSwipe(dir){
+const userAnswer=dir==='right';
+const correct=userAnswer===cards[idx].answer;
+if(correct)score++;
+answers.push({q:cards[idx].text,correct,exp:cards[idx].exp,user:userAnswer?'Correcto':'Incorrecto',expected:cards[idx].answer?'Correcto':'Incorrecto'});
+animateCard(dir);
+}
+
+function animateCard(dir){
+const x=dir==='right'?400:-400;
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+card.style.transform=`translateX(${x}px) rotate(${dir==='right'?20:-20}deg)`;
+card.style.opacity='0';
+setTimeout(()=>{idx++;renderCard();},300);
+}
+
+card.addEventListener('touchstart',e=>{
+startX=e.touches[0].clientX;
+startY=e.touches[0].clientY;
+isDragging=true;
+card.style.transition='none';
+},{passive:true});
+
+card.addEventListener('touchmove',e=>{
+if(!isDragging)return;
+const x=e.touches[0].clientX-startX;
+const y=e.touches[0].clientY-startY;
+if(Math.abs(x)>Math.abs(y)){
+card.style.transform=`translateX(${x}px) rotate(${x*0.05}deg)`;
+card.style.opacity=Math.max(0.5,1-Math.abs(x)/300);
+}
+},{passive:true});
+
+card.addEventListener('touchend',e=>{
+if(!isDragging)return;
+isDragging=false;
+const x=e.changedTouches[0].clientX-startX;
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+if(x>80){handleSwipe('right');}
+else if(x<-80){handleSwipe('left');}
+else{card.style.transform='';card.style.opacity='1';}
+});
+
+let mouseStartX=0,mouseDragging=false;
+card.addEventListener('mousedown',e=>{
+mouseStartX=e.clientX;
+mouseDragging=true;
+card.style.transition='none';
+e.preventDefault();
+});
+document.addEventListener('mousemove',e=>{
+if(!mouseDragging)return;
+const x=e.clientX-mouseStartX;
+card.style.transform=`translateX(${x}px) rotate(${x*0.05}deg)`;
+card.style.opacity=Math.max(0.5,1-Math.abs(x)/300);
+});
+document.addEventListener('mouseup',e=>{
+if(!mouseDragging)return;
+mouseDragging=false;
+const x=e.clientX-mouseStartX;
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+if(x>80){handleSwipe('right');}
+else if(x<-80){handleSwipe('left');}
+else{card.style.transform='';card.style.opacity='1';}
+});
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Reto completado!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">${score>=4?'¡Excelente trabajo!':'Sigue aprendiendo'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">Tu respuesta: ${a.user} ${a.correct?'✓':'✗ (Era: '+a.expected+')'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-message">La seguridad eléctrica empieza por conocer los hechos. ¡Nunca confíes en mitos!</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.swipe-container{display:flex;justify-content:center;align-items:center;flex:1;padding:16px;touch-action:none;}
+.swipe-card{background:var(--surface);border-radius:16px;padding:24px;font-size:1.2rem;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:300px;width:100%;cursor:grab;user-select:none;min-height:120px;display:flex;align-items:center;justify-content:center;}
+.swipe-card:active{cursor:grabbing;}
+.swipe-buttons{display:flex;gap:12px;width:100%;}
+.swipe-buttons .cta{flex:1;font-size:0.9rem;padding:12px 8px;}
+#btnIncorrect{background:var(--err);}
+#btnCorrect{background:var(--ok);}
+.results-message{text-align:center;padding:16px;font-size:0.95rem;color:var(--muted);margin-top:8px;}
+</style>
+</body>
+</html>
