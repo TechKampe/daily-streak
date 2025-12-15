@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: Herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primera semana de ayudante</div>
+<div class="modal-body">El oficial te asigna tareas. Demuestra que conoces las herramientas básicas de cada oficio.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const tasks=[
+{task:"Pelar cables de 2.5mm para una conexión",opts:["Pelacables","Alicates universales","Tijeras"],correct:0,tools:["Pelacables","Alicates","Tijeras"],why:["Corte limpio sin dañar el conductor","Pueden cortar hilos o dañar el cobre","Corte irregular y riesgo de corte"],tip:"El pelacables tiene muescas calibradas para cada sección de cable."},
+{task:"Apretar la tuerca de un grifo monomando",opts:["Llave inglesa","Destornillador plano","Martillo"],correct:0,tools:["Llave inglesa","Destornillador","Martillo"],why:["Ajuste regulable para distintas tuercas","No sirve para tuercas hexagonales","Dañaría la grifería y las juntas"],tip:"Ajusta la llave inglesa al tamaño exacto para no redondear la tuerca."},
+{task:"Comprobar si una superficie está horizontal",opts:["Nivel de burbuja","Cinta métrica","Escuadra"],correct:0,tools:["Nivel de burbuja","Cinta métrica","Escuadra"],why:["Indica horizontalidad con precisión","Solo mide distancias, no nivela","Mide ángulos rectos, no horizontalidad"],tip:"Coloca el nivel en varios puntos para verificar toda la superficie."},
+{task:"Cortar un tubo de cobre de 15mm",opts:["Cortatubos","Sierra de mano","Radial"],correct:0,tools:["Cortatubos","Sierra de mano","Radial"],why:["Corte limpio y perpendicular al tubo","Corte irregular y con rebabas","Excesivo para tubería pequeña, peligroso"],tip:"Gira el cortatubos apretando poco a poco para un corte perfecto."},
+{task:"Medir si hay tensión en un enchufe",opts:["Polímetro","Buscapolos","Pelacables"],correct:0,tools:["Polímetro","Buscapolos","Pelacables"],why:["Mide tensión exacta en voltios","Solo detecta fase, no mide valor","No tiene función de medición eléctrica"],tip:"Configura el polímetro en voltaje AC y usa las puntas correctas."},
+{task:"Hacer una roza pequeña en pared de ladrillo",opts:["Cincel y maceta","Taladro","Espátula"],correct:0,tools:["Cincel y maceta","Taladro","Espátula"],why:["Control preciso para rozas pequeñas","Hace agujeros, no canales lineales","Solo sirve para aplicar masilla"],tip:"Marca primero con lápiz y ve golpeando suave siguiendo la línea."}
+];
+
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const btns=opts.querySelectorAll('.btn-option');
+const correct=i===tasks[idx].correct;
+btns[i].classList.add(correct?'correct':'incorrect');
+if(!correct)btns[tasks[idx].correct].classList.add('correct');
+answers.push({task:tasks[idx].task,userIdx:i,user:tasks[idx].opts[i],correct,correctTool:tasks[idx].opts[tasks[idx].correct],tools:tasks[idx].tools,why:tasks[idx].why,tip:tasks[idx].tip});
+btns.forEach(b=>b.disabled=true);
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Jornada completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctTool:'✗ Elegiste: '+a.user+' → Correcta: '+a.correctTool}</div>
+<div class="result-explanation"><strong>Por qué:</strong> ${a.tools.map((t,i)=>t+': '+a.why[i]).join('. ')}</div>
+<div class="result-explanation"><strong>Consejo:</strong> ${a.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
