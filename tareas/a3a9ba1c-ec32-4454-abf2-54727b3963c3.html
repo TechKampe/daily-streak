@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Conexiones Seguras: El Quiz Eléctrico - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Quiz Eléctrico</div>
+<div class="subtitle" id="question">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Tu tutor te hace preguntas básicas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">⚡ Primer día de prácticas</div>
+<div class="modal-body">Tu tutor te hace 5 preguntas básicas de seguridad eléctrica antes de entrar al tajo. ¡Demuestra lo que sabes!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startQuiz()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{q:"¿De qué color es el cable de tierra?",opts:["Azul","Negro","Verde/Amarillo","Marrón"],ans:2,exp:"El cable de tierra siempre es verde/amarillo por normativa ITC-BT para identificarlo rápidamente."},
+{q:"¿Qué hacer antes de tocar un cuadro?",opts:["Avisar al jefe","Cortar la corriente","Ponerse guantes","Mirar el esquema"],ans:1,exp:"SIEMPRE cortar la corriente antes de manipular. Es la regla de oro del electricista."},
+{q:"¿Qué EPI es básico del electricista?",opts:["Casco de obra","Guantes aislantes","Chaleco reflectante","Mascarilla"],ans:1,exp:"Los guantes aislantes protegen contra descargas. Son el EPI más importante en trabajos eléctricos."},
+{q:"¿Tensión doméstica en España?",opts:["110V","220V","230V","380V"],ans:2,exp:"En España la tensión doméstica es 230V desde la armonización europea. Antes era 220V."},
+{q:"¿Qué hacer si un compañero se electrocuta?",opts:["Tocarlo para apartarlo","Cortar la corriente","Echarle agua","Esperar a que suelte"],ans:1,exp:"Primero cortar la corriente para no electrocutarte tú. Nunca tocar directamente a la víctima."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),qEl=document.getElementById('question'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+function startQuiz(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+qEl.textContent=d.q;
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+helper.textContent='Toca la respuesta correcta';
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" aria-label="Opción: ${o}" onclick="selectAnswer(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectAnswer(i){
+const d=data[idx];
+const buttons=opts.querySelectorAll('.btn-option');
+buttons.forEach((b,j)=>{
+b.disabled=true;
+if(j===d.ans)b.classList.add('correct');
+else if(j===i&&i!==d.ans)b.classList.add('incorrect');
+});
+const correct=i===d.ans;
+if(correct)score++;
+answers.push({q:d.q,correct,exp:d.exp,user:d.opts[i],correctAns:d.opts[d.ans]});
+helper.textContent=correct?'¡Correcto! ✓':'Incorrecto ✗';
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Quiz completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.q}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Tu respuesta: '+a.user+'<br>✓ Correcta: '+a.correctAns}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--surface-alt)">
+<div class="result-question">💡 Consejo del tutor</div>
+<div class="result-explanation">Recuerda: primero desconectar, luego trabajar. La prisa es el peor enemigo del electricista.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
