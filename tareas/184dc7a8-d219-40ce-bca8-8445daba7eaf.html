@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🗂️ ¿Dónde va esto? Orden en el taller - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🗂️ ¿Dónde va esto?</div>
+<div class="subtitle">Asigna cada ítem a su categoría</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div id="item-display"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🗂️ Organiza el taller</div>
+<div class="modal-body">Es tu primer día en un taller de climatización. Clasifica cada elemento en: Seguridad, Herramientas o Cliente.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const items=[
+{name:"Guantes aislantes",category:"Seguridad",exp:"Los guantes aislantes son un EPI esencial para protegerte de descargas eléctricas."},
+{name:"Manómetro",category:"Herramientas",exp:"El manómetro mide la presión del refrigerante en el sistema de climatización."},
+{name:"Saludo cordial",category:"Cliente",exp:"Un saludo amable genera confianza y profesionalidad desde el primer contacto."},
+{name:"Casco de protección",category:"Seguridad",exp:"El casco protege la cabeza de golpes e impactos en obra."},
+{name:"Detector de fugas",category:"Herramientas",exp:"Herramienta fundamental para localizar escapes de gas refrigerante."},
+{name:"Presupuesto claro",category:"Cliente",exp:"Un presupuesto detallado evita malentendidos y genera confianza."},
+{name:"Gafas de seguridad",category:"Seguridad",exp:"Las gafas protegen los ojos de salpicaduras y partículas."},
+{name:"Bomba de vacío",category:"Herramientas",exp:"Se usa para extraer humedad y aire del circuito frigorífico."},
+{name:"Explicar el trabajo",category:"Cliente",exp:"Informar al cliente sobre las tareas genera transparencia."},
+{name:"Calzado de seguridad",category:"Seguridad",exp:"El calzado protege los pies de caídas de objetos y pisadas."}
+];
+const categories=["Seguridad","Herramientas","Cliente"];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),itemDisplay=document.getElementById('item-display'),catsEl=document.getElementById('categories'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+prog.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+itemDisplay.innerHTML=`<div class="brand" style="font-size:1.4rem;text-align:center;margin-bottom:1rem">${item.name}</div>`;
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCategory('${c}')">${c}</button>`).join('');
+ensureFits();
+}
+
+function selectCategory(cat){
+const item=items[idx];
+const correct=cat===item.category;
+const btns=catsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+if(b.textContent===cat){
+b.classList.add(correct?'correct':'incorrect');
+}
+if(b.textContent===item.category&&!correct){
+b.classList.add('correct');
+}
+b.disabled=true;
+});
+answers.push({name:item.name,selected:cat,correct:item.category,isCorrect:correct,exp:item.exp});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Taller organizado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.isCorrect?'✓ '+a.correct:'✗ '+a.selected+' → '+a.correct}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item" style="background:var(--surface-alt);border-left:3px solid var(--accent)">
+<div class="result-question">💡 Consejo profesional</div>
+<div class="result-explanation">En el trabajo real, prioriza: 1º Seguridad (siempre EPIs), 2º Herramientas (prepara todo antes), 3º Cliente (trato profesional). Esta organización mental te hará más eficiente y seguro.</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
