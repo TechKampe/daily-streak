@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obra en Acción - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneDesc">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Inspección</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔍 Supervisor Novato</div>
+<div class="modal-body">Primera ronda de inspección. Detecta el fallo en cada zona de obra. ¡Ojo crítico!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{zone:"Zona de andamio - Altura",desc:"Trabajo en altura, 3er piso",items:["Arnés enganchado","Tablones fijados","Operario sin casco","Barandilla colocada"],error:2,exp:"El casco es EPI obligatorio en altura. Un golpe sin protección puede ser mortal."},
+{zone:"Cuadro eléctrico - Sótano",desc:"Instalación junto a bajante",items:["Diferencial activo","Cable pelado junto a humedad","Guantes aislantes","Señal de riesgo"],error:1,exp:"Cable pelado + humedad = electrocución. Debe aislarse antes de trabajar."},
+{zone:"Almacén de materiales",desc:"Zona de acopio interior",items:["Sacos de cemento en suelo húmedo","Ladrillos apilados correctamente","Pasillo despejado"],error:0,exp:"El cemento absorbe humedad y se endurece. Almacenar sobre palés secos."},
+{zone:"Acceso principal - Entrada",desc:"Control de seguridad",items:["Señalización de obra","Vallado perimetral","Extintor caducado (2019)"],error:2,exp:"Extintor caducado = no funciona. Revisar fecha y recargar anualmente."},
+{zone:"Área de mezclas - Patio",desc:"Preparación de mortero",items:["Hormigonera con protección","Gafas de seguridad","Radial sin revisar enchufada","Agua cerca del trabajo"],error:2,exp:"Herramienta sin revisar puede fallar. Inspección diaria obligatoria."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),descEl=document.getElementById('sceneDesc'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+descEl.textContent=s.zone;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(j===s.error?'correct':'incorrect');
+if(j===s.error&&j!==i)b.classList.add('correct');
+});
+answers.push({zone:s.zone,chosen:s.items[i],correct:s.items[s.error],isCorrect:i===s.error,exp:s.exp});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">🔍 Inspección Completa</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.zone}</div>
+<div class="result-answer">${a.isCorrect?'✓ Detectaste: '+a.correct:'✗ Elegiste: '+a.chosen}</div>
+${!a.isCorrect?`<div class="result-answer">Error real: ${a.correct}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">La observación activa salva vidas. Antes de trabajar, dedica 2 minutos a inspeccionar tu zona. Un ojo entrenado previene accidentes.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
