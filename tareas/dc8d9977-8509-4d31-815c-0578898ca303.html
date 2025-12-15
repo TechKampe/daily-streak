@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 📋 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle" id="subtitle">Primer día en la empresa</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="cloze-container" id="cloze-container">
+<p class="cloze-text" id="cloze-text"></p>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">📋 Manual de Herramientas</div>
+<div class="modal-body">El encargado te entrega el manual pero algunos términos están borrosos. ¡Completa las palabras que faltan!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const data = [
+{
+sentence: "Para medir tensión en un enchufe, uso el ___.",
+blank: "multímetro",
+options: ["multímetro", "buscapolos", "pelacables"],
+correct: 0,
+explanation: "El multímetro mide tensión, corriente y resistencia. El buscapolos solo detecta fase y el pelacables es para pelar cables."
+},
+{
+sentence: "Antes de tocar un cable, compruebo si tiene fase con el ___.",
+blank: "buscapolos",
+options: ["diferencial", "buscapolos", "alicates"],
+correct: 1,
+explanation: "El buscapolos detecta presencia de fase. El diferencial es protección y los alicates son herramientas de corte."
+},
+{
+sentence: "Para cortar cables de cobre uso los ___.",
+blank: "alicates",
+options: ["pelacables", "alicates", "regletas"],
+correct: 1,
+explanation: "Los alicates de corte sirven para cortar cables. Los pelacables quitan el aislamiento y las regletas conectan cables."
+},
+{
+sentence: "Para quitar el aislamiento del cable uso el ___.",
+blank: "pelacables",
+options: ["multímetro", "pelacables", "tubo corrugado"],
+correct: 1,
+explanation: "El pelacables retira el aislamiento sin dañar el cobre. El multímetro mide y el tubo protege cables."
+},
+{
+sentence: "La protección que salta por fuga a tierra es el ___.",
+blank: "diferencial",
+options: ["magnetotérmico", "diferencial", "buscapolos"],
+correct: 1,
+explanation: "El diferencial detecta fugas a tierra. El magnetotérmico protege contra sobrecargas y cortocircuitos."
+},
+{
+sentence: "Para unir varios cables en una conexión uso ___.",
+blank: "regletas",
+options: ["regletas", "tubos corrugados", "alicates"],
+correct: 0,
+explanation: "Las regletas permiten conectar cables de forma segura. Los tubos protegen y los alicates cortan."
+}
+];
+
+let idx = 0, answers = [], score = 0;
+const scene = document.getElementById('scene');
+const clozeText = document.getElementById('cloze-text');
+const opts = document.getElementById('options');
+const prog = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const helper = document.getElementById('helper');
+const subtitle = document.getElementById('subtitle');
+const modal = document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame() {
+modal.classList.remove('active');
+render();
+}
+
+function render() {
+if (idx >= data.length) { showResults(); return; }
+const d = data[idx];
+prog.style.width = (idx / data.length * 100) + '%';
+counter.textContent = (idx + 1) + '/' + data.length;
+subtitle.textContent = 'Completa la frase ' + (idx + 1);
+
+const parts = d.sentence.split('___');
+clozeText.innerHTML = parts[0] + '<span class="cloze-blank" id="blank">___</span>' + (parts[1] || '');
+
+opts.innerHTML = d.options.map((o, i) =>
+`<button class="btn-option" onclick="selectOption(${i})">${o}</button>`
+).join('');
+
+helper.textContent = 'Selecciona la palabra correcta';
+ensureFits();
+}
+
+function selectOption(i) {
+const d = data[idx];
+const correct = i === d.correct;
+if (correct) score++;
+
+answers.push({
+sentence: d.sentence,
+blank: d.blank,
+userAnswer: d.options[i],
+correct: correct,
+explanation: d.explanation,
+options: d.options,
+correctIndex: d.correct
+});
+
+const btns = opts.querySelectorAll('.btn-option');
+btns.forEach((b, j) => {
+b.disabled = true;
+if (j === d.correct) b.classList.add('correct');
+if (j === i && !correct) b.classList.add('incorrect');
+});
+
+const blank = document.getElementById('blank');
+blank.textContent = d.options[i];
+blank.classList.add(correct ? 'correct' : 'incorrect');
+
+helper.textContent = correct ? '¡Correcto!' : 'Incorrecto';
+
+setTimeout(() => {
+idx++;
+render();
+}, 1200);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+
+let resultsHTML = `
+<div class="results-header">
+<div class="results-title">¡Manual Completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Palabras correctas</div>
+</div>
+<div class="results-list">`;
+
+answers.forEach((a, i) => {
+const fullSentence = a.sentence.replace('___', '<strong>' + a.blank + '</strong>');
+resultsHTML += `
+<div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+<div class="result-question">${fullSentence}</div>
+<div class="result-answer">${a.correct ? '✓ ' + a.userAnswer : '✗ Tu respuesta: ' + a.userAnswer}</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>`;
+});
+
+resultsHTML += `
+</div>
+<div class="tip-box">
+<div class="tip-title">💡 Consejo profesional</div>
+<div class="tip-text">Usar la terminología técnica correcta es clave en obra. Evita confusiones peligrosas y demuestra profesionalidad ante compañeros y clientes.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>`;
+
+scene.innerHTML = resultsHTML;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+}
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
