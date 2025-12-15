@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🗣️ Tu primera llamada con el cliente - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🗣️ Tu primera llamada</div>
+<div class="subtitle" id="subtitle">Gestiona la llamada con el cliente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="chat-container" id="chat"></div>
+</div>
+<div class="footer" id="footer">
+<div class="helper" id="helper">Elige tu respuesta</div>
+<div class="options" id="options"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+mentor:{name:"Carlos (Mentor)",img:"https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png"},
+cliente:{name:"Sra. García",img:"https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png"}
+};
+
+const turns=[
+{
+messages:[
+{from:"mentor",text:"Suena el teléfono. Es tu primera llamada de cliente. ¡Adelante, tú puedes!"},
+{from:"cliente",text:"¿Hola? ¿Hablo con el electricista?"}
+],
+options:[
+{text:"¡Hola! Sí, soy yo. ¿Qué problema tiene?",type:"partial",feedback:"Correcto identificarte, pero falta presentación profesional."},
+{text:"Buenos días, Electricidad Kämpe, le atiende Pablo. ¿En qué puedo ayudarle?",type:"correct",feedback:"Perfecto: saludo formal, identificas empresa y nombre."},
+{text:"Sí, dígame rápido que estoy ocupado.",type:"incorrect",feedback:"Nunca transmitas prisa. El cliente merece atención."}
+]
+},
+{
+messages:[
+{from:"cliente",text:"Mire, tengo un problema. Se me van los plomos cada vez que enciendo el microondas y la vitro a la vez."}
+],
+options:[
+{text:"Eso es fácil, seguro es el diferencial. Mando técnico mañana.",type:"incorrect",feedback:"No diagnostiques sin información. Puede haber varias causas."},
+{text:"Entiendo. ¿Desde cuándo ocurre? ¿Ha cambiado algo recientemente?",type:"correct",feedback:"Excelente: preguntas para entender el contexto del problema."},
+{text:"¿Ha probado a no usar los dos a la vez?",type:"partial",feedback:"Es una solución temporal, pero no investigas la causa raíz."}
+]
+},
+{
+messages:[
+{from:"cliente",text:"Lleva pasando una semana. ¡Es muy molesto! Necesito que vengan YA, tengo invitados este fin de semana."}
+],
+options:[
+{text:"Tranquila, entiendo la urgencia. Déjeme ver disponibilidad para hoy o mañana.",type:"correct",feedback:"Genial: validas su urgencia y ofreces solución realista."},
+{text:"No puedo hacer milagros, hay lista de espera.",type:"incorrect",feedback:"Evita respuestas negativas. Busca alternativas."},
+{text:"Puedo ir ahora mismo si quiere.",type:"partial",feedback:"Buena intención, pero no prometas sin verificar agenda."}
+]
+},
+{
+messages:[
+{from:"cliente",text:"Vale, ¿pueden venir mañana por la mañana? Vivo en Calle Mayor 23, 2ºB."}
+],
+options:[
+{text:"Perfecto. Me confirma: Calle Mayor 23, 2ºB. ¿Mañana entre 9 y 11h le viene bien?",type:"correct",feedback:"Excelente: repites dirección y concretas horario."},
+{text:"Sí, apuntado. Mañana vamos.",type:"partial",feedback:"Falta confirmar la dirección y dar hora concreta."},
+{text:"Ok, hasta mañana entonces.",type:"incorrect",feedback:"No has confirmado datos ni horario. Puede haber confusión."}
+]
+},
+{
+messages:[
+{from:"mentor",text:"Muy bien, ya casi terminas. Cierra la llamada profesionalmente."},
+{from:"cliente",text:"¿Algo más que necesiten saber?"}
+]
+,
+options:[
+{text:"No, ya tengo todo. Adiós.",type:"incorrect",feedback:"Cierre muy brusco. Falta resumir y agradecer."},
+{text:"Sí, su teléfono de contacto por si surge algo. Mañana 9-11h en Calle Mayor 23, 2ºB. ¡Gracias por confiar en nosotros!",type:"correct",feedback:"Perfecto: pides contacto, resumes cita y agradeces."},
+{text:"Creo que no. Hasta mañana.",type:"partial",feedback:"Aceptable, pero falta pedir teléfono y agradecer."}
+]
+}
+];
+
+let currentTurn=0,answers=[],chatHistory=[];
+
+const scene=document.getElementById('scene'),chat=document.getElementById('chat'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),subtitle=document.getElementById('subtitle');
+
+function renderChat(){
+chat.innerHTML=chatHistory.map(m=>{
+if(m.isPlayer){
+return `<div class="chat-bubble player"><div class="bubble-content player-bubble">${m.text}</div></div>`;
+}else{
+const av=avatars[m.from];
+return `<div class="chat-bubble npc"><img class="bubble-avatar" src="${av.img}" alt="${av.name}"><div class="bubble-info"><div class="bubble-name">${av.name}</div><div class="bubble-content">${m.text}</div></div></div>`;
+}
+}).join('');
+chat.scrollTop=chat.scrollHeight;
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){showResults();return}
+const t=turns[currentTurn];
+t.messages.forEach(m=>chatHistory.push({from:m.from,text:m.text,isPlayer:false}));
+renderChat();
+prog.style.width=((currentTurn)/turns.length*100)+'%';
+counter.textContent=(currentTurn+1)+'/'+turns.length;
+subtitle.textContent='Turno '+(currentTurn+1)+': Elige tu respuesta';
+helper.textContent='Selecciona cómo responder';
+opts.innerHTML=t.options.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(i){
+const t=turns[currentTurn];
+const opt=t.options[i];
+answers.push({turn:currentTurn+1,selected:opt.text,type:opt.type,feedback:opt.feedback});
+chatHistory.push({text:opt.text,isPlayer:true});
+renderChat();
+opts.innerHTML='';
+helper.textContent=opt.type==='correct'?'✓ Buena elección':opt.type==='partial'?'◐ Mejorable':'✗ No recomendable';
+setTimeout(()=>{currentTurn++;renderTurn();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.type==='correct').length;
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Llamada completada!</div>
+<div class="results-score">${score}/${turns.length}</div>
+<div class="results-subtitle">Decisiones profesionales</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.type==='correct'?'correct':a.type==='partial'?'partial':'incorrect'}">
+<div class="result-question">Turno ${a.turn}</div>
+<div class="result-answer">${a.selected}</div>
+<div class="result-explanation">${a.feedback}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">En llamadas con clientes: saluda con nombre y empresa, escucha activamente, confirma datos y cierra agradeciendo. ¡La primera impresión cuenta!</div>
+</div>
+</div>
+<div class="footer footer-fixed"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();renderTurn();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.chat-container{display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;padding:8px;max-height:calc(100svh - 240px);-webkit-overflow-scrolling:touch;}
+.chat-bubble{display:flex;gap:8px;align-items:flex-start;}
+.chat-bubble.player{justify-content:flex-end;}
+.bubble-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.bubble-info{display:flex;flex-direction:column;gap:2px;max-width:75%;}
+.bubble-name{font-size:11px;font-weight:700;color:var(--txt2);}
+.bubble-content{background:var(--glass);padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;color:var(--txt);}
+.player-bubble{background:var(--accent);color:#000;border-radius:16px 16px 4px 16px;max-width:75%;margin-left:auto;}
+.main{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+#options{display:flex;flex-direction:column;gap:8px;width:100%;}
+.footer-fixed{position:sticky;bottom:0;background:var(--bg);padding:16px;margin-top:auto;}
+.result-item.partial{border-left:4px solid #f0ad4e;}
+</style>
+</body>
+</html>
