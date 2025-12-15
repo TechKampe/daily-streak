@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Conexiones Seguras: ¿Dominas lo básico? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Conexiones Seguras</div>
+<div class="subtitle" id="question">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la respuesta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">⚡ Tu primera prueba</div>
+<div class="modal-body">El oficial te evalúa antes de dejarte tocar el cuadro. ¡Demuestra lo que sabes!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{q:"¿Qué EPI es obligatorio en trabajos eléctricos?",opts:["Guantes aislantes","Gafas de sol","Casco de obra"],ans:0,exp:"Los guantes aislantes protegen de descargas eléctricas."},
+{q:"¿De qué color es el cable de tierra?",opts:["Azul","Verde/Amarillo","Marrón"],ans:1,exp:"Verde/amarillo identifica tierra por normativa internacional."},
+{q:"¿Qué hacer antes de manipular un circuito?",opts:["Verificar ausencia de tensión","Avisar al vecino","Abrir ventanas"],ans:0,exp:"Siempre comprobar que no hay tensión con un buscapolos."},
+{q:"¿Cuál es la tensión doméstica en España?",opts:["110V","230V","380V"],ans:1,exp:"En España la tensión monofásica estándar es 230V."},
+{q:"¿Qué herramienta debe estar aislada?",opts:["Destornillador","Martillo","Cinta métrica"],ans:0,exp:"Destornilladores aislados evitan cortocircuitos y descargas."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),qEl=document.getElementById('question'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+qEl.textContent=d.q;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" aria-label="${o}" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>b.disabled=true);
+const correct=i===data[idx].ans;
+btns[i].classList.add(correct?'correct':'incorrect');
+if(!correct)btns[data[idx].ans].classList.add('correct');
+if(correct)score++;
+answers.push({q:data[idx].q,correct,exp:data[idx].exp,user:data[idx].opts[i],correctAns:data[idx].opts[data[idx].ans]});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Tu respuesta: '+a.user}</div>
+${!a.correct?`<div class="result-answer">✓ Correcta: ${a.correctAns}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Siempre verifica ausencia de tensión antes de intervenir en cualquier instalación.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
