@@ -1,0 +1,2506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>El Encargo - Kämpe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00A896;
+            --primary-dark: #008F7A;
+            --primary-light: #00C4AA;
+            --accent: #05B384;
+            --success: #2ECC71;
+            --danger: #E74C3C;
+            --warning: #F39C12;
+            --dark: #0D3B4C;
+            --dark-medium: #1A5568;
+            --light: #F0F9F7;
+            --white: #FFFFFF;
+            --gradient-bg: linear-gradient(135deg, #00A896 0%, #05B384 50%, #00C4AA 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Baloo 2', cursive;
+            background: var(--dark);
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ============ HEADER ============ */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            padding-right: 70px; /* Space for React Native close button */
+            background: var(--dark);
+            z-index: 100;
+        }
+
+        .level-badge {
+            background: var(--primary);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .lives-container {
+            display: flex;
+            gap: 6px;
+        }
+
+        .life {
+            width: 28px;
+            height: 28px;
+            transition: all 0.3s ease;
+        }
+
+        .life.lost {
+            opacity: 0.25;
+            transform: scale(0.8);
+        }
+
+        .life svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ============ INTRO SCREEN ============ */
+        #intro-screen {
+            background: var(--gradient-bg);
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .intro-avatar {
+            width: 180px;
+            height: 180px;
+            background: var(--dark);
+            border-radius: 50%;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            border: 4px solid var(--white);
+        }
+
+        .intro-title {
+            color: var(--white);
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .intro-subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 16px;
+            margin-bottom: 32px;
+        }
+
+        .intro-features {
+            background: rgba(255,255,255,0.15);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 32px;
+            text-align: left;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .intro-feature {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--white);
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .intro-feature:last-child {
+            margin-bottom: 0;
+        }
+
+        .intro-feature-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--white);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .btn {
+            padding: 16px 48px;
+            border: none;
+            border-radius: 30px;
+            font-family: 'Baloo 2', cursive;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--white);
+            color: var(--primary-dark);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.96);
+        }
+
+        /* ============ EXPLORATION SCREEN ============ */
+        #exploration-screen {
+            background: var(--dark);
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a2e;
+        }
+
+        .map {
+            position: relative;
+            aspect-ratio: 9 / 16;
+            height: 100%;
+            max-height: 100%;
+            max-width: 100%;
+            width: auto;
+        }
+
+        /* Si la pantalla es más ancha que 9:16, limitar por altura */
+        @media (min-aspect-ratio: 9/16) {
+            .map {
+                height: 100%;
+                width: auto;
+            }
+        }
+
+        /* Si la pantalla es más alta que 9:16, limitar por ancho */
+        @media (max-aspect-ratio: 9/16) {
+            .map {
+                width: 100%;
+                height: auto;
+            }
+        }
+
+        /* Placeholder maps */
+        .map-bg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            inset: 0;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* Map elements placeholder */
+        .map-element {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+        }
+
+        .map-element:active {
+            transform: translate(-50%, -50%) scale(0.95);
+        }
+
+        .map-element-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .map-element-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        .map-element-label {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 4px;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .map-element.visited .map-element-icon {
+            opacity: 0.5;
+        }
+
+        .map-element.visited::after {
+            content: '✓';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--success);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* Player */
+        .player {
+            position: absolute;
+            width: 75px;
+            height: 75px;
+            z-index: 50;
+            transform: translate(-50%, -50%);
+        }
+
+        .player img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 3px 4px rgba(0,0,0,0.4));
+        }
+
+        /* Tap indicator */
+        .tap-indicator {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 40;
+            transform: translate(-50%, -50%);
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .tap-indicator.active {
+            animation: tapPulse 0.6s ease-out forwards;
+        }
+
+        @keyframes tapPulse {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
+        }
+
+        /* Dialogue box */
+        .dialogue-box {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border-radius: 24px 24px 0 0;
+            padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            z-index: 200;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .dialogue-box.active {
+            transform: translateY(0);
+        }
+
+        .dialogue-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .dialogue-avatar {
+            width: 56px;
+            height: 56px;
+            background: var(--light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .dialogue-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .dialogue-name {
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 16px;
+        }
+
+        .dialogue-text {
+            color: var(--dark);
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .dialogue-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Baloo 2', cursive;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Progress indicator */
+        .progress-bar {
+            display: none; /* Hidden - not intuitive for users */
+            position: absolute;
+            top: 70px;
+            left: 16px;
+            right: 16px;
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            z-index: 60;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        /* Decision button */
+        .btn-decision {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 14px 32px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-family: 'Baloo 2', cursive;
+            font-size: 16px;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+            z-index: 100;
+            display: none;
+        }
+
+        .btn-decision.visible {
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+        }
+
+        /* ============ DECISION SCREEN ============ */
+        #decision-screen {
+            background: var(--dark);
+        }
+
+        .decision-container {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .decision-title {
+            color: var(--white);
+            font-size: 22px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-back-to-map {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 12px;
+            color: var(--white);
+            font-family: 'Baloo 2', cursive;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-back-to-map:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        .decision-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .decision-section-title {
+            color: var(--primary-light);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .decision-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .decision-option {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--white);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .decision-option:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .decision-option.selected {
+            border-color: var(--primary);
+            background: rgba(0, 168, 150, 0.2);
+        }
+
+        .decision-option-radio {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .decision-option.selected .decision-option-radio {
+            border-color: var(--primary);
+            background: var(--primary);
+        }
+
+        .decision-option.selected .decision-option-radio::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+        }
+
+        .btn-validate {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-family: 'Baloo 2', cursive;
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 16px;
+            cursor: pointer;
+        }
+
+        .btn-validate:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ============ TRANSITION SCREEN ============ */
+        .transition-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(180deg, #0D3B4C 0%, #1A5568 100%);
+            z-index: 350;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .transition-screen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .transition-content {
+            text-align: center;
+        }
+
+        .transition-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .transition-title {
+            color: var(--success);
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .transition-text {
+            color: rgba(255,255,255,0.8);
+            font-size: 16px;
+            margin-bottom: 32px;
+        }
+
+        .transition-time {
+            margin-bottom: 32px;
+        }
+
+        .time-passing {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .time-dot {
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: timePulse 1.5s ease infinite;
+        }
+
+        .time-dot:nth-child(2) { animation-delay: 0.3s; }
+        .time-dot:nth-child(3) { animation-delay: 0.6s; }
+
+        @keyframes timePulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .time-label {
+            color: var(--primary-light);
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .transition-alert {
+            background: rgba(231, 76, 60, 0.2);
+            border: 2px solid var(--danger);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+            animation: alertPulse 1s ease infinite;
+        }
+
+        @keyframes alertPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
+            50% { box-shadow: 0 0 20px 5px rgba(231, 76, 60, 0.2); }
+        }
+
+        .alert-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .alert-text {
+            color: var(--danger);
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 25px;
+            font-family: 'Baloo 2', cursive;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            animation: btnPulse 2s ease infinite;
+        }
+
+        @keyframes btnPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* ============ BATTLE SCREEN ============ */
+        #battle-screen {
+            background: linear-gradient(180deg, #1a1a2e 0%, #0D3B4C 100%);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .battle-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+        }
+
+        .battle-turn-indicator {
+            text-align: center;
+            padding: 8px 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 20px;
+            margin: 0 auto 16px;
+        }
+
+        .battle-turn-indicator span {
+            color: var(--primary-light);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .enemy-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding-top: 10px;
+        }
+
+        .enemy-platform {
+            width: 200px;
+            height: 40px;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            margin-top: 20px;
+        }
+
+        .enemy-card {
+            position: absolute;
+            top: 0px;
+            right: 10px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 10px 14px;
+            min-width: 140px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .enemy-card-name {
+            color: var(--dark);
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .enemy-hp-bar {
+            height: 8px;
+            background: var(--dark);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .enemy-hp-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .enemy-hp-fill.damage {
+            background: var(--danger);
+        }
+
+        .enemy-sprite {
+            width: 140px;
+            height: 140px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 70px;
+            margin-bottom: 8px;
+            box-shadow: 0 0 60px rgba(231, 76, 60, 0.6);
+            animation: enemyFloat 2s ease-in-out infinite;
+            position: relative;
+            z-index: 10;
+            overflow: hidden;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .enemy-sprite.hit {
+            animation: enemyHit 0.5s ease;
+        }
+
+        @keyframes enemyHit {
+            0%, 100% { transform: translateX(0); filter: brightness(1); }
+            25% { transform: translateX(-20px); filter: brightness(2); }
+            75% { transform: translateX(20px); filter: brightness(2); }
+        }
+
+        .enemy-sprite.defeated {
+            animation: enemyDefeat 0.8s ease forwards;
+        }
+
+        @keyframes enemyDefeat {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        @keyframes enemyFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .enemy-info {
+            text-align: center;
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 12px;
+            margin: 12px 0;
+        }
+
+        .enemy-desc {
+            color: #ffffff;
+            font-size: 15px;
+            line-height: 1.4;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        .protection-zone {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            margin: 0 -16px -16px -16px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+        }
+
+        .protection-title {
+            color: var(--dark);
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .protection-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .protection-btn {
+            background: var(--light);
+            border: 3px solid var(--dark);
+            border-radius: 12px;
+            padding: 14px 10px;
+            color: var(--dark);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Baloo 2', cursive;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .protection-btn:hover {
+            background: var(--primary-light);
+            border-color: var(--primary-dark);
+            color: white;
+        }
+
+        .protection-btn:active {
+            transform: scale(0.95);
+        }
+
+        .protection-btn.attacking {
+            animation: attackPulse 0.3s ease;
+        }
+
+        @keyframes attackPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); background: var(--primary); color: white; }
+            100% { transform: scale(1); }
+        }
+
+        .protection-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .prot-dif-a .protection-icon { background: #3498DB; }
+        .prot-dif-b .protection-icon { background: #9B59B6; }
+        .prot-mag-c .protection-icon { background: #E67E22; }
+        .prot-mag-d .protection-icon { background: #E74C3C; }
+        .prot-dps-2 .protection-icon { background: #F1C40F; }
+        .prot-dps-12 .protection-icon { background: #F39C12; }
+
+        /* Attack animation overlay */
+        .attack-overlay {
+            position: fixed;
+            inset: 0;
+            background: transparent;
+            z-index: 250;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .attack-effect {
+            font-size: 100px;
+            opacity: 0;
+        }
+
+        .attack-effect.active {
+            animation: attackEffect 0.6s ease forwards;
+        }
+
+        @keyframes attackEffect {
+            0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+            50% { transform: scale(1.5) rotate(10deg); opacity: 1; }
+            100% { transform: scale(2) rotate(0deg); opacity: 0; }
+        }
+
+        /* Battle feedback */
+        .battle-feedback {
+            position: fixed;
+            inset: 0;
+            background: rgba(13, 59, 76, 0.95);
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .battle-feedback.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .feedback-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            margin-bottom: 24px;
+        }
+
+        .feedback-icon.success {
+            background: var(--success);
+        }
+
+        .feedback-icon.error {
+            background: var(--danger);
+        }
+
+        .feedback-title {
+            color: var(--white);
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .feedback-text {
+            color: rgba(255,255,255,0.8);
+            font-size: 15px;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            max-width: 300px;
+        }
+
+        .feedback-tip {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            max-width: 300px;
+        }
+
+        .feedback-tip-label {
+            color: var(--primary-light);
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .feedback-tip-text {
+            color: var(--white);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .feedback-btn {
+            padding: 14px 40px;
+            border: none;
+            border-radius: 25px;
+            font-family: 'Baloo 2', cursive;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .feedback-btn.success {
+            background: var(--success);
+            color: white;
+        }
+
+        .feedback-btn.retry {
+            background: var(--white);
+            color: var(--dark);
+        }
+
+        /* ============ LEVEL COMPLETE ============ */
+        .level-complete {
+            position: fixed;
+            inset: 0;
+            background: var(--gradient-bg);
+            z-index: 400;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .level-complete.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .level-complete-icon {
+            font-size: 80px;
+            margin-bottom: 24px;
+        }
+
+        .level-complete-title {
+            color: var(--white);
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .level-complete-text {
+            color: rgba(255,255,255,0.9);
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .unlocked-item {
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .unlocked-icon {
+            font-size: 32px;
+        }
+
+        .unlocked-text {
+            color: var(--white);
+            font-size: 14px;
+        }
+
+        /* ============ GAME OVER ============ */
+        .game-over {
+            position: fixed;
+            inset: 0;
+            background: rgba(13, 59, 76, 0.98);
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .game-over.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .game-over-icon {
+            font-size: 80px;
+            margin-bottom: 24px;
+        }
+
+        .game-over-title {
+            color: var(--danger);
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .game-over-text {
+            color: rgba(255,255,255,0.8);
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        /* ============ VICTORY SCREEN ============ */
+        #victory-screen {
+            background: var(--gradient-bg);
+            justify-content: center;
+            align-items: center;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .victory-icon {
+            font-size: 100px;
+            margin-bottom: 24px;
+        }
+
+        .victory-title {
+            color: var(--white);
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .victory-text {
+            color: rgba(255,255,255,0.9);
+            font-size: 16px;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        /* Shake animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .shake {
+            animation: shake 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- INTRO SCREEN -->
+    <div id="intro-screen" class="screen active">
+        <div class="intro-avatar">⚡</div>
+        <h1 class="intro-title">El Encargo</h1>
+        <p class="intro-subtitle">Instalaciones de recarga de VE</p>
+        
+        <div class="intro-features">
+            <div class="intro-feature">
+                <div class="intro-feature-icon">🗺️</div>
+                <span>Explora escenarios reales</span>
+            </div>
+            <div class="intro-feature">
+                <div class="intro-feature-icon">📋</div>
+                <span>Diseña instalaciones según ITC-BT-52</span>
+            </div>
+            <div class="intro-feature">
+                <div class="intro-feature-icon">⚔️</div>
+                <span>Defiende tu instalación de amenazas</span>
+            </div>
+        </div>
+        
+        <button class="btn btn-primary" onclick="startGame()">¡Empezar!</button>
+    </div>
+
+    <!-- EXPLORATION SCREEN -->
+    <div id="exploration-screen" class="screen">
+        <div class="game-header">
+            <div class="level-badge" id="levelBadge">Nivel 1</div>
+            <div class="lives-container" id="livesContainer"></div>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        
+        <div class="map-container" id="mapContainer" onclick="handleMapClick(event)">
+            <div class="map" id="gameMap">
+                <div class="map-bg" id="mapBg"></div>
+                <div class="player" id="player">
+                    <img id="playerSprite" src="" alt="player">
+                </div>
+                <div class="tap-indicator" id="tapIndicator"></div>
+            </div>
+        </div>
+        
+        <button class="btn-decision" id="btnDecision" onclick="openDecision()">
+            📋 Diseñar Proyecto
+        </button>
+        
+        <div class="dialogue-box" id="dialogueBox">
+            <div class="dialogue-header">
+                <div class="dialogue-avatar" id="dialogueAvatar">👤</div>
+                <div class="dialogue-name" id="dialogueName">Nombre</div>
+            </div>
+            <div class="dialogue-text" id="dialogueText">Texto del diálogo...</div>
+            <button class="dialogue-btn" onclick="closeDialogue()">Continuar</button>
+        </div>
+    </div>
+
+    <!-- DECISION SCREEN -->
+    <div id="decision-screen" class="screen">
+        <div class="game-header">
+            <div class="level-badge" id="decisionLevelBadge">Nivel 1</div>
+            <div class="lives-container" id="decisionLivesContainer"></div>
+        </div>
+        
+        <div class="decision-container" id="decisionContainer">
+            <h2 class="decision-title">📋 Tu Proyecto</h2>
+            <!-- Sections will be generated by JS -->
+        </div>
+    </div>
+
+    <!-- TRANSITION SCREEN -->
+    <div class="transition-screen" id="transitionScreen">
+        <div class="transition-content">
+            <div class="transition-icon">🔧</div>
+            <h2 class="transition-title">¡Instalación completada!</h2>
+            <p class="transition-text" id="transitionText">Has instalado el punto de recarga en casa de los García.</p>
+            <div class="transition-time">
+                <div class="time-passing">
+                    <span class="time-dot"></span>
+                    <span class="time-dot"></span>
+                    <span class="time-dot"></span>
+                </div>
+                <p class="time-label">6 meses después...</p>
+            </div>
+            <div class="transition-alert">
+                <div class="alert-icon">⚠️</div>
+                <p class="alert-text">¡Se detectan amenazas eléctricas!</p>
+            </div>
+            <button class="btn btn-danger" onclick="startBattleFromTransition()">¡Defender instalación!</button>
+        </div>
+    </div>
+
+    <!-- BATTLE SCREEN -->
+    <div id="battle-screen" class="screen">
+        <div class="game-header">
+            <div class="level-badge" id="battleLevelBadge">Nivel 1</div>
+            <div class="lives-container" id="battleLivesContainer"></div>
+        </div>
+        
+        <div class="battle-container">
+            <div class="battle-turn-indicator">
+                <span id="battleTurnText">Turno 1 de 1</span>
+            </div>
+            
+            <div class="enemy-zone">
+                <div class="enemy-card">
+                    <div class="enemy-card-name" id="enemyCardName">Amenaza</div>
+                    <div class="enemy-hp-bar">
+                        <div class="enemy-hp-fill" id="enemyHpFill" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="enemy-sprite" id="enemySprite">⚡</div>
+                <div class="enemy-platform"></div>
+            </div>
+            
+            <div class="enemy-info">
+                <div class="enemy-desc" id="enemyDesc">Descripción de la amenaza</div>
+            </div>
+            
+            <div class="protection-zone">
+                <div class="protection-title">¿Qué protección usas?</div>
+                <div class="protection-options" id="protectionOptions">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Attack animation overlay -->
+        <div class="attack-overlay" id="attackOverlay">
+            <div class="attack-effect" id="attackEffect">⚡</div>
+        </div>
+        
+        <div class="battle-feedback" id="battleFeedback">
+            <div class="feedback-icon" id="feedbackIcon">✓</div>
+            <div class="feedback-title" id="feedbackTitle">¡Súper efectivo!</div>
+            <div class="feedback-text" id="feedbackText">La protección ha funcionado correctamente.</div>
+            <div class="feedback-tip" id="feedbackTip">
+                <div class="feedback-tip-label">💡 Recuerda</div>
+                <div class="feedback-tip-text" id="feedbackTipText">Texto educativo...</div>
+            </div>
+            <button class="feedback-btn" id="feedbackBtn" onclick="closeFeedback()">Continuar</button>
+        </div>
+    </div>
+
+    <!-- LEVEL COMPLETE -->
+    <div class="level-complete" id="levelComplete">
+        <div class="level-complete-icon">🏆</div>
+        <h2 class="level-complete-title" id="levelCompleteTitle">¡Nivel completado!</h2>
+        <p class="level-complete-text" id="levelCompleteText">Has defendido la instalación con éxito.</p>
+        <div class="unlocked-item">
+            <div class="unlocked-icon">📖</div>
+            <div class="unlocked-text" id="unlockedText">Ficha desbloqueada: DPS Tipo 2</div>
+        </div>
+        <button class="btn btn-primary" id="levelCompleteBtn" onclick="nextLevel()">Siguiente encargo →</button>
+    </div>
+
+    <!-- GAME OVER -->
+    <div class="game-over" id="gameOver">
+        <div class="game-over-icon">😵</div>
+        <h2 class="game-over-title">Game Over</h2>
+        <p class="game-over-text">Has perdido todas tus vidas.<br>¡Vuelve a intentarlo!</p>
+        <button class="btn btn-primary" onclick="restartGame()">Reiniciar</button>
+    </div>
+
+    <!-- VICTORY SCREEN -->
+    <div id="victory-screen" class="screen">
+        <div class="victory-icon">🎉</div>
+        <h1 class="victory-title">¡Felicidades!</h1>
+        <p class="victory-text">Has completado todos los encargos.<br>Ahora eres un experto en instalaciones de recarga de vehículos eléctricos.</p>
+        <button class="btn btn-primary" onclick="finishGame()">Finalizar</button>
+    </div>
+
+    <script>
+        // ============ PLAYER SPRITES ============
+        const playerSprites = {
+    down: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/player_down.png',
+    up: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/player_up.png',
+    left: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/player_left.png',
+    right: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/player_right.png'
+};
+
+
+        // ============ NPC SPRITES ============
+        const npcSprites = {
+            garcia: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/npc_garcia.png',
+            presidente: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/npc_presidente.png',
+            gestor: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/npc_gestor.png'
+        };
+
+        // ============ MAP BACKGROUNDS ============
+        const mapBackgrounds = {
+            1: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/map_nivel1.png',
+            2: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/map_nivel2.png',
+            3: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/map_nivel3.png'
+        };
+
+        // ============ ELEMENT ICONS ============
+        const elementIcons = {
+            cuadro: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/icon_cuadro.png',
+            coche: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/icon_coche.png',
+            npc: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/icon_npc.png',
+            info: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/icon_info.png',
+            enchufe: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/icon_enchufe.png'
+        };
+
+        // ============ ENEMY SPRITES ============
+        const enemySprites = {
+            sobretension: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/enemy_sobretension.png',
+            fuga_ac: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/enemy_fuga_ac.png',
+            fuga_dc: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/enemy_fuga_dc.png',
+            sobrecarga: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/enemy_sobrecarga.png',
+            rayo: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/enemy_rayo.png'
+        };
+
+        // ============ PROTECTION ICONS ============
+        const protectionIcons = {
+            dps_2: 'https://raw.githubusercontent.com/TechKampe/daily-streak/main/games/game_puntos_recarga/prot_dps_2.png',
+            dps_12: 'https://raw.githubusercontent.com/TechKampe/daily-streak/main/games/game_puntos_recarga/prot_dps_12.png',
+            dif_a: 'https://raw.githubusercontent.com/TechKampe/daily-streak/main/games/game_puntos_recarga/prot_dif_a.png',
+            dif_b: 'https://raw.githubusercontent.com/TechKampe/daily-streak/main/games/game_puntos_recarga/prot_dif_b.png',
+            mag_c: 'https://raw.githubusercontent.com/TechKampe/daily-streak/main/games/game_puntos_recarga/prot_mag_c.png',
+            mag_d: 'https://raw.githubusercontent.com/TechKampe/daily-streak/main/games/game_puntos_recarga/prot_mag_d.png'
+        };
+
+        // ============ UI ASSETS ============
+        const uiAssets = {
+            markerDestino: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/marker_destino.png',
+            panelDialogo: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/panel_dialogo.png',
+            btnInteractuar: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/btn_interactuar.png',
+            battleBg: 'https://cdn.jsdelivr.net/gh/TechKampe/daily-streak@main/games/game_puntos_recarga/battle_bg.png'
+        };
+
+        // ============ GAME STATE ============
+        const gameState = {
+            currentLevel: 1,
+            lives: 5,
+            phase: 'exploration', // exploration, decision, battle
+            visitedElements: [],
+            currentBattle: 0,
+            playerPos: { x: 50, y: 75 },
+            playerDirection: 'down' // up, down, left, right
+        };
+
+        // ============ WALKABLE ZONES ============
+        // Each cell is 10% width x 5% height
+        // Column: A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9
+        // Row: 1-20 (multiply by 5 for top %)
+        const walkableZones = {
+            1: [
+                'C4','D4','E4','F4','G4','H4',
+                'C5','D5','E5','F5','G5','H5',
+                'C6','D6','G6','H6',
+                'C7','H7',
+                'C8','H8',
+                'C9','H9',
+                'C10','H10',
+                'C11','H11',
+                'C12','H12',
+                'C13','H13',
+                'C14','H14',
+                'C15','D15','G15','H15',
+                'D16','E16','F16','G16','H16',
+                'E17','F17','G17','H17'
+            ],
+            2: [
+                'B3','C3','D3','E3','F3',
+                'B4','C4','D4','E4','F4',
+                'E5','F5',
+                'D6','E6','F6','G6','H6','I6',
+                'B7','C7','D7','E7','F7','G7','H7','I7',
+                'E8','F8',
+                'E9','F9',
+                'E10','F10',
+                'E11','F11',
+                'E12','F12',
+                'E13','F13',
+                'B14','C14','D14','E14','F14',
+                'E15','F15',
+                'E16','F16',
+                'E17','F17',
+                'E18','F18',
+                'E19','F19'
+            ],
+            3: [
+                'B1','G1',
+                'B2','G2',
+                'B3','G3',
+                'B4','G4',
+                'B5','C5','D5','E5','F5','G5','H5',
+                'B6','C6','D6','E6','F6','H6','I6',
+                'A7','B7','C7','D7','I7','J7',
+                'A8','B8','C8','J8',
+                'A9','J9',
+                'A10','B10','I10','J10',
+                'A11','B11','C11','D11','H11','I11','J11',
+                'C12','D12','E12','G12','H12','I12',
+                'D13','E13','F13','G13',
+                'E14','F14','G14','H14',
+                'F15','G15','H15','I15','J15',
+                'A16','E16','F16','I16','J16',
+                'A17','B17','C17','D17','E17','J17',
+                'C18','D18','J18',
+                'D19','E19','I19','J19',
+                'E20','F20','G20','H20','I20','J20'
+            ]
+        };
+
+        // Convert cell name to bounds (e.g., 'C4' -> {x1: 20, x2: 30, y1: 15, y2: 20})
+        function cellToBounds(cell) {
+            const col = cell.charCodeAt(0) - 65; // A=0, B=1, etc.
+            const row = parseInt(cell.slice(1)) - 1; // 1=0, 2=1, etc.
+            return {
+                x1: col * 10,
+                x2: (col + 1) * 10,
+                y1: row * 5,
+                y2: (row + 1) * 5
+            };
+        }
+
+        // Check if position is in walkable zone
+        function isWalkable(x, y, level) {
+            const zones = walkableZones[level];
+            if (!zones) return true;
+            
+            for (const cell of zones) {
+                const bounds = cellToBounds(cell);
+                if (x >= bounds.x1 && x < bounds.x2 && y >= bounds.y1 && y < bounds.y2) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Find nearest walkable cell center
+        function findNearestWalkable(x, y, level) {
+            const zones = walkableZones[level];
+            if (!zones || zones.length === 0) return { x, y };
+            
+            let nearest = null;
+            let minDist = Infinity;
+            
+            for (const cell of zones) {
+                const bounds = cellToBounds(cell);
+                const centerX = (bounds.x1 + bounds.x2) / 2;
+                const centerY = (bounds.y1 + bounds.y2) / 2;
+                const dist = Math.abs(x - centerX) + Math.abs(y - centerY);
+                
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = { x: centerX, y: centerY, cell: cell };
+                }
+            }
+            
+            return nearest || { x, y };
+        }
+
+        // Get cell from coordinates
+        function getCellAt(x, y) {
+            const col = Math.floor(x / 10);
+            const row = Math.floor(y / 5) + 1;
+            if (col < 0 || col > 9 || row < 1 || row > 20) return null;
+            return String.fromCharCode(65 + col) + row;
+        }
+
+        // Get center of cell
+        function getCellCenter(cell) {
+            const col = cell.charCodeAt(0) - 65;
+            const row = parseInt(cell.slice(1)) - 1;
+            return {
+                x: col * 10 + 5,
+                y: row * 5 + 2.5
+            };
+        }
+
+        // Get walkable neighbors of a cell
+        function getWalkableNeighbors(cell, level) {
+            const zones = walkableZones[level];
+            if (!zones) return [];
+            
+            const col = cell.charCodeAt(0) - 65;
+            const row = parseInt(cell.slice(1));
+            const neighbors = [];
+            
+            // Left
+            if (col > 0) {
+                const left = String.fromCharCode(64 + col) + row;
+                if (zones.includes(left)) neighbors.push(left);
+            }
+            // Right
+            if (col < 9) {
+                const right = String.fromCharCode(66 + col) + row;
+                if (zones.includes(right)) neighbors.push(right);
+            }
+            // Up
+            if (row > 1) {
+                const up = String.fromCharCode(65 + col) + (row - 1);
+                if (zones.includes(up)) neighbors.push(up);
+            }
+            // Down
+            if (row < 20) {
+                const down = String.fromCharCode(65 + col) + (row + 1);
+                if (zones.includes(down)) neighbors.push(down);
+            }
+            
+            return neighbors;
+        }
+
+        // BFS pathfinding - returns array of cells to visit
+        function findPathBFS(startCell, endCell, level) {
+            const zones = walkableZones[level];
+            if (!zones) return [];
+            if (!zones.includes(startCell) || !zones.includes(endCell)) return [];
+            if (startCell === endCell) return [];
+            
+            const queue = [[startCell]];
+            const visited = new Set([startCell]);
+            
+            while (queue.length > 0) {
+                const path = queue.shift();
+                const current = path[path.length - 1];
+                
+                if (current === endCell) {
+                    // Return path without start cell
+                    return path.slice(1);
+                }
+                
+                const neighbors = getWalkableNeighbors(current, level);
+                for (const neighbor of neighbors) {
+                    if (!visited.has(neighbor)) {
+                        visited.add(neighbor);
+                        queue.push([...path, neighbor]);
+                    }
+                }
+            }
+            
+            return []; // No path found
+        }
+
+        // Current movement state
+        let movementQueue = [];
+        let isMoving = false;
+
+        // ============ LEVEL DATA ============
+        const levels = {
+            1: {
+                name: "Casa de los García",
+                badge: "Nivel 1: Unifamiliar",
+                mapClass: "map-nivel1",
+                elements: [
+                    { id: 'npc1', type: 'npc', x: 50, y: 88, icon: '👩', label: 'Sra. García', 
+                      dialogue: { name: 'Sra. García', avatar: '👩', npcSprite: 'garcia', 
+                        text: 'Nos hemos comprado un Hyundai Kona EV. ¿Podemos instalar un punto de recarga aquí en el garaje?' }},
+                    { id: 'cuadro1', type: 'cuadro', x: 88, y: 45, icon: '📦', label: 'Cuadro', 
+                      dialogue: { name: 'Cuadro Vivienda', avatar: '📦', 
+                        text: 'Potencia contratada: 5,75 kW. Electrificación elevada. Hay espacio disponible para un circuito adicional.' }},
+                    { id: 'coche1', type: 'coche', x: 50, y: 38, icon: '🚗', label: 'Coche', 
+                      dialogue: { name: 'Hyundai Kona EV', avatar: '🚗', 
+                        text: 'Conector Tipo 2 (Mennekes). Compatible con Modo 3 de carga. Potencia máxima admitida: 7,4 kW.' }}
+                ],
+                correctDecision: {
+                    esquema: 'circuito_adicional',
+                    potencia: '7.4',
+                    proteccion: 'dif_a'
+                },
+                battles: [
+                    { id: 'sobretension', name: 'Sobretensión Transitoria', icon: '⛈️', 
+                      desc: '¡Una tormenta de verano genera picos de tensión!',
+                      correct: 'dps_2',
+                      feedback: {
+                        success: 'El DPS Tipo 2 ha derivado la sobretensión a tierra, protegiendo el cargador.',
+                        tip: 'Los DPS Tipo 2 protegen contra sobretensiones transitorias causadas por tormentas o maniobras en la red.'
+                      },
+                      wrongFeedback: {
+                        tip: 'Las sobretensiones transitorias requieren un DPS (Dispositivo de Protección contra Sobretensiones). El Tipo 2 es adecuado para instalaciones estándar.'
+                      }
+                    }
+                ],
+                unlocks: ['Esquema circuito adicional', 'DPS Tipo 2']
+            },
+            2: {
+                name: "Comunidad Jardines del Norte",
+                badge: "Nivel 2: Comunitario",
+                mapClass: "map-nivel2",
+                elements: [
+                    { id: 'npc2', type: 'npc', x: 45, y: 92, icon: '👷', label: 'Presidente', 
+                      dialogue: { name: 'Presidente Comunidad', avatar: '👷', npcSprite: 'presidente', 
+                        text: 'Somos 10 vecinos interesados en puntos de recarga. Queremos que cada uno pague su consumo por separado.' }},
+                    { id: 'cuadro2', type: 'cuadro', x: 88, y: 10, icon: '📦', label: 'Contadores', 
+                      dialogue: { name: 'Cuarto de Contadores', avatar: '📦', 
+                        text: 'Potencia disponible: 80 kW. Hay espacio en la centralización para nuevos contadores individuales.' }},
+                    { id: 'plaza2', type: 'coche', x: 28, y: 25, icon: '🅿️', label: 'Plazas', 
+                      dialogue: { name: 'Plazas de Parking', avatar: '🅿️', 
+                        text: '10 plazas de aparcamiento. Distancia media al cuadro: 20 metros.' }},
+                    { id: 'info2', type: 'info', x: 15, y: 67, icon: '📋', label: 'Normativa', 
+                      dialogue: { name: 'Acuerdo de Junta', avatar: '📋', 
+                        text: 'Acuerdo aprobado: cada vecino tendrá su propio contador para el punto de recarga. Potencia por punto: 7,4 kW.' }}
+                ],
+                correctDecision: {
+                    esquema: 'contador_individual',
+                    potencia: '7.4',
+                    proteccion: 'dif_b'
+                },
+                battles: [
+                    { id: 'fuga_ac', name: 'Fuga de Corriente AC', icon: '💧', 
+                      desc: 'Se detecta una fuga de corriente alterna en el circuito.',
+                      correct: 'dif_a',
+                      feedback: {
+                        success: 'El diferencial Tipo A ha detectado la fuga de corriente alterna y ha desconectado el circuito.',
+                        tip: 'El diferencial Tipo A detecta corrientes de fuga alternas (senoidales) y pulsantes.'
+                      },
+                      wrongFeedback: {
+                        tip: 'Las fugas de corriente AC se detectan con un diferencial. El Tipo A es suficiente para corrientes alternas.'
+                      }
+                    },
+                    { id: 'fuga_dc', name: 'Fuga con Componente DC', icon: '⚫', 
+                      desc: 'El cargador Modo 3 genera una fuga con componente de corriente continua.',
+                      correct: 'dif_b',
+                      feedback: {
+                        success: 'El diferencial Tipo B ha detectado la componente DC de la fuga.',
+                        tip: 'Los cargadores Modo 3 pueden generar fugas con componente DC. El diferencial Tipo B es capaz de detectarlas.'
+                      },
+                      wrongFeedback: {
+                        tip: 'El diferencial Tipo A NO detecta componentes de corriente continua. Para cargadores Modo 3, la ITC-BT-52 recomienda usar Tipo B.'
+                      }
+                    }
+                ],
+                unlocks: ['Esquema contador individual', 'Diferencial Tipo B']
+            },
+            3: {
+                name: "Parking ElectraPlaza",
+                badge: "Nivel 3: Público",
+                mapClass: "map-nivel3",
+                elements: [
+                    { id: 'npc3', type: 'npc', x: 50, y: 90, icon: '👔', label: 'Gestor', 
+                      dialogue: { name: 'Gestor del Centro', avatar: '👔', npcSprite: 'gestor', 
+                        text: 'Queremos 4 puntos de recarga rápida. Alta rotación, máximo 30 minutos por coche. Es zona exterior.' }},
+                    { id: 'cuadro3', type: 'cuadro', x: 68, y: 48, icon: '📦', label: 'Cuadro', 
+                      dialogue: { name: 'Cuadro General', avatar: '📦', 
+                        text: 'Potencia disponible: 150 kW. Instalación en exterior, zona con frecuentes tormentas en verano.' }},
+                    { id: 'carga3', type: 'enchufe', x: 40, y: 55, icon: '⚡', label: 'Zona Recarga', 
+                      dialogue: { name: 'Zona de Recarga Rápida', avatar: '⚡', 
+                        text: '4 puntos de recarga Modo 4 (DC). Conectores CCS. Potencia por punto: 50 kW.' }},
+                    { id: 'info3', type: 'info', x: 30, y: 20, icon: '⚠️', label: 'Aviso', 
+                      dialogue: { name: 'Señal de Aviso', avatar: '⚠️', 
+                        text: 'ZONA EXTERIOR - Riesgo de tormentas eléctricas. Requiere protección reforzada contra sobretensiones.' }}
+                ],
+                correctDecision: {
+                    esquema: 'colectivo',
+                    potencia: '50',
+                    proteccion: 'dif_b'
+                },
+                battles: [
+                    { id: 'sobrecarga', name: 'Sobrecarga Modo 4', icon: '🔥', 
+                      desc: 'La alta potencia del Modo 4 genera picos de corriente de arranque.',
+                      correct: 'mag_d',
+                      feedback: {
+                        success: 'El magnetotérmico curva D ha soportado el pico de arranque sin dispararse.',
+                        tip: 'La curva D está diseñada para soportar corrientes de arranque elevadas, típicas en recarga rápida.'
+                      },
+                      wrongFeedback: {
+                        tip: 'Los cargadores Modo 4 tienen picos de arranque elevados. El magnetotérmico curva C puede dispararse innecesariamente. Usa curva D.'
+                      }
+                    },
+                    { id: 'fuga_dc2', name: 'Fuga DC Modo 4', icon: '⚫', 
+                      desc: 'La recarga en corriente continua genera una fuga DC.',
+                      correct: 'dif_b',
+                      feedback: {
+                        success: 'El diferencial Tipo B ha detectado la fuga de corriente continua.',
+                        tip: 'En Modo 4 (DC), las fugas son siempre de corriente continua. El Tipo B es obligatorio.'
+                      },
+                      wrongFeedback: {
+                        tip: 'El Modo 4 trabaja en corriente continua (DC). Solo el diferencial Tipo B puede detectar estas fugas.'
+                      }
+                    },
+                    { id: 'rayo', name: 'Impacto de Rayo', icon: '⛈️⛈️', 
+                      desc: '¡ALERTA! Tormenta severa. Impacto de rayo cercano a la instalación.',
+                      correct: 'dps_12',
+                      feedback: {
+                        success: '¡El DPS Tipo 1+2 ha resistido el impacto directo y protegido toda la instalación!',
+                        tip: 'En zonas con riesgo de impacto directo de rayo, el DPS Tipo 1+2 ofrece protección primaria y secundaria combinada.'
+                      },
+                      wrongFeedback: {
+                        tip: 'El DPS Tipo 2 solo protege contra sobretensiones indirectas. Para impactos directos de rayo, se necesita DPS Tipo 1 o combinado 1+2.'
+                      }
+                    }
+                ],
+                unlocks: ['Esquema colectivo', 'DPS Tipo 1+2', 'Magnetotérmico Curva D']
+            }
+        };
+
+        // Protection options for battles
+        const protections = [
+            { id: 'dif_a', name: 'Dif. Tipo A', icon: '🔵', class: 'prot-dif-a' },
+            { id: 'dif_b', name: 'Dif. Tipo B', icon: '🟣', class: 'prot-dif-b' },
+            { id: 'mag_c', name: 'Mag. Curva C', icon: '🟠', class: 'prot-mag-c' },
+            { id: 'mag_d', name: 'Mag. Curva D', icon: '🔴', class: 'prot-mag-d' },
+            { id: 'dps_2', name: 'DPS Tipo 2', icon: '🟡', class: 'prot-dps-2' },
+            { id: 'dps_12', name: 'DPS Tipo 1+2', icon: '🟡', class: 'prot-dps-12' }
+        ];
+
+        // ============ SCREEN MANAGEMENT ============
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // ============ LIVES SYSTEM ============
+        function renderLives(containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const life = document.createElement('div');
+                life.className = 'life' + (i >= gameState.lives ? ' lost' : '');
+                life.innerHTML = `<svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C7.58 2 4 5.58 4 10V14C4 14.55 4.45 15 5 15H6V18C6 18.55 6.45 19 7 19H17C17.55 19 18 18.55 18 18V15H19C19.55 15 20 14.55 20 14V10C20 5.58 16.42 2 12 2Z" fill="#F39C12"/>
+                    <path d="M4 14V15C4 15.55 4.45 16 5 16H19C19.55 16 20 15.55 20 15V14H4Z" fill="#E67E22"/>
+                    <ellipse cx="12" cy="10" rx="6" ry="4" fill="#F5B041"/>
+                </svg>`;
+                container.appendChild(life);
+            }
+        }
+
+        function loseLife() {
+            gameState.lives--;
+            renderLives('livesContainer');
+            renderLives('decisionLivesContainer');
+            renderLives('battleLivesContainer');
+            
+            if (gameState.lives <= 0) {
+                setTimeout(() => {
+                    document.getElementById('gameOver').classList.add('active');
+                }, 500);
+                return false;
+            }
+            return true;
+        }
+
+        // ============ GAME START ============
+        function startGame() {
+            gameState.currentLevel = 1;
+            gameState.lives = 5;
+            gameState.visitedElements = [];
+            gameState.phase = 'exploration';
+            
+            loadLevel(1);
+            showScreen('exploration-screen');
+        }
+
+        function restartGame() {
+            document.getElementById('gameOver').classList.remove('active');
+            startGame();
+        }
+
+        // ============ LEVEL LOADING ============
+        function loadLevel(levelNum) {
+            const level = levels[levelNum];
+            gameState.currentLevel = levelNum;
+            gameState.visitedElements = [];
+            gameState.currentBattle = 0;
+            isMoving = false;
+            
+            // Set initial position at center of a walkable cell
+            const zones = walkableZones[levelNum];
+            let startCell = null;
+            
+            // Try to find a good starting cell (prefer lower rows)
+            if (zones && zones.length > 0) {
+                // Sort by row number descending to start at bottom
+                const sortedZones = [...zones].sort((a, b) => {
+                    const rowA = parseInt(a.slice(1));
+                    const rowB = parseInt(b.slice(1));
+                    return rowB - rowA;
+                });
+                startCell = sortedZones[0];
+            }
+            
+            if (startCell) {
+                const center = getCellCenter(startCell);
+                gameState.playerPos = center;
+            } else {
+                gameState.playerPos = { x: 50, y: 75 };
+            }
+            
+            // Update badges
+            document.getElementById('levelBadge').textContent = level.badge;
+            document.getElementById('decisionLevelBadge').textContent = level.badge;
+            document.getElementById('battleLevelBadge').textContent = level.badge;
+            
+            // Render lives
+            renderLives('livesContainer');
+            renderLives('decisionLivesContainer');
+            renderLives('battleLivesContainer');
+            
+            // Setup map background
+            const mapBg = document.getElementById('mapBg');
+            mapBg.className = 'map-bg';
+            if (mapBackgrounds[levelNum]) {
+                mapBg.style.backgroundImage = `url(${mapBackgrounds[levelNum]})`;
+            }
+            
+            // Clear and add elements
+            document.querySelectorAll('.map-element').forEach(el => el.remove());
+            level.elements.forEach(elem => {
+                const el = document.createElement('div');
+                el.className = `map-element ${elem.type}`;
+                el.id = elem.id;
+                el.style.left = elem.x + '%';
+                el.style.top = elem.y + '%';
+                
+                // Get icon image based on type
+                let iconContent;
+                if (elementIcons[elem.type]) {
+                    iconContent = `<img src="${elementIcons[elem.type]}" alt="${elem.label}">`;
+                } else {
+                    iconContent = elem.icon; // Fallback to emoji
+                }
+                
+                el.innerHTML = `
+                    <div class="map-element-icon">${iconContent}</div>
+                    <div class="map-element-label">${elem.label}</div>
+                `;
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    interactWith(elem);
+                };
+                document.getElementById('gameMap').appendChild(el);
+            });
+            
+            // Reset player position and sprite
+            const player = document.getElementById('player');
+            player.style.left = gameState.playerPos.x + '%';
+            player.style.top = gameState.playerPos.y + '%';
+            gameState.playerDirection = 'down';
+            const spriteImg = document.getElementById('playerSprite');
+            spriteImg.src = playerSprites.down;
+            spriteImg.style.transform = 'scale(0.75)'; // down sprite is 75%
+            
+            // Adjust player size based on level
+            // Player size: Level 1 = 75px, Level 2 = 50px, Level 3 = 38px (75% of 50)
+            let playerSize;
+            if (levelNum === 1) playerSize = '75px';
+            else if (levelNum === 2) playerSize = '50px';
+            else playerSize = '38px';
+            
+            player.style.width = playerSize;
+            player.style.height = playerSize;
+            
+            // Reset progress
+            updateProgress();
+            
+            // Hide decision button initially
+            document.getElementById('btnDecision').classList.remove('visible');
+        }
+
+        // ============ MAP INTERACTION ============
+        function handleMapClick(event) {
+            if (isMoving) return; // Don't accept new clicks while moving
+            
+            const map = document.getElementById('gameMap');
+            const rect = map.getBoundingClientRect();
+            let x = ((event.clientX - rect.left) / rect.width) * 100;
+            let y = ((event.clientY - rect.top) / rect.height) * 100;
+            
+            // Get current cell and target cell
+            const currentCell = getCellAt(gameState.playerPos.x, gameState.playerPos.y);
+            let targetCell = getCellAt(x, y);
+            
+            // If target not walkable, find nearest walkable
+            const zones = walkableZones[gameState.currentLevel];
+            if (!zones || !zones.includes(targetCell)) {
+                const nearest = findNearestWalkable(x, y, gameState.currentLevel);
+                x = nearest.x;
+                y = nearest.y;
+                targetCell = nearest.cell || getCellAt(x, y);
+            }
+            
+            // Show tap indicator at actual destination
+            const indicator = document.getElementById('tapIndicator');
+            indicator.style.left = x + '%';
+            indicator.style.top = y + '%';
+            indicator.classList.remove('active');
+            void indicator.offsetWidth;
+            indicator.classList.add('active');
+            
+            // Find path and move
+            if (currentCell && targetCell && currentCell !== targetCell) {
+                const path = findPathBFS(currentCell, targetCell, gameState.currentLevel);
+                if (path.length > 0) {
+                    moveAlongPath(path);
+                }
+            }
+        }
+
+        function moveAlongPath(cellPath) {
+            if (cellPath.length === 0) return;
+            
+            isMoving = true;
+            let index = 0;
+            
+            function moveToNextCell() {
+                if (index >= cellPath.length) {
+                    isMoving = false;
+                    return;
+                }
+                
+                const targetCell = cellPath[index];
+                const target = getCellCenter(targetCell);
+                index++;
+                
+                animateSingleStep(target.x, target.y, moveToNextCell);
+            }
+            
+            moveToNextCell();
+        }
+
+        function animateSingleStep(targetX, targetY, callback) {
+            const player = document.getElementById('player');
+            const startX = gameState.playerPos.x;
+            const startY = gameState.playerPos.y;
+            const deltaX = targetX - startX;
+            const deltaY = targetY - startY;
+            
+            // Update direction
+            updatePlayerDirection(deltaX, deltaY);
+            
+            const duration = 100; // ms per cell
+            const startTime = performance.now();
+            
+            function step(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                const currentX = startX + deltaX * progress;
+                const currentY = startY + deltaY * progress;
+                
+                player.style.left = currentX + '%';
+                player.style.top = currentY + '%';
+                
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    gameState.playerPos = { x: targetX, y: targetY };
+                    if (callback) callback();
+                }
+            }
+            
+            requestAnimationFrame(step);
+        }
+
+        function updatePlayerDirection(deltaX, deltaY) {
+            let direction;
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                direction = deltaX > 0 ? 'right' : 'left';
+            } else {
+                direction = deltaY > 0 ? 'down' : 'up';
+            }
+            gameState.playerDirection = direction;
+            
+            const spriteImg = document.getElementById('playerSprite');
+            if (spriteImg && playerSprites[direction]) {
+                spriteImg.src = playerSprites[direction];
+                // Up/down sprites are 75% size
+                if (direction === 'up' || direction === 'down') {
+                    spriteImg.style.transform = 'scale(0.75)';
+                } else {
+                    spriteImg.style.transform = 'scale(1)';
+                }
+            }
+        }
+
+        function movePlayerToCell(targetCell) {
+            const currentCell = getCellAt(gameState.playerPos.x, gameState.playerPos.y);
+            if (!currentCell || !targetCell || currentCell === targetCell) return;
+            
+            const path = findPathBFS(currentCell, targetCell, gameState.currentLevel);
+            if (path.length > 0) {
+                moveAlongPath(path);
+            }
+        }
+
+        function interactWith(element) {
+            // Find walkable cell near element
+            let targetX = element.x;
+            let targetY = element.y + 10;
+            
+            const nearest = findNearestWalkable(targetX, targetY, gameState.currentLevel);
+            const targetCell = nearest.cell || getCellAt(nearest.x, nearest.y);
+            
+            if (targetCell) {
+                movePlayerToCell(targetCell);
+            }
+            
+            // Mark as visited
+            if (!gameState.visitedElements.includes(element.id)) {
+                gameState.visitedElements.push(element.id);
+                document.getElementById(element.id).classList.add('visited');
+                updateProgress();
+            }
+            
+            // Show dialogue after brief delay for movement
+            setTimeout(() => {
+                showDialogue(element.dialogue);
+            }, 300);
+        }
+
+        function showDialogue(dialogue) {
+            const avatarEl = document.getElementById('dialogueAvatar');
+            
+            // Check if NPC has sprite image
+            if (dialogue.npcSprite && npcSprites[dialogue.npcSprite]) {
+                avatarEl.innerHTML = `<img src="${npcSprites[dialogue.npcSprite]}" alt="${dialogue.name}">`;
+            } else {
+                avatarEl.innerHTML = dialogue.avatar;
+            }
+            
+            document.getElementById('dialogueName').textContent = dialogue.name;
+            document.getElementById('dialogueText').textContent = dialogue.text;
+            document.getElementById('dialogueBox').classList.add('active');
+        }
+
+        function closeDialogue() {
+            document.getElementById('dialogueBox').classList.remove('active');
+        }
+
+        function backToMap() {
+            showScreen('exploration-screen');
+        }
+
+        function updateProgress() {
+            const level = levels[gameState.currentLevel];
+            const total = level.elements.length;
+            const visited = gameState.visitedElements.length;
+            const percent = (visited / total) * 100;
+            
+            document.getElementById('progressFill').style.width = percent + '%';
+            
+            // Show decision button when all visited
+            if (visited >= total) {
+                document.getElementById('btnDecision').classList.add('visible');
+            }
+        }
+
+        // ============ DECISION PHASE ============
+        function openDecision() {
+            const level = levels[gameState.currentLevel];
+            const container = document.getElementById('decisionContainer');
+            
+            let html = '<h2 class="decision-title">📋 Tu Proyecto</h2>';
+            html += '<button class="btn-back-to-map" onclick="backToMap()">← Volver al mapa</button>';
+            
+            // Esquema de conexión
+            html += `
+                <div class="decision-section">
+                    <div class="decision-section-title">Esquema de Conexión</div>
+                    <div class="decision-options" data-field="esquema">
+                        <div class="decision-option" data-value="colectivo" onclick="selectOption(this)">
+                            <div class="decision-option-radio"></div>
+                            <span>Colectivo con contador principal</span>
+                        </div>
+                        <div class="decision-option" data-value="contador_comun" onclick="selectOption(this)">
+                            <div class="decision-option-radio"></div>
+                            <span>Individual - contador común vivienda</span>
+                        </div>
+                        <div class="decision-option" data-value="contador_individual" onclick="selectOption(this)">
+                            <div class="decision-option-radio"></div>
+                            <span>Individual - contador por estación</span>
+                        </div>
+                        <div class="decision-option" data-value="circuito_adicional" onclick="selectOption(this)">
+                            <div class="decision-option-radio"></div>
+                            <span>Circuito adicional</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Potencia
+            html += `
+                <div class="decision-section">
+                    <div class="decision-section-title">Potencia por Punto</div>
+                    <div class="decision-options" data-field="potencia">
+                        <div class="decision-option" data-value="3.7" onclick="selectOption(this)">
+                            <div class="decision-option-radio"></div>
+                            <span>3,7 kW (Modo 2)</span>
+                        </div>
+                        <div class="decision-option" data-value="7.4" onclick="selectOption(this)">
+                            <div class="decision-option-radio"></div>
+                            <span>7,4 kW (Modo 3 monofásico)</span>
+                        </div>
+                        <div class="decision-option" data-value="22" onclick="selectOption(this)">
+                            <div class="decision-option-radio"></div>
+                            <span>22 kW (Modo 3 trifásico)</span>
+                        </div>
+                        <div class="decision-option" data-value="50" onclick="selectOption(this)">
+                            <div class="decision-option-radio"></div>
+                            <span>>22 kW (Modo 4 DC)</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Protección diferencial
+            html += `
+                <div class="decision-section">
+                    <div class="decision-section-title">Protección Diferencial</div>
+                    <div class="decision-options" data-field="proteccion">
+                        <div class="decision-option" data-value="dif_a" onclick="selectOption(this)">
+                            <div class="decision-option-radio"></div>
+                            <span>Tipo A (AC + pulsante)</span>
+                        </div>
+                        <div class="decision-option" data-value="dif_b" onclick="selectOption(this)">
+                            <div class="decision-option-radio"></div>
+                            <span>Tipo B (AC + DC)</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            html += '<button class="btn-validate" id="btnValidate" onclick="validateDecision()" disabled>Validar Proyecto</button>';
+            
+            container.innerHTML = html;
+            showScreen('decision-screen');
+        }
+
+        function selectOption(element) {
+            const parent = element.closest('.decision-options');
+            parent.querySelectorAll('.decision-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            // Check if all sections have selection
+            checkAllSelected();
+        }
+
+        function checkAllSelected() {
+            const sections = document.querySelectorAll('.decision-options');
+            let allSelected = true;
+            sections.forEach(section => {
+                if (!section.querySelector('.selected')) {
+                    allSelected = false;
+                }
+            });
+            document.getElementById('btnValidate').disabled = !allSelected;
+        }
+
+        function validateDecision() {
+            const level = levels[gameState.currentLevel];
+            const correct = level.correctDecision;
+            
+            const esquema = document.querySelector('[data-field="esquema"] .selected')?.dataset.value;
+            const potencia = document.querySelector('[data-field="potencia"] .selected')?.dataset.value;
+            const proteccion = document.querySelector('[data-field="proteccion"] .selected')?.dataset.value;
+            
+            // Check if correct
+            if (esquema === correct.esquema && potencia === correct.potencia && proteccion === correct.proteccion) {
+                // Correct! Show transition
+                showTransition();
+            } else {
+                // Wrong - lose life and shake
+                document.querySelector('.decision-container').classList.add('shake');
+                setTimeout(() => {
+                    document.querySelector('.decision-container').classList.remove('shake');
+                }, 500);
+                
+                if (loseLife()) {
+                    // Give hint
+                    alert('❌ Revisa tu proyecto. Algo no está bien configurado para este escenario.');
+                }
+            }
+        }
+
+        // ============ TRANSITION PHASE ============
+        function showTransition() {
+            const level = levels[gameState.currentLevel];
+            const transitionTexts = {
+                1: 'Has instalado el punto de recarga en casa de los García.',
+                2: 'Has instalado los 10 puntos de recarga en la comunidad.',
+                3: 'Has instalado la zona de recarga rápida en ElectraPlaza.'
+            };
+            
+            document.getElementById('transitionText').textContent = transitionTexts[gameState.currentLevel];
+            document.getElementById('transitionScreen').classList.add('active');
+        }
+
+        function startBattleFromTransition() {
+            document.getElementById('transitionScreen').classList.remove('active');
+            startBattle();
+        }
+
+        // ============ BATTLE PHASE ============
+        function startBattle() {
+            gameState.phase = 'battle';
+            gameState.currentBattle = 0;
+            
+            showScreen('battle-screen');
+            showBattle();
+        }
+
+        function showBattle() {
+            const level = levels[gameState.currentLevel];
+            const battle = level.battles[gameState.currentBattle];
+            
+            // Update turn indicator
+            const battleNum = gameState.currentBattle + 1;
+            const totalBattles = level.battles.length;
+            document.getElementById('battleTurnText').textContent = 
+                `Turno ${battleNum} de ${totalBattles}`;
+            
+            // Update enemy
+            const enemySprite = document.getElementById('enemySprite');
+            if (enemySprites[battle.id]) {
+                enemySprite.innerHTML = `<img src="${enemySprites[battle.id]}" alt="${battle.name}" style="width:100%;height:100%;object-fit:contain;">`;
+            } else {
+                enemySprite.innerHTML = battle.icon;
+            }
+            enemySprite.className = 'enemy-sprite'; // Reset classes
+            document.getElementById('enemyCardName').textContent = battle.name;
+            document.getElementById('enemyDesc').textContent = battle.desc;
+            
+            // Reset HP bar
+            const hpFill = document.getElementById('enemyHpFill');
+            hpFill.style.width = '100%';
+            hpFill.classList.remove('damage');
+            
+            // Render protection options
+            const container = document.getElementById('protectionOptions');
+            container.innerHTML = '';
+            protections.forEach(prot => {
+                const btn = document.createElement('button');
+                btn.className = 'protection-btn ' + prot.class;
+                btn.id = 'prot-btn-' + prot.id;
+                const iconContent = protectionIcons[prot.id] 
+                    ? `<img src="${protectionIcons[prot.id]}" alt="${prot.name}" style="width:36px;height:36px;object-fit:contain;">`
+                    : prot.icon;
+                btn.innerHTML = `
+                    <div class="protection-icon">${iconContent}</div>
+                    <span>${prot.name}</span>
+                `;
+                btn.onclick = () => selectProtection(prot.id, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectProtection(protId, btnElement) {
+            const level = levels[gameState.currentLevel];
+            const battle = level.battles[gameState.currentBattle];
+            
+            const isCorrect = protId === battle.correct;
+            
+            // Disable all buttons during animation
+            document.querySelectorAll('.protection-btn').forEach(b => b.disabled = true);
+            
+            // Attack animation
+            btnElement.classList.add('attacking');
+            
+            // Show attack effect
+            const attackEffect = document.getElementById('attackEffect');
+            const prot = protections.find(p => p.id === protId);
+            if (protectionIcons[prot.id]) {
+                attackEffect.innerHTML = `<img src="${protectionIcons[prot.id]}" alt="${prot.name}" style="width:100%;height:100%;object-fit:contain;">`;
+            } else {
+                attackEffect.innerHTML = prot.icon;
+            }
+            attackEffect.classList.remove('active');
+            void attackEffect.offsetWidth;
+            attackEffect.classList.add('active');
+            
+            setTimeout(() => {
+                // Enemy hit animation
+                const enemySprite = document.getElementById('enemySprite');
+                const hpFill = document.getElementById('enemyHpFill');
+                
+                if (isCorrect) {
+                    enemySprite.classList.add('hit');
+                    hpFill.classList.add('damage');
+                    hpFill.style.width = '0%';
+                    
+                    setTimeout(() => {
+                        enemySprite.classList.add('defeated');
+                        setTimeout(() => showFeedback(true, battle), 600);
+                    }, 500);
+                } else {
+                    // Wrong - shake enemy (resists)
+                    enemySprite.style.animation = 'none';
+                    void enemySprite.offsetWidth;
+                    enemySprite.style.animation = 'enemyFloat 2s ease-in-out infinite';
+                    showFeedback(false, battle);
+                }
+            }, 400);
+        }
+
+        function showFeedback(isCorrect, battle) {
+            // Show feedback
+            const feedback = document.getElementById('battleFeedback');
+            const icon = document.getElementById('feedbackIcon');
+            const title = document.getElementById('feedbackTitle');
+            const text = document.getElementById('feedbackText');
+            const tip = document.getElementById('feedbackTip');
+            const tipText = document.getElementById('feedbackTipText');
+            const btn = document.getElementById('feedbackBtn');
+            
+            if (isCorrect) {
+                icon.className = 'feedback-icon success';
+                icon.textContent = '✓';
+                title.textContent = '¡Súper efectivo!';
+                text.textContent = battle.feedback.success;
+                tipText.textContent = battle.feedback.tip;
+                btn.className = 'feedback-btn success';
+                btn.textContent = 'Continuar';
+            } else {
+                icon.className = 'feedback-icon error';
+                icon.textContent = '✗';
+                title.textContent = 'No es efectivo...';
+                text.textContent = 'Esa protección no es adecuada para esta amenaza.';
+                tipText.textContent = battle.wrongFeedback.tip;
+                btn.className = 'feedback-btn retry';
+                btn.textContent = 'Reintentar';
+                
+                loseLife();
+            }
+            
+            tip.style.display = 'block';
+            feedback.classList.add('active');
+            feedback.dataset.correct = isCorrect;
+        }
+
+        function closeFeedback() {
+            const feedback = document.getElementById('battleFeedback');
+            const wasCorrect = feedback.dataset.correct === 'true';
+            feedback.classList.remove('active');
+            
+            // Re-enable buttons
+            document.querySelectorAll('.protection-btn').forEach(b => {
+                b.disabled = false;
+                b.classList.remove('attacking');
+            });
+            
+            if (wasCorrect) {
+                // Move to next battle or complete level
+                gameState.currentBattle++;
+                const level = levels[gameState.currentLevel];
+                
+                if (gameState.currentBattle >= level.battles.length) {
+                    // Level complete!
+                    showLevelComplete();
+                } else {
+                    // Next battle
+                    showBattle();
+                }
+            }
+            // If wrong, just close and let them try again
+        }
+
+        // ============ LEVEL COMPLETE ============
+        function showLevelComplete() {
+            const level = levels[gameState.currentLevel];
+            
+            document.getElementById('levelCompleteTitle').textContent = '¡' + level.name + ' completado!';
+            document.getElementById('levelCompleteText').textContent = 'Has defendido la instalación con éxito durante 6 meses.';
+            document.getElementById('unlockedText').textContent = 'Fichas desbloqueadas: ' + level.unlocks.join(', ');
+            
+            if (gameState.currentLevel >= 3) {
+                document.getElementById('levelCompleteBtn').textContent = '¡Victoria Final!';
+                document.getElementById('levelCompleteBtn').onclick = showVictory;
+            } else {
+                document.getElementById('levelCompleteBtn').textContent = 'Siguiente encargo →';
+                document.getElementById('levelCompleteBtn').onclick = nextLevel;
+            }
+            
+            document.getElementById('levelComplete').classList.add('active');
+        }
+
+        function nextLevel() {
+            document.getElementById('levelComplete').classList.remove('active');
+            gameState.currentLevel++;
+            loadLevel(gameState.currentLevel);
+            showScreen('exploration-screen');
+        }
+
+        function showVictory() {
+            document.getElementById('levelComplete').classList.remove('active');
+            showScreen('victory-screen');
+        }
+
+        // ============ FINISH GAME ============
+        function finishGame() {
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ 
+                    action: 'TASK_COMPLETED' 
+                }));
+            } else {
+                console.log('Game completed!');
+                alert('¡Juego completado! (ReactNativeWebView no disponible)');
+            }
+        }
+
+        // ============ INITIALIZE UI ASSETS ============
+        function initUIAssets() {
+            // Set tap indicator background
+            document.getElementById('tapIndicator').style.backgroundImage = `url(${uiAssets.markerDestino})`;
+            
+            // Set battle screen background
+            document.getElementById('battle-screen').style.backgroundImage = `url(${uiAssets.battleBg})`;
+        }
+
+        // Initialize on load
+        initUIAssets();
+    </script>
+</body>
+</html>
