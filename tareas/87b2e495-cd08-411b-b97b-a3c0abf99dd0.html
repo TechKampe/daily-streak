@@ -1,0 +1,179 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Seguro o riesgo? ⚡ Desliza tu instinto - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguro o riesgo? ⚡</div>
+<div class="subtitle" id="subtitle">Desliza tu instinto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="tinder-card">
+<div class="tinder-card-content" id="card-content"></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o pulsa para responder</div>
+<div class="tinder-buttons" id="tinder-buttons">
+<button class="btn-option" id="btn-incorrect">❌ Incorrecto</button>
+<button class="btn-option" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Primera semana como ayudante ⚡</div>
+<div class="modal-body">Tu jefe te deja solo 5 min. Decide qué acciones son seguras y cuáles peligrosas. Desliza derecha = Correcto, izquierda = Incorrecto.</div>
+<div class="modal-actions">
+<button class="cta" id="start-btn">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Trabajar en el cuadro eléctrico sin desconectar la corriente",correct:false,exp:"Siempre hay que cortar la alimentación antes de manipular el cuadro. Riesgo de electrocución grave."},
+{text:"Usar herramientas con mango aislante para trabajos eléctricos",correct:true,exp:"Las herramientas aisladas protegen contra descargas hasta 1000V según normativa."},
+{text:"Comprobar ausencia de tensión con un buscapolos antes de tocar cables",correct:true,exp:"Verificar ausencia de tensión es obligatorio antes de cualquier manipulación eléctrica."},
+{text:"Manipular cables con las manos húmedas o mojadas",correct:false,exp:"El agua aumenta la conductividad. Nunca toques instalaciones eléctricas con manos húmedas."},
+{text:"Señalizar la zona de trabajo con carteles de advertencia",correct:true,exp:"La señalización previene que otros reconecten mientras trabajas. Es obligatoria por PRL."},
+{text:"Usar una escalera metálica junto a líneas eléctricas activas",correct:false,exp:"Las escaleras metálicas conducen electricidad. Usa escaleras de fibra de vidrio cerca de líneas activas."}
+];
+let idx=0,answers=[],startX=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('tinder-card'),cardContent=document.getElementById('card-content'),progressBar=document.getElementById('progress-bar'),counter=document.getElementById('counter'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect'),startBtn=document.getElementById('start-btn');
+
+function renderCard(){
+if(idx>=cards.length){showResults();return}
+cardContent.textContent=cards[idx].text;
+progressBar.style.width=(idx/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+card.classList.remove('correct','incorrect');
+ensureFits();
+}
+
+function answer(isCorrect){
+const correct=isCorrect===cards[idx].correct;
+answers.push({text:cards[idx].text,userAnswer:isCorrect,correctAnswer:cards[idx].correct,isCorrect:correct,exp:cards[idx].exp});
+const direction=isCorrect?1:-1;
+card.style.transform=`translateX(${direction*300}px) rotate(${direction*30}deg)`;
+card.style.opacity='0';
+idx++;
+setTimeout(renderCard,300);
+}
+
+function handleDragStart(e){
+isDragging=true;
+startX=e.type.includes('mouse')?e.clientX:e.touches[0].clientX;
+card.style.transition='none';
+}
+
+function handleDragMove(e){
+if(!isDragging)return;
+e.preventDefault();
+currentX=(e.type.includes('mouse')?e.clientX:e.touches[0].clientX)-startX;
+const rotation=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotation}deg)`;
+card.classList.remove('correct','incorrect');
+if(currentX>50)card.classList.add('correct');
+else if(currentX<-50)card.classList.add('incorrect');
+}
+
+function handleDragEnd(){
+if(!isDragging)return;
+isDragging=false;
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+if(currentX>80){answer(true);}
+else if(currentX<-80){answer(false);}
+else{card.style.transform='translateX(0) rotate(0deg)';card.classList.remove('correct','incorrect');}
+currentX=0;
+}
+
+card.addEventListener('mousedown',handleDragStart);
+card.addEventListener('touchstart',handleDragStart,{passive:true});
+document.addEventListener('mousemove',handleDragMove);
+document.addEventListener('touchmove',handleDragMove,{passive:false});
+document.addEventListener('mouseup',handleDragEnd);
+document.addEventListener('touchend',handleDragEnd);
+
+btnCorrect.onclick=()=>answer(true);
+btnIncorrect.onclick=()=>answer(false);
+startBtn.onclick=()=>{modal.classList.remove('active');renderCard();};
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Reto completado!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">${score>=4?'¡Buen instinto de seguridad!':'Repasa las normas de PRL eléctrica'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.isCorrect?'✓ Acertaste':'✗ Tu respuesta: '+(a.userAnswer?'Correcto':'Incorrecto')}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-message">Recuerda: la seguridad eléctrica salva vidas. ¡Sigue aprendiendo!</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;padding:16px;touch-action:none;}
+.tinder-card{width:100%;max-width:300px;min-height:180px;background:#fff;border:3px solid #00E6BC;border-radius:16px;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;cursor:grab;user-select:none;transition:transform 0.3s ease,opacity 0.3s ease;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
+.tinder-card:active{cursor:grabbing;}
+.tinder-card.correct{border-color:#00E6BC;background:rgba(0,230,188,0.1);}
+.tinder-card.incorrect{border-color:#FF6B9D;background:rgba(255,107,157,0.1);}
+.tinder-card-content{font-size:1.1rem;font-weight:500;line-height:1.4;color:#1a1a2e;}
+.tinder-buttons{display:flex;gap:12px;width:100%;}
+.tinder-buttons .btn-option{flex:1;font-size:0.95rem;}
+.results-message{text-align:center;padding:16px;font-weight:500;color:#00E6BC;}
+</style>
+</body>
+</html>
