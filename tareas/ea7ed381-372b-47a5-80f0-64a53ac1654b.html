@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🎁 ¡Feliz Día de Reyes!</div>
+<div class="modal-body">El mejor regalo que puedes hacerte es apostar por tu crecimiento. ¡Sigue así! Kämpe te acompaña en tu camino.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<script>
+const statements=[
+{text:"Siempre hay que desconectar el circuito antes de manipularlo",correct:true,exp:"Regla de oro: cortar tensión antes de trabajar evita el 90% de accidentes eléctricos."},
+{text:"Los guantes de goma de cocina sirven como protección eléctrica",correct:false,exp:"Solo los guantes dieléctricos homologados ofrecen protección real contra descargas."},
+{text:"24V en corriente continua se considera tensión de seguridad",correct:true,exp:"Tensiones ≤24V DC o 50V AC se consideran seguras en condiciones normales."},
+{text:"Las herramientas aisladas solo son necesarias en alta tensión",correct:false,exp:"Siempre debes usar herramientas aisladas, incluso en baja tensión pueden salvarte la vida."},
+{text:"Es seguro trabajar con instalaciones eléctricas en zonas húmedas",correct:false,exp:"La humedad reduce la resistencia del cuerpo y aumenta el riesgo de electrocución."},
+{text:"El triángulo amarillo con rayo indica riesgo eléctrico",correct:true,exp:"Esta señalización advierte de peligro eléctrico y obliga a extremar precauciones."},
+{text:"Ante una descarga, lo primero es separar a la víctima del cable con las manos",correct:false,exp:"Nunca toques directamente. Corta la corriente o usa material aislante para separar."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),modal=document.getElementById('modal');
+
+function startGame(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+const s=statements[idx];
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">¿Esta afirmación es verdadera o falsa?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i style="width:${(idx/statements.length)*100}%"></i></div></div>
+<span class="badge">${idx+1}/${statements.length}</span>
+</div>
+</div>
+<div class="main">
+<div class="card" style="text-align:center;padding:24px 16px;">
+<span class="card-text" style="font-size:1.1rem;line-height:1.4">${s.text}</span>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Toca tu respuesta</div>
+<div style="display:flex;gap:12px;width:100%">
+<button class="cta" style="flex:1;background:#22c55e" onclick="answer(true)">✓ Verdadero</button>
+<button class="cta" style="flex:1;background:#ef4444" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>`;
+ensureFits();
+}
+
+function answer(userAns){
+const s=statements[idx];
+const correct=userAns===s.correct;
+answers.push({text:s.text,userAns,correctAns:s.correct,correct,exp:s.exp});
+const btns=scene.querySelectorAll('.footer .cta');
+btns.forEach(b=>b.disabled=true);
+btns[userAns?0:1].classList.add(correct?'correct':'incorrect');
+setTimeout(()=>{
+idx++;
+if(idx<statements.length)render();
+else showResults();
+},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAns?'Verdadero':'Falso'} ${a.correct?'✓':'✗'} | Correcta: ${a.correctAns?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="card" style="margin:16px 0;padding:16px;text-align:center;">
+<strong>💡 Consejo final:</strong><br>La seguridad no es negociable. Antes de tocar cualquier instalación: verificar, señalizar, desconectar. Tu vida vale más que cualquier urgencia.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
