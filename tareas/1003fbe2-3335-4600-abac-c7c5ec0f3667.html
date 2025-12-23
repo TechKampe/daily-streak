@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle" id="statement">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options">
+<button class="btn-option" id="btn-true" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btn-false" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Elige si la afirmación es verdadera o falsa</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🎁 ¡Feliz Día de Reyes!</div>
+<div class="modal-body">El mejor regalo es apostar por tu crecimiento. ¡Sigue así! Kämpe te acompaña en tu camino.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements=[
+{text:"Los guantes de cuero son suficientes para trabajar con electricidad.",ans:false,exp:"Los guantes de cuero NO protegen contra descargas. Se necesitan guantes dieléctricos homologados."},
+{text:"Siempre hay que cortar la corriente antes de manipular un cuadro eléctrico.",ans:true,exp:"Correcto. La regla de oro: cortar, bloquear, verificar ausencia de tensión antes de trabajar."},
+{text:"Un voltaje de 24V no puede ser peligroso para una persona.",ans:false,exp:"Incluso tensiones bajas pueden ser peligrosas en condiciones de humedad o contacto prolongado."},
+{text:"Las herramientas con mango aislado protegen contra descargas eléctricas.",ans:true,exp:"Sí, siempre que estén homologadas y en buen estado. Revísalas antes de cada uso."},
+{text:"Trabajar con las manos mojadas aumenta el riesgo de electrocución.",ans:true,exp:"El agua reduce la resistencia del cuerpo, aumentando la corriente que circula. ¡Manos secas siempre!"},
+{text:"La señal de triángulo amarillo con rayo indica zona segura.",ans:false,exp:"Ese símbolo indica RIESGO ELÉCTRICO. Significa peligro, no seguridad."},
+{text:"Ante una descarga eléctrica, lo primero es separar a la víctima de la fuente.",ans:true,exp:"Correcto, pero SIN tocarla directamente. Usa material aislante o corta la corriente primero."}
+];
+let idx=0,score=0,answers=[],blocked=false;
+const scene=document.getElementById('scene'),stEl=document.getElementById('statement'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnT=document.getElementById('btn-true'),btnF=document.getElementById('btn-false'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=statements.length){showResults();return}
+blocked=false;
+const s=statements[idx];
+stEl.textContent=s.text;
+prog.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+btnT.className='btn-option';btnF.className='btn-option';
+ensureFits();
+}
+
+function answer(val){
+if(blocked)return;
+blocked=true;
+const s=statements[idx];
+const correct=val===s.ans;
+if(correct)score++;
+answers.push({text:s.text,correct,exp:s.exp,userAns:val,realAns:s.ans});
+if(val){btnT.classList.add(correct?'correct':'incorrect');}
+else{btnF.classList.add(correct?'correct':'incorrect');}
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAns?'Verdadero':'Falso'} ${a.correct?'✓':'✗'} | Correcta: ${a.realAns?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">💡 Consejo: La prevención empieza por la actitud. Nunca asumas que un circuito está sin tensión, ¡compruébalo siempre!</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
