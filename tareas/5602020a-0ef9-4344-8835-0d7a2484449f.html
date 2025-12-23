@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle" id="statement">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options">
+<button class="btn-option" id="btnTrue" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btnFalse" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">¿Esta afirmación es verdadera o falsa?</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🎁 ¡Feliz Día de Reyes!</div>
+<div class="modal-body">El mejor regalo es apostar por tu crecimiento. ¡Sigue así! Kämpe te acompaña en tu camino como electricista.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar reto!</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements=[
+{text:"Los guantes de cuero protegen de descargas eléctricas",correct:false,exp:"Solo los guantes dieléctricos homologados protegen. El cuero no aísla la electricidad."},
+{text:"Siempre hay que desconectar antes de manipular",correct:true,exp:"Regla de oro: cortar alimentación, verificar ausencia de tensión y señalizar."},
+{text:"12V no puede ser peligroso nunca",correct:false,exp:"En condiciones húmedas o con heridas, incluso bajas tensiones pueden ser letales."},
+{text:"Las herramientas aisladas tienen mango naranja/rojo",correct:true,exp:"El color identifica herramientas con aislamiento hasta 1000V según norma VDE."},
+{text:"Se puede trabajar con las manos mojadas si hay poca tensión",correct:false,exp:"El agua reduce la resistencia del cuerpo, aumentando el riesgo de electrocución."},
+{text:"El cartel 'Peligro eléctrico' es obligatorio en cuadros",correct:true,exp:"La señalización advierte del riesgo y es obligatoria por normativa de seguridad."},
+{text:"Ante una descarga, lo primero es separar a la víctima",correct:false,exp:"Primero corta la corriente. Tocar a la víctima puede electrocutarte también."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),stEl=document.getElementById('statement'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),btnTrue=document.getElementById('btnTrue'),btnFalse=document.getElementById('btnFalse'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=statements.length){showResults();return}
+const s=statements[idx];
+stEl.textContent=s.text;
+prog.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+helper.textContent='¿Esta afirmación es verdadera o falsa?';
+btnTrue.classList.remove('selected','correct','incorrect');
+btnFalse.classList.remove('selected','correct','incorrect');
+btnTrue.disabled=false;
+btnFalse.disabled=false;
+ensureFits();
+}
+
+function answer(userAnswer){
+btnTrue.disabled=true;
+btnFalse.disabled=true;
+const correct=userAnswer===statements[idx].correct;
+if(userAnswer){
+btnTrue.classList.add('selected');
+btnTrue.classList.add(correct?'correct':'incorrect');
+}else{
+btnFalse.classList.add('selected');
+btnFalse.classList.add(correct?'correct':'incorrect');
+}
+answers.push({
+text:statements[idx].text,
+userAnswer:userAnswer,
+correctAnswer:statements[idx].correct,
+isCorrect:correct,
+exp:statements[idx].exp
+});
+helper.textContent=correct?'¡Bien! Siguiente...':'Hmm... Siguiente...';
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+const score=answers.filter(a=>a.isCorrect).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">⚡ ¡Reto completado!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">"${a.text}"</div>
+<div class="result-answer">Dijiste: ${a.userAnswer?'Verdadero':'Falso'} ${a.isCorrect?'✓':'✗'} (Era: ${a.correctAnswer?'Verdadero':'Falso'})</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> La seguridad no es opcional. Antes de tocar, verifica. Un segundo de prevención vale más que toda una vida.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
