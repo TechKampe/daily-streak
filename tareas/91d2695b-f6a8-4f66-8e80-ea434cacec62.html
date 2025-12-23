@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Paso a paso: domina el protocolo - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const sequences=[
+{title:"Preparación eléctrica",steps:["Desconectar alimentación del cuadro","Verificar ausencia de tensión con multímetro","Colocar señalización de trabajo","Preparar herramientas aisladas","Iniciar la intervención"],correct:[0,1,2,3,4],exp:"Primero cortar corriente, luego verificar, señalizar, preparar y trabajar. Este orden previene electrocuciones."},
+{title:"Atención de avería",steps:["Escuchar descripción del cliente","Hacer preguntas de diagnóstico","Inspeccionar visualmente la zona","Informar diagnóstico y presupuesto","Proceder con autorización"],correct:[0,1,2,3,4],exp:"Escuchar, preguntar, inspeccionar, informar y actuar. Genera confianza y evita trabajos no autorizados."},
+{title:"Cierre de jornada",steps:["Recoger herramientas y materiales","Limpiar zona de trabajo","Verificar que no queden residuos","Revisar inventario de herramientas","Cerrar y asegurar el área"],correct:[0,1,2,3,4],exp:"Recoger, limpiar, verificar, revisar y cerrar. Mantiene orden y evita pérdidas o accidentes."}
+];
+let seqIdx=0,userOrders=[],currentOrder=[];
+const scene=document.getElementById('scene');
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function showIntro(){
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Domina el protocolo</div>
+<div class="modal-body">Ordena los pasos correctamente usando ↑↓. Eres el nuevo técnico y debes demostrar tu conocimiento.</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">Comenzar</button></div>
+</div>
+</div>`;
+}
+
+function startGame(){seqIdx=0;userOrders=[];renderSequence();}
+
+function renderSequence(){
+const seq=sequences[seqIdx];
+currentOrder=shuffle([...Array(seq.steps.length).keys()]);
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Paso a paso</div>
+<div class="subtitle">${seq.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(seqIdx/sequences.length)*100}%"></i></div></div>
+<span class="badge">Secuencia ${seqIdx+1}/${sequences.length}</span>
+</div>
+</div>
+<div class="main"><div class="cards" id="cards">${renderCards(seq)}</div></div>
+<div class="footer">
+<div class="helper">Ordena los pasos del 1 al ${seq.steps.length}</div>
+<button class="cta" onclick="checkOrder()">Confirmar orden</button>
+</div>`;
+ensureFits();
+}
+
+function renderCards(seq){
+return currentOrder.map((stepIdx,pos)=>`
+<div class="card" data-id="${stepIdx}">
+<span class="card-num">${pos+1}</span>
+<span class="card-text">${seq.steps[stepIdx]}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveCard(${pos},-1)">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveCard(${pos},1)">↓</button>
+</div>
+</div>`).join('');
+}
+
+function moveCard(pos,dir){
+const newPos=pos+dir;
+if(newPos<0||newPos>=currentOrder.length)return;
+[currentOrder[pos],currentOrder[newPos]]=[currentOrder[newPos],currentOrder[pos]];
+const cards=document.getElementById('cards');
+cards.innerHTML=renderCards(sequences[seqIdx]);
+ensureFits();
+}
+
+function checkOrder(){
+const seq=sequences[seqIdx];
+const isCorrect=currentOrder.every((v,i)=>v===seq.correct[i]);
+userOrders.push({title:seq.title,userOrder:[...currentOrder],correct:seq.correct,steps:seq.steps,isCorrect,exp:seq.exp});
+showFeedback(isCorrect,seq);
+}
+
+function showFeedback(isCorrect,seq){
+const cards=document.querySelectorAll('.card');
+cards.forEach((card,i)=>{
+const stepIdx=currentOrder[i];
+if(stepIdx===seq.correct[i]){card.classList.add('correct');}
+else{card.classList.add('incorrect');}
+});
+setTimeout(()=>{showExplanation(seq);},1500);
+}
+
+function showExplanation(seq){
+scene.innerHTML=`
+<div class="modal-backdrop active">
+<div class="modal">
+<div class="modal-title">${userOrders[seqIdx].isCorrect?'✅ ¡Correcto!':'❌ Orden incorrecto'}</div>
+<div class="modal-body">${seq.exp}</div>
+<div class="modal-actions"><button class="cta" onclick="nextSequence()">Siguiente</button></div>
+</div>
+</div>`;
+}
+
+function nextSequence(){
+seqIdx++;
+if(seqIdx>=sequences.length){showResults();}
+else{renderSequence();}
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=userOrders.filter(o=>o.isCorrect).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${sequences.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${userOrders.map((o,i)=>`
+<div class="result-item ${o.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${o.title}</div>
+<div class="result-answer">${o.isCorrect?'✓ Orden correcto':'✗ Orden incorrecto'}</div>
+<div class="result-explanation">${o.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Memoriza los protocolos como rutinas. La seguridad y eficiencia dependen del orden correcto en cada procedimiento.</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();showIntro();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
