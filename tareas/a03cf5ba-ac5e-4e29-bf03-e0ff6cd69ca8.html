@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Mito o Realidad: Seguridad Eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Mito o Realidad</div>
+<div class="subtitle">Seguridad Eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-container">
+<p id="statement-text"></p>
+</div>
+<div class="options" id="options">
+<button class="btn-option" id="btn-true" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btn-false" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper">¿Es verdadero o falso? Pulsa tu respuesta.</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const statements = [
+{text:"La madera nunca conduce electricidad.",correct:false,exp:"La madera húmeda SÍ puede conducir electricidad. Solo la madera seca es aislante."},
+{text:"Con guantes de goma domésticos puedo manipular cuadros eléctricos.",correct:false,exp:"Los guantes domésticos NO están homologados. Se necesitan guantes dieléctricos certificados."},
+{text:"Antes de trabajar hay que verificar ausencia de tensión.",correct:true,exp:"Correcto. Es una de las 5 reglas de oro: siempre verificar con un detector homologado."},
+{text:"Un diferencial protege contra todos los riesgos eléctricos.",correct:false,exp:"El diferencial protege contra contactos indirectos, pero NO contra todos los riesgos."},
+{text:"Los cables de colores siempre indican su función correctamente.",correct:false,exp:"Nunca confíes solo en el color. Instalaciones antiguas o errores pueden engañarte."},
+{text:"Trabajar con tensión está permitido si tengo experiencia.",correct:false,exp:"Trabajar en tensión requiere formación específica, EPIs especiales y autorización expresa."},
+{text:"El cuerpo humano puede conducir electricidad.",correct:true,exp:"Correcto. El cuerpo humano es conductor, especialmente con humedad o sudor."}
+];
+
+let idx = 0, score = 0, answers = [];
+const scene = document.getElementById('scene');
+const statementText = document.getElementById('statement-text');
+const progressBar = document.getElementById('progress-bar');
+const counter = document.getElementById('counter');
+const btnTrue = document.getElementById('btn-true');
+const btnFalse = document.getElementById('btn-false');
+const optionsDiv = document.getElementById('options');
+
+function render() {
+    if (idx >= statements.length) { showResults(); return; }
+    const s = statements[idx];
+    statementText.textContent = s.text;
+    progressBar.style.width = ((idx) / statements.length * 100) + '%';
+    counter.textContent = (idx + 1) + '/' + statements.length;
+    btnTrue.disabled = false;
+    btnFalse.disabled = false;
+    btnTrue.classList.remove('correct', 'incorrect', 'selected');
+    btnFalse.classList.remove('correct', 'incorrect', 'selected');
+    ensureFits();
+}
+
+function answer(userAnswer) {
+    btnTrue.disabled = true;
+    btnFalse.disabled = true;
+    const s = statements[idx];
+    const isCorrect = userAnswer === s.correct;
+    if (isCorrect) score++;
+    answers.push({text: s.text, userAnswer, correctAnswer: s.correct, isCorrect, exp: s.exp});
+    
+    if (userAnswer) {
+        btnTrue.classList.add('selected');
+        btnTrue.classList.add(isCorrect ? 'correct' : 'incorrect');
+    } else {
+        btnFalse.classList.add('selected');
+        btnFalse.classList.add(isCorrect ? 'correct' : 'incorrect');
+    }
+    
+    setTimeout(() => {
+        idx++;
+        render();
+    }, 1000);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">⚡ ¡Prueba completada!</div>
+                    <div class="results-score">${score}/${statements.length}</div>
+                    <div class="results-subtitle">Respuestas correctas</div>
+                </div>
+                <div class="results-list">
+                    ${answers.map(a => `
+                        <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${a.text}</div>
+                            <div class="result-answer">Tu respuesta: ${a.userAnswer ? 'Verdadero' : 'Falso'} ${a.isCorrect ? '✓' : '✗'} | Correcta: ${a.correctAnswer ? 'Verdadero' : 'Falso'}</div>
+                            <div class="result-explanation">${a.exp}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="result-item">
+                    <div class="result-question">💡 Consejo: Las 5 Reglas de Oro</div>
+                    <div class="result-explanation">1. Desconectar. 2. Prevenir reconexión. 3. Verificar ausencia de tensión. 4. Puesta a tierra. 5. Señalizar y delimitar.</div>
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({action: 'TASK_COMPLETED'}));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', () => { render(); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+render();
+</script>
+</body>
+</html>
