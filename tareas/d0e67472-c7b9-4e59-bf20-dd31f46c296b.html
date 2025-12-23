@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Quién manda aquí? 👷 Roles en obra - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Quién manda aquí? 👷</div>
+<div class="subtitle" id="task-text">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/8</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el rol responsable de esta tarea</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🎆 ¡Última noche del año!</div>
+<div class="modal-body">Cierra el año aprendiendo algo nuevo. Hoy dominarás los roles en obra. ¡Empieza 2025 con ventaja!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Vamos allá!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const items=[
+{task:"Firma el parte diario",answer:"Jefe de obra",exp:"El jefe de obra valida y firma la documentación oficial."},
+{task:"Mezcla el mortero",answer:"Peón",exp:"Preparar materiales básicos es tarea del peón."},
+{task:"Replantea según planos",answer:"Oficial",exp:"El oficial interpreta planos y ejecuta replanteos técnicos."},
+{task:"Supervisa la seguridad",answer:"Jefe de obra",exp:"La seguridad general es responsabilidad del jefe de obra."},
+{task:"Carga material al tajo",answer:"Peón",exp:"El transporte de materiales corresponde al peón."},
+{task:"Ejecuta la tabiquería",answer:"Oficial",exp:"Levantar tabiques requiere la técnica del oficial."},
+{task:"Limpia la zona de trabajo",answer:"Peón",exp:"Mantener el orden y limpieza es tarea del peón."},
+{task:"Coordina con proveedores",answer:"Jefe de obra",exp:"La coordinación externa la gestiona el jefe de obra."}
+];
+const categories=["Jefe de obra","Oficial","Peón"];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),catEl=document.getElementById('categories'),taskEl=document.getElementById('task-text'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+taskEl.textContent=item.task;
+prog.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+catEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCategory('${c}')">${c}</button>`).join('');
+ensureFits();
+}
+
+function selectCategory(cat){
+const item=items[idx];
+const correct=cat===item.answer;
+const btns=catEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===item.answer)b.classList.add('correct');
+else if(b.textContent===cat&&!correct)b.classList.add('incorrect');
+});
+answers.push({task:item.task,user:cat,correct:item.answer,ok:correct,exp:item.exp});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.ok).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Roles dominados!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Asignaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.ok?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.ok?'✓ '+a.correct:'✗ Dijiste: '+a.user+' → '+a.correct}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Si tienes dudas técnicas, pregunta al oficial. Para temas de seguridad o coordinación, dirígete al jefe de obra.
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
