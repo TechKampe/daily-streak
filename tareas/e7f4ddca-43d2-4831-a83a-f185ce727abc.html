@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Paso a paso: domina el protocolo - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const sequences=[
+{title:"Preparación antes de intervención eléctrica",
+steps:["Revisar orden de trabajo y planos","Cortar suministro en cuadro general","Verificar ausencia de tensión","Preparar herramientas aisladas","Señalizar zona de trabajo"],
+correct:[0,1,2,3,4],
+exp:"Primero entender qué hacer, luego cortar y verificar antes de tocar nada. La señalización protege a otros.",
+tip:"⚡ Nunca confíes solo en el interruptor: verifica siempre con un detector de tensión."},
+{title:"Atender cliente con avería reportada",
+steps:["Escuchar descripción del problema","Inspeccionar visualmente la zona","Diagnosticar causa probable","Informar al cliente del presupuesto","Ejecutar la reparación"],
+correct:[0,1,2,3,4],
+exp:"Escuchar primero evita errores. El diagnóstico antes del presupuesto genera confianza profesional.",
+tip:"🤝 Un cliente bien informado es un cliente que vuelve. Explica siempre qué harás."},
+{title:"Limpieza y recogida al finalizar jornada",
+steps:["Recoger herramientas y materiales","Limpiar escombros y residuos","Revisar que no queden peligros","Informar al encargado del avance","Guardar EPIs correctamente"],
+correct:[0,1,2,3,4],
+exp:"Recoger antes de limpiar. Revisar peligros evita accidentes nocturnos. El informe cierra el ciclo.",
+tip:"🧹 Una obra limpia es una obra segura. Los accidentes ocurren en el desorden."}
+];
+let currentSeq=0,userOrder=[],answers=[],dragIdx=null;
+const scene=document.getElementById('scene');
+
+function shuffle(arr){
+const a=[...arr];
+for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+return a;
+}
+
+function showIntro(){
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Paso a paso</div>
+<div class="modal-body">Tu supervisor evalúa si conoces los procedimientos. Ordena cada secuencia correctamente.</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">Comenzar</button></div>
+</div>
+</div>`;
+}
+
+function startGame(){currentSeq=0;answers=[];renderSequence();}
+
+function renderSequence(){
+if(currentSeq>=sequences.length){showResults();return;}
+const seq=sequences[currentSeq];
+userOrder=shuffle([...Array(seq.steps.length).keys()]);
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Paso a paso</div>
+<div class="subtitle">${seq.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(currentSeq/sequences.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentSeq+1}/${sequences.length}</span>
+</div>
+</div>
+<div class="main"><div class="cards-list" id="cards"></div></div>
+<div class="footer">
+<div class="helper">Usa ↑↓ o arrastra para ordenar</div>
+<button class="cta" id="cta" onclick="confirmOrder()">Confirmar orden</button>
+</div>`;
+renderCards();
+ensureFits();
+}
+
+function renderCards(){
+const cards=document.getElementById('cards');
+const seq=sequences[currentSeq];
+cards.innerHTML=userOrder.map((stepIdx,pos)=>`
+<div class="card" data-pos="${pos}" draggable="true">
+<span class="card-num">${pos+1}</span>
+<span class="card-text">${seq.steps[stepIdx]}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveCard(${pos},-1)">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveCard(${pos},1)">↓</button>
+</div>
+</div>`).join('');
+addDragListeners();
+}
+
+function moveCard(pos,dir){
+const newPos=pos+dir;
+if(newPos<0||newPos>=userOrder.length)return;
+[userOrder[pos],userOrder[newPos]]=[userOrder[newPos],userOrder[pos]];
+animateSwap(pos,newPos);
+}
+
+function animateSwap(p1,p2){
+const cards=document.querySelectorAll('.card');
+cards[p1].classList.add('dragging');
+cards[p2].classList.add('dragging');
+setTimeout(()=>{renderCards();},150);
+}
+
+function addDragListeners(){
+const cards=document.querySelectorAll('.card');
+cards.forEach(card=>{
+card.addEventListener('dragstart',e=>{
+dragIdx=parseInt(card.dataset.pos);
+card.classList.add('dragging');
+e.dataTransfer.effectAllowed='move';
+});
+card.addEventListener('dragend',()=>{
+card.classList.remove('dragging');
+dragIdx=null;
+});
+card.addEventListener('dragover',e=>{
+e.preventDefault();
+e.dataTransfer.dropEffect='move';
+});
+card.addEventListener('drop',e=>{
+e.preventDefault();
+const dropIdx=parseInt(card.dataset.pos);
+if(dragIdx!==null&&dragIdx!==dropIdx){
+const item=userOrder.splice(dragIdx,1)[0];
+userOrder.splice(dropIdx,0,item);
+renderCards();
+}
+});
+});
+}
+
+function confirmOrder(){
+const seq=sequences[currentSeq];
+const isCorrect=userOrder.every((v,i)=>v===seq.correct[i]);
+answers.push({
+title:seq.title,
+correct:isCorrect,
+userOrder:[...userOrder],
+correctOrder:[...seq.correct],
+steps:seq.steps,
+exp:seq.exp,
+tip:seq.tip
+});
+showFeedback(isCorrect,seq);
+}
+
+function showFeedback(isCorrect,seq){
+const modal=document.createElement('div');
+modal.className='modal-backdrop active';
+modal.innerHTML=`
+<div class="modal">
+<div class="modal-title">${isCorrect?'✅ ¡Correcto!':'❌ Orden incorrecto'}</div>
+<div class="modal-body">${isCorrect?'Has ordenado bien la secuencia.':'Revisa el orden correcto abajo.'}</div>
+<div class="modal-actions"><button class="cta" onclick="nextSequence()">Continuar</button></div>
+</div>`;
+scene.appendChild(modal);
+}
+
+function nextSequence(){
+currentSeq++;
+renderSequence();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+let score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${answers.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.title}</div>
+<div class="result-answer">${a.correct?'✓ Orden correcto':'✗ Tu orden: '+a.userOrder.map(i=>i+1).join(' → ')}</div>
+${!a.correct?`<div class="result-answer">Correcto: ${a.correctOrder.map(i=>i+1).join(' → ')}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+<div class="result-explanation"><strong>${a.tip}</strong></div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{showIntro();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
