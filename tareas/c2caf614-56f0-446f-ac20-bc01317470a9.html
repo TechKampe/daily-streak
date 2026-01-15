@@ -1,0 +1,230 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Protocolo 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Protocolo 🔧</div>
+<div class="subtitle" id="instruction">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="phrase-card">
+<span class="card-text" id="phrase-text"></span>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Tu supervisor espera tu respuesta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">¡Bienvenido! 👷</div>
+<div class="modal-body">Es tu primer día. Demuestra que conoces la terminología eléctrica completando cada frase con la palabra correcta.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const clozeData = [
+{
+before: "Antes de manipular un circuito, debo comprobar la ausencia de",
+after: ".",
+options: ["tensión", "corriente", "resistencia"],
+correct: 0,
+explanation: "'Tensión' es lo que indica si hay diferencia de potencial peligrosa. 'Corriente' solo fluye cuando hay carga conectada, y 'resistencia' es una propiedad del material."
+},
+{
+before: "El cable de color verde-amarillo siempre es el de",
+after: ".",
+options: ["fase", "neutro", "tierra"],
+correct: 2,
+explanation: "'Tierra' usa verde-amarillo por normativa internacional. 'Fase' es marrón/negro/gris y 'neutro' es azul."
+},
+{
+before: "Para proteger contra sobrecargas instalamos un",
+after: ".",
+options: ["diferencial", "magnetotérmico"],
+correct: 1,
+explanation: "El 'magnetotérmico' protege contra sobrecargas y cortocircuitos. El 'diferencial' protege contra fugas a tierra."
+},
+{
+before: "Para medir tensión en un enchufe, uso el",
+after: ".",
+options: ["multímetro", "buscapolos"],
+correct: 0,
+explanation: "El 'multímetro' mide valores exactos de tensión. El 'buscapolos' solo indica presencia de fase."
+},
+{
+before: "El conductor que lleva corriente de retorno se llama",
+after: ".",
+options: ["fase", "neutro"],
+correct: 1,
+explanation: "El 'neutro' es el retorno del circuito. La 'fase' es el conductor activo que lleva la corriente."
+},
+{
+before: "Un cortocircuito ocurre cuando fase y neutro entran en contacto",
+after: ".",
+options: ["directo", "a través de carga"],
+correct: 0,
+explanation: "'Directo' significa sin resistencia intermedia, causando corriente extrema. 'A través de carga' es el funcionamiento normal."
+}
+];
+
+let currentIndex = 0;
+let score = 0;
+let answers = [];
+
+const scene = document.getElementById('scene');
+const phraseText = document.getElementById('phrase-text');
+const optionsDiv = document.getElementById('options');
+const progressBar = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const helper = document.getElementById('helper');
+const modal = document.getElementById('modal');
+
+function startGame() {
+    modal.classList.remove('active');
+    renderCloze();
+}
+
+function renderCloze() {
+    if (currentIndex >= clozeData.length) {
+        showResults();
+        return;
+    }
+    
+    const data = clozeData[currentIndex];
+    const blankHTML = '<span class="blank-highlight">___</span>';
+    phraseText.innerHTML = `"${data.before} ${blankHTML}${data.after}"`;
+    
+    progressBar.style.width = ((currentIndex) / clozeData.length * 100) + '%';
+    counter.textContent = `${currentIndex + 1}/${clozeData.length}`;
+    
+    optionsDiv.innerHTML = data.options.map((opt, i) => 
+        `<button class="btn-option" onclick="selectOption(${i})">${opt}</button>`
+    ).join('');
+    
+    helper.textContent = 'Selecciona la palabra correcta';
+    ensureFits();
+}
+
+function selectOption(index) {
+    const data = clozeData[currentIndex];
+    const isCorrect = index === data.correct;
+    const buttons = optionsDiv.querySelectorAll('.btn-option');
+    
+    buttons.forEach((btn, i) => {
+        btn.disabled = true;
+        if (i === data.correct) btn.classList.add('correct');
+        else if (i === index && !isCorrect) btn.classList.add('incorrect');
+    });
+    
+    const blankHTML = `<span class="blank-filled ${isCorrect ? 'correct' : 'incorrect'}">${data.options[index]}</span>`;
+    phraseText.innerHTML = `"${data.before} ${blankHTML}${data.after}"`;
+    
+    if (isCorrect) score++;
+    
+    answers.push({
+        phrase: `${data.before} ___ ${data.after}`,
+        correctAnswer: data.options[data.correct],
+        userAnswer: data.options[index],
+        isCorrect: isCorrect,
+        explanation: data.explanation
+    });
+    
+    helper.textContent = isCorrect ? '¡Correcto! ✓' : `Era: ${data.options[data.correct]}`;
+    
+    setTimeout(() => {
+        currentIndex++;
+        renderCloze();
+    }, 1200);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        
+        const percentage = Math.round((score / clozeData.length) * 100);
+        let message = percentage === 100 ? '¡Excelente! Dominas el vocabulario' : 
+                      percentage >= 70 ? '¡Muy bien! Sigue practicando' : 
+                      'Repasa los términos básicos';
+        
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">¡Protocolo completado!</div>
+                    <div class="results-score">${score}/${clozeData.length}</div>
+                    <div class="results-subtitle">${message}</div>
+                </div>
+                <div class="results-list">
+                    ${answers.map(a => `
+                        <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-question">"${a.phrase}"</div>
+                            <div class="result-answer">${a.isCorrect ? '✓ ' + a.userAnswer : '✗ Tu respuesta: ' + a.userAnswer + ' → Correcta: ' + a.correctAnswer}</div>
+                            <div class="result-explanation">${a.explanation}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="result-item">
+                    <div class="result-question">💡 Consejo final</div>
+                    <div class="result-explanation">Dominar el vocabulario técnico es clave para comunicarte con tu equipo y clientes. Un término incorrecto puede causar confusión o errores peligrosos.</div>
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+            action: 'TASK_COMPLETED'
+        }));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+        document.documentElement.style.setProperty('--ui-scale', scale);
+    }
+}
+
+window.addEventListener('load', () => {
+    modal.classList.add('active');
+    ensureFits();
+});
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
