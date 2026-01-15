@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Swipe Eléctrico: ¿Mito o Realidad? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Swipe Eléctrico</div>
+<div class="subtitle">¿Mito o Realidad?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="tinder-container" id="tinderContainer">
+<div class="tinder-card" id="tinderCard">
+<div class="tinder-card-content" id="cardContent"></div>
+<div class="tinder-indicator left" id="indicatorLeft">❌</div>
+<div class="tinder-indicator right" id="indicatorRight">✅</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o usa los botones</div>
+<div class="tinder-buttons">
+<button class="btn-option" id="btnIncorrect">❌ Incorrecto</button>
+<button class="btn-option" id="btnCorrect">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 Primera Semana de Aprendiz</div>
+<div class="modal-body">El oficial te pone a prueba. Desliza derecha si es CORRECTO, izquierda si es INCORRECTO.</div>
+<div class="modal-actions">
+<button class="cta" id="startBtn">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"El cable azul es siempre el neutro",correct:true,exp:"Correcto. Por normativa, el azul identifica el neutro en instalaciones domésticas."},
+{text:"Si estás seco, 220V no te harán daño",correct:false,exp:"¡MITO PELIGROSO! 220V pueden matar independientemente de la humedad. La resistencia del cuerpo varía."},
+{text:"Antes de trabajar, corta SIEMPRE la corriente",correct:true,exp:"Fundamental. Desconectar y verificar ausencia de tensión es obligatorio antes de manipular."},
+{text:"El cable de tierra y el neutro son lo mismo",correct:false,exp:"Incorrecto. El neutro completa el circuito, la tierra es protección contra derivaciones."},
+{text:"Los guantes aislantes son opcionales",correct:false,exp:"¡Falso! Los EPI son obligatorios. Los guantes pueden salvarte la vida."},
+{text:"El cable marrón o negro es la fase",correct:true,exp:"Correcto. Marrón, negro o gris identifican las fases según normativa."}
+];
+let idx=0,answers=[],startX=0,startY=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('tinderCard'),content=document.getElementById('cardContent'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),indicatorL=document.getElementById('indicatorLeft'),indicatorR=document.getElementById('indicatorRight'),helper=document.getElementById('helper'),btnCorrect=document.getElementById('btnCorrect'),btnIncorrect=document.getElementById('btnIncorrect');
+
+document.getElementById('startBtn').onclick=()=>{modal.classList.remove('active');renderCard();};
+btnCorrect.onclick=()=>handleAnswer(true);
+btnIncorrect.onclick=()=>handleAnswer(false);
+
+function renderCard(){
+if(idx>=cards.length){showResults();return;}
+content.textContent=cards[idx].text;
+prog.style.width=(idx/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.style.transform='';
+card.style.opacity='1';
+indicatorL.style.opacity='0';
+indicatorR.style.opacity='0';
+ensureFits();
+}
+
+function handleAnswer(userSaidCorrect){
+const isRight=userSaidCorrect===cards[idx].correct;
+answers.push({q:cards[idx].text,userAnswer:userSaidCorrect,wasCorrect:isRight,exp:cards[idx].exp,actualAnswer:cards[idx].correct});
+animateOut(userSaidCorrect?1:-1);
+}
+
+function animateOut(dir){
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+card.style.transform=`translateX(${dir*400}px) rotate(${dir*30}deg)`;
+card.style.opacity='0';
+setTimeout(()=>{card.style.transition='';idx++;renderCard();},300);
+}
+
+card.addEventListener('touchstart',onStart,{passive:true});
+card.addEventListener('touchmove',onMove,{passive:false});
+card.addEventListener('touchend',onEnd);
+card.addEventListener('mousedown',onStart);
+document.addEventListener('mousemove',onMove);
+document.addEventListener('mouseup',onEnd);
+
+function onStart(e){
+if(modal.classList.contains('active'))return;
+isDragging=true;
+const point=e.touches?e.touches[0]:e;
+startX=point.clientX;startY=point.clientY;
+card.style.transition='';
+}
+
+function onMove(e){
+if(!isDragging)return;
+const point=e.touches?e.touches[0]:e;
+currentX=point.clientX-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+const opacity=Math.min(Math.abs(currentX)/100,1);
+if(currentX<0){indicatorL.style.opacity=opacity;indicatorR.style.opacity='0';}
+else{indicatorR.style.opacity=opacity;indicatorL.style.opacity='0';}
+if(e.cancelable)e.preventDefault();
+}
+
+function onEnd(){
+if(!isDragging)return;
+isDragging=false;
+const threshold=80;
+if(currentX>threshold){handleAnswer(true);}
+else if(currentX<-threshold){handleAnswer(false);}
+else{card.style.transition='transform 0.2s ease';card.style.transform='';indicatorL.style.opacity='0';indicatorR.style.opacity='0';}
+currentX=0;
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.wasCorrect).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">⚡ ¡Prueba Completada!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">${answers.map(a=>`<div class="result-item ${a.wasCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">${a.wasCorrect?'✓ Acertaste':'✗ Fallaste'} - Era: ${a.actualAnswer?'Correcto':'Incorrecto'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}</div>
+<div class="results-message">${score>=4?'¡Buen trabajo! Tienes bases sólidas de seguridad.':'Repasa estos conceptos. La seguridad es lo primero.'}</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;padding:16px;touch-action:none;}
+.tinder-card{position:relative;width:100%;max-width:300px;min-height:180px;background:#fff;border:3px solid #00E6BC;border-radius:16px;display:flex;align-items:center;justify-content:center;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1);cursor:grab;user-select:none;}
+.tinder-card-content{font-size:1.1rem;text-align:center;line-height:1.4;color:#1a1a2e;}
+.tinder-indicator{position:absolute;top:16px;font-size:2rem;opacity:0;transition:opacity 0.1s;pointer-events:none;}
+.tinder-indicator.left{left:16px;}
+.tinder-indicator.right{right:16px;}
+.tinder-buttons{display:flex;gap:12px;width:100%;}
+.tinder-buttons .btn-option{flex:1;font-size:0.95rem;}
+.results-message{text-align:center;padding:16px;font-size:1rem;color:#1a1a2e;background:rgba(0,230,188,0.1);border-radius:12px;margin:0 16px 16px;}
+</style>
+</body>
+</html>
