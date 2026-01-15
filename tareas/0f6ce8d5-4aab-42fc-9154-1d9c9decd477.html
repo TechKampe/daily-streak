@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obras sin Sustos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneText">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el elemento incorrecto</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const scenes=[
+{text:"Operario preparando mezcla de cemento en obra",items:["Cemento Portland","Arena fina","Agua del grifo","Yeso de secado rápido"],error:3,exp:"El yeso no se mezcla con cemento; reacciona y debilita la mezcla."},
+{text:"Trabajador soldando tuberías de cobre",items:["Gafas de seguridad","Guantes ignífugos","Soplete de gas","Mascarilla de tela"],error:3,exp:"Para soldar se necesita mascarilla con filtro, no de tela."},
+{text:"Electricista revisando cuadro eléctrico",items:["Detector de tensión","Guantes dieléctricos","Destornillador aislado","Escalera metálica"],error:3,exp:"Escaleras metálicas conducen electricidad; usar fibra de vidrio."},
+{text:"Acopio de materiales en zona de paso",items:["Señalización visible","Palés apilados a 1.5m","Extintores accesibles","Sacos bloqueando salida"],error:3,exp:"Bloquear salidas de emergencia incumple PRL gravemente."},
+{text:"Operario trabajando en altura con arnés",items:["Arnés homologado","Línea de vida anclada","Casco con barbuquejo","Punto de anclaje en andamio móvil"],error:3,exp:"Andamios móviles no son puntos de anclaje seguros; usar fijos."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sceneText=document.getElementById('sceneText'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>b.disabled=true);
+btns[i].classList.add(i===s.error?'correct':'incorrect');
+if(i===s.error)btns[i].classList.add('selected');
+answers.push({scene:s.text,chosen:s.items[i],correct:s.items[s.error],isCorrect:i===s.error,exp:s.exp});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Inspección Completa</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene}</div>
+<div class="result-answer">${a.isCorrect?'✓ Detectaste: '+a.chosen:'✗ Elegiste: '+a.chosen}</div>
+${!a.isCorrect?`<div class="result-answer">Error real: ${a.correct}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Antes de empezar cualquier tarea, haz una pausa de 10 segundos para revisar visualmente el entorno. Detectar un fallo a tiempo puede evitar accidentes graves.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
