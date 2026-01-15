@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 📋 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle" id="subtitle">Rellena los huecos del manual</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="cloze-container"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{sentence:"Para detectar fugas de gas refrigerante uso el ___.",opts:["detector de fugas","manómetro","vacuómetro"],ans:0,exps:["El manómetro mide presión, no detecta fugas.","El vacuómetro mide vacío, no localiza fugas."]},
+{sentence:"El tubo de cobre se corta con ___.",opts:["cortatubos","sierra de calar","tijera"],ans:0,exps:["La sierra de calar es para madera/plástico.","La tijera no corta metal."]},
+{sentence:"Para hacer el vacío al circuito necesito la ___.",opts:["bomba de vacío","soldadora","llave inglesa"],ans:0,exps:["La soldadora une piezas, no extrae aire.","La llave inglesa aprieta tuercas."]},
+{sentence:"La temperatura del evaporador se mide con ___.",opts:["termómetro","manómetro","nivel"],ans:0,exps:["El manómetro mide presión, no temperatura.","El nivel mide inclinación."]},
+{sentence:"Para unir tubos de cobre uso la ___.",opts:["soldadura","cinta aislante","brida"],ans:0,exps:["La cinta aislante es para cables eléctricos.","La brida sujeta pero no sella herméticamente."]},
+{sentence:"El gas refrigerante se carga con el ___.",opts:["manómetro","detector","compresor"],ans:0,exps:["El detector busca fugas, no carga gas.","El compresor comprime gas, no lo carga."]}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),clozeC=document.getElementById('cloze-container'),optsC=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),subtitle=document.getElementById('subtitle');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+subtitle.textContent='Frase '+(idx+1)+' de '+data.length;
+const parts=d.sentence.split('___');
+clozeC.innerHTML='<div class="result-question" style="text-align:center;font-size:1.1rem;line-height:1.5;">'+parts[0]+'<span id="blank" style="border-bottom:2px dashed var(--accent);padding:0 8px;margin:0 4px;">???</span>'+parts[1]+'</div>';
+optsC.innerHTML=d.opts.map((o,i)=>'<button class="btn-option" onclick="selectOpt('+i+')">'+o+'</button>').join('');
+helper.textContent='Selecciona la palabra correcta';
+ensureFits();
+}
+
+function selectOpt(i){
+const d=data[idx];
+const correct=i===d.ans;
+const blank=document.getElementById('blank');
+blank.textContent=d.opts[i];
+blank.style.borderBottom='none';
+blank.style.background=correct?'var(--ok)':'var(--err)';
+blank.style.padding='2px 8px';
+blank.style.borderRadius='4px';
+optsC.querySelectorAll('.btn-option').forEach((b,j)=>{
+b.disabled=true;
+if(j===d.ans)b.classList.add('correct');
+else if(j===i)b.classList.add('incorrect');
+});
+answers.push({sentence:d.sentence,correctAns:d.opts[d.ans],userAns:d.opts[i],correct,exps:d.exps});
+helper.textContent=correct?'¡Correcto!':'Incorrecto';
+setTimeout(()=>{idx++;render();},900);
+}
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML='<div class="results-scroll"><div class="results-header"><div class="results-title">¡Manual Completado!</div><div class="results-score">'+score+'/'+data.length+'</div><div class="results-subtitle">Respuestas correctas</div></div><div class="results-list">'+answers.map(a=>{
+const filled=a.sentence.replace('___','<strong>'+a.correctAns+'</strong>');
+let expText='';
+if(!a.correct){
+expText='<div class="result-explanation">Tu respuesta: '+a.userAns+'</div>';
+}
+const wrongExps=a.exps.map(e=>'<div class="result-explanation">• '+e+'</div>').join('');
+return '<div class="result-item '+(a.correct?'correct':'incorrect')+'"><div class="result-question">'+filled+'</div>'+(a.correct?'<div class="result-answer">✓ Correcto</div>':expText)+'<div style="margin-top:4px;font-size:0.85rem;opacity:0.85;">'+wrongExps+'</div></div>';
+}).join('')+'</div><div class="result-item" style="background:var(--glass);margin-top:12px;"><div class="result-question">💡 Consejo Final</div><div class="result-explanation">Usar la terminología correcta te ayuda a comunicarte mejor con tu equipo y proveedores. ¡Dominar el vocabulario técnico es clave en climatización!</div></div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>';
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
