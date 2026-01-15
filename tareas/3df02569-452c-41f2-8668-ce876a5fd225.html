@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🧠 Memoria de Seguridad: Empareja y Protege - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px;max-width:100%}
+.mem-card{height:70px;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;box-sizing:border-box;cursor:pointer;transition:transform 0.2s,background 0.2s;font-family:'Baloo 2',sans-serif}
+.mem-card.hidden{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.mem-card.revealed{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.shake{animation:shake 0.4s}
+.mem-card.pop{animation:pop 0.2s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats-row{display:flex;justify-content:space-between;font-size:14px;color:#0B214A;padding:0 8px;font-family:'Baloo 2',sans-serif}
+.pair-explanation{background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:8px}
+.pair-explanation strong{color:#00E6BC}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🧠 Memoria de Seguridad</div>
+<div class="subtitle">Empareja cada EPI con su riesgo</div>
+</div>
+</div>
+<div class="stats-row">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="main">
+<div class="memory-board" id="board"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca dos cartas para encontrar parejas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,a:"Gafas de seguridad",b:"Proyección de partículas",exp:"Las gafas protegen los ojos de fragmentos y chispas."},
+{id:2,a:"Guantes aislantes",b:"Riesgo eléctrico",exp:"Los guantes aislantes evitan descargas al manipular cables."},
+{id:3,a:"Mascarilla FFP2",b:"Polvo y fibras",exp:"La mascarilla filtra partículas nocivas del aire."},
+{id:4,a:"Casco de obra",b:"Caída de objetos",exp:"El casco absorbe impactos y protege la cabeza."}
+];
+let cards=[],first=null,second=null,locked=false,attempts=0,matched=0,history=[];
+const maxAttempts=10,totalPairs=pairs.length;
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+function init(){
+cards=[];
+pairs.forEach(p=>{cards.push({pairId:p.id,text:p.a,type:'a'});cards.push({pairId:p.id,text:p.b,type:'b'})});
+shuffle(cards);
+renderBoard();
+updateStats();
+}
+
+function renderBoard(){
+const board=document.getElementById('board');
+board.innerHTML=cards.map((c,i)=>`<div class="mem-card hidden" data-index="${i}">?</div>`).join('');
+board.querySelectorAll('.mem-card').forEach(el=>el.addEventListener('click',onCardClick));
+}
+
+function onCardClick(e){
+if(locked)return;
+const el=e.currentTarget;
+const idx=parseInt(el.dataset.index);
+if(el.classList.contains('matched')||el.classList.contains('revealed'))return;
+revealCard(el,idx);
+if(!first){first={el,idx}}
+else if(first.idx!==idx){second={el,idx};checkMatch()}
+}
+
+function revealCard(el,idx){
+el.classList.remove('hidden');
+el.classList.add('revealed','pop');
+el.textContent=cards[idx].text;
+}
+
+function hideCard(el,idx){
+el.classList.remove('revealed');
+el.classList.add('hidden');
+el.textContent='?';
+}
+
+function checkMatch(){
+locked=true;
+attempts++;
+updateStats();
+const c1=cards[first.idx],c2=cards[second.idx];
+const isMatch=c1.pairId===c2.pairId&&c1.type!==c2.type;
+if(isMatch){
+first.el.classList.remove('revealed');
+first.el.classList.add('matched');
+second.el.classList.remove('revealed');
+second.el.classList.add('matched');
+matched++;
+history.push({pairId:c1.pairId,found:true});
+updateStats();
+resetSelection();
+if(matched===totalPairs)endGame(true);
+}else{
+first.el.classList.add('shake');
+second.el.classList.add('shake');
+setTimeout(()=>{
+first.el.classList.remove('shake');
+second.el.classList.remove('shake');
+hideCard(first.el,first.idx);
+hideCard(second.el,second.idx);
+resetSelection();
+if(attempts>=maxAttempts)endGame(false);
+},2000);
+}
+}
+
+function resetSelection(){first=null;second=null;locked=false}
+function updateStats(){
+document.getElementById('attempts').textContent=`Intento ${attempts}/${maxAttempts}`;
+document.getElementById('pairs').textContent=`${matched}/${totalPairs} parejas`;
+}
+
+function endGame(won){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+document.getElementById('scene').classList.replace('gameplay','results');
+const foundIds=history.filter(h=>h.found).map(h=>h.pairId);
+const missing=pairs.filter(p=>!foundIds.includes(p.id));
+let html=`<div class="results-scroll"><div class="results-header">
+<div class="results-title">${won?'¡Felicidades!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/${totalPairs}</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div></div>
+<div class="results-list">`;
+if(won){
+pairs.forEach(p=>{html+=`<div class="pair-explanation"><strong>${p.a}</strong> ↔ <strong>${p.b}</strong><br>${p.exp}</div>`});
+}else{
+html+=`<p style="padding:0 8px;font-size:14px">Te faltaron estas parejas:</p>`;
+missing.forEach(p=>{html+=`<div class="pair-explanation"><strong>${p.a}</strong> ↔ <strong>${p.b}</strong><br>${p.exp}</div>`});
+html+=`<p style="padding:8px;font-size:14px">¡No te rindas! La seguridad laboral es clave. Vuelve a intentarlo 💪</p>`;
+}
+html+=`</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+document.getElementById('scene').innerHTML=html;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}))}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{init();ensureFits()});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
