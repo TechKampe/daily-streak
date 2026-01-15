@@ -1,0 +1,243 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🗣️ Tu primera entrevista de trabajo - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.chat-container{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;animation:fadeIn 0.3s ease}
+.chat-bubble.npc{background:var(--surface);align-self:flex-start;border-bottom-left-radius:4px}
+.chat-bubble.player{background:var(--accent);color:#000;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-sender{font-size:11px;font-weight:700;margin-bottom:4px;opacity:0.7}
+.chat-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;margin-right:8px}
+.npc-row{display:flex;align-items:flex-start}
+.chat-options{padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg);border-top:1px solid var(--surface)}
+.chat-options .btn-option{text-align:left;font-size:13px;padding:12px 14px;white-space:normal;line-height:1.3}
+.reaction{padding:6px 12px;background:var(--surface);border-radius:12px;font-size:12px;align-self:flex-start;margin-left:40px;opacity:0.9}
+.intro-card{background:var(--surface);border-radius:16px;padding:16px;margin:8px;text-align:center}
+.intro-card h2{font-size:18px;margin-bottom:8px}
+.intro-card p{font-size:13px;opacity:0.9;line-height:1.4}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🗣️ Tu primera entrevista</div>
+<div class="subtitle" id="subtitle">Videollamada con RRHH</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">0/5</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+laura:'https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png',
+marcos:'https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png'
+};
+const turns=[
+{
+messages:[
+{sender:'Laura',avatar:'laura',text:'¡Hola! Soy Laura, de RRHH. Gracias por conectarte. ¿Puedes presentarte brevemente?'}
+],
+options:[
+{text:'Soy Alex, tengo 19 años y estoy terminando mi formación en electricidad. Me interesa mucho este puesto.',score:2,reaction:'😊 Laura asiente con interés'},
+{text:'Pues... soy Alex, busco trabajo y vi vuestra oferta.',score:1,reaction:'🤔 Laura espera más detalles'},
+{text:'Hola, ¿qué tal? Soy el mejor candidato que vais a encontrar.',score:0,reaction:'😬 Laura parece sorprendida'}
+]
+},
+{
+messages:[
+{sender:'Laura',avatar:'laura',text:'Cuéntame, ¿por qué te interesa trabajar como ayudante de electricista?'}
+],
+options:[
+{text:'Me gusta resolver problemas técnicos y el trabajo manual. Además, es un oficio con futuro.',score:2,reaction:'😊 Laura toma nota positiva'},
+{text:'Necesito un trabajo y este estaba disponible.',score:0,reaction:'😕 Laura parece decepcionada'},
+{text:'Mi padre es electricista y siempre me ha llamado la atención el oficio.',score:1,reaction:'🙂 Laura muestra curiosidad'}
+]
+},
+{
+messages:[
+{sender:'Laura',avatar:'laura',text:'Veo que no tienes experiencia laboral previa. ¿Cómo crees que puedes aportar al equipo?'}
+],
+options:[
+{text:'Tengo muchas ganas de aprender y soy responsable. En las prácticas siempre llegaba puntual.',score:2,reaction:'👍 Laura valora tu actitud'},
+{text:'Es verdad que no tengo experiencia, pero aprendo rápido.',score:1,reaction:'🙂 Laura asiente levemente'},
+{text:'Bueno, todos empezamos sin experiencia, ¿no?',score:0,reaction:'😐 Laura no parece convencida'}
+]
+},
+{
+messages:[
+{sender:'Laura',avatar:'laura',text:'Te presento a Marcos, nuestro técnico jefe. Tiene una pregunta para ti.'},
+{sender:'Marcos',avatar:'marcos',text:'¿Qué harías si un cliente te pide algo que no sabes hacer?'}
+],
+options:[
+{text:'Le diría que voy a consultarlo con un compañero para darle la mejor solución.',score:2,reaction:'😊 Marcos asiente aprobando'},
+{text:'Intentaría hacerlo yo solo para no quedar mal.',score:0,reaction:'😟 Marcos niega con la cabeza'},
+{text:'Le diría directamente que no sé y que llame a otro.',score:1,reaction:'🤔 Marcos valora la honestidad'}
+]
+},
+{
+messages:[
+{sender:'Laura',avatar:'laura',text:'Perfecto. ¿Tienes alguna pregunta sobre el puesto o la empresa?'}
+],
+options:[
+{text:'Sí, ¿cómo es el proceso de formación para los nuevos ayudantes?',score:2,reaction:'😊 Laura aprecia tu interés'},
+{text:'¿Cuánto se cobra?',score:0,reaction:'😅 Laura parece incómoda'},
+{text:'No, creo que todo está claro.',score:1,reaction:'🙂 Laura cierra la entrevista'}
+]
+}
+];
+let currentTurn=0,chatHistory=[],answers=[],score=0;
+const main=document.getElementById('main'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function renderIntro(){
+main.innerHTML=`
+<div class="chat-container">
+<div class="intro-card">
+<h2>🎯 Tu primera entrevista</h2>
+<p>Has conseguido una videollamada para un puesto de ayudante de electricista. Responde bien a Laura (RRHH) y Marcos (Técnico jefe).</p>
+</div>
+<div class="chat-options">
+<button class="btn-option cta" onclick="startChat()">Comenzar entrevista</button>
+</div>
+</div>`;
+}
+
+function startChat(){
+chatHistory=[];
+renderTurn();
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){showResults();return}
+const turn=turns[currentTurn];
+prog.style.width=((currentTurn)/turns.length*100)+'%';
+counter.textContent=`${currentTurn+1}/5`;
+subtitle.textContent=`Turno ${currentTurn+1} de 5`;
+let messagesHTML=chatHistory.map(m=>{
+if(m.type==='npc'){
+return`<div class="npc-row"><img class="chat-avatar" src="${m.avatar}" alt=""><div><div class="chat-sender">${m.sender}</div><div class="chat-bubble npc">${m.text}</div></div></div>`;
+}else if(m.type==='player'){
+return`<div class="chat-bubble player">${m.text}</div>`;
+}else if(m.type==='reaction'){
+return`<div class="reaction">${m.text}</div>`;
+}
+return'';
+}).join('');
+turn.messages.forEach(m=>{
+messagesHTML+=`<div class="npc-row"><img class="chat-avatar" src="${avatars[m.avatar]}" alt=""><div><div class="chat-sender">${m.sender}</div><div class="chat-bubble npc">${m.text}</div></div></div>`;
+});
+const optionsHTML=turn.options.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join('');
+main.innerHTML=`
+<div class="chat-container">
+<div class="chat-messages" id="chatMessages">${messagesHTML}</div>
+<div class="chat-options" id="chatOptions">${optionsHTML}</div>
+</div>`;
+setTimeout(()=>{
+const chatEl=document.getElementById('chatMessages');
+if(chatEl)chatEl.scrollTop=chatEl.scrollHeight;
+},100);
+ensureFits();
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const opt=turn.options[idx];
+turn.messages.forEach(m=>{
+chatHistory.push({type:'npc',sender:m.sender,avatar:avatars[m.avatar],text:m.text});
+});
+chatHistory.push({type:'player',text:opt.text});
+chatHistory.push({type:'reaction',text:opt.reaction});
+score+=opt.score;
+answers.push({
+question:turn.messages[turn.messages.length-1].text,
+answer:opt.text,
+score:opt.score,
+reaction:opt.reaction
+});
+currentTurn++;
+renderTurn();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+document.getElementById('scene').classList.replace('gameplay','results');
+prog.style.width='100%';
+counter.textContent='5/5';
+subtitle.textContent='Resultados';
+const maxScore=turns.length*2;
+const pct=Math.round((score/maxScore)*100);
+let verdict='';
+if(pct>=80)verdict='¡Excelente entrevista! Transmites profesionalidad.';
+else if(pct>=50)verdict='Buena entrevista, pero puedes mejorar algunos puntos.';
+else verdict='Necesitas practicar más tus respuestas.';
+const feedbackHTML=answers.map((a,i)=>{
+let cls=a.score===2?'correct':a.score===1?'':'incorrect';
+let icon=a.score===2?'✓':a.score===1?'~':'✗';
+let exp='';
+if(i===0)exp=a.score===2?'Presentación clara y motivada.':a.score===1?'Faltó mostrar más interés.':'Evita parecer arrogante.';
+if(i===1)exp=a.score===2?'Buena motivación profesional.':a.score===1?'El vínculo familiar es válido, pero añade más.':'Muestra interés genuino por el oficio.';
+if(i===2)exp=a.score===2?'Destacas actitud y compromiso.':a.score===1?'Añade ejemplos concretos.':'Evita respuestas defensivas.';
+if(i===3)exp=a.score===2?'Consultar demuestra profesionalidad.':a.score===1?'Honesto, pero ofrece alternativas.':'Nunca intentes algo que no dominas.';
+if(i===4)exp=a.score===2?'Preguntar muestra interés real.':a.score===1?'Aprovecha para conocer la empresa.':'El salario se negocia más adelante.';
+return`<div class="result-item ${cls}">
+<div class="result-question">Turno ${i+1}: ${a.question.substring(0,50)}...</div>
+<div class="result-answer">${icon} ${a.answer.substring(0,40)}...</div>
+<div class="result-explanation">${exp}</div>
+</div>`;
+}).join('');
+main.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${verdict}</div>
+<div class="results-score">${score}/${maxScore}</div>
+<div class="results-subtitle">Puntos obtenidos</div>
+</div>
+<div class="results-list">${feedbackHTML}</div>
+<div class="result-item" style="background:var(--surface);border-left:none">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Antes de una entrevista, investiga la empresa y prepara 2-3 preguntas. Practica tu presentación en voz alta.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{renderIntro();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
