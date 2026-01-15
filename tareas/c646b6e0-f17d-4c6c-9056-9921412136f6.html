@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">Seguridad eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-container"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">¿Verdadero o Falso? Demuestra lo que sabes</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const statements=[
+{text:"Los guantes de látex domésticos protegen igual que los guantes dieléctricos homologados.",answer:false,exp:"Los guantes dieléctricos están certificados para tensiones específicas; los de látex doméstico no ofrecen protección eléctrica fiable."},
+{text:"Una tensión de 50V en corriente alterna puede ser mortal en condiciones húmedas.",answer:true,exp:"En ambientes húmedos, tensiones desde 24V AC pueden ser peligrosas. 50V AC es potencialmente letal."},
+{text:"Si el diferencial no salta, significa que no hay tensión en el circuito.",answer:false,exp:"El diferencial detecta fugas a tierra, no ausencia de tensión. Siempre hay que verificar con un detector o polímetro."},
+{text:"La madera seca es un material aislante.",answer:true,exp:"La madera seca tiene alta resistencia eléctrica. Sin embargo, húmeda conduce electricidad."},
+{text:"La corriente continua no es peligrosa porque no produce fibrilación cardíaca.",answer:false,exp:"La corriente continua también puede causar fibrilación y quemaduras graves. Ambos tipos son peligrosos."},
+{text:"Ante un accidente eléctrico, lo primero es cortar la corriente antes de tocar a la víctima.",answer:true,exp:"Tocar a la víctima sin cortar la corriente puede electrocutar al rescatador. Primero desconectar."},
+{text:"Un polímetro en posición de ohmios sirve para comprobar si hay tensión en un enchufe.",answer:false,exp:"Para medir tensión se usa la posición de voltímetro (V). Usar ohmios en un circuito con tensión puede dañar el equipo y ser peligroso."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),stmtEl=document.getElementById('statement-container'),optsEl=document.getElementById('options'),progBar=document.getElementById('progress-bar'),counterEl=document.getElementById('counter');
+
+function render(){
+if(idx>=statements.length){showResults();return}
+const s=statements[idx];
+progBar.style.width=((idx)/statements.length*100)+'%';
+counterEl.textContent=(idx+1)+'/'+statements.length;
+stmtEl.innerHTML=`<div class="result-question" style="text-align:center;font-size:1.1rem;line-height:1.4;padding:1rem 0">${s.text}</div>`;
+optsEl.innerHTML=`<button class="btn-option" id="btn-true">Verdadero</button><button class="btn-option" id="btn-false">Falso</button>`;
+document.getElementById('btn-true').onclick=()=>handleAnswer(true);
+document.getElementById('btn-false').onclick=()=>handleAnswer(false);
+ensureFits();
+}
+
+function handleAnswer(userAnswer){
+const s=statements[idx];
+const correct=userAnswer===s.answer;
+const btnTrue=document.getElementById('btn-true'),btnFalse=document.getElementById('btn-false');
+btnTrue.disabled=true;btnFalse.disabled=true;
+if(userAnswer){
+btnTrue.classList.add(correct?'correct':'incorrect');
+}else{
+btnFalse.classList.add(correct?'correct':'incorrect');
+}
+answers.push({text:s.text,userAnswer,correctAnswer:s.answer,correct,exp:s.exp});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Reto completado!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.correct?'✓ Acertaste':'✗ Fallaste'} — Respuesta correcta: ${a.correctAnswer?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item" style="background:var(--accent-gradient);margin-top:1rem">
+<div class="result-question" style="color:#fff">💡 Consejo final</div>
+<div class="result-explanation" style="color:#fff">Recuerda las 5 Reglas de Oro: desconectar, enclavamiento, verificar ausencia de tensión, puesta a tierra y señalizar. ¡Nunca las saltes!</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
