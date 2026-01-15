@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 ¿Qué herramienta es esta? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{img:"https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=400&h=300&fit=crop",correct:"Alicates de corte",opts:["Alicates de corte","Tenazas","Alicates universales"],exp:"Los alicates de corte tienen filos afilados para cortar cables. Las tenazas son para sujetar y los universales combinan funciones."},
+{img:"https://images.unsplash.com/photo-1580901368919-7738efb0f87e?w=400&h=300&fit=crop",correct:"Llave inglesa",opts:["Llave fija","Llave inglesa","Llave de tubo"],exp:"La llave inglesa tiene mordaza ajustable. La fija tiene medida única y la de tubo rodea la pieza completamente."},
+{img:"https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&h=300&fit=crop",correct:"Nivel de burbuja",opts:["Regla metálica","Nivel de burbuja","Escuadra"],exp:"El nivel de burbuja indica horizontalidad con su ampolla. La regla solo mide y la escuadra marca ángulos."},
+{img:"https://images.unsplash.com/photo-1426927308491-6380b6a9936f?w=400&h=300&fit=crop",correct:"Destornillador de estrella",opts:["Destornillador plano","Destornillador de estrella","Destornillador Torx"],exp:"El de estrella (Phillips) tiene punta en cruz. El plano es recto y el Torx tiene forma de estrella de 6 puntas."},
+{img:"https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&h=300&fit=crop",correct:"Flexómetro",opts:["Cinta métrica de costura","Flexómetro","Metro plegable"],exp:"El flexómetro es metálico y enrollable. La cinta de costura es flexible y el metro plegable es de madera articulada."}
+];
+let idx=0,score=0,answers=[],phase='game';
+const scene=document.getElementById('scene');
+
+function shuffle(arr){return arr.map(v=>({v,s:Math.random()})).sort((a,b)=>a.s-b.s).map(o=>o.v)}
+
+function renderIntro(){
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 ¿Qué herramienta es esta?</div>
+<div class="modal-body">Es tu primer día en el almacén. Identifica 5 herramientas para preparar el material de obra.</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">Comenzar</button></div>
+</div>
+</div>`;
+}
+
+function startGame(){phase='game';renderRound()}
+
+function renderRound(){
+if(idx>=data.length){showResults();return}
+const d=data[idx],shuffled=shuffle([...d.opts]);
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 ¿Qué herramienta es esta?</div>
+<div class="subtitle">Selecciona el nombre correcto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${idx/data.length*100}%"></i></div></div>
+<span class="badge">Ronda ${idx+1}/5</span>
+</div>
+</div>
+<div class="main">
+<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px">
+<img src="${d.img}" alt="Herramienta" style="width:100%;max-width:280px;height:140px;object-fit:cover;border-radius:12px">
+<div class="options" id="options">
+${shuffled.map(o=>`<button class="btn-option" onclick="selectAnswer(this,'${o}')">${o}</button>`).join('')}
+</div>
+</div>
+</div>
+<div class="footer"><div class="helper">Toca la opción correcta</div></div>`;
+ensureFits();
+}
+
+function selectAnswer(btn,answer){
+if(phase!=='game')return;
+phase='feedback';
+const d=data[idx],isCorrect=answer===d.correct;
+if(isCorrect)score++;
+answers.push({img:d.img,correct:d.correct,user:answer,isCorrect,exp:d.exp});
+document.querySelectorAll('.btn-option').forEach(b=>{
+if(b.textContent===d.correct)b.classList.add('correct');
+else if(b.textContent===answer&&!isCorrect)b.classList.add('incorrect');
+b.disabled=true;
+});
+setTimeout(()=>renderExplanation(),1500);
+}
+
+function renderExplanation(){
+const a=answers[answers.length-1];
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">${a.isCorrect?'✅ ¡Correcto!':'❌ Incorrecto'}</div>
+<div class="subtitle">${a.correct}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(idx+1)/data.length*100}%"></i></div></div>
+<span class="badge">Ronda ${idx+1}/5</span>
+</div>
+</div>
+<div class="main">
+<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px;text-align:center">
+<img src="${a.img}" alt="${a.correct}" style="width:120px;height:80px;object-fit:cover;border-radius:8px">
+<div style="font-weight:700;font-size:1.1rem">${a.correct}</div>
+<div style="font-size:0.9rem;line-height:1.4;max-width:300px">${a.exp}</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="nextRound()">Siguiente</button></div>`;
+ensureFits();
+}
+
+function nextRound(){idx++;phase='game';renderRound()}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🎉 ¡Completado!</div>
+<div class="results-score">${score}/5</div>
+<div class="results-subtitle">Herramientas identificadas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div style="display:flex;gap:12px;align-items:center">
+<img src="${a.img}" style="width:50px;height:40px;object-fit:cover;border-radius:6px">
+<div style="flex:1">
+<div class="result-question">${a.correct}</div>
+<div class="result-answer">${a.isCorrect?'✓ Correcto':'✗ Dijiste: '+a.user}</div>
+</div>
+</div>
+</div>`).join('')}
+</div>
+<div style="padding:16px;text-align:center;font-size:0.9rem;line-height:1.4;background:var(--surface);border-radius:12px;margin:0 16px">
+<strong>💡 Consejo:</strong> Antes de empezar cualquier trabajo, revisa siempre el material. Conocer tus herramientas te hará más eficiente y seguro.
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+renderIntro();
+</script>
+</body>
+</html>
