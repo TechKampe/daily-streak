@@ -1,0 +1,223 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Pon a prueba tu instinto técnico - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">Tu primera semana como aprendiz</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-area"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">¿Verdadero o Falso? Decide rápido</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="intro-modal">
+<div class="modal">
+<div class="modal-title">Tu reto de hoy ⚡</div>
+<div class="modal-body">Tu supervisor quiere comprobar si distingues hechos de mitos sobre seguridad eléctrica. ¡Demuestra tu instinto técnico!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements = [
+{
+text: "Las tensiones por debajo de 50V son siempre seguras y no pueden causar daño.",
+answer: false,
+explanation: "Falso. Aunque 50V se considera límite convencional, en condiciones de humedad o piel mojada, tensiones menores pueden ser peligrosas."
+},
+{
+text: "Antes de trabajar en un circuito, debo verificar ausencia de tensión con un comprobador homologado.",
+answer: true,
+explanation: "Verdadero. Es obligatorio por normativa PRL verificar siempre la ausencia de tensión antes de intervenir."
+},
+{
+text: "La madera seca es un aislante perfecto y puedo usarla para protegerme de descargas.",
+answer: false,
+explanation: "Falso. La madera puede absorber humedad y contener impurezas conductoras. Solo los EPIs homologados garantizan protección."
+},
+{
+text: "Los guantes de trabajo de cuero me protegen igual que los guantes dieléctricos.",
+answer: false,
+explanation: "Falso. Solo los guantes dieléctricos certificados ofrecen protección eléctrica. Los de cuero no aíslan."
+},
+{
+text: "Debo revisar el estado de mis herramientas eléctricas antes de cada uso.",
+answer: true,
+explanation: "Verdadero. La revisión previa detecta cables dañados, carcasas rotas o fallos que podrían causar accidentes."
+},
+{
+text: "Las zonas con riesgo eléctrico deben estar señalizadas con carteles amarillos de advertencia.",
+answer: true,
+explanation: "Verdadero. La señalización de riesgos eléctricos es obligatoria según normativa de seguridad laboral."
+},
+{
+text: "Si un compañero sufre una descarga, debo apartarlo inmediatamente tocándolo con las manos.",
+answer: false,
+explanation: "Falso. Primero corta la corriente o usa material aislante. Tocarlo directamente te convierte en conductor."
+}
+];
+
+let currentIndex = 0;
+let score = 0;
+let answers = [];
+let gameStarted = false;
+
+const scene = document.getElementById('scene');
+const statementArea = document.getElementById('statement-area');
+const optionsEl = document.getElementById('options');
+const progressBar = document.getElementById('progress-bar');
+const counterEl = document.getElementById('counter');
+const introModal = document.getElementById('intro-modal');
+
+function startGame() {
+introModal.classList.remove('active');
+gameStarted = true;
+renderStatement();
+}
+
+function renderStatement() {
+if (currentIndex >= statements.length) {
+showResults();
+return;
+}
+
+const stmt = statements[currentIndex];
+progressBar.style.width = ((currentIndex) / statements.length * 100) + '%';
+counterEl.textContent = (currentIndex + 1) + '/' + statements.length;
+
+statementArea.innerHTML = `<div class="statement-text">${stmt.text}</div>`;
+optionsEl.innerHTML = `
+<button class="btn-option" id="btn-true" onclick="selectAnswer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btn-false" onclick="selectAnswer(false)">✗ Falso</button>
+`;
+
+ensureFits();
+}
+
+function selectAnswer(userAnswer) {
+const stmt = statements[currentIndex];
+const isCorrect = userAnswer === stmt.answer;
+
+if (isCorrect) score++;
+
+answers.push({
+text: stmt.text,
+userAnswer: userAnswer,
+correctAnswer: stmt.answer,
+isCorrect: isCorrect,
+explanation: stmt.explanation
+});
+
+const btnTrue = document.getElementById('btn-true');
+const btnFalse = document.getElementById('btn-false');
+
+btnTrue.disabled = true;
+btnFalse.disabled = true;
+
+if (userAnswer === true) {
+btnTrue.classList.add(isCorrect ? 'correct' : 'incorrect');
+} else {
+btnFalse.classList.add(isCorrect ? 'correct' : 'incorrect');
+}
+
+setTimeout(() => {
+currentIndex++;
+renderStatement();
+}, 1000);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+
+const percentage = Math.round((score / statements.length) * 100);
+let message = '';
+if (percentage >= 85) message = '¡Excelente instinto técnico!';
+else if (percentage >= 60) message = 'Buen trabajo, sigue aprendiendo';
+else message = 'Repasa los conceptos de seguridad';
+
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${message}</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a, i) => `
+<div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+<div class="result-question">${i + 1}. ${a.text}</div>
+<div class="result-answer">
+Tu respuesta: ${a.userAnswer ? 'Verdadero' : 'Falso'} ${a.isCorrect ? '✓' : '✗'}
+${!a.isCorrect ? `<br>Correcta: ${a.correctAnswer ? 'Verdadero' : 'Falso'}` : ''}
+</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Antes de tocar cualquier instalación, verifica SIEMPRE la ausencia de tensión con un comprobador homologado. Es el hábito que puede salvarte la vida.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>
+`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({
+action: 'TASK_COMPLETED'
+}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale', scale);
+}
+}
+
+window.addEventListener('load', () => {
+introModal.classList.add('active');
+ensureFits();
+});
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
