@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Primero lo primero: Orden en el taller - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Orden en el taller</div>
+<div class="subtitle" id="subtitle">Ordena los pasos correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">Reto 1/3</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+<div class="footer">
+<div class="helper" id="helper">Usa ↑↓ o arrastra para ordenar</div>
+<button class="cta" id="cta">Confirmar orden</button>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 ¡Bienvenido al taller!</div>
+<div class="modal-body">Tu supervisor quiere comprobar si conoces el orden correcto de los procedimientos. Ordena los pasos usando los botones o arrastrando.</div>
+<div class="modal-actions">
+<button class="cta" onclick="closeModal()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<script>
+const challenges=[
+{title:"Preparar una soldadura básica",steps:["Inspeccionar el material","Preparar la superficie","Colocar EPI de soldador","Realizar la soldadura","Dejar enfriar la pieza"],tip:"Siempre usa EPI antes de soldar: careta, guantes y mandil ignífugo."},
+{title:"Atender avería eléctrica",steps:["Localizar el cuadro eléctrico","Cortar la corriente","Verificar ausencia de tensión","Realizar la reparación","Rearmar el sistema"],tip:"Nunca trabajes sin verificar ausencia de tensión con un detector homologado."},
+{title:"Recibir pedido en almacén",steps:["Verificar el albarán","Comprobar estado del material","Firmar la recepción","Almacenar correctamente"],tip:"Documenta siempre cualquier daño antes de firmar la recepción."}
+];
+let currentChallenge=0,userOrder=[],results=[],draggedIdx=null;
+const scene=document.getElementById('scene'),main=document.getElementById('main'),cta=document.getElementById('cta'),subtitle=document.getElementById('subtitle'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function closeModal(){modal.classList.remove('active');renderChallenge();}
+
+function renderChallenge(){
+if(currentChallenge>=challenges.length){showResults();return;}
+const c=challenges[currentChallenge];
+userOrder=shuffle(c.steps);
+subtitle.textContent=c.title;
+counter.textContent=`Reto ${currentChallenge+1}/${challenges.length}`;
+progress.style.width=`${(currentChallenge/challenges.length)*100}%`;
+helper.textContent="Usa ↑↓ o arrastra para ordenar";
+cta.textContent="Confirmar orden";
+cta.disabled=false;
+cta.onclick=confirmOrder;
+renderCards();
+ensureFits();
+}
+
+function renderCards(){
+main.innerHTML=`<div class="cards-list" id="cardsList">${userOrder.map((s,i)=>`<div class="card" draggable="true" data-idx="${i}"><span class="card-num">${i+1}</span><span class="card-text">${s}</span><div class="card-controls"><button class="btn-ghost" aria-label="Subir" onclick="moveUp(${i})">↑</button><button class="btn-ghost" aria-label="Bajar" onclick="moveDown(${i})">↓</button></div></div>`).join('')}</div>`;
+setupDragAndDrop();
+}
+
+function moveUp(i){if(i>0){[userOrder[i],userOrder[i-1]]=[userOrder[i-1],userOrder[i]];renderCards();animateCard(i-1);}}
+function moveDown(i){if(i<userOrder.length-1){[userOrder[i],userOrder[i+1]]=[userOrder[i+1],userOrder[i]];renderCards();animateCard(i+1);}}
+
+function animateCard(i){
+const cards=document.querySelectorAll('.card');
+if(cards[i]){cards[i].style.transform='scale(1.03)';setTimeout(()=>{cards[i].style.transform='';},150);}
+}
+
+function setupDragAndDrop(){
+const cards=document.querySelectorAll('.card');
+cards.forEach((card,i)=>{
+card.addEventListener('dragstart',e=>{draggedIdx=i;card.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+card.addEventListener('dragend',()=>{card.classList.remove('dragging');draggedIdx=null;});
+card.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';});
+card.addEventListener('drop',e=>{e.preventDefault();if(draggedIdx!==null&&draggedIdx!==i){const item=userOrder.splice(draggedIdx,1)[0];userOrder.splice(i,0,item);renderCards();}});
+card.addEventListener('touchstart',handleTouchStart,{passive:false});
+card.addEventListener('touchmove',handleTouchMove,{passive:false});
+card.addEventListener('touchend',handleTouchEnd);
+});
+}
+
+let touchStartY=0,touchCardIdx=null,touchCard=null;
+function handleTouchStart(e){
+touchCardIdx=parseInt(e.currentTarget.dataset.idx);
+touchCard=e.currentTarget;
+touchStartY=e.touches[0].clientY;
+touchCard.classList.add('dragging');
+}
+function handleTouchMove(e){e.preventDefault();}
+function handleTouchEnd(e){
+if(touchCard){touchCard.classList.remove('dragging');}
+const touchEndY=e.changedTouches[0].clientY;
+const diff=touchEndY-touchStartY;
+if(Math.abs(diff)>30){
+if(diff<0)moveUp(touchCardIdx);
+else moveDown(touchCardIdx);
+}
+touchCard=null;touchCardIdx=null;
+}
+
+function confirmOrder(){
+const c=challenges[currentChallenge];
+const correct=JSON.stringify(userOrder)===JSON.stringify(c.steps);
+results.push({title:c.title,userOrder:[...userOrder],correctOrder:c.steps,correct,tip:c.tip});
+currentChallenge++;
+if(currentChallenge<challenges.length){
+showFeedback(results[results.length-1]);
+}else{
+showFeedback(results[results.length-1],true);
+}
+}
+
+function showFeedback(r,isLast=false){
+const icon=r.correct?'✅':'❌';
+const status=r.correct?'¡Orden correcto!':'Orden incorrecto';
+main.innerHTML=`<div class="feedback-box"><div class="feedback-title">${icon} ${status}</div><div class="feedback-section"><strong>Tu orden:</strong>${r.userOrder.map((s,i)=>`<div class="feedback-step">${i+1}. ${s}</div>`).join('')}</div>${!r.correct?`<div class="feedback-section correct-order"><strong>✅ Orden correcto:</strong>${r.correctOrder.map((s,i)=>`<div class="feedback-step">${i+1}. ${s}</div>`).join('')}</div>`:''}<div class="feedback-tip">💡 <strong>Consejo:</strong> ${r.tip}</div></div>`;
+helper.textContent=r.correct?"¡Excelente trabajo!":"Revisa el procedimiento correcto";
+cta.textContent=isLast?"Ver resultados":"Siguiente reto";
+cta.onclick=isLast?showResults:renderChallenge;
+ensureFits();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=results.filter(r=>r.correct).length;
+scene.innerHTML=`<div class="results-scroll"><div class="results-header"><div class="results-title">🔧 ¡Entrenamiento completado!</div><div class="results-score">${score}/${results.length}</div><div class="results-subtitle">Secuencias correctas</div></div><div class="results-list">${results.map(r=>`<div class="result-item ${r.correct?'correct':'incorrect'}"><div class="result-question">${r.title}</div><div class="result-answer">${r.correct?'✓ Orden correcto':'✗ Orden incorrecto'}</div><div class="result-explanation">💡 ${r.tip}</div></div>`).join('')}</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
