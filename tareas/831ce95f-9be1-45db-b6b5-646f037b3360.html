@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 ¿Seguro o Peligro? Decisiones en Obra - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 ¿Seguro o Peligro?</div>
+<div class="modal-body">Desliza las cartas o usa los botones. Derecha = Correcto/Seguro. Izquierda = Incorrecto/Peligroso.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguro o Peligro? 🔌</div>
+<div class="subtitle" id="subtitle">Primer día como ayudante</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="tinder-card">
+<div class="tinder-card-content" id="card-content"></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o pulsa los botones</div>
+<div class="tinder-buttons" id="tinder-buttons">
+<button class="cta" id="btn-incorrect" style="background:#ff6b6b">❌ Incorrecto</button>
+<button class="cta" id="btn-correct" style="background:#00E6BC">✅ Correcto</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{text:"Trabajar con el cuadro eléctrico conectado",correct:false,exp:"Siempre desconecta el cuadro antes de trabajar. Riesgo de electrocución."},
+{text:"Usar guantes aislantes antes de manipular cables",correct:true,exp:"Los guantes aislantes son EPI obligatorio para trabajos eléctricos."},
+{text:"Utilizar destornillador mojado en una instalación",correct:false,exp:"Las herramientas mojadas conducen electricidad. Riesgo mortal."},
+{text:"Verificar ausencia de tensión con un polímetro",correct:true,exp:"Comprobar ausencia de tensión es obligatorio antes de intervenir."},
+{text:"Señalizar la zona de trabajo eléctrico",correct:true,exp:"La señalización previene accidentes de terceros. Normativa PRL."},
+{text:"Dejar cables pelados sin proteger temporalmente",correct:false,exp:"Los cables expuestos deben protegerse siempre. Riesgo de contacto."}
+];
+let idx=0,answers=[],startX=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('tinder-card'),cardContent=document.getElementById('card-content'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect'),helper=document.getElementById('helper');
+
+function startGame(){modal.classList.remove('active');renderCard();}
+
+function renderCard(){
+if(idx>=data.length){showResults();return}
+cardContent.textContent=data[idx].text;
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+card.style.transition='none';
+ensureFits();
+}
+
+function answer(isCorrect){
+const d=data[idx];
+answers.push({text:d.text,userAnswer:isCorrect,correctAnswer:d.correct,isRight:isCorrect===d.correct,exp:d.exp});
+const dir=isCorrect?1:-1;
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+card.style.transform=`translateX(${dir*300}px) rotate(${dir*20}deg)`;
+card.style.opacity='0';
+idx++;
+setTimeout(renderCard,300);
+}
+
+card.addEventListener('mousedown',e=>{if(idx>=data.length)return;isDragging=true;startX=e.clientX;card.style.transition='none';});
+card.addEventListener('mousemove',e=>{if(!isDragging)return;currentX=e.clientX-startX;card.style.transform=`translateX(${currentX}px) rotate(${currentX*0.05}deg)`;});
+card.addEventListener('mouseup',()=>{if(!isDragging)return;isDragging=false;if(Math.abs(currentX)>80){answer(currentX>0);}else{card.style.transition='transform 0.2s ease';card.style.transform='translateX(0) rotate(0deg)';}currentX=0;});
+card.addEventListener('mouseleave',()=>{if(isDragging){isDragging=false;card.style.transition='transform 0.2s ease';card.style.transform='translateX(0) rotate(0deg)';currentX=0;}});
+card.addEventListener('touchstart',e=>{if(idx>=data.length)return;isDragging=true;startX=e.touches[0].clientX;card.style.transition='none';},{passive:true});
+card.addEventListener('touchmove',e=>{if(!isDragging)return;currentX=e.touches[0].clientX-startX;card.style.transform=`translateX(${currentX}px) rotate(${currentX*0.05}deg)`;},{passive:true});
+card.addEventListener('touchend',()=>{if(!isDragging)return;isDragging=false;if(Math.abs(currentX)>80){answer(currentX>0);}else{card.style.transition='transform 0.2s ease';card.style.transform='translateX(0) rotate(0deg)';}currentX=0;});
+
+btnCorrect.onclick=()=>{if(idx<data.length)answer(true);};
+btnIncorrect.onclick=()=>{if(idx<data.length)answer(false);};
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isRight).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Reto Completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Decisiones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isRight?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.isRight?'✓ Acertaste':'✗ Fallaste'} (${a.correctAnswer?'Era seguro':'Era peligroso'})</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-message">¡Buen trabajo! Reconocer riesgos eléctricos es clave para tu seguridad. 🔌⚡</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;padding:16px;}
+.tinder-card{width:100%;max-width:280px;min-height:160px;background:#fff;border:3px solid #00E6BC;border-radius:16px;display:flex;align-items:center;justify-content:center;padding:24px;cursor:grab;user-select:none;touch-action:none;}
+.tinder-card:active{cursor:grabbing;}
+.tinder-card-content{font-size:1.1rem;text-align:center;color:#1a1a2e;line-height:1.4;}
+.tinder-buttons{display:flex;gap:12px;width:100%;}
+.tinder-buttons .cta{flex:1;font-size:0.95rem;padding:12px 8px;}
+.results-message{text-align:center;padding:16px;font-size:1rem;color:#1a1a2e;background:#e8fff9;border-radius:12px;margin:16px;}
+</style>
+</body>
+</html>
