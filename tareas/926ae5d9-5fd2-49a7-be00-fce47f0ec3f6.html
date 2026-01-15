@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Kit 🧰 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Kit 🧰</div>
+<div class="subtitle">Primer día de aprendiz</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="cloze-container"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Elige la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{text:"Para cortar tubería de cobre uso el ___.",opts:["cortatubos","sierra","alicates"],ans:0,exp:"El cortatubos hace cortes limpios y precisos. La sierra deja rebabas y los alicates no cortan tubos."},
+{text:"El sellado de roscas se hace con ___.",opts:["teflón","silicona","masilla"],ans:0,exp:"La cinta de teflón sella roscas metálicas. La silicona es para juntas fijas y la masilla no resiste presión."},
+{text:"Para desatascar un desagüe uso un ___.",opts:["desatascador","destornillador","flexómetro"],ans:0,exp:"El desatascador genera presión para liberar obstrucciones. Las otras herramientas no sirven para esto."},
+{text:"La tubería de PVC se une con ___.",opts:["pegamento","soldadura","teflón"],ans:0,exp:"El PVC se une con adhesivo especial. La soldadura es para metal y el teflón para roscas."},
+{text:"Para medir diámetros de tubo uso el ___.",opts:["calibre","nivel","llave inglesa"],ans:0,exp:"El calibre mide con precisión. El nivel comprueba horizontalidad y la llave aprieta tuercas."},
+{text:"Las tuercas de grifería se aprietan con ___.",opts:["llave grifa","martillo","destornillador"],ans:0,exp:"La llave grifa ajusta tuercas de fontanería. El martillo y destornillador no son adecuados."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),clozeContainer=document.getElementById('cloze-container'),helper=document.getElementById('helper');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+const parts=d.text.split('___');
+clozeContainer.innerHTML=`<p class="cloze-text">${parts[0]}<span class="cloze-blank" id="blank">___</span>${parts[1]||''}</p>`;
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const d=data[idx];
+const correct=i===d.ans;
+const blank=document.getElementById('blank');
+blank.textContent=d.opts[i];
+blank.classList.add(correct?'correct':'incorrect');
+opts.querySelectorAll('.btn-option').forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===d.ans&&!correct)b.classList.add('correct');
+});
+answers.push({text:d.text,correct,exp:d.exp,user:d.opts[i],correctAns:d.opts[d.ans]});
+setTimeout(()=>{idx++;render();},900);
+}
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Kit preparado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text.replace('___',`<strong>${a.correctAns}</strong>`)}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Dijiste: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo profesional</div>
+<div class="result-explanation">Usa siempre los nombres técnicos de las herramientas. Revisa tu maletín antes de cada trabajo y mantén todo limpio y ordenado.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
