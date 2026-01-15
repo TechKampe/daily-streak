@@ -1,0 +1,245 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Voltaje Express: ¿Dominas lo básico? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Voltaje Express</div>
+<div class="subtitle" id="question">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Tu primer día como ayudante. ¡Demuestra lo que sabes!</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">⚡ Voltaje Express</div>
+<div class="modal-body">Es tu primer día en obra. El oficial te hará 5 preguntas rápidas para comprobar tus conocimientos básicos.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const quizData = [
+{
+q: "¿De qué color es el cable de tierra?",
+opts: ["Azul", "Verde/Amarillo", "Marrón", "Negro"],
+ans: 1,
+correctText: "Verde/Amarillo",
+exp: "El cable de tierra siempre es verde/amarillo por normativa. Confundirlo puede ser mortal."
+},
+{
+q: "¿Qué protege el diferencial?",
+opts: ["Contra sobrecargas", "Contra fugas a tierra", "Contra cortocircuitos"],
+ans: 1,
+correctText: "Contra fugas a tierra",
+exp: "El diferencial detecta fugas de corriente y corta el suministro para evitar electrocuciones."
+},
+{
+q: "¿Qué herramienta se usa para pelar cables?",
+opts: ["Alicates de corte", "Pelacables", "Destornillador"],
+ans: 1,
+correctText: "Pelacables",
+exp: "El pelacables retira el aislante sin dañar el conductor. Usar otras herramientas puede cortar hilos."
+},
+{
+q: "¿Cuál es el voltaje doméstico en España?",
+opts: ["110V", "220V", "230V", "380V"],
+ans: 2,
+correctText: "230V",
+exp: "En España el voltaje doméstico estándar es 230V. Confundirlo con 110V puede dañar equipos."
+},
+{
+q: "¿De qué color es el cable neutro?",
+opts: ["Marrón", "Negro", "Azul", "Gris"],
+ans: 2,
+correctText: "Azul",
+exp: "El neutro es azul por normativa europea. El marrón y negro son fases."
+}
+];
+
+let currentIdx = 0;
+let score = 0;
+let answers = [];
+let isTransitioning = false;
+
+const scene = document.getElementById('scene');
+const optsContainer = document.getElementById('options');
+const questionEl = document.getElementById('question');
+const progressBar = document.getElementById('progress');
+const counterEl = document.getElementById('counter');
+const helperEl = document.getElementById('helper');
+const modal = document.getElementById('modal');
+
+function startGame() {
+    modal.classList.remove('active');
+    renderQuestion();
+}
+
+function renderQuestion() {
+    if (currentIdx >= quizData.length) {
+        showResults();
+        return;
+    }
+
+    const data = quizData[currentIdx];
+    questionEl.textContent = data.q;
+    progressBar.style.width = (currentIdx / quizData.length * 100) + '%';
+    counterEl.textContent = (currentIdx + 1) + '/' + quizData.length;
+    helperEl.textContent = 'Toca la respuesta correcta';
+
+    optsContainer.innerHTML = data.opts.map((opt, i) => 
+        `<button class="btn-option" aria-label="${opt}" onclick="selectAnswer(${i})">${opt}</button>`
+    ).join('');
+
+    optsContainer.style.opacity = '0';
+    optsContainer.style.transform = 'translateX(20px)';
+    setTimeout(() => {
+        optsContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        optsContainer.style.opacity = '1';
+        optsContainer.style.transform = 'translateX(0)';
+    }, 50);
+
+    isTransitioning = false;
+    ensureFits();
+}
+
+function selectAnswer(idx) {
+    if (isTransitioning) return;
+    isTransitioning = true;
+
+    const data = quizData[currentIdx];
+    const buttons = optsContainer.querySelectorAll('.btn-option');
+    const isCorrect = idx === data.ans;
+
+    buttons.forEach((btn, i) => {
+        btn.disabled = true;
+        if (i === idx) {
+            btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+        }
+        if (i === data.ans && !isCorrect) {
+            btn.classList.add('correct');
+        }
+    });
+
+    if (isCorrect) score++;
+
+    answers.push({
+        question: data.q,
+        userAnswer: data.opts[idx],
+        correctAnswer: data.correctText,
+        isCorrect: isCorrect,
+        explanation: data.exp
+    });
+
+    helperEl.textContent = isCorrect ? '✓ ¡Correcto!' : '✗ Incorrecto';
+
+    setTimeout(() => {
+        optsContainer.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+        optsContainer.style.opacity = '0';
+        optsContainer.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            currentIdx++;
+            renderQuestion();
+        }, 200);
+    }, 800);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+
+        const percentage = Math.round((score / quizData.length) * 100);
+        let message = '';
+        if (percentage === 100) {
+            message = '¡Perfecto! El oficial confía plenamente en ti.';
+        } else if (percentage >= 60) {
+            message = 'Buen nivel, pero repasa los fallos.';
+        } else {
+            message = 'Necesitas repasar los fundamentos.';
+        }
+
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">⚡ Quiz Completado</div>
+                    <div class="results-score">${score}/${quizData.length}</div>
+                    <div class="results-subtitle">${message}</div>
+                </div>
+                <div class="results-list">
+                    ${answers.map((a, i) => `
+                        <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${i + 1}. ${a.question}</div>
+                            <div class="result-answer">${a.isCorrect ? '✓ ' + a.userAnswer : '✗ Tu respuesta: ' + a.userAnswer}</div>
+                            ${!a.isCorrect ? `<div class="result-answer" style="opacity:0.8">→ Correcta: ${a.correctAnswer}</div>` : ''}
+                            <div class="result-explanation">${a.explanation}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="results-tip">
+                    <strong>💡 Consejo:</strong> En obra, si tienes dudas, pregunta siempre al oficial antes de tocar cualquier cable. Una pregunta puede salvarte la vida.
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+            action: 'TASK_COMPLETED'
+        }));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+
+    if (scene.scrollHeight > scene.clientHeight) {
+        scene.classList.add('compact');
+    }
+    if (scene.scrollHeight > scene.clientHeight) {
+        scene.classList.add('compact-xs');
+    }
+    if (scene.scrollHeight > scene.clientHeight) {
+        const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+        document.documentElement.style.setProperty('--ui-scale', scale);
+    }
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
