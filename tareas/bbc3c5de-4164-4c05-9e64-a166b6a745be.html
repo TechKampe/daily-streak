@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Protocolo 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Protocolo 🔧</div>
+<div class="subtitle" id="instruction">Completa la frase con la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="sentence-card">
+<span class="card-text" id="sentence"></span>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra que completa la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const clozeData = [
+{
+sentence: "Antes de manipular un circuito, debo comprobar la ausencia de ___.",
+options: ["tensión", "corriente", "resistencia"],
+answer: 0,
+explanation: "Comprobamos ausencia de TENSIÓN porque es lo que puede causar descarga eléctrica. La corriente solo circula si hay tensión y carga conectada."
+},
+{
+sentence: "El cable de color verde-amarillo siempre es el de ___.",
+options: ["fase", "neutro", "tierra"],
+answer: 2,
+explanation: "El verde-amarillo es TIERRA por normativa internacional. El azul es neutro y los colores marrón/negro/gris son fase."
+},
+{
+sentence: "Para proteger contra sobrecargas instalamos un ___.",
+options: ["diferencial", "magnetotérmico"],
+answer: 1,
+explanation: "El MAGNETOTÉRMICO protege contra sobrecargas y cortocircuitos. El diferencial protege contra fugas a tierra."
+},
+{
+sentence: "Para medir tensión en un enchufe, uso el ___.",
+options: ["multímetro", "buscapolos", "pinza amperimétrica"],
+answer: 0,
+explanation: "El MULTÍMETRO mide tensión con precisión. El buscapolos solo detecta presencia de fase, no mide valores."
+},
+{
+sentence: "El interruptor que protege a las personas es el ___.",
+options: ["magnetotérmico", "diferencial"],
+answer: 1,
+explanation: "El DIFERENCIAL detecta fugas a tierra y protege a personas de electrocución. El magnetotérmico protege la instalación."
+},
+{
+sentence: "La sección del cable se mide en ___.",
+options: ["amperios", "mm²", "voltios"],
+answer: 1,
+explanation: "La sección se mide en MM² (milímetros cuadrados). Los amperios miden corriente y los voltios miden tensión."
+}
+];
+
+let currentIndex = 0;
+let score = 0;
+let answers = [];
+let selectedOption = -1;
+
+const scene = document.getElementById('scene');
+const sentenceEl = document.getElementById('sentence');
+const optionsEl = document.getElementById('options');
+const progressEl = document.getElementById('progress');
+const counterEl = document.getElementById('counter');
+const helperEl = document.getElementById('helper');
+
+function renderCloze() {
+if (currentIndex >= clozeData.length) {
+showResults();
+return;
+}
+
+const current = clozeData[currentIndex];
+selectedOption = -1;
+
+const parts = current.sentence.split('___');
+sentenceEl.innerHTML = parts[0] + '<span class="gap">___</span>' + (parts[1] || '');
+
+progressEl.style.width = (currentIndex / clozeData.length * 100) + '%';
+counterEl.textContent = (currentIndex + 1) + '/' + clozeData.length;
+
+optionsEl.innerHTML = current.options.map((opt, i) =>
+`<button class="btn-option" onclick="selectOption(${i})">${opt}</button>`
+).join('');
+
+ensureFits();
+}
+
+function selectOption(index) {
+selectedOption = index;
+const current = clozeData[currentIndex];
+const isCorrect = index === current.answer;
+
+if (isCorrect) score++;
+
+answers.push({
+sentence: current.sentence,
+correct: isCorrect,
+userAnswer: current.options[index],
+correctAnswer: current.options[current.answer],
+explanation: current.explanation
+});
+
+const buttons = optionsEl.querySelectorAll('.btn-option');
+buttons.forEach((btn, i) => {
+btn.disabled = true;
+if (i === current.answer) {
+btn.classList.add('correct');
+} else if (i === index && !isCorrect) {
+btn.classList.add('incorrect');
+}
+});
+
+const gap = sentenceEl.querySelector('.gap');
+if (gap) {
+gap.textContent = current.options[current.answer];
+gap.classList.add('filled');
+}
+
+setTimeout(() => {
+currentIndex++;
+renderCloze();
+}, 1200);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+
+let resultsHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Protocolo completado!</div>
+<div class="results-score">${score}/${clozeData.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">`;
+
+answers.forEach((a, i) => {
+const completedSentence = clozeData[i].sentence.replace('___', `<strong>${a.correctAnswer}</strong>`);
+resultsHTML += `
+<div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+<div class="result-question">${completedSentence}</div>
+<div class="result-answer">${a.correct ? '✓ Correcto' : '✗ Tu respuesta: ' + a.userAnswer}</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>`;
+});
+
+resultsHTML += `
+</div>
+<div class="card">
+<span class="card-text">💡 <strong>Consejo:</strong> Dominar el vocabulario técnico es clave para comunicarte con tu equipo y clientes. Usa siempre los términos correctos para evitar confusiones y accidentes.</span>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+
+scene.innerHTML = resultsHTML;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({
+action: 'TASK_COMPLETED'
+}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+
+if (scene.scrollHeight > scene.clientHeight) {
+scene.classList.add('compact');
+}
+if (scene.scrollHeight > scene.clientHeight) {
+scene.classList.add('compact-xs');
+}
+if (scene.scrollHeight > scene.clientHeight) {
+const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale', scale);
+}
+}
+
+window.addEventListener('load', () => { ensureFits(); renderCloze(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+renderCloze();
+</script>
+</body>
+</html>
