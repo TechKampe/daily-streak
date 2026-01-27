@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🧠 Memory: Conecta Herramientas y Oficios - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px;max-width:100%;}
+.mem-card{height:70px;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;box-sizing:border-box;cursor:pointer;transition:transform 0.2s ease,background 0.2s ease;font-family:'Baloo 2',sans-serif;}
+.mem-card.hidden{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700;}
+.mem-card.revealed{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2;}
+.mem-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;line-height:1.2;}
+.mem-card.shake{animation:shake 0.4s ease;}
+.mem-card.pop{animation:pop 0.2s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats-row{display:flex;justify-content:space-between;padding:0 8px;font-size:14px;color:#0B214A;font-family:'Baloo 2',sans-serif;}
+.stats-row span{background:rgba(255,255,255,0.9);padding:4px 10px;border-radius:12px;}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🧠 Memory: Herramientas y Oficios</div>
+<div class="subtitle">Empareja cada herramienta con su oficio</div>
+</div>
+</div>
+<div class="main">
+<div class="stats-row">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="memory-board" id="board"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca dos cartas para encontrar parejas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,a:"Multímetro",b:"Electricista",exp:"El multímetro mide tensión, corriente y resistencia, esencial para diagnosticar circuitos eléctricos."},
+{id:2,a:"Llave inglesa",b:"Fontanero",exp:"La llave inglesa ajusta tuercas de distintos tamaños en tuberías y conexiones de agua."},
+{id:3,a:"Llana",b:"Albañil",exp:"La llana extiende y alisa mortero o yeso sobre paredes y superficies."},
+{id:4,a:"Manómetro",b:"Climatización",exp:"El manómetro mide la presión del refrigerante en sistemas de aire acondicionado."}
+];
+
+let cards=[],first=null,second=null,locked=false,attempts=0,matched=0,maxAttempts=10,answers=[];
+const board=document.getElementById('board'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.a,type:'a'});
+cards.push({pairId:p.id,text:p.b,type:'b'});
+});
+shuffle(cards);
+renderBoard();
+ensureFits();
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+function renderBoard(){
+board.innerHTML='';
+cards.forEach((c,i)=>{
+const div=document.createElement('div');
+div.className='mem-card hidden';
+div.textContent='?';
+div.dataset.index=i;
+div.onclick=()=>flipCard(i,div);
+board.appendChild(div);
+});
+}
+
+function flipCard(i,el){
+if(locked||el.classList.contains('revealed')||el.classList.contains('matched'))return;
+el.classList.remove('hidden');
+el.classList.add('revealed','pop');
+el.textContent=cards[i].text;
+
+if(!first){first={i,el};}
+else{
+second={i,el};
+locked=true;
+attempts++;
+attemptsEl.textContent=`Intento ${attempts}/10`;
+checkMatch();
+}
+}
+
+function checkMatch(){
+const c1=cards[first.i],c2=cards[second.i];
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+setTimeout(()=>{
+first.el.classList.remove('revealed');
+first.el.classList.add('matched');
+second.el.classList.remove('revealed');
+second.el.classList.add('matched');
+matched++;
+pairsEl.textContent=`${matched}/4 parejas`;
+const p=pairs.find(x=>x.pairId===c1.pairId);
+answers.push({pair:`${p.a} – ${p.b}`,found:true,exp:p.exp});
+reset();
+if(matched===4)endGame(true);
+else if(attempts>=maxAttempts)endGame(false);
+},300);
+}else{
+first.el.classList.add('shake');
+second.el.classList.add('shake');
+setTimeout(()=>{
+first.el.classList.remove('revealed','shake');
+first.el.classList.add('hidden');
+first.el.textContent='?';
+second.el.classList.remove('revealed','shake');
+second.el.classList.add('hidden');
+second.el.textContent='?';
+reset();
+if(attempts>=maxAttempts)endGame(false);
+},2000);
+}
+}
+
+function reset(){first=null;second=null;locked=false;}
+
+function endGame(won){
+const foundIds=answers.map(a=>pairs.find(p=>`${p.a} – ${p.b}`===a.pair).id);
+pairs.forEach(p=>{
+if(!foundIds.includes(p.id)){
+answers.push({pair:`${p.a} – ${p.b}`,found:false,exp:p.exp});
+}
+});
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${won?'¡Felicidades!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/4</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.found?'correct':'incorrect'}">
+<div class="result-question">${a.pair}</div>
+<div class="result-answer">${a.found?'✓ Encontrada':'✗ No encontrada'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{init();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+init();
+</script>
+</body>
+</html>
