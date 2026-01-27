@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 ¿Qué herramienta es esta? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{img:"https://images.unsplash.com/photo-1586864387789-628af9feed72?w=400&h=300&fit=crop",correct:"Destornillador de estrella",opts:["Destornillador plano","Destornillador de estrella","Punzón"],ans:1,exp:"El destornillador de estrella (Phillips) tiene punta en cruz para tornillos con ranura en X. El plano tiene punta recta y el punzón es para marcar."},
+{img:"https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400&h=300&fit=crop",correct:"Alicates universales",opts:["Alicates de corte","Alicates universales","Tenazas"],ans:1,exp:"Los alicates universales combinan zona de agarre, corte y pelado. Los de corte solo cortan y las tenazas son para extraer clavos."},
+{img:"https://images.unsplash.com/photo-1580901368919-7738efb0f87e?w=400&h=300&fit=crop",correct:"Llave inglesa",opts:["Llave fija","Llave inglesa","Llave Allen"],ans:1,exp:"La llave inglesa es ajustable mediante tornillo. La fija tiene boca fija y la Allen es hexagonal para tornillos empotrados."},
+{img:"https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=400&h=300&fit=crop",correct:"Flexómetro",opts:["Regla metálica","Flexómetro","Metro de carpintero"],ans:1,exp:"El flexómetro es cinta métrica enrollable en carcasa. La regla es rígida y el metro de carpintero se pliega en secciones."},
+{img:"https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400&h=300&fit=crop",correct:"Nivel de burbuja",opts:["Escuadra","Nivel de burbuja","Plomada"],ans:1,exp:"El nivel de burbuja indica horizontalidad/verticalidad con burbujas en líquido. La escuadra mide ángulos y la plomada solo verticalidad."}
+];
+let idx=0,score=0,answers=[],phase='game';
+const scene=document.getElementById('scene');
+
+function renderGame(){
+const d=data[idx];
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 ¿Qué herramienta es esta?</div>
+<div class="subtitle">Identifica la herramienta de la imagen</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(idx/data.length)*100}%"></i></div></div>
+<span class="badge">Ronda ${idx+1}/${data.length}</span>
+</div>
+</div>
+<div class="main">
+<div style="text-align:center;margin-bottom:12px">
+<img src="${d.img}" alt="Herramienta" style="width:100%;max-width:280px;height:140px;object-fit:cover;border-radius:12px">
+</div>
+<div class="options" id="options">
+${d.opts.map((o,i)=>`<button class="btn-option" data-idx="${i}">${o}</button>`).join('')}
+</div>
+</div>
+<div class="footer"><div class="helper">Selecciona el nombre correcto</div></div>`;
+document.querySelectorAll('.btn-option').forEach(b=>b.onclick=()=>selectAnswer(parseInt(b.dataset.idx)));
+ensureFits();
+}
+
+function selectAnswer(i){
+const d=data[idx],correct=i===d.ans;
+if(correct)score++;
+answers.push({q:d.correct,correct,user:d.opts[i],img:d.img,exp:d.exp,correctAns:d.opts[d.ans]});
+document.querySelectorAll('.btn-option').forEach((b,j)=>{
+b.disabled=true;
+if(j===d.ans)b.classList.add('correct');
+else if(j===i&&!correct)b.classList.add('incorrect');
+});
+setTimeout(()=>renderExplanation(d,correct),1500);
+}
+
+function renderExplanation(d,correct){
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">${correct?'✅ ¡Correcto!':'❌ Incorrecto'}</div>
+<div class="subtitle">Ronda ${idx+1}/${data.length}</div>
+</div>
+</div>
+<div class="main" style="overflow-y:auto;flex:1">
+<div style="text-align:center;margin-bottom:8px">
+<img src="${d.img}" alt="${d.correct}" style="width:120px;height:80px;object-fit:cover;border-radius:8px">
+</div>
+<div style="text-align:center;font-weight:700;font-size:1.1rem;margin-bottom:8px">${d.correct}</div>
+<div style="font-size:0.9rem;line-height:1.4;padding:0 8px">${d.exp}</div>
+</div>
+<div class="footer"><button class="cta" id="nextBtn">Siguiente</button></div>`;
+document.getElementById('nextBtn').onclick=()=>{idx++;idx<data.length?renderGame():showResults();};
+ensureFits();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🎉 ¡Completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Herramientas identificadas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+<img src="${a.img}" alt="${a.q}" style="width:60px;height:45px;object-fit:cover;border-radius:6px">
+<div>
+<div class="result-question">${a.q}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Tu respuesta: '+a.user}</div>
+</div>
+</div>
+<div class="result-explanation">${a.exp.substring(0,100)}...</div>
+</div>`).join('')}
+</div>
+<div style="background:var(--surface);padding:16px;border-radius:12px;margin:16px 0">
+<div style="font-weight:700;margin-bottom:8px">💡 Consejo práctico</div>
+<div style="font-size:0.9rem">Antes de salir a obra, revisa siempre tu caja de herramientas. Conocer cada herramienta evita errores y accidentes.</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function showIntro(){
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primer día en el almacén</div>
+<div class="modal-body">El encargado te pide identificar 5 herramientas básicas antes de salir a obra. ¿Estás listo?</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">¡Comenzar!</button></div>
+</div>
+</div>`;
+}
+
+function startGame(){renderGame();}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{showIntro();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
