@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tu primer servicio eléctrico ⚡ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Tu primer servicio eléctrico ⚡</div>
+<div class="subtitle">Completa la frase eligiendo la opción correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="cloze-sentence"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta o EPI correcto</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const clozes = [
+{
+sentence: "Para comprobar si hay tensión en el enchufe, uso el ___.",
+options: ["buscapolos", "martillo"],
+correct: 0,
+explanation: "El buscapolos detecta presencia de tensión. El martillo es una herramienta de golpeo, no sirve para mediciones eléctricas."
+},
+{
+sentence: "Para medir el voltaje exacto del circuito, uso el ___.",
+options: ["multímetro", "pinza amperimétrica"],
+correct: 0,
+explanation: "El multímetro mide tensión con precisión. La pinza amperimétrica mide intensidad sin cortar el cable."
+},
+{
+sentence: "Antes de manipular el enchufe, me pongo ___.",
+options: ["guantes dieléctricos", "gafas de sol"],
+correct: 0,
+explanation: "Los guantes dieléctricos aíslan de descargas. Las gafas de sol no son un EPI para electricidad."
+},
+{
+sentence: "Para cortar la alimentación, bajo el ___ del circuito.",
+options: ["automático", "interruptor de lámpara"],
+correct: 0,
+explanation: "El automático (magnetotérmico) corta todo el circuito. El interruptor de lámpara solo controla un punto de luz."
+},
+{
+sentence: "Para pelar el cable correctamente, empleo ___.",
+options: ["pelacables", "cúter sin control"],
+correct: 0,
+explanation: "El pelacables corta solo el aislante sin dañar el conductor. Un cúter puede cortar hilos y causar accidentes."
+},
+{
+sentence: "Para identificar el cable neutro, consulto el ___.",
+options: ["código de colores", "termómetro"],
+correct: 0,
+explanation: "El código de colores (azul=neutro) identifica conductores. El termómetro mide temperatura, no tiene relación."
+}
+];
+
+let currentIndex = 0;
+let answers = [];
+let score = 0;
+
+const scene = document.getElementById('scene');
+const progressBar = document.getElementById('progress-bar');
+const counter = document.getElementById('counter');
+const sentenceEl = document.getElementById('cloze-sentence');
+const optionsEl = document.getElementById('options');
+
+function renderCloze() {
+if (currentIndex >= clozes.length) {
+showResults();
+return;
+}
+const cloze = clozes[currentIndex];
+progressBar.style.width = (currentIndex / clozes.length * 100) + '%';
+counter.textContent = (currentIndex + 1) + '/' + clozes.length;
+sentenceEl.innerHTML = cloze.sentence.replace('___', '<u>___</u>');
+optionsEl.innerHTML = cloze.options.map((opt, i) =>
+`<button class="btn-option" onclick="selectOption(${i})">${opt}</button>`
+).join('');
+ensureFits();
+}
+
+function selectOption(index) {
+const cloze = clozes[currentIndex];
+const isCorrect = index === cloze.correct;
+const buttons = optionsEl.querySelectorAll('.btn-option');
+buttons.forEach((btn, i) => {
+btn.disabled = true;
+if (i === cloze.correct) btn.classList.add('correct');
+else if (i === index && !isCorrect) btn.classList.add('incorrect');
+});
+const filledSentence = cloze.sentence.replace('___', `<u><strong>${cloze.options[index]}</strong></u>`);
+sentenceEl.innerHTML = filledSentence;
+if (isCorrect) score++;
+answers.push({
+sentence: cloze.sentence,
+userAnswer: cloze.options[index],
+correctAnswer: cloze.options[cloze.correct],
+isCorrect: isCorrect,
+explanation: cloze.explanation
+});
+setTimeout(() => {
+currentIndex++;
+renderCloze();
+}, 800);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Servicio completado!</div>
+<div class="results-score">${score}/${clozes.length}</div>
+<div class="results-subtitle">Frases correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a => `
+<div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+<div class="result-question">${a.sentence.replace('___', '<strong>' + a.correctAnswer + '</strong>')}</div>
+<div class="result-answer">${a.isCorrect ? '✓ Correcto' : '✗ Dijiste: ' + a.userAnswer}</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>
+`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Repasa la diferencia entre multímetro (mide valores) y buscapolos (detecta tensión). Usa siempre EPI y corta el automático antes de trabajar.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>
+`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale', scale);
+}
+}
+
+window.addEventListener('load', () => { ensureFits(); renderCloze(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+renderCloze();
+</script>
+</body>
+</html>
