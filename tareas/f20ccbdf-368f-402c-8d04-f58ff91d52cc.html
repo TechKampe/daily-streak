@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Protocolo 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Protocolo 🔧</div>
+<div class="subtitle" id="subtitle">Completa la frase con la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="phrase-card">
+<p id="phrase-text"></p>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra que completa la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const clozeData = [
+{
+phrase: "Antes de manipular un circuito, debo comprobar la ausencia de ___.",
+options: ["tensión", "corriente"],
+answer: 0,
+explanation: "Comprobamos ausencia de TENSIÓN porque es lo que indica si hay diferencia de potencial peligrosa. La corriente solo circula cuando hay carga conectada."
+},
+{
+phrase: "El cable de color verde-amarillo siempre es el de ___.",
+options: ["fase", "tierra"],
+answer: 1,
+explanation: "El verde-amarillo es TIERRA por normativa. La fase suele ser marrón, negro o gris, y el neutro es azul."
+},
+{
+phrase: "Para proteger contra sobrecargas instalamos un ___.",
+options: ["diferencial", "magnetotérmico"],
+answer: 1,
+explanation: "El MAGNETOTÉRMICO protege contra sobrecargas y cortocircuitos. El diferencial protege contra fugas a tierra y electrocución."
+},
+{
+phrase: "Para medir la intensidad que consume un aparato, uso la ___.",
+options: ["pinza amperimétrica", "buscapolos"],
+answer: 0,
+explanation: "La PINZA AMPERIMÉTRICA mide corriente sin cortar el circuito. El buscapolos solo detecta presencia de fase."
+},
+{
+phrase: "El interruptor que corta automáticamente ante una fuga a tierra es el ___.",
+options: ["magnetotérmico", "diferencial"],
+answer: 1,
+explanation: "El DIFERENCIAL detecta diferencias entre fase y neutro (fugas) y corta. El magnetotérmico solo actúa por sobrecarga o cortocircuito."
+},
+{
+phrase: "El cable de color azul corresponde al conductor ___.",
+options: ["neutro", "fase"],
+answer: 0,
+explanation: "El azul es NEUTRO por normativa europea. La fase usa colores como marrón, negro o gris."
+}
+];
+
+let currentIndex = 0;
+let answers = [];
+let score = 0;
+
+const scene = document.getElementById('scene');
+const phraseText = document.getElementById('phrase-text');
+const optionsContainer = document.getElementById('options');
+const progressBar = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const helper = document.getElementById('helper');
+
+function renderCloze() {
+if (currentIndex >= clozeData.length) {
+showResults();
+return;
+}
+
+const current = clozeData[currentIndex];
+const phraseWithBlank = current.phrase.replace("___", "<span class='cloze-blank'>______</span>");
+phraseText.innerHTML = phraseWithBlank;
+
+progressBar.style.width = ((currentIndex) / clozeData.length * 100) + '%';
+counter.textContent = (currentIndex + 1) + '/' + clozeData.length;
+
+optionsContainer.innerHTML = current.options.map((opt, i) => 
+    `<button class="btn-option" onclick="selectOption(${i})">${opt}</button>`
+).join('');
+
+helper.textContent = "Selecciona la palabra que completa la frase";
+ensureFits();
+}
+
+function selectOption(selected) {
+const current = clozeData[currentIndex];
+const isCorrect = selected === current.answer;
+
+if (isCorrect) score++;
+
+answers.push({
+    phrase: current.phrase,
+    userAnswer: current.options[selected],
+    correctAnswer: current.options[current.answer],
+    isCorrect: isCorrect,
+    explanation: current.explanation
+});
+
+const buttons = optionsContainer.querySelectorAll('.btn-option');
+buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === current.answer) {
+        btn.classList.add('correct');
+    } else if (i === selected && !isCorrect) {
+        btn.classList.add('incorrect');
+    }
+});
+
+const blank = document.querySelector('.cloze-blank');
+if (blank) {
+    blank.textContent = current.options[current.answer];
+    blank.classList.add(isCorrect ? 'correct' : 'incorrect');
+}
+
+helper.textContent = isCorrect ? "¡Correcto!" : "La respuesta era: " + current.options[current.answer];
+
+setTimeout(() => {
+    currentIndex++;
+    renderCloze();
+}, 1200);
+}
+
+function showResults() {
+setTimeout(() => {
+    document.documentElement.classList.replace('gameplay', 'results');
+    scene.classList.replace('gameplay', 'results');
+    
+    scene.innerHTML = `
+        <div class="results-scroll">
+            <div class="results-header">
+                <div class="results-title">¡Protocolo Completado!</div>
+                <div class="results-score">${score}/${clozeData.length}</div>
+                <div class="results-subtitle">Respuestas correctas</div>
+            </div>
+            <div class="results-list">
+                ${answers.map(a => `
+                    <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+                        <div class="result-question">${a.phrase.replace("___", "<strong>" + a.correctAnswer + "</strong>")}</div>
+                        <div class="result-answer">${a.isCorrect ? '✓ Correcto' : '✗ Tu respuesta: ' + a.userAnswer}</div>
+                        <div class="result-explanation">${a.explanation}</div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="card">
+                <p><strong>💡 Consejo final:</strong> Dominar el vocabulario técnico es clave para comunicarte con tu equipo y clientes. Usa siempre los términos correctos para evitar confusiones y accidentes.</p>
+            </div>
+            <div class="footer">
+                <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+            </div>
+        </div>
+    `;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+        action: 'TASK_COMPLETED'
+    }));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+
+if (scene.scrollHeight > scene.clientHeight) {
+    scene.classList.add('compact');
+}
+
+if (scene.scrollHeight > scene.clientHeight) {
+    scene.classList.add('compact-xs');
+}
+
+if (scene.scrollHeight > scene.clientHeight) {
+    const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+    document.documentElement.style.setProperty('--ui-scale', scale);
+}
+}
+
+window.addEventListener('load', () => { ensureFits(); renderCloze(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+renderCloze();
+</script>
+</body>
+</html>
