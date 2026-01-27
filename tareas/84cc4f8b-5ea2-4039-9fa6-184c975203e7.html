@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cable o Peligro: Clasifica y Protege ⚡ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Cable o Peligro ⚡</div>
+<div class="subtitle" id="instruction">Clasifica cada ítem en su categoría</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/9</span>
+</div>
+</div>
+<div class="main">
+<div id="item-display"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para el ítem</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const items=[
+{name:"Guantes dieléctricos",cat:"EPI",exp:"Te protegen de descargas. Error típico: confundirlos con herramienta."},
+{name:"Multímetro",cat:"Herramienta",exp:"Mide tensión, corriente y resistencia en la instalación."},
+{name:"Bloqueo/etiquetado (LOTO)",cat:"Acción preventiva",exp:"Impide reconexión accidental antes de trabajar."},
+{name:"Probar ausencia de tensión",cat:"Acción preventiva",exp:"Verificas que no hay corriente antes de tocar."},
+{name:"Destornillador aislado",cat:"Herramienta",exp:"Actúa sobre la instalación con mango protector."},
+{name:"Gafas de seguridad",cat:"EPI",exp:"Protegen tus ojos de chispas o partículas."},
+{name:"Alfombra aislante",cat:"EPI",exp:"Te aísla del suelo. Error: creer que es accesorio."},
+{name:"Avisar y señalizar zona",cat:"Acción preventiva",exp:"Reduce riesgo alertando a terceros."},
+{name:"Cinta aislante",cat:"Herramienta",exp:"Aísla empalmes; actúa sobre la instalación."}
+];
+const categories=["EPI","Herramienta","Acción preventiva"];
+let idx=0,answers=[],animating=false;
+const scene=document.getElementById('scene'),itemDisplay=document.getElementById('item-display'),catsEl=document.getElementById('categories'),progBar=document.getElementById('progress-bar'),counter=document.getElementById('counter'),instruction=document.getElementById('instruction');
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+progBar.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+itemDisplay.innerHTML=`<div class="brand" style="font-size:1.5rem;text-align:center;margin-bottom:1rem;">${item.name}</div>`;
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option" data-cat="${c}">${c}</button>`).join('');
+catsEl.querySelectorAll('.btn-option').forEach(btn=>{
+btn.onclick=()=>selectCategory(btn.dataset.cat,btn);
+});
+ensureFits();
+}
+
+function selectCategory(cat,btn){
+if(animating)return;
+animating=true;
+const item=items[idx];
+const correct=cat===item.cat;
+btn.classList.add(correct?'correct':'incorrect');
+btn.style.transform='scale(1.08)';
+btn.style.transition='transform 0.2s ease';
+setTimeout(()=>{
+btn.style.transform='scale(1)';
+},200);
+answers.push({name:item.name,user:cat,correct:item.cat,ok:correct,exp:item.exp});
+setTimeout(()=>{
+idx++;
+animating=false;
+render();
+},450);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.ok).length;
+const tip="Regla mental: ¿Me protege? → EPI. ¿Mide o actúa sobre instalación? → Herramienta. ¿Reduce riesgo antes de tocar? → Acción preventiva.";
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Clasificación completada!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Asignaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.ok?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.ok?'✓ '+a.correct:'✗ Tu respuesta: '+a.user+' → Correcta: '+a.correct}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="result-item" style="background:var(--surface-2);border-left:4px solid var(--accent);">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">${tip}</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
