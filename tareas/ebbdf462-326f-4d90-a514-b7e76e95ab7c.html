@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Primero lo primero: Ordena y conquista - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{title:"Bloqueo y etiquetado (LOTO)",steps:["Cortar suministro eléctrico","Verificar ausencia de tensión","Bloquear el equipo con candado","Realizar el trabajo","Rearmar el sistema"],tip:"Nunca trabajes sin verificar ausencia de tensión con un detector homologado."},
+{title:"Preparación antes de subir a escalera",steps:["Inspeccionar estado de la escalera","Colocar escalera en superficie estable","Preparar herramientas en cinturón","Subir manteniendo 3 puntos de apoyo","Asegurar posición antes de trabajar"],tip:"Lleva las herramientas en el cinturón, nunca en las manos al subir."},
+{title:"Entrega de trabajo al cliente",steps:["Verificar funcionamiento del trabajo","Limpiar zona de trabajo","Recoger herramientas y materiales","Explicar el trabajo realizado al cliente","Entregar documentación o garantía"],tip:"Una entrega profesional incluye siempre explicación y limpieza del área."}
+];
+let currentChallenge=0,userOrder=[],draggedIdx=null,touchStartY=0,score=0,results=[];
+const scene=document.getElementById('scene');
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function renderChallenge(){
+const ch=challenges[currentChallenge];
+userOrder=shuffle([...Array(ch.steps.length).keys()]);
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y conquista</div>
+<div class="subtitle">${ch.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(currentChallenge/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main"><div class="cards-list" id="cards">${renderCards(ch)}</div></div>
+<div class="footer">
+<div class="helper">Ordena los pasos usando ↑↓ o arrastrando</div>
+<button class="cta" id="cta" onclick="confirmOrder()">Confirmar orden</button>
+</div>`;
+attachCardEvents();
+ensureFits();
+}
+
+function renderCards(ch){
+return userOrder.map((stepIdx,pos)=>`
+<div class="card" data-pos="${pos}" draggable="true">
+<span class="card-num">${pos+1}</span>
+<span class="card-text">${ch.steps[stepIdx]}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveCard(${pos},-1)">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveCard(${pos},1)">↓</button>
+</div>
+</div>`).join('');
+}
+
+function moveCard(pos,dir){
+const newPos=pos+dir;
+if(newPos<0||newPos>=userOrder.length)return;
+[userOrder[pos],userOrder[newPos]]=[userOrder[newPos],userOrder[pos]];
+updateCards();
+}
+
+function updateCards(){
+const ch=challenges[currentChallenge];
+document.getElementById('cards').innerHTML=renderCards(ch);
+attachCardEvents();
+}
+
+function attachCardEvents(){
+const cards=document.querySelectorAll('.card');
+cards.forEach((card,i)=>{
+card.addEventListener('dragstart',e=>{draggedIdx=i;card.classList.add('dragging');});
+card.addEventListener('dragend',()=>{card.classList.remove('dragging');draggedIdx=null;});
+card.addEventListener('dragover',e=>{e.preventDefault();});
+card.addEventListener('drop',e=>{e.preventDefault();if(draggedIdx!==null&&draggedIdx!==i){const item=userOrder.splice(draggedIdx,1)[0];userOrder.splice(i,0,item);updateCards();}});
+card.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY;draggedIdx=i;card.classList.add('dragging');},{passive:true});
+card.addEventListener('touchmove',e=>{e.preventDefault();},{passive:false});
+card.addEventListener('touchend',e=>{
+const touchEndY=e.changedTouches[0].clientY;
+const diff=touchEndY-touchStartY;
+const threshold=40;
+if(Math.abs(diff)>threshold){
+const dir=diff>0?1:-1;
+const newPos=Math.max(0,Math.min(userOrder.length-1,draggedIdx+dir));
+if(newPos!==draggedIdx){const item=userOrder.splice(draggedIdx,1)[0];userOrder.splice(newPos,0,item);updateCards();}
+}
+card.classList.remove('dragging');
+draggedIdx=null;
+});
+});
+}
+
+function confirmOrder(){
+const ch=challenges[currentChallenge];
+const correctOrder=[...Array(ch.steps.length).keys()];
+const isCorrect=userOrder.every((v,i)=>v===correctOrder[i]);
+if(isCorrect)score++;
+results.push({title:ch.title,userOrder:[...userOrder],correct:isCorrect,steps:ch.steps,tip:ch.tip});
+showFeedback(ch,isCorrect);
+}
+
+function showFeedback(ch,isCorrect){
+const userSteps=userOrder.map((idx,i)=>`<div class="result-step">${i+1}. ${ch.steps[idx]}</div>`).join('');
+const correctSteps=ch.steps.map((s,i)=>`<div class="result-step">${i+1}. ${s}</div>`).join('');
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y conquista</div>
+<div class="subtitle">${ch.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${((currentChallenge+1)/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main">
+<div class="feedback-box ${isCorrect?'correct':'incorrect'}">
+<div class="feedback-title">${isCorrect?'✅ ¡Orden correcto!':'❌ Orden incorrecto'}</div>
+${!isCorrect?`<div class="feedback-section"><strong>Tu orden:</strong>${userSteps}</div><div class="feedback-section"><strong>✅ Orden correcto:</strong>${correctSteps}</div>`:`<div class="feedback-section">${correctSteps}</div>`}
+<div class="feedback-tip">💡 ${ch.tip}</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="nextChallenge()">${currentChallenge<challenges.length-1?'Siguiente reto':'Ver resultados'}</button>
+</div>`;
+ensureFits();
+}
+
+function nextChallenge(){
+currentChallenge++;
+if(currentChallenge>=challenges.length){showResults();}
+else{renderChallenge();}
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${challenges.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${results.map(r=>`
+<div class="result-item ${r.correct?'correct':'incorrect'}">
+<div class="result-question">${r.title}</div>
+<div class="result-answer">${r.correct?'✓ Orden correcto':'✗ Orden incorrecto'}</div>
+<div class="result-explanation">💡 ${r.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function showIntro(){
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primero lo primero</div>
+<div class="modal-body">Eres el nuevo técnico de mantenimiento. Ordena los pasos correctamente usando ↑↓ o arrastrando las tarjetas.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>
+</div>`;
+}
+
+function startGame(){
+document.getElementById('modal').classList.remove('active');
+renderChallenge();
+}
+
+window.addEventListener('load',()=>{showIntro();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
