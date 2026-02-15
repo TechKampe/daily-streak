@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Verdades del taller - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle" id="statement">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options">
+<button class="btn-option" id="btn-true" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btn-false" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper">¿Es verdadero o falso? Toca tu respuesta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primera semana en el taller</div>
+<div class="modal-body">Tu supervisor te reta: ¿sabes distinguir mitos de verdades sobre seguridad? Clasifica cada afirmación.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Acepto el reto!</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements = [
+{text: "Los guantes de trabajo siempre protegen al usar taladros y amoladoras.", correct: false, exp: "FALSO. Con maquinaria rotativa, los guantes pueden engancharse y causar lesiones graves. Nunca uses guantes con herramientas giratorias."},
+{text: "Los productos químicos deben guardarse en sus envases originales y etiquetados.", correct: true, exp: "VERDADERO. Mantener los químicos en envases originales con etiquetas previene confusiones peligrosas y facilita actuar ante emergencias."},
+{text: "Un puesto de trabajo desordenado solo afecta a la productividad, no a la seguridad.", correct: false, exp: "FALSO. El desorden causa tropiezos, caídas y dificulta encontrar herramientas en emergencias. El orden es parte fundamental de la seguridad."},
+{text: "Antes de usar una herramienta eléctrica, hay que revisar el cable y el enchufe.", correct: true, exp: "VERDADERO. Revisar cables y enchufes previene electrocuciones y cortocircuitos. Nunca uses herramientas con cables dañados."},
+{text: "Los accidentes laborales solo les pasan a los trabajadores novatos.", correct: false, exp: "FALSO. Los accidentes ocurren a cualquiera. El exceso de confianza en veteranos es una causa frecuente de accidentes graves."},
+{text: "Las gafas de seguridad son obligatorias solo cuando hay chispas visibles.", correct: false, exp: "FALSO. Partículas invisibles, polvo y salpicaduras pueden dañar los ojos. Usa gafas siempre que haya riesgo de proyecciones."},
+{text: "Si una herramienta manual está un poco oxidada pero funciona, se puede seguir usando.", correct: false, exp: "FALSO. El óxido debilita el metal y puede causar roturas. Las herramientas deben mantenerse limpias y en buen estado."}
+];
+
+let idx = 0, score = 0, answers = [], canAnswer = true;
+const scene = document.getElementById('scene');
+const stmtEl = document.getElementById('statement');
+const prog = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const btnTrue = document.getElementById('btn-true');
+const btnFalse = document.getElementById('btn-false');
+const modal = document.getElementById('modal');
+
+function startGame() {
+    modal.classList.remove('active');
+    render();
+}
+
+function render() {
+    if (idx >= statements.length) { showResults(); return; }
+    canAnswer = true;
+    const s = statements[idx];
+    stmtEl.textContent = s.text;
+    prog.style.width = (idx / statements.length * 100) + '%';
+    counter.textContent = (idx + 1) + '/' + statements.length;
+    btnTrue.classList.remove('correct', 'incorrect', 'selected');
+    btnFalse.classList.remove('correct', 'incorrect', 'selected');
+    btnTrue.disabled = false;
+    btnFalse.disabled = false;
+    ensureFits();
+}
+
+function answer(userAnswer) {
+    if (!canAnswer) return;
+    canAnswer = false;
+    const s = statements[idx];
+    const isCorrect = userAnswer === s.correct;
+    if (isCorrect) score++;
+    answers.push({
+        text: s.text,
+        userAnswer: userAnswer,
+        correct: s.correct,
+        isCorrect: isCorrect,
+        exp: s.exp
+    });
+    
+    btnTrue.disabled = true;
+    btnFalse.disabled = true;
+    
+    if (userAnswer) {
+        btnTrue.classList.add(isCorrect ? 'correct' : 'incorrect');
+    } else {
+        btnFalse.classList.add(isCorrect ? 'correct' : 'incorrect');
+    }
+    
+    setTimeout(() => {
+        idx++;
+        render();
+    }, 1000);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">🏆 ¡Reto completado!</div>
+                    <div class="results-score">${score}/${statements.length}</div>
+                    <div class="results-subtitle">Respuestas correctas</div>
+                </div>
+                <div class="results-list">
+                    ${answers.map(a => `
+                        <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${a.text}</div>
+                            <div class="result-answer">Tu respuesta: ${a.userAnswer ? 'Verdadero' : 'Falso'} ${a.isCorrect ? '✓' : '✗'}</div>
+                            <div class="result-answer">Correcto: ${a.correct ? 'Verdadero' : 'Falso'}</div>
+                            <div class="result-explanation">${a.exp}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="results-tip">
+                    <strong>💡 Consejo final:</strong> Cuestiona siempre lo que "siempre se ha hecho así". Los mitos en el taller pueden costarte caro. La seguridad se basa en conocimiento actualizado, no en tradiciones.
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({action: 'TASK_COMPLETED'}));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
