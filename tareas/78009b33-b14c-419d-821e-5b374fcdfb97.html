@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Seguridad o productividad? 🎯 Clasifica sin dudar - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguridad o productividad? 🎯</div>
+<div class="subtitle" id="item-text">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Asigna cada acción a su categoría</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<div class="modal-backdrop active" id="intro-modal">
+<div class="modal">
+<div class="modal-title">Tu primer día en obra 🏗️</div>
+<div class="modal-body">Demuestra que sabes distinguir acciones de seguridad y productividad. Clasifica 10 ítems tocando la categoría correcta.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>
+</div>
+<script>
+const items=[
+{text:"Revisar arnés antes de subir",cat:"Seguridad",exp:"Verificar el arnés previene caídas graves."},
+{text:"Preparar materiales la noche anterior",cat:"Productividad",exp:"Anticipar materiales ahorra tiempo en obra."},
+{text:"Señalizar zona de trabajo",cat:"Seguridad",exp:"La señalización evita accidentes a terceros."},
+{text:"Usar guantes anticorte",cat:"Seguridad",exp:"Los EPIs protegen de lesiones en manos."},
+{text:"Organizar herramientas por uso",cat:"Productividad",exp:"Orden = menos tiempo buscando."},
+{text:"Verificar conexión a tierra",cat:"Seguridad",exp:"Evita electrocuciones por fallos eléctricos."},
+{text:"Planificar rutas de acceso",cat:"Productividad",exp:"Rutas claras agilizan el trabajo en equipo."},
+{text:"Comprobar estado del andamio",cat:"Seguridad",exp:"Un andamio defectuoso puede causar caídas."},
+{text:"Etiquetar cables por circuito",cat:"Productividad",exp:"Facilita identificación y reduce errores."},
+{text:"Usar gafas de protección",cat:"Seguridad",exp:"Protege los ojos de partículas y salpicaduras."}
+];
+const categories=["Seguridad","Productividad"];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),itemEl=document.getElementById('item-text'),catsEl=document.getElementById('categories'),progBar=document.getElementById('progress-bar'),counterEl=document.getElementById('counter'),introModal=document.getElementById('intro-modal');
+
+function startGame(){
+introModal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+itemEl.textContent=item.text;
+progBar.style.width=((idx)/items.length*100)+'%';
+counterEl.textContent=(idx+1)+'/'+items.length;
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCat('${c}')">${c==='Seguridad'?'🛡️':'⚡'} ${c}</button>`).join('');
+ensureFits();
+}
+
+function selectCat(cat){
+const item=items[idx];
+const correct=cat===item.cat;
+answers.push({text:item.text,user:cat,correct:item.cat,ok:correct,exp:item.exp});
+const btns=catsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+if(b.textContent.includes(cat)){
+b.classList.add(correct?'correct':'incorrect');
+b.style.transform='scale(1.05)';
+}
+b.disabled=true;
+});
+setTimeout(()=>{idx++;render();},400);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.ok).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Clasificación completada!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">asignaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.ok?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.ok?'✓':'✗'} Tu respuesta: ${a.user} → Correcta: ${a.correct}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> En obra, pregúntate siempre: "¿Esto me protege o me hace más eficiente?" La seguridad nunca se sacrifica por productividad.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
