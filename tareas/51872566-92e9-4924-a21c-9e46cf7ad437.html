@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">Seguridad eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-area"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">¿Esta afirmación es verdadera o falsa?</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const statements=[
+{text:"La madera siempre aísla la electricidad",answer:false,exp:"La madera húmeda o tratada puede conducir electricidad. Solo la madera completamente seca ofrece cierto aislamiento."},
+{text:"Los cables negros nunca llevan corriente",answer:false,exp:"El color del cable varía según normativa y país. Nunca asumas que un cable está sin tensión por su color."},
+{text:"Desconectar el diferencial es suficiente para trabajar seguro",answer:false,exp:"Siempre debes verificar ausencia de tensión con un comprobador. Puede haber derivaciones o errores de cableado."},
+{text:"El agua destilada pura no conduce electricidad",answer:true,exp:"El agua destilada pura carece de iones, por lo que no conduce. Pero el agua común siempre tiene impurezas conductoras."},
+{text:"Un voltaje bajo no puede ser peligroso",answer:false,exp:"Incluso 50V pueden ser letales en condiciones de humedad o si atraviesa el corazón. La corriente mata, no solo el voltaje."},
+{text:"Los guantes de goma domésticos protegen de descargas",answer:false,exp:"Solo los guantes dieléctricos homologados ofrecen protección real. Los guantes comunes pueden tener poros o defectos."},
+{text:"Antes de trabajar, hay que verificar ausencia de tensión",answer:true,exp:"Es la regla de oro de seguridad eléctrica. Siempre comprueba con un verificador homologado antes de tocar cualquier conductor."}
+];
+let idx=0,score=0,answers=[],canAnswer=true;
+const scene=document.getElementById('scene'),stmtArea=document.getElementById('statement-area'),optsEl=document.getElementById('options'),progBar=document.getElementById('progress-bar'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=statements.length){showResults();return}
+canAnswer=true;
+const s=statements[idx];
+progBar.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+stmtArea.innerHTML=`<div class="result-question" style="text-align:center;font-size:1.1rem;line-height:1.4;padding:1rem 0">${s.text}</div>`;
+optsEl.innerHTML=`<button class="btn-option" id="btn-true" onclick="answer(true)">✓ Verdadero</button><button class="btn-option" id="btn-false" onclick="answer(false)">✗ Falso</button>`;
+ensureFits();
+}
+
+function answer(val){
+if(!canAnswer)return;
+canAnswer=false;
+const s=statements[idx];
+const correct=val===s.answer;
+if(correct)score++;
+answers.push({text:s.text,userAnswer:val,correctAnswer:s.answer,correct,exp:s.exp});
+const btnT=document.getElementById('btn-true'),btnF=document.getElementById('btn-false');
+if(val===true){btnT.classList.add(correct?'correct':'incorrect');}
+else{btnF.classList.add(correct?'correct':'incorrect');}
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const pct=Math.round(score/statements.length*100);
+let msg=pct>=70?'¡Buen trabajo, aprendiz!':'Sigue estudiando seguridad eléctrica';
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${msg}</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.userAnswer?'Tu respuesta: Verdadero':'Tu respuesta: Falso'} ${a.correct?'✓':'✗'} · Correcta: ${a.correctAnswer?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item" style="background:var(--surface-alt,#f0f4ff)">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Antes de intervenir en cualquier instalación, aplica las 5 reglas de oro: desconectar, bloquear, verificar ausencia de tensión, poner a tierra y señalizar.</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
