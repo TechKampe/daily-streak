@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Herramienta o EPI? 🛠️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Herramienta o EPI? 🛠️</div>
+<div class="subtitle">Clasifica cada elemento en su categoría</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div id="item-display"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para clasificar</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const items = [
+{name: "Gafas de seguridad", category: "EPI", exp: "Protegen los ojos de partículas y salpicaduras."},
+{name: "Destornillador", category: "Herramienta", exp: "Sirve para apretar o aflojar tornillos."},
+{name: "Cono naranja", category: "Señalización", exp: "Delimita zonas de trabajo o peligro."},
+{name: "Casco", category: "EPI", exp: "Protege la cabeza de impactos y caídas de objetos."},
+{name: "Llave inglesa", category: "Herramienta", exp: "Herramienta ajustable para tuercas y tornillos."},
+{name: "Chaleco reflectante", category: "EPI", exp: "Aumenta la visibilidad del trabajador."},
+{name: "Cinta de balizamiento", category: "Señalización", exp: "Marca perímetros de seguridad o zonas restringidas."},
+{name: "Guantes anticorte", category: "EPI", exp: "Protegen las manos de cortes y abrasiones."},
+{name: "Taladro", category: "Herramienta", exp: "Máquina para perforar materiales."},
+{name: "Señal de prohibido el paso", category: "Señalización", exp: "Indica restricción de acceso a una zona."}
+];
+const categories = ["Herramienta", "EPI", "Señalización"];
+let currentIdx = 0, answers = [], score = 0;
+const scene = document.getElementById('scene');
+const itemDisplay = document.getElementById('item-display');
+const categoriesEl = document.getElementById('categories');
+const progressBar = document.getElementById('progress-bar');
+const counterEl = document.getElementById('counter');
+
+function render() {
+if (currentIdx >= items.length) { showResults(); return; }
+const item = items[currentIdx];
+progressBar.style.width = (currentIdx / items.length * 100) + '%';
+counterEl.textContent = (currentIdx + 1) + '/' + items.length;
+itemDisplay.innerHTML = `<div class="brand" style="font-size:1.5rem;text-align:center;margin:1.5rem 0">${item.name}</div>`;
+categoriesEl.innerHTML = categories.map(cat => 
+`<button class="btn-option" onclick="selectCategory('${cat}')">${cat}</button>`
+).join('');
+ensureFits();
+}
+
+function selectCategory(cat) {
+const item = items[currentIdx];
+const correct = cat === item.category;
+if (correct) score++;
+answers.push({name: item.name, userAnswer: cat, correct: correct, correctAnswer: item.category, exp: item.exp});
+const btns = categoriesEl.querySelectorAll('.btn-option');
+btns.forEach(btn => {
+btn.disabled = true;
+if (btn.textContent === cat) {
+btn.classList.add(correct ? 'correct' : 'incorrect');
+}
+if (btn.textContent === item.category && !correct) {
+btn.classList.add('correct');
+}
+});
+setTimeout(() => { currentIdx++; render(); }, 600);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Almacén organizado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a => `
+<div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.correct ? '✓ ' + a.correctAnswer : '✗ Dijiste: ' + a.userAnswer + ' → Correcto: ' + a.correctAnswer}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo PRL</div>
+<div class="result-explanation">Organiza mentalmente: Herramientas = lo que usas para trabajar. EPI = lo que te protege. Señalización = lo que informa o delimita. Cumplir esto desde el día 1 evita accidentes.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({action: 'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+}
+}
+
+window.addEventListener('load', () => { render(); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+render();
+</script>
+</body>
+</html>
