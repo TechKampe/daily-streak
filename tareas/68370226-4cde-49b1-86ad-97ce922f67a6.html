@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Seguridad o comodidad? Clasifica bien 🛡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguridad o comodidad? 🛡️</div>
+<div class="subtitle" id="instruction">Clasifica cada elemento</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div id="item-display"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para este elemento</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primera semana en obra 🏗️</div>
+<div class="modal-body">El encargado te pide organizar el almacén. Separa lo que es EPI obligatorio de lo que es solo equipamiento de confort.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Entendido!</button>
+</div>
+</div>
+</div>
+<script>
+const items=[
+{name:"Casco de seguridad",correct:"EPI Obligatorio",exp:"El casco es EPI obligatorio en obras según RD 773/1997."},
+{name:"Rodilleras acolchadas",correct:"EPI Obligatorio",exp:"En trabajos de alicatado o suelo, las rodilleras son EPI obligatorio."},
+{name:"Guantes anticorte",correct:"EPI Obligatorio",exp:"Los guantes anticorte son EPI obligatorio en manipulación de materiales cortantes."},
+{name:"Riñonera portaherramientas",correct:"Confort/Opcional",exp:"La riñonera es práctica pero no es un equipo de protección exigible."},
+{name:"Gafas de protección",correct:"EPI Obligatorio",exp:"Las gafas protegen de proyecciones y son EPI obligatorio en muchas tareas."},
+{name:"Termo personal",correct:"Confort/Opcional",exp:"El termo es un elemento de confort personal, no un EPI."},
+{name:"Chaleco reflectante",correct:"EPI Obligatorio",exp:"El chaleco reflectante es obligatorio para visibilidad en obra."},
+{name:"Auriculares bluetooth",correct:"Confort/Opcional",exp:"Los auriculares bluetooth son un elemento personal de ocio, no un EPI."},
+{name:"Mascarilla FFP2",correct:"EPI Obligatorio",exp:"La mascarilla FFP2 es EPI obligatorio en tareas con polvo o partículas."},
+{name:"Cinturón lumbar",correct:"Confort/Opcional",exp:"El cinturón lumbar es recomendable pero no obligatorio salvo indicación específica."}
+];
+const categories=["EPI Obligatorio","Confort/Opcional"];
+let idx=0,answers=[],animating=false;
+const scene=document.getElementById('scene'),itemDisplay=document.getElementById('item-display'),catDiv=document.getElementById('categories'),progBar=document.getElementById('progress-bar'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+progBar.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+itemDisplay.innerHTML=`<div class="brand" style="font-size:1.5rem;text-align:center;margin-bottom:1rem;">${item.name}</div>`;
+catDiv.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCategory('${c}')">${c}</button>`).join('');
+ensureFits();
+}
+
+function selectCategory(cat){
+if(animating)return;
+animating=true;
+const item=items[idx];
+const correct=cat===item.correct;
+const btns=catDiv.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+if(b.textContent===cat){
+b.classList.add(correct?'correct':'incorrect');
+b.style.transform='scale(1.05)';
+}
+b.disabled=true;
+});
+answers.push({name:item.name,userAnswer:cat,correct,correctAnswer:item.correct,exp:item.exp});
+setTimeout(()=>{
+animating=false;
+idx++;
+render();
+},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const correctCount=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Almacén organizado!</div>
+<div class="results-score">${correctCount}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctAnswer:'✗ Dijiste: '+a.userAnswer+' → Correcto: '+a.correctAnswer}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Ante la duda, pregunta al responsable de PRL; nunca asumas que algo es opcional.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
