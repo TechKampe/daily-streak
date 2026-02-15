@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Ojo al Fallo: Detecta el Error - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Ojo al Fallo</div>
+<div class="subtitle" id="escena">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el ítem incorrecto o peligroso</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const scenes=[
+{escena:"Un técnico va a sustituir un enchufe con tensión cercana.",items:["Destornillador aislado","Destornillador NO aislado","Guantes dieléctricos"],error:1,explicacion:"Usar herramienta no aislada cerca de tensión puede causar electrocución."},
+{escena:"El electricista abre el cuadro para trabajar en un circuito.",items:["Verificar ausencia de tensión","Usar EPI adecuado","Empezar sin comprobar tensión"],error:2,explicacion:"Siempre hay que verificar ausencia de corriente antes de manipular."},
+{escena:"Se instala cableado para un horno de 5kW.",items:["Cable de 2.5mm²","Cable de 6mm²","Protección magnetotérmica"],error:0,explicacion:"Un cable de 2.5mm² es insuficiente para 5kW; riesgo de sobrecalentamiento."},
+{escena:"Mantenimiento en cuadro eléctrico de zona común.",items:["Señalizar el cuadro","Avisar a compañeros","Trabajar sin señalización"],error:2,explicacion:"No señalizar puede provocar que alguien reconecte mientras trabajas."},
+{escena:"Reparación de luminaria en escalera a 3m de altura.",items:["Casco + arnés + gafas","Solo guantes","Escalera estabilizada"],error:1,explicacion:"En trabajos en altura se requiere EPI completo: casco, arnés y gafas."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),escenaEl=document.getElementById('escena'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+escenaEl.textContent=s.escena;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add('selected');});
+const correct=i===s.error;
+answers.push({escena:s.escena,elegido:s.items[i],correcto:s.items[s.error],acierto:correct,explicacion:s.explicacion});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const aciertos=answers.filter(a=>a.acierto).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Revisión completada!</div>
+<div class="results-score">${aciertos}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.acierto?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}</div>
+<div class="result-answer">Elegiste: ${a.elegido}</div>
+<div class="result-answer">Correcto: ${a.correcto}</div>
+<div class="result-explanation">${a.explicacion}</div>
+</div>`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">La atención al detalle salva vidas. Antes de actuar, revisa siempre herramientas, EPIs y señalización. La seguridad es responsabilidad de todos.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
