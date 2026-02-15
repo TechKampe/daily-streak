@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Swipe Seguro: ¿Riesgo o OK? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Swipe Seguro</div>
+<div class="subtitle" id="subtitle">¿Riesgo o práctica segura?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="swipe-container" id="swipe-container">
+<div class="swipe-card" id="swipe-card">
+<div class="swipe-card-content" id="card-text"></div>
+<div class="swipe-hint" id="swipe-hint"></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o pulsa para responder</div>
+<div class="swipe-buttons" id="swipe-buttons">
+<button class="btn-option" id="btn-incorrect">❌ Incorrecto</button>
+<button class="btn-option" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 Primer día en obra</div>
+<div class="modal-body">Identifica prácticas seguras. Desliza derecha = ✅ Correcto, izquierda = ❌ Incorrecto.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Usar guantes aislantes para manipular cables",safe:true,exp:"Los guantes aislantes protegen contra descargas. Es obligatorio según PRL."},
+{text:"Trabajar con herramientas mojadas",safe:false,exp:"El agua conduce electricidad. Nunca uses herramientas húmedas."},
+{text:"Verificar ausencia de tensión antes de tocar",safe:true,exp:"Comprobar con detector es el primer paso de seguridad eléctrica."},
+{text:"Subir a escalera metálica cerca de líneas activas",safe:false,exp:"El metal conduce. Usa escaleras de fibra cerca de electricidad."},
+{text:"Señalizar la zona de trabajo eléctrico",safe:true,exp:"La señalización previene accidentes de terceros. Es obligatoria."},
+{text:"Manipular el cuadro sin desconectar la corriente",safe:false,exp:"Siempre corta el suministro antes de intervenir. Riesgo de electrocución."}
+];
+let idx=0,answers=[],startX=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),card=document.getElementById('swipe-card'),cardText=document.getElementById('card-text'),hint=document.getElementById('swipe-hint'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal'),container=document.getElementById('swipe-container');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=cards.length){showResults();return;}
+const c=cards[idx];
+cardText.textContent=c.text;
+prog.style.width=(idx/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+hint.textContent='';
+hint.className='swipe-hint';
+ensureFits();
+}
+
+function answer(swipeRight){
+const c=cards[idx];
+const userSafe=swipeRight;
+const correct=userSafe===c.safe;
+answers.push({text:c.text,userSafe,correct,exp:c.exp,actualSafe:c.safe});
+animateOut(swipeRight);
+}
+
+function animateOut(right){
+const dir=right?1:-1;
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+card.style.transform=`translateX(${dir*300}px) rotate(${dir*20}deg)`;
+card.style.opacity='0';
+setTimeout(()=>{
+card.style.transition='none';
+idx++;
+render();
+},300);
+}
+
+function handleStart(e){
+isDragging=true;
+startX=e.type.includes('mouse')?e.clientX:e.touches[0].clientX;
+card.style.transition='none';
+}
+
+function handleMove(e){
+if(!isDragging)return;
+currentX=(e.type.includes('mouse')?e.clientX:e.touches[0].clientX)-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+if(currentX>50){hint.textContent='✅ Correcto';hint.className='swipe-hint hint-right';}
+else if(currentX<-50){hint.textContent='❌ Incorrecto';hint.className='swipe-hint hint-left';}
+else{hint.textContent='';hint.className='swipe-hint';}
+}
+
+function handleEnd(){
+if(!isDragging)return;
+isDragging=false;
+if(currentX>80){answer(true);}
+else if(currentX<-80){answer(false);}
+else{card.style.transition='transform 0.2s ease';card.style.transform='translateX(0) rotate(0deg)';hint.textContent='';hint.className='swipe-hint';}
+currentX=0;
+}
+
+card.addEventListener('mousedown',handleStart);
+card.addEventListener('mousemove',handleMove);
+card.addEventListener('mouseup',handleEnd);
+card.addEventListener('mouseleave',handleEnd);
+card.addEventListener('touchstart',handleStart,{passive:true});
+card.addEventListener('touchmove',handleMove,{passive:true});
+card.addEventListener('touchend',handleEnd);
+
+document.getElementById('btn-correct').onclick=()=>answer(true);
+document.getElementById('btn-incorrect').onclick=()=>answer(false);
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔌 ¡Evaluación completa!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Prácticas identificadas correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.text}</div>
+<div class="result-answer">${a.correct?'✓ Acertaste':'✗ Fallaste'} — Tú: ${a.userSafe?'Correcto':'Incorrecto'} | Real: ${a.actualSafe?'Seguro':'Riesgo'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-message">${score>=4?'¡Excelente! Conoces bien la seguridad eléctrica básica.':'Repasa las normas PRL antes de trabajar en obra.'}</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.swipe-container{display:flex;justify-content:center;align-items:center;flex:1;padding:16px;min-height:200px;}
+.swipe-card{background:#fff;border:3px solid #00E6BC;border-radius:16px;padding:24px;width:100%;max-width:300px;min-height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:grab;user-select:none;touch-action:none;position:relative;}
+.swipe-card:active{cursor:grabbing;}
+.swipe-card-content{font-size:1.1rem;text-align:center;font-weight:500;color:#1a1a2e;line-height:1.4;}
+.swipe-hint{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:1.2rem;font-weight:700;opacity:0;transition:opacity 0.2s;}
+.hint-right{color:#00E6BC;opacity:1;}
+.hint-left{color:#ff6b6b;opacity:1;}
+.swipe-buttons{display:flex;gap:12px;width:100%;justify-content:center;}
+.swipe-buttons .btn-option{flex:1;max-width:140px;}
+.results-message{text-align:center;padding:16px;font-weight:500;color:#1a1a2e;}
+</style>
+</body>
+</html>
