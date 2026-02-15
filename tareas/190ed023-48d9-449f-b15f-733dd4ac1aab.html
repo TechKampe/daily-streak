@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tu primera satisfacción de entrevista 💬 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 3_low.png" alt="" loading="lazy">
+<script>
+const recruiter={name:"Laura - RRHH",avatar:"https://techkampe.github.io/daily-streak/assets/Avatar 3_low.png"};
+const turns=[
+{
+messages:[
+{from:"recruiter",text:"¡Hola! Soy Laura, de Recursos Humanos. Gracias por conectarte. 😊"},
+{from:"recruiter",text:"Cuéntame un poco sobre ti y tu formación como electricista."}
+],
+options:[
+{text:"Acabo de terminar mi formación y estoy listo para aprender en el mundo real.",score:2,feedback:"Perfecto: honesto sobre tu nivel y con actitud proactiva."},
+{text:"Sé bastante de electricidad, hice muchas prácticas.",score:1,feedback:"Bien, pero suena algo vago. Mejor ser específico."},
+{text:"Pues nada, busco curro y vi vuestra oferta.",score:0,feedback:"Demasiado informal y sin mostrar interés real."}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"¿Qué te motivó a formarte como electricista?"}
+],
+options:[
+{text:"Me gusta resolver problemas técnicos y el sector tiene futuro.",score:2,feedback:"Excelente: muestra pasión y visión de futuro."},
+{text:"Mi padre es electricista y me pareció buena idea.",score:1,feedback:"Válido, pero falta mostrar motivación personal."},
+{text:"No sabía qué estudiar y esto parecía fácil.",score:0,feedback:"Transmite desinterés y poca profesionalidad."}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"¿Cuál dirías que es tu mayor debilidad profesional?"}
+],
+options:[
+{text:"Me falta experiencia real, pero compenso estudiando y preguntando.",score:2,feedback:"Honesto y muestra actitud de mejora continua."},
+{text:"A veces soy perfeccionista y tardo más de la cuenta.",score:1,feedback:"Clásica respuesta; suena preparada pero poco auténtica."},
+{text:"No tengo debilidades importantes, la verdad.",score:0,feedback:"Falta de autocrítica; nadie es perfecto."}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"El puesto requiere disponibilidad para guardias. ¿Tendrías problema?"}
+],
+options:[
+{text:"Ninguno. Entiendo que es parte del trabajo y estoy preparado.",score:2,feedback:"Demuestra compromiso y entendimiento del sector."},
+{text:"Depende de los días, pero intentaría adaptarme.",score:1,feedback:"Muestra flexibilidad limitada; puede generar dudas."},
+{text:"Preferiría horario fijo, las guardias no me gustan.",score:0,feedback:"Poca disposición; difícil encajar en el puesto."}
+]
+},
+{
+messages:[
+{from:"recruiter",text:"¿Tienes alguna pregunta sobre el puesto o la empresa?"}
+],
+options:[
+{text:"Sí, ¿cómo es el plan de formación para perfiles junior?",score:2,feedback:"Pregunta inteligente que muestra interés en crecer."},
+{text:"¿Cuánto se cobra exactamente?",score:1,feedback:"Legítimo, pero mejor esperar a que lo mencionen."},
+{text:"No, creo que todo claro.",score:0,feedback:"Parece desinterés; siempre conviene preguntar algo."}
+]
+}
+];
+let currentTurn=0,answers=[],chatHistory=[];
+const scene=document.getElementById('scene');
+
+function renderIntro(){
+scene.innerHTML=`
+<div class="modal-backdrop active" id="introModal">
+<div class="modal">
+<div class="modal-title">Tu primera entrevista 💬</div>
+<div class="modal-body">Acabas de terminar tu formación como electricista. Hoy tienes tu primera entrevista por videollamada. ¡Demuestra profesionalidad!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startChat()">Comenzar</button>
+</div>
+</div>
+</div>`;
+}
+
+function startChat(){
+document.getElementById('introModal').classList.remove('active');
+renderTurn();
+}
+
+function renderTurn(){
+const turn=turns[currentTurn];
+turn.messages.forEach(m=>{
+chatHistory.push({from:m.from,text:m.text});
+});
+renderChatUI();
+}
+
+function renderChatUI(){
+const turn=turns[currentTurn];
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Entrevista de trabajo 💬</div>
+<div class="subtitle">Responde a la reclutadora</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i style="width:${(currentTurn/turns.length)*100}%"></i></div>
+</div>
+<span class="badge">${currentTurn+1}/${turns.length}</span>
+</div>
+</div>
+<div class="chat-container">
+<div class="chat-history" id="chatHistory">
+${chatHistory.map(m=>`
+<div class="chat-bubble ${m.from==='recruiter'?'chat-recruiter':'chat-player'}">
+${m.from==='recruiter'?`<img class="chat-avatar" src="${recruiter.avatar}" alt="">`:''}<div class="chat-content">
+${m.from==='recruiter'?`<div class="chat-name">${recruiter.name}</div>`:''}
+<div class="chat-text">${m.text}</div>
+</div>
+</div>`).join('')}
+</div>
+</div>
+<div class="chat-options" id="chatOptions">
+${turn.options.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join('')}
+</div>`;
+const historyEl=document.getElementById('chatHistory');
+historyEl.scrollTop=historyEl.scrollHeight;
+ensureFits();
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const opt=turn.options[idx];
+answers.push({question:turn.messages[turn.messages.length-1].text,answer:opt.text,score:opt.score,feedback:opt.feedback});
+chatHistory.push({from:'player',text:opt.text});
+currentTurn++;
+if(currentTurn<turns.length){
+setTimeout(()=>renderTurn(),300);
+}else{
+setTimeout(()=>showResults(),500);
+}
+}
+
+function showResults(){
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const totalScore=answers.reduce((a,b)=>a+b.score,0);
+const maxScore=turns.length*2;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Entrevista completada!</div>
+<div class="results-score">${totalScore}/${maxScore}</div>
+<div class="results-subtitle">Puntos obtenidos</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.score===2?'correct':a.score===1?'':'incorrect'}">
+<div class="result-question">${i+1}. ${a.question}</div>
+<div class="result-answer">Tu respuesta: ${a.answer}</div>
+<div class="result-explanation">${a.feedback}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Antes de cada entrevista, prepara un mini-guion con tu presentación, motivación y 2-3 preguntas sobre la empresa. ¡Te dará seguridad!</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();renderIntro();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.chat-container{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;margin:0 16px;}
+.chat-history{flex:1;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;}
+.chat-bubble{display:flex;gap:8px;max-width:85%;}
+.chat-recruiter{align-self:flex-start;}
+.chat-player{align-self:flex-end;flex-direction:row-reverse;}
+.chat-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.chat-content{background:var(--surface);border-radius:12px;padding:8px 12px;}
+.chat-player .chat-content{background:var(--dark);color:#fff;}
+.chat-name{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:2px;}
+.chat-text{font-size:14px;line-height:1.4;}
+.chat-options{display:flex;flex-direction:column;gap:8px;padding:12px 16px;background:var(--bg);border-top:1px solid var(--border);}
+.chat-options .btn-option{text-align:left;font-size:13px;padding:10px 14px;white-space:normal;line-height:1.3;}
+</style>
+</body>
+</html>
