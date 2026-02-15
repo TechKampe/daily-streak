@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conexiones de Obra: Memory Eléctrico - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;width:100%;max-width:400px;margin:0 auto}
+.mem-card{height:70px;width:100%;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;box-sizing:border-box;transition:transform 0.2s ease,background 0.3s ease}
+.mem-card.covered{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.mem-card.revealed{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.shake{animation:shake 0.5s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.stats-row{display:flex;justify-content:space-between;font-size:14px;padding:0 16px;margin-bottom:8px;color:#0B214A}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Memory Eléctrico</div>
+<div class="subtitle">Encuentra las 4 parejas de conceptos</div>
+</div>
+</div>
+<div class="stats-row">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="memory-board" id="board"></div>
+<div class="footer">
+<div class="helper">Toca dos cartas para emparejarlas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,a:"Interruptor diferencial",b:"Protege contra contactos",exp:"El diferencial detecta fugas de corriente y corta el suministro para evitar electrocuciones."},
+{id:2,a:"Polímetro",b:"Mide voltaje y continuidad",exp:"El polímetro es la herramienta básica para diagnosticar circuitos eléctricos."},
+{id:3,a:"Cable de tierra",b:"Color amarillo-verde",exp:"Por normativa, el cable de tierra siempre es amarillo-verde para identificarlo fácilmente."},
+{id:4,a:"Enchufe schuko",b:"Conexión con toma tierra",exp:"El schuko incluye contactos laterales para la toma de tierra, aumentando la seguridad."}
+];
+let cards=[],first=null,second=null,locked=false,attempts=0,matched=0,maxAttempts=10,results=[];
+const board=document.getElementById('board'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.a,type:'a'});
+cards.push({pairId:p.id,text:p.b,type:'b'});
+});
+shuffle(cards);
+render();
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+function render(){
+board.innerHTML='';
+cards.forEach((c,i)=>{
+const div=document.createElement('div');
+div.className='mem-card covered';
+div.textContent='?';
+div.dataset.index=i;
+div.onclick=()=>handleClick(i,div);
+board.appendChild(div);
+});
+updateStats();
+ensureFits();
+}
+
+function handleClick(idx,el){
+if(locked)return;
+if(el.classList.contains('matched'))return;
+if(el.classList.contains('revealed'))return;
+revealCard(idx,el);
+if(!first){first={idx,el};}
+else if(first.idx!==idx){
+second={idx,el};
+locked=true;
+attempts++;
+updateStats();
+checkMatch();
+}
+}
+
+function revealCard(idx,el){
+el.classList.remove('covered');
+el.classList.add('revealed');
+el.textContent=cards[idx].text;
+el.style.transform='scale(0.95)';
+setTimeout(()=>{el.style.transform='scale(1)';},100);
+}
+
+function coverCard(el,idx){
+el.classList.remove('revealed');
+el.classList.add('covered');
+el.textContent='?';
+}
+
+function checkMatch(){
+const c1=cards[first.idx],c2=cards[second.idx];
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+first.el.classList.remove('revealed');
+first.el.classList.add('matched');
+second.el.classList.remove('revealed');
+second.el.classList.add('matched');
+matched++;
+const p=pairs.find(x=>x.pairId===c1.pairId);
+results.push({pair:p,found:true});
+updateStats();
+reset();
+if(matched===4)endGame(true);
+}else{
+first.el.classList.add('shake');
+second.el.classList.add('shake');
+setTimeout(()=>{
+first.el.classList.remove('shake');
+second.el.classList.remove('shake');
+coverCard(first.el,first.idx);
+coverCard(second.el,second.idx);
+reset();
+if(attempts>=maxAttempts)endGame(false);
+},2000);
+}
+}
+
+function reset(){first=null;second=null;locked=false;}
+function updateStats(){
+attemptsEl.textContent='Intento '+attempts+'/'+maxAttempts;
+pairsEl.textContent=matched+'/4 parejas';
+}
+
+function endGame(won){
+pairs.forEach(p=>{if(!results.find(r=>r.pair.id===p.id))results.push({pair:p,found:false});});
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${won?'¡Felicidades!':'¡Buen intento!'}</div>
+<div class="results-score">${matched}/4</div>
+<div class="results-subtitle">${won?'Has encontrado todas las parejas':'Parejas encontradas'}</div>
+</div>
+<div class="results-list">
+${pairs.map(p=>{
+const found=results.find(r=>r.pair.id===p.id&&r.found);
+return `<div class="result-item ${found?'correct':'incorrect'}">
+<div class="result-question">${p.a} ↔ ${p.b}</div>
+<div class="result-answer">${found?'✓ Encontrada':'✗ No encontrada'}</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`;
+}).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{init();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
