@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Conceptos Eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;width:100%;max-width:400px;margin:0 auto}
+.mem-card{height:70px;width:100%;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;box-sizing:border-box;transition:transform 0.2s ease,background 0.3s ease}
+.mem-card.covered{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.mem-card.revealed{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.shake{animation:shake 0.5s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.mem-card.pop{animation:pop 0.2s ease}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats{display:flex;justify-content:center;gap:16px;font-size:14px;color:#0B214A;margin:8px 0}
+.stats span{background:#f0f0f0;padding:4px 10px;border-radius:12px}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta Conceptos</div>
+<div class="subtitle">Encuentra las 4 parejas técnicas</div>
+</div>
+</div>
+<div class="main">
+<div class="stats">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="memory-board" id="board"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca dos cartas para emparejarlas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{a:"Polímetro",b:"Medir tensión"},
+{a:"Fase",b:"Cable marrón/negro"},
+{a:"ICP",b:"Protección general"},
+{a:"Pelacables",b:"Retirar aislante"}
+];
+const explanations=[
+"El polímetro es la herramienta básica para medir tensión, corriente y resistencia.",
+"El cable de fase en España es marrón, negro o gris según normativa.",
+"El ICP (Interruptor de Control de Potencia) es la protección general del suministro.",
+"El pelacables retira el aislante sin dañar el conductor de cobre."
+];
+
+let cards=[],firstCard=null,secondCard=null,locked=false,attempts=0,matchedPairs=0,maxAttempts=10;
+
+function init(){
+cards=[];
+pairs.forEach((p,i)=>{
+cards.push({id:i*2,pairId:i,text:p.a});
+cards.push({id:i*2+1,pairId:i,text:p.b});
+});
+shuffle(cards);
+renderBoard();
+}
+
+function shuffle(arr){
+for(let i=arr.length-1;i>0;i--){
+const j=Math.floor(Math.random()*(i+1));
+[arr[i],arr[j]]=[arr[j],arr[i]];
+}
+}
+
+function renderBoard(){
+const board=document.getElementById('board');
+board.innerHTML=cards.map(c=>`<div class="mem-card covered" data-id="${c.id}" data-pair="${c.pairId}">?</div>`).join('');
+board.querySelectorAll('.mem-card').forEach(el=>el.addEventListener('click',onCardClick));
+updateStats();
+}
+
+function onCardClick(e){
+if(locked)return;
+const card=e.currentTarget;
+if(card.classList.contains('matched')||card.classList.contains('revealed'))return;
+revealCard(card);
+if(!firstCard){
+firstCard=card;
+}else if(card!==firstCard){
+secondCard=card;
+locked=true;
+attempts++;
+updateStats();
+checkMatch();
+}
+}
+
+function revealCard(el){
+const id=parseInt(el.dataset.id);
+const c=cards.find(x=>x.id===id);
+el.classList.remove('covered');
+el.classList.add('revealed','pop');
+el.textContent=c.text;
+}
+
+function coverCard(el){
+el.classList.remove('revealed','pop');
+el.classList.add('covered');
+el.textContent='?';
+}
+
+function checkMatch(){
+const p1=parseInt(firstCard.dataset.pair);
+const p2=parseInt(secondCard.dataset.pair);
+if(p1===p2){
+firstCard.classList.remove('revealed');
+firstCard.classList.add('matched');
+secondCard.classList.remove('revealed');
+secondCard.classList.add('matched');
+matchedPairs++;
+updateStats();
+resetTurn();
+if(matchedPairs===4)endGame(true);
+}else{
+firstCard.classList.add('shake');
+secondCard.classList.add('shake');
+setTimeout(()=>{
+coverCard(firstCard);
+coverCard(secondCard);
+firstCard.classList.remove('shake');
+secondCard.classList.remove('shake');
+resetTurn();
+if(attempts>=maxAttempts)endGame(false);
+},2000);
+}
+}
+
+function resetTurn(){
+firstCard=null;
+secondCard=null;
+locked=false;
+}
+
+function updateStats(){
+document.getElementById('attempts').textContent=`Intento ${attempts}/${maxAttempts}`;
+document.getElementById('pairs').textContent=`${matchedPairs}/4 parejas`;
+}
+
+function endGame(won){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+document.getElementById('scene').classList.replace('gameplay','results');
+const missing=pairs.filter((_,i)=>!cards.filter(c=>c.pairId===i&&document.querySelector(`[data-id="${c.id}"]`).classList.contains('matched')).length);
+document.getElementById('scene').innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${won?'¡Felicidades! 🎉':'¡Sigue practicando!'}</div>
+<div class="results-score">${matchedPairs}/4</div>
+<div class="results-subtitle">parejas encontradas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${pairs.map((p,i)=>`
+<div class="result-item correct">
+<div class="result-question">${p.a} ↔ ${p.b}</div>
+<div class="result-explanation">${explanations[i]}</div>
+</div>
+`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{init();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
