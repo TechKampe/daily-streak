@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Conexiones Seguras: ¿Dominas lo básico? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Conexiones Seguras</div>
+<div class="subtitle" id="question">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la respuesta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">¡Primera semana en obra!</div>
+<div class="modal-body">Tu supervisor quiere evaluar tus conocimientos básicos de seguridad eléctrica. Responde 5 preguntas rápidas.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startQuiz()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{q:"¿De qué color es el cable de tierra?",opts:["Azul","Verde/Amarillo","Marrón"],ans:1,exp:"El cable de tierra siempre es verde/amarillo por normativa internacional IEC 60446."},
+{q:"¿Qué mide un polímetro en posición V~?",opts:["Tensión alterna","Resistencia","Corriente continua"],ans:0,exp:"V~ indica voltaje en corriente alterna, el más común en instalaciones domésticas (230V)."},
+{q:"¿Qué EPI es obligatorio al manipular cuadros?",opts:["Casco de obra","Guantes aislantes","Gafas de sol"],ans:1,exp:"Los guantes aislantes protegen contra descargas. El casco es para caídas de objetos."},
+{q:"Antes de tocar un cuadro, ¿qué debes hacer?",opts:["Avisar al vecino","Verificar ausencia de tensión","Preparar las herramientas"],ans:1,exp:"SIEMPRE verificar con polímetro que no hay tensión antes de manipular."},
+{q:"¿Cuál es la función del cable neutro?",opts:["Proteger de descargas","Cerrar el circuito","Derivar sobretensiones"],ans:1,exp:"El neutro cierra el circuito. La tierra protege personas, son funciones distintas."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),qEl=document.getElementById('question'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startQuiz(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+qEl.textContent=d.q;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" aria-label="Opción: ${o}" onclick="selectAnswer(${i})">${o}</button>`).join('');
+opts.style.opacity=0;
+setTimeout(()=>{opts.style.transition='opacity 0.3s';opts.style.opacity=1;},50);
+ensureFits();
+}
+
+function selectAnswer(i){
+const d=data[idx];
+const correct=i===d.ans;
+if(correct)score++;
+answers.push({q:d.q,correct,exp:d.exp,user:d.opts[i],correctAns:d.opts[d.ans]});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===d.ans&&!correct)b.classList.add('correct');
+});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.q}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Tu respuesta: '+a.user}</div>
+${!a.correct?`<div class="result-answer" style="opacity:0.8">✓ Correcta: ${a.correctAns}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="result-item" style="margin-top:12px;background:var(--surface)">
+<div class="result-question">💡 Consejo del supervisor</div>
+<div class="result-explanation">Antes de tocar cualquier instalación, verifica SIEMPRE la ausencia de tensión con el polímetro. Es la regla de oro.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
