@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obra en Marcha - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneText">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento con error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const scenes=[
+{text:"Compañero prepara mortero para colocar ladrillos.",opts:["Cemento, arena y agua","Mezcla con yeso incluido","Paleta de albañil","Cubeta limpia"],error:1,exp:"Nunca mezcles yeso con cemento: reaccionan y debilitan la mezcla."},
+{text:"Operario sube al andamio a 4 metros de altura.",opts:["Andamio con barandilla","Casco de seguridad","Sin arnés ni línea de vida","Botas con puntera"],error:2,exp:"En altura >2m es obligatorio usar arnés y línea de vida."},
+{text:"Técnico va a cortar azulejos cerámicos.",opts:["Cortadora de disco diamante","Gafas de protección","Radial con disco de madera","Guantes anticorte"],error:2,exp:"El disco de madera no corta cerámica y puede romperse causando lesiones."},
+{text:"Electricista revisa conexiones en cuarto de baño.",opts:["Interruptor diferencial activo","Herramientas aisladas","Cable pelado junto al lavabo","Calzado dieléctrico"],error:2,exp:"Un cable pelado en zona húmeda es riesgo de electrocución grave."},
+{text:"Almacén de materiales al final de jornada.",opts:["Disolventes junto a cuadro eléctrico","Sacos de cemento apilados","Herramientas en panel","Señalización de salida"],error:0,exp:"Los inflamables deben estar lejos de fuentes de ignición y en armario ventilado."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),sceneText=document.getElementById('sceneText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper');
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+helper.textContent='Toca el elemento con error';
+optsEl.innerHTML=s.opts.map((o,i)=>`<button class="btn-option" data-i="${i}">${o}</button>`).join('');
+optsEl.querySelectorAll('.btn-option').forEach(b=>b.onclick=()=>selectOption(parseInt(b.dataset.i)));
+ensureFits();
+}
+
+function selectOption(i){
+const s=scenes[idx];
+const correct=i===s.error;
+answers.push({scene:s.text,chosen:s.opts[i],correctOpt:s.opts[s.error],correct,exp:s.exp});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===s.error&&!correct)b.classList.add('correct');
+});
+helper.textContent=correct?'✓ ¡Bien visto!':'✗ Era: '+s.opts[s.error];
+setTimeout(()=>{idx++;render();},900);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Revisión completada!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.scene}</div>
+<div class="result-answer">${a.correct?'✓ '+a.chosen:'✗ Elegiste: '+a.chosen}</div>
+${!a.correct?`<div class="result-answer">Correcto: ${a.correctOpt}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo</div>
+<div class="result-explanation">La atención al detalle salva vidas. Revisa siempre materiales, EPIs y entorno antes de trabajar.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
