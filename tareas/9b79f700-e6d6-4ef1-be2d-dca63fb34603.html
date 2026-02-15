@@ -1,0 +1,185 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Herramienta o EPI? 🧰 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Herramienta o EPI? 🧰</div>
+<div class="subtitle" id="instruction">Clasifica cada elemento</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div id="item-display"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="intro-modal">
+<div class="modal">
+<div class="modal-title">📦 Primer día en el almacén</div>
+<div class="modal-body">Organiza el material en dos estantes: Herramientas de trabajo y Equipos de Protección Individual (EPI).</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Vamos!</button>
+</div>
+</div>
+</div>
+<script>
+const items = [
+{name: "Guantes de nitrilo", category: "EPI", exp: "Protegen las manos de químicos y cortes menores."},
+{name: "Destornillador", category: "Herramienta", exp: "Sirve para apretar o aflojar tornillos."},
+{name: "Casco de seguridad", category: "EPI", exp: "Protege la cabeza de impactos y caída de objetos."},
+{name: "Taladro", category: "Herramienta", exp: "Se usa para perforar materiales diversos."},
+{name: "Gafas de protección", category: "EPI", exp: "Protegen los ojos de partículas y salpicaduras."},
+{name: "Llave inglesa", category: "Herramienta", exp: "Ajustable para tuercas de distintos tamaños."},
+{name: "Arnés de seguridad", category: "EPI", exp: "Obligatorio en trabajos en altura para evitar caídas."},
+{name: "Mascarilla FFP2", category: "EPI", exp: "Filtra partículas y protege las vías respiratorias."},
+{name: "Nivel de burbuja", category: "Herramienta", exp: "Comprueba si una superficie está nivelada."},
+{name: "Botas con puntera", category: "EPI", exp: "Protegen los pies de aplastamientos y pinchazos."}
+];
+
+let currentIdx = 0;
+let answers = [];
+let score = 0;
+
+const scene = document.getElementById('scene');
+const itemDisplay = document.getElementById('item-display');
+const categoriesDiv = document.getElementById('categories');
+const progressBar = document.getElementById('progress-bar');
+const counterEl = document.getElementById('counter');
+const introModal = document.getElementById('intro-modal');
+
+function startGame() {
+    introModal.classList.remove('active');
+    renderItem();
+}
+
+function renderItem() {
+    if (currentIdx >= items.length) {
+        showResults();
+        return;
+    }
+    
+    const item = items[currentIdx];
+    progressBar.style.width = (currentIdx / items.length * 100) + '%';
+    counterEl.textContent = (currentIdx + 1) + '/' + items.length;
+    
+    itemDisplay.innerHTML = `<div class="results-title" style="margin-bottom:24px;font-size:1.5rem;">${item.name}</div>`;
+    
+    categoriesDiv.innerHTML = `
+        <button class="btn-option" onclick="selectCategory('Herramienta')">🔧 Herramienta</button>
+        <button class="btn-option" onclick="selectCategory('EPI')">🦺 EPI</button>
+    `;
+    
+    ensureFits();
+}
+
+function selectCategory(selected) {
+    const item = items[currentIdx];
+    const isCorrect = selected === item.category;
+    
+    if (isCorrect) score++;
+    
+    answers.push({
+        name: item.name,
+        selected: selected,
+        correct: item.category,
+        isCorrect: isCorrect,
+        exp: item.exp
+    });
+    
+    const buttons = categoriesDiv.querySelectorAll('.btn-option');
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.includes(item.category)) {
+            btn.classList.add('correct');
+        }
+        if (btn.textContent.includes(selected) && !isCorrect) {
+            btn.classList.add('incorrect');
+        }
+    });
+    
+    setTimeout(() => {
+        currentIdx++;
+        renderItem();
+    }, 600);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">¡Almacén organizado!</div>
+                    <div class="results-score">${score}/${items.length}</div>
+                    <div class="results-subtitle">Clasificaciones correctas</div>
+                </div>
+                <div class="results-list">
+                    ${answers.map(a => `
+                        <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${a.name}</div>
+                            <div class="result-answer">${a.isCorrect ? '✓ ' + a.correct : '✗ Pusiste: ' + a.selected + ' → Era: ' + a.correct}</div>
+                            <div class="result-explanation">${a.exp}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="result-item">
+                    <div class="result-question">💡 Consejo práctico</div>
+                    <div class="result-explanation">Pregúntate: "¿Esto me protege a mí o me ayuda a trabajar?". Si protege tu cuerpo, es EPI. Si transforma materiales, es herramienta.</div>
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+            action: 'TASK_COMPLETED'
+        }));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', () => {
+    introModal.classList.add('active');
+    ensureFits();
+});
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
