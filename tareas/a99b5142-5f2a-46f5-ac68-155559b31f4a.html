@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">Seguridad eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-area"></div>
+</div>
+<div class="footer">
+<div class="helper">¿Verdadero o falso?</div>
+<div id="btn-container"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primera semana ⚡</div>
+<div class="modal-body">El oficial te pone a prueba con afirmaciones sobre riesgos eléctricos. ¿Mito o realidad?</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+<script>
+const statements=[
+{text:"Los guantes de trabajo normales protegen de descargas eléctricas",ans:false,exp:"FALSO. Solo los guantes dieléctricos homologados protegen. Los de obra son para abrasiones, no para electricidad."},
+{text:"Antes de manipular un cuadro hay que verificar ausencia de tensión",ans:true,exp:"VERDADERO. Es obligatorio usar un comprobador de tensión antes de cualquier intervención eléctrica."},
+{text:"La corriente doméstica de 230V no puede ser mortal",ans:false,exp:"FALSO. 230V pueden matar. Corrientes de solo 30mA atravesando el corazón pueden causar fibrilación ventricular."},
+{text:"Un diferencial protege contra todos los contactos eléctricos",ans:false,exp:"FALSO. El diferencial protege contra contactos indirectos, pero no contra contactos directos entre fases."},
+{text:"Trabajar con la luz apagada garantiza que no hay tensión",ans:false,exp:"FALSO. Que no haya luz no significa ausencia de tensión. Siempre hay que medir con un comprobador homologado."},
+{text:"El agua aumenta el riesgo de electrocución",ans:true,exp:"VERDADERO. El agua reduce la resistencia del cuerpo y facilita el paso de corriente, aumentando el peligro."},
+{text:"Los cables de colores siempre indican correctamente su función",ans:false,exp:"FALSO. Instalaciones antiguas o mal hechas pueden tener colores incorrectos. Siempre hay que verificar."}
+];
+let idx=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),stArea=document.getElementById('statement-area'),btnCont=document.getElementById('btn-container'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=statements.length){showResults();return}
+locked=false;
+prog.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+stArea.innerHTML=`<div class="statement-text">${statements[idx].text}</div>`;
+btnCont.innerHTML=`<button class="btn-option" id="btn-true" onclick="answer(true)">Verdadero</button><button class="btn-option" id="btn-false" onclick="answer(false)">Falso</button>`;
+ensureFits();
+}
+
+function answer(userAns){
+if(locked)return;
+locked=true;
+const correct=userAns===statements[idx].ans;
+answers.push({text:statements[idx].text,userAns,correctAns:statements[idx].ans,correct,exp:statements[idx].exp});
+const btnT=document.getElementById('btn-true'),btnF=document.getElementById('btn-false');
+if(userAns){btnT.classList.add(correct?'correct':'incorrect');}
+else{btnF.classList.add(correct?'correct':'incorrect');}
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAns?'Verdadero':'Falso'} ${a.correct?'✓':'✗'}</div>
+<div class="result-answer">Correcto: ${a.correctAns?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Siempre usa un comprobador de tensión homologado (VAT) antes de tocar cualquier conductor. Verifica en los tres puntos: fase-neutro, fase-tierra y neutro-tierra.
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
