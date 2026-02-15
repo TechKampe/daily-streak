@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Voltaje seguro: ¿dominas lo básico? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Voltaje seguro</div>
+<div class="subtitle" id="question">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">El oficial te examina. ¡Demuestra lo que sabes!</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{q:"¿Qué EPI es obligatorio en trabajos eléctricos?",opts:["Guantes aislantes","Guantes de algodón","Guantes de látex"],ans:0,exp:"Los guantes aislantes protegen de descargas. Los de algodón o látex no aíslan la electricidad."},
+{q:"¿De qué color es el cable de tierra?",opts:["Verde/Amarillo","Azul","Marrón"],ans:0,exp:"El cable de tierra es verde/amarillo por normativa. Azul es neutro y marrón es fase."},
+{q:"¿Cuál es la tensión doméstica en España?",opts:["230V","110V","380V"],ans:0,exp:"En España la tensión doméstica es 230V. 110V es de EEUU y 380V es trifásica industrial."},
+{q:"Un compañero sufre descarga. ¿Qué haces primero?",opts:["Cortar la corriente","Tocarlo para apartarlo","Echarle agua"],ans:0,exp:"Primero corta la corriente. Nunca toques a alguien electrizado ni uses agua cerca de electricidad."},
+{q:"¿Qué herramienta es segura para trabajos eléctricos?",opts:["Destornillador aislado","Destornillador normal","Cualquiera vale"],ans:0,exp:"Solo herramientas con mango aislado (1000V). Las normales conducen electricidad y son peligrosas."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),qEl=document.getElementById('question'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+qEl.textContent=d.q;
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" aria-label="${o}" onclick="select(${i})">${o}</button>`).join('');
+opts.style.opacity='0';
+requestAnimationFrame(()=>{opts.style.transition='opacity 0.3s';opts.style.opacity='1';});
+ensureFits();
+}
+
+function select(i){
+const d=data[idx];
+const correct=i===d.ans;
+if(correct)score++;
+answers.push({q:d.q,correct,exp:d.exp,user:d.opts[i],correctAns:d.opts[d.ans]});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===d.ans&&!correct)b.classList.add('correct');
+});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Examen completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.q}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Tu respuesta: '+a.user}</div>
+${!a.correct?`<div class="result-answer">✓ Correcta: ${a.correctAns}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Ante cualquier duda, pregunta siempre al oficial antes de actuar. En electricidad, una pregunta puede salvarte la vida.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
