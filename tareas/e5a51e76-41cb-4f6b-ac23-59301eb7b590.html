@@ -1,0 +1,146 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Cortar un tubo de cobre de 15mm",opts:["Cortatubos","Llave inglesa","Flexómetro"],ans:0,tip:"El cortatubos hace cortes limpios sin deformar el tubo."},
+{task:"Medir la distancia entre dos puntos",opts:["Cincel","Flexómetro","Pelacables"],ans:1,tip:"El flexómetro permite mediciones precisas hasta 5-8 metros."},
+{task:"Pelar un cable eléctrico de 2.5mm²",opts:["Multímetro","Llave inglesa","Pelacables"],ans:2,tip:"El pelacables corta solo el aislante sin dañar el conductor."},
+{task:"Apretar el racor de un grifo",opts:["Llave inglesa","Cortatubos","Cincel"],ans:0,tip:"La llave inglesa es ajustable y no daña las tuercas."},
+{task:"Comprobar si hay tensión en un enchufe",opts:["Flexómetro","Multímetro","Lijadora"],ans:1,tip:"El multímetro detecta tensión de forma segura."},
+{task:"Hacer una regata pequeña en la pared",opts:["Pelacables","Cortatubos","Cincel"],ans:2,tip:"El cincel con martillo abre regatas en mampostería."}
+];
+const explanations={
+"Cortatubos":"Diseñado para cortes circulares en tubos",
+"Llave inglesa":"Ajusta y aprieta tuercas de distintos tamaños",
+"Flexómetro":"Cinta métrica retráctil para medir distancias",
+"Pelacables":"Retira el aislante de cables sin dañarlos",
+"Multímetro":"Mide tensión, corriente y resistencia eléctrica",
+"Cincel":"Herramienta de percusión para tallar o romper",
+"Lijadora":"Alisa superficies de madera o metal"
+};
+let idx=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+locked=false;
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" data-idx="${i}">${o}</button>`).join('');
+optsEl.querySelectorAll('.btn-option').forEach(btn=>{
+btn.addEventListener('click',()=>select(parseInt(btn.dataset.idx)));
+});
+ensureFits();
+}
+
+function select(i){
+if(locked)return;
+locked=true;
+const t=tasks[idx];
+const correct=i===t.ans;
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+if(j===i){
+b.classList.add(correct?'correct':'incorrect');
+b.innerHTML=(correct?'✓ ':'✗ ')+t.opts[j];
+}
+});
+answers.push({
+task:t.task,
+user:t.opts[i],
+correctTool:t.opts[t.ans],
+isCorrect:correct,
+tip:t.tip,
+others:t.opts.filter((_,j)=>j!==t.ans).map(o=>o+': '+explanations[o])
+});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔧 ¡Jornada completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.isCorrect?'✓ '+a.user:'✗ Elegiste: '+a.user+' → Correcta: '+a.correctTool}</div>
+<div class="result-explanation">${a.isCorrect?'💡 '+a.tip:'❌ '+a.others.join(' | ')+' 💡 '+a.tip}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tips">
+<div class="results-subtitle">Consejos de seguridad</div>
+<p>• Usa gafas al cincelar. • Verifica ausencia de tensión antes de manipular cables. • Sujeta bien las piezas al cortar.</p>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
