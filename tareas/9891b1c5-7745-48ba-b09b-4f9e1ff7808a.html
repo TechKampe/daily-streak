@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Obra o taller? Clasifica tu equipo 🧰 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Obra o taller? 🧰</div>
+<div class="subtitle" id="instruction">Clasifica cada elemento</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/9</span>
+</div>
+</div>
+<div class="main">
+<div class="item-display" id="itemDisplay"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primer día 👷</div>
+<div class="modal-body">El encargado te pide organizar materiales mezclados. Separa qué va a obra y qué se queda en taller.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const items = [
+{name: "Taladro percutor", category: "obra", exp: "Portátil, imprescindible para fijar en obra."},
+{name: "Torno de banco", category: "taller", exp: "Maquinaria fija, requiere instalación estable."},
+{name: "Casco de seguridad", category: "obra", exp: "EPI obligatorio en cualquier obra."},
+{name: "Nivel láser", category: "obra", exp: "Portátil, esencial para replanteos en sitio."},
+{name: "Esmeriladora fija", category: "taller", exp: "Máquina pesada, uso en taller."},
+{name: "Flexómetro", category: "obra", exp: "Herramienta de mano básica y portátil."},
+{name: "Gafas protectoras", category: "obra", exp: "EPI portátil para protección ocular."},
+{name: "Prensa de tornillo", category: "taller", exp: "Se fija al banco, no es portátil."},
+{name: "Cemento rápido", category: "obra", exp: "Consumible para reparaciones in situ."}
+];
+
+const categories = [
+{id: "obra", label: "Llevar a obra 🏗️"},
+{id: "taller", label: "Dejar en taller 🔧"}
+];
+
+let currentIdx = 0;
+let answers = [];
+let score = 0;
+let canSelect = true;
+
+const scene = document.getElementById('scene');
+const itemDisplay = document.getElementById('itemDisplay');
+const categoriesEl = document.getElementById('categories');
+const progress = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const modal = document.getElementById('modal');
+
+function startGame() {
+    modal.classList.remove('active');
+    renderCategories();
+    renderItem();
+    ensureFits();
+}
+
+function renderCategories() {
+    categoriesEl.innerHTML = categories.map(c => 
+        `<button class="btn-option" data-cat="${c.id}" onclick="selectCategory('${c.id}')">${c.label}</button>`
+    ).join('');
+}
+
+function renderItem() {
+    if (currentIdx >= items.length) {
+        showResults();
+        return;
+    }
+    canSelect = true;
+    const item = items[currentIdx];
+    itemDisplay.innerHTML = `<div class="item-text">${item.name}</div>`;
+    progress.style.width = ((currentIdx) / items.length * 100) + '%';
+    counter.textContent = (currentIdx + 1) + '/' + items.length;
+    
+    categoriesEl.querySelectorAll('.btn-option').forEach(btn => {
+        btn.classList.remove('correct', 'incorrect', 'selected');
+    });
+    ensureFits();
+}
+
+function selectCategory(catId) {
+    if (!canSelect) return;
+    canSelect = false;
+    
+    const item = items[currentIdx];
+    const correct = catId === item.category;
+    if (correct) score++;
+    
+    answers.push({
+        item: item.name,
+        selected: catId,
+        correct: correct,
+        correctCat: item.category,
+        exp: item.exp
+    });
+    
+    categoriesEl.querySelectorAll('.btn-option').forEach(btn => {
+        if (btn.dataset.cat === catId) {
+            btn.classList.add(correct ? 'correct' : 'incorrect');
+        }
+        if (!correct && btn.dataset.cat === item.category) {
+            btn.classList.add('correct');
+        }
+    });
+    
+    setTimeout(() => {
+        currentIdx++;
+        renderItem();
+    }, 600);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        
+        const catLabels = {obra: "Llevar a obra", taller: "Dejar en taller"};
+        
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">¡Organización completada!</div>
+                    <div class="results-score">${score}/${items.length}</div>
+                    <div class="results-subtitle">Clasificaciones correctas</div>
+                </div>
+                <div class="results-list">
+                    ${answers.map(a => `
+                        <div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${a.item}</div>
+                            <div class="result-answer">${a.correct ? '✓' : '✗'} ${catLabels[a.selected]} ${!a.correct ? '→ ' + catLabels[a.correctCat] : ''}</div>
+                            <div class="result-explanation">${a.exp}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="results-tip">
+                    <strong>💡 Consejo:</strong> Antes de salir a obra, agrupa mentalmente: portátil y EPIs van contigo; lo fijo y pesado se queda en taller.
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+            action: 'TASK_COMPLETED'
+        }));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
