@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 🔧</div>
+<div class="subtitle" id="subtitle">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="phrase"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Elige la palabra que completa la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{phrase:"Para medir tensión eléctrica, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","alicates"],exp:"El multímetro mide tensión, corriente y resistencia. El buscapolos solo detecta presencia de fase."},
+{phrase:"La unidad de medida de la corriente eléctrica es el ___.",blank:"amperio",opts:["voltio","amperio","ohmio"],exp:"El amperio (A) mide corriente. El voltio mide tensión y el ohmio resistencia."},
+{phrase:"El ___ protege contra fugas de corriente a tierra.",blank:"diferencial",opts:["magnetotérmico","diferencial","fusible"],exp:"El diferencial detecta fugas a tierra. El magnetotérmico protege contra sobrecargas y cortocircuitos."},
+{phrase:"Antes de trabajar en un circuito, debo ___ la corriente.",blank:"cortar",opts:["cortar","aumentar","medir"],exp:"Siempre se debe cortar la corriente antes de manipular un circuito por seguridad."},
+{phrase:"El cable de color verde y amarillo es el de ___.",blank:"tierra",opts:["fase","neutro","tierra"],exp:"Por normativa, el cable verde/amarillo es siempre tierra. El azul es neutro y marrón/negro/gris es fase."},
+{phrase:"Para comprobar si hay tensión en un enchufe uso el ___.",blank:"buscapolos",opts:["buscapolos","alicate","destornillador"],exp:"El buscapolos detecta presencia de fase de forma rápida y segura en enchufes."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),phraseEl=document.getElementById('phrase'),optsEl=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+phraseEl.innerHTML=d.phrase.replace('___','<u>___</u>');
+optsEl.innerHTML=d.opts.map(o=>`<button class="btn-option" onclick="select('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(opt){
+const d=data[idx];
+const correct=opt===d.blank;
+answers.push({phrase:d.phrase,blank:d.blank,user:opt,correct,exp:d.exp});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===opt)b.classList.add(correct?'correct':'incorrect');
+if(b.textContent===d.blank&&!correct)b.classList.add('correct');
+});
+phraseEl.innerHTML=d.phrase.replace('___',`<u>${opt}</u>`);
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual Completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.phrase.replace('___','<strong>'+a.blank+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Correcto: '+a.user:'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Dominar la terminología técnica te permitirá comunicarte con precisión en obra y evitar errores costosos.
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
