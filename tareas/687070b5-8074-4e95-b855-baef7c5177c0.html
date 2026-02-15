@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Seguro o peligro? ⚡ Desliza y decide - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguro o peligro? ⚡</div>
+<div class="subtitle" id="subtitle">Desliza para decidir</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o usa los botones</div>
+<div class="tinder-buttons" id="tinder-buttons">
+<button class="btn-option" id="btn-incorrect">❌ Incorrecto</button>
+<button class="btn-option" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primer día ⚡</div>
+<div class="modal-body">El oficial te muestra situaciones. Desliza derecha si es SEGURO, izquierda si es PELIGROSO.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Verificar ausencia de tensión antes de tocar cables",correct:true,exp:"Siempre verificar con polímetro. Es obligatorio por normativa PRL."},
+{text:"Usar destornillador común de metal sin aislamiento",correct:false,exp:"Las herramientas deben estar aisladas hasta 1000V para trabajos eléctricos."},
+{text:"Trabajar descalzo para sentir mejor el suelo",correct:false,exp:"El calzado aislante protege de descargas. Nunca trabajar descalzo."},
+{text:"Conectar 5 regletas en cadena para más enchufes",correct:false,exp:"Sobrecargar líneas causa incendios. Máximo una regleta por toma."},
+{text:"Desconectar el diferencial antes de intervenir",correct:true,exp:"Cortar alimentación en el cuadro es el primer paso de seguridad."},
+{text:"Señalizar la zona de trabajo con cinta",correct:true,exp:"Avisar a otros trabajadores previene accidentes. Es buena práctica PRL."}
+];
+let idx=0,answers=[],startX=0,startY=0,currentCard=null,isDragging=false;
+const scene=document.getElementById('scene'),container=document.getElementById('tinder-container'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');renderCard();}
+
+function renderCard(){
+if(idx>=cards.length){showResults();return}
+container.innerHTML='';
+const card=document.createElement('div');
+card.className='tinder-card';
+card.innerHTML=`<div class="tinder-card-content">${cards[idx].text}</div>`;
+container.appendChild(card);
+currentCard=card;
+prog.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+setupTouch(card);
+ensureFits();
+}
+
+function setupTouch(card){
+let deltaX=0,deltaY=0;
+const onStart=(e)=>{
+isDragging=true;
+const touch=e.touches?e.touches[0]:e;
+startX=touch.clientX;startY=touch.clientY;
+card.style.transition='none';
+};
+const onMove=(e)=>{
+if(!isDragging)return;
+const touch=e.touches?e.touches[0]:e;
+deltaX=touch.clientX-startX;
+deltaY=touch.clientY-startY;
+const rotate=deltaX*0.1;
+card.style.transform=`translate(${deltaX}px,${deltaY}px) rotate(${rotate}deg)`;
+if(deltaX>50)card.classList.add('swipe-right');
+else card.classList.remove('swipe-right');
+if(deltaX<-50)card.classList.add('swipe-left');
+else card.classList.remove('swipe-left');
+};
+const onEnd=()=>{
+if(!isDragging)return;
+isDragging=false;
+card.style.transition='transform 0.3s ease';
+if(deltaX>80){swipe('right');}
+else if(deltaX<-80){swipe('left');}
+else{card.style.transform='';card.classList.remove('swipe-right','swipe-left');}
+};
+card.addEventListener('touchstart',onStart,{passive:true});
+card.addEventListener('touchmove',onMove,{passive:true});
+card.addEventListener('touchend',onEnd);
+card.addEventListener('mousedown',onStart);
+document.addEventListener('mousemove',onMove);
+document.addEventListener('mouseup',onEnd);
+}
+
+function swipe(dir){
+const userSaidCorrect=(dir==='right');
+const isCorrect=(userSaidCorrect===cards[idx].correct);
+answers.push({q:cards[idx].text,userSaidCorrect,actualCorrect:cards[idx].correct,isCorrect,exp:cards[idx].exp});
+if(currentCard){
+currentCard.style.transition='transform 0.4s ease';
+currentCard.style.transform=dir==='right'?'translate(150%,0) rotate(30deg)':'translate(-150%,0) rotate(-30deg)';
+}
+setTimeout(()=>{idx++;renderCard();},400);
+}
+
+btnCorrect.onclick=()=>swipe('right');
+btnIncorrect.onclick=()=>swipe('left');
+
+function showResults(){
+const score=answers.filter(a=>a.isCorrect).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Jornada completada!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Decisiones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">Dijiste: ${a.userSaidCorrect?'Correcto ✅':'Incorrecto ❌'} | Era: ${a.actualCorrect?'Seguro':'Peligroso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-message">${score>=4?'¡Gran instinto de seguridad! Estás listo para la obra.':'Repasa las normas PRL. La seguridad es lo primero.'}</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;position:relative;min-height:200px;}
+.tinder-card{background:#fff;border:3px solid #00E6BC;border-radius:16px;padding:24px;width:85%;max-width:300px;min-height:140px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.1rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.15);cursor:grab;user-select:none;touch-action:none;}
+.tinder-card.swipe-right{border-color:#4CAF50;box-shadow:0 0 20px rgba(76,175,80,0.4);}
+.tinder-card.swipe-left{border-color:#f44336;box-shadow:0 0 20px rgba(244,67,54,0.4);}
+.tinder-card-content{line-height:1.4;}
+.tinder-buttons{display:flex;gap:12px;width:100%;justify-content:center;}
+.tinder-buttons .btn-option{flex:1;max-width:150px;}
+.results-message{text-align:center;padding:16px;font-weight:500;color:#00E6BC;}
+</style>
+</body>
+</html>
