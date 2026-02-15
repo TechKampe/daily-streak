@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Errores que Cuestan Caro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="scene-text">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔍 Supervisor Novato</div>
+<div class="modal-body">Es tu primera semana. Revisa el trabajo de los equipos y detecta errores antes de que causen problemas.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes = [
+{
+text: "Instalación eléctrica en baño:",
+items: ["Cableado con tubo corrugado", "Cable pelado cerca del lavabo", "Interruptor a 1.2m del suelo", "Toma de tierra conectada"],
+error: 1,
+exp: "Cable pelado cerca de humedad es riesgo de electrocución. Siempre usar aislamiento completo en zonas húmedas."
+},
+{
+text: "Operario en obra de demolición:",
+items: ["Casco de seguridad puesto", "Botas con puntera reforzada", "Manos sin guantes de protección", "Gafas antipartículas"],
+error: 2,
+exp: "Trabajar sin guantes en demolición expone a cortes y químicos. Los EPIs son obligatorios por ley."
+},
+{
+text: "Entrega de presupuesto a cliente:",
+items: ["Desglose de materiales", "Precio total sin IVA indicado", "Plazo de ejecución estimado", "Datos de contacto empresa"],
+error: 1,
+exp: "Un presupuesto sin IVA visible puede ser ilegal y genera desconfianza. Siempre detallar impuestos."
+},
+{
+text: "Trabajo en altura - pintado de fachada:",
+items: ["Arnés de seguridad", "Escalera apoyada en cristal", "Casco con barbuquejo", "Señalización en zona inferior"],
+error: 1,
+exp: "Apoyar escalera en superficie frágil causa caídas graves. Usar puntos de apoyo estables."
+},
+{
+text: "Limpieza de zona de trabajo:",
+items: ["Escoba industrial", "Taladro enchufado durante limpieza", "Bolsas para escombros", "Guantes de trabajo"],
+error: 1,
+exp: "Herramienta eléctrica conectada puede activarse accidentalmente. Siempre desconectar antes de limpiar."
+}
+];
+
+let idx = 0, answers = [];
+const scene = document.getElementById('scene');
+const opts = document.getElementById('options');
+const sceneText = document.getElementById('scene-text');
+const prog = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const helper = document.getElementById('helper');
+const modal = document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame() {
+    modal.classList.remove('active');
+    render();
+}
+
+function render() {
+    if (idx >= scenes.length) { showResults(); return; }
+    const s = scenes[idx];
+    sceneText.textContent = s.text;
+    prog.style.width = (idx / scenes.length * 100) + '%';
+    counter.textContent = (idx + 1) + '/' + scenes.length;
+    helper.textContent = 'Toca el elemento con el error';
+    opts.innerHTML = s.items.map((item, i) =>
+        `<button class="btn-option" onclick="selectItem(${i})">${item}</button>`
+    ).join('');
+    ensureFits();
+}
+
+function selectItem(i) {
+    const s = scenes[idx];
+    const btns = opts.querySelectorAll('.btn-option');
+    btns.forEach(b => b.disabled = true);
+    btns[i].classList.add(i === s.error ? 'correct' : 'incorrect');
+    if (i !== s.error) btns[s.error].classList.add('correct');
+    
+    answers.push({
+        scene: s.text,
+        chosen: s.items[i],
+        correct: s.items[s.error],
+        isCorrect: i === s.error,
+        exp: s.exp
+    });
+    
+    setTimeout(() => { idx++; render(); }, 800);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        const score = answers.filter(a => a.isCorrect).length;
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">¡Inspección completada!</div>
+                    <div class="results-score">${score}/${scenes.length}</div>
+                    <div class="results-subtitle">Errores detectados correctamente</div>
+                </div>
+                <div class="results-list">
+                    ${answers.map((a, i) => `
+                        <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${i + 1}. ${a.scene}</div>
+                            <div class="result-answer">${a.isCorrect ? '✓ ' + a.chosen : '✗ Elegiste: ' + a.chosen}</div>
+                            ${!a.isCorrect ? `<div class="result-answer">→ Error real: ${a.correct}</div>` : ''}
+                            <div class="result-explanation">${a.exp}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="result-item">
+                    <div class="result-question">💡 Consejo profesional</div>
+                    <div class="result-explanation">La atención al detalle marca la diferencia entre un buen profesional y uno excelente. Detectar errores a tiempo evita accidentes, reclamaciones y pérdida de confianza.</div>
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>`;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
