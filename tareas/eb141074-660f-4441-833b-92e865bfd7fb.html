@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🗣️ Tu primera llamada al cliente - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+mentor:{name:"Carlos (Mentor)",img:"https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png"},
+cliente:{name:"Sra. García",img:"https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png"},
+player:{name:"Tú",img:"https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png"}
+};
+
+const turns=[
+{
+messages:[
+{from:"mentor",text:"Suena el teléfono. Es tu primera llamada real. ¡Ánimo, tú puedes!"},
+{from:"cliente",text:"¿Hola? ¿Es el servicio técnico de calderas?"}
+],
+options:[
+{text:"Buenos días, sí, le atiende [nombre]. ¿En qué puedo ayudarle?",score:2,reaction:"¡Perfecto! Saludo profesional.",quality:"correct"},
+{text:"Sí, dígame.",score:1,reaction:"Funciona, pero falta calidez.",quality:"partial"},
+{text:"¿Quién es?",score:0,reaction:"Eso no transmite profesionalidad.",quality:"incorrect"}
+]
+},
+{
+messages:[
+{from:"cliente",text:"Mi caldera no enciende desde ayer. Hace mucho frío y tengo niños en casa."}
+],
+options:[
+{text:"Entiendo, debe ser incómodo. ¿Puede ver si hay luz en el piloto?",score:2,reaction:"Empatía + pregunta técnica. ¡Genial!",quality:"correct"},
+{text:"¿Ha probado a encenderla otra vez?",score:1,reaction:"Pregunta básica, pero sin empatía.",quality:"partial"},
+{text:"Buf, qué mal. Pues habrá que ir a verla.",score:0,reaction:"Sin diagnóstico previo no es eficiente.",quality:"incorrect"}
+]
+},
+{
+messages:[
+{from:"cliente",text:"No veo ninguna luz. ¿Es grave? Necesito que vengan ya."}
+],
+options:[
+{text:"Puede ser algo sencillo. ¿Recuerda cuándo fue la última revisión?",score:2,reaction:"Calmas al cliente y recoges más datos.",quality:"correct"},
+{text:"Tranquila, lo solucionaremos. Voy a consultar agenda.",score:1,reaction:"Bien, pero perdiste una pregunta útil.",quality:"partial"},
+{text:"Sin luz es mala señal. Esto pinta caro.",score:0,reaction:"Alarmaste innecesariamente al cliente.",quality:"incorrect"}
+]
+},
+{
+messages:[
+{from:"cliente",text:"Hace más de un año... ¿Pueden venir hoy? Es urgente."}
+],
+options:[
+{text:"Déjeme consultar. Puedo confirmarle visita esta tarde entre 17-19h.",score:2,reaction:"Compromiso realista. Muy profesional.",quality:"correct"},
+{text:"Vamos ahora mismo, no se preocupe.",score:0,reaction:"Prometer sin verificar genera problemas.",quality:"incorrect"},
+{text:"Hoy lo veo difícil, quizás mañana.",score:1,reaction:"Poco esfuerzo por ayudar en urgencia.",quality:"partial"}
+]
+},
+{
+messages:[
+{from:"cliente",text:"Vale, entre 17 y 19h me viene bien. Muchas gracias."}
+],
+options:[
+{text:"Perfecto, le enviaremos SMS de confirmación. ¡Hasta luego!",score:2,reaction:"Cierre impecable con seguimiento.",quality:"correct"},
+{text:"Ok, adiós.",score:1,reaction:"Funcional pero frío.",quality:"partial"},
+{text:"Ale, pues eso.",score:0,reaction:"Despedida poco profesional.",quality:"incorrect"}
+]
+}
+];
+
+let currentTurn=0,chatHistory=[],answers=[],score=0;
+const scene=document.getElementById('scene');
+
+function renderIntro(){
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🗣️ Tu primera llamada</div>
+<div class="modal-body">Tu mentor observa cómo gestionas una llamada real. ¡Demuestra profesionalidad!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>`;
+}
+
+function startGame(){
+document.getElementById('modal').classList.remove('active');
+renderTurn();
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){showResults();return}
+const turn=turns[currentTurn];
+turn.messages.forEach(m=>chatHistory.push({from:m.from,text:m.text}));
+renderChat();
+}
+
+function renderChat(){
+const turn=turns[currentTurn];
+const optionsHTML=turn?turn.options.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join(''):'';
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🗣️ Primera llamada</div>
+<div class="subtitle">Responde profesionalmente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i style="width:${(currentTurn/turns.length)*100}%"></i></div>
+</div>
+<span class="badge">${currentTurn+1}/${turns.length}</span>
+</div>
+</div>
+<div class="main" style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:8px;">
+<div id="chat-area" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:8px;">
+${chatHistory.map(m=>`
+<div style="display:flex;gap:8px;align-items:flex-start;${m.from==='player'?'flex-direction:row-reverse':''}">
+<img src="${avatars[m.from].img}" alt="" style="width:36px;height:36px;border-radius:50%;flex-shrink:0;">
+<div style="max-width:75%;padding:10px 12px;border-radius:16px;font-size:14px;line-height:1.3;${m.from==='player'?'background:#1a1a2e;color:#fff;border-bottom-right-radius:4px;':'background:#2d2d44;color:#e0e0e0;border-bottom-left-radius:4px;'}">
+<div style="font-size:11px;opacity:0.7;margin-bottom:4px;">${avatars[m.from].name}</div>
+${m.text}
+</div>
+</div>
+`).join('')}
+</div>
+</div>
+<div class="footer" style="flex-shrink:0;">
+<div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+${optionsHTML}
+</div>
+</div>`;
+const chatArea=document.getElementById('chat-area');
+if(chatArea)chatArea.scrollTop=chatArea.scrollHeight;
+ensureFits();
+}
+
+function selectOption(i){
+const turn=turns[currentTurn];
+const opt=turn.options[i];
+chatHistory.push({from:'player',text:opt.text});
+chatHistory.push({from:'mentor',text:opt.reaction});
+answers.push({q:`Turno ${currentTurn+1}`,chosen:opt.text,score:opt.score,quality:opt.quality,reaction:opt.reaction});
+score+=opt.score;
+currentTurn++;
+setTimeout(()=>renderTurn(),300);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const maxScore=turns.length*2;
+const pct=Math.round((score/maxScore)*100);
+const tip="💡 Consejo: Prepara un guion mental antes de cada llamada: saludo, preguntas clave y cierre.";
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">📞 Llamada completada</div>
+<div class="results-score">${score}/${maxScore}</div>
+<div class="results-subtitle">${pct>=80?'¡Excelente comunicación!':pct>=50?'Buen trabajo, sigue practicando':'Hay margen de mejora'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.quality==='correct'?'correct':a.quality==='partial'?'':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer" style="font-size:13px;opacity:0.9;">"${a.chosen.substring(0,40)}${a.chosen.length>40?'...':''}"</div>
+<div class="result-explanation">${a.reaction}</div>
+</div>
+`).join('')}
+<div class="result-item" style="background:linear-gradient(135deg,#1a3a2e,#2d4a3e);border-left:3px solid #4ade80;">
+<div class="result-explanation">${tip}</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();renderIntro();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
