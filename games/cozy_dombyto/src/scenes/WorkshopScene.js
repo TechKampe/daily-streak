@@ -3,7 +3,7 @@
 
   var W = 932, H = 430;
   var HEADER_H = 44;
-  var INVENTORY_W = 300;
+  var INVENTORY_W = 200;
   var GRID_AREA_RIGHT = W - INVENTORY_W;
 
   window.WorkshopScene = new Phaser.Class({

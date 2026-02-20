@@ -1,12 +1,12 @@
-// Cozy Dombyto — Inventory panel (right side, vertical layout for landscape)
+// Cozy Dombyto — Inventory panel (right side, compact 2×4 grid)
 (function () {
 
-  var TAB_H = 36;
-  var ITEM_SIZE = 40;
-  var ITEM_COLS = 3;         // items per row in the grid
+  var TAB_H = 32;
+  var ITEM_SIZE = 36;
+  var ITEM_COLS = 2;
   var ITEM_CELL_W = 90;
-  var ITEM_CELL_H = 72;
-  var SCROLL_PAD = 8;
+  var ITEM_CELL_H = 80;
+  var SCROLL_PAD = 6;
   var DRAG_THRESHOLD = 12;
   var PANEL_COLOR = 0xf5e1d0;
   var TAB_ACTIVE = 0xe8917a;
@@ -25,12 +25,14 @@
     this.itemEmojis = [];
     this.scrollOffset = 0;
 
-    // Pointer state: idle → pending → scrolling | dragging
     this.gestureState = 'idle';
     this.pointerStartX = 0;
     this.pointerStartY = 0;
     this.scrollStartOffset = 0;
     this.pendingItemDef = null;
+
+    // Compute cell size to fit panel width
+    ITEM_CELL_W = Math.floor((this.pw - SCROLL_PAD * 2) / ITEM_COLS);
 
     this._drawBackground();
     this._buildTabs();
@@ -47,7 +49,6 @@
       this.pw, this.ph, PANEL_COLOR, 0.95
     ).setDepth(99);
 
-    // Left border
     this.leftBorder = this.scene.add.rectangle(
       this.px, this.py + this.ph / 2, 2, this.ph, 0xe8917a, 0.6
     ).setDepth(99);
@@ -55,21 +56,27 @@
 
   proto._buildTabs = function () {
     var tabs = window.INVENTORY_TABS;
-    var tabW = this.pw / tabs.length;
-    var tabY = this.py + TAB_H / 2 + 4;
+    // 2 tabs per row, 2 rows
+    var colCount = 2;
+    var rowCount = Math.ceil(tabs.length / colCount);
+    var tabCellW = this.pw / colCount;
+    var tabRowH = TAB_H;
     var self = this;
 
     for (var i = 0; i < tabs.length; i++) {
       (function (tab, index) {
-        var tx = self.px + tabW * index + tabW / 2;
+        var tc = index % colCount;
+        var tr = Math.floor(index / colCount);
+        var tx = self.px + tc * tabCellW + tabCellW / 2;
+        var ty = self.py + tr * tabRowH + tabRowH / 2 + 3;
 
-        var bg = self.scene.add.rectangle(tx, tabY, tabW - 4, TAB_H - 6, TAB_INACTIVE, 1)
+        var bg = self.scene.add.rectangle(tx, ty, tabCellW - 4, tabRowH - 4, TAB_INACTIVE, 1)
           .setInteractive({ useHandCursor: true })
           .setDepth(101);
         bg.setStrokeStyle(1, 0xc48878, 0.4);
 
-        var label = self.scene.add.text(tx, tabY, tab.label, {
-          fontSize: '11px', fontFamily: '"Baloo 2", cursive', color: '#3d2b1f',
+        var label = self.scene.add.text(tx, ty, tab.label, {
+          fontSize: '10px', fontFamily: '"Baloo 2", cursive', color: '#3d2b1f',
           align: 'center'
         }).setOrigin(0.5, 0.5).setDepth(102);
 
@@ -81,6 +88,8 @@
         self.tabLabels.push(label);
       })(tabs[i], i);
     }
+
+    this._tabTotalH = rowCount * tabRowH + 6;
     this._updateTabHighlights();
   };
 
@@ -100,8 +109,8 @@
   };
 
   proto._buildScrollArea = function () {
-    this.scrollY = this.py + TAB_H + 8;
-    this.scrollH = this.ph - TAB_H - 12;
+    this.scrollY = this.py + this._tabTotalH;
+    this.scrollH = this.ph - this._tabTotalH - 4;
 
     var maskGfx = this.scene.make.graphics({ add: false });
     maskGfx.fillRect(this.px, this.scrollY, this.pw, this.scrollH);
@@ -112,7 +121,6 @@
     var self = this;
 
     this.scene.input.on('pointerdown', function (pointer) {
-      // Only handle if pointer is in the scroll item area
       if (pointer.x < self.px || pointer.x > self.px + self.pw) return;
       if (pointer.y < self.scrollY || pointer.y > self.scrollY + self.scrollH) return;
       if (self.scene.activeDrag) return;
@@ -131,11 +139,9 @@
       var dy = pointer.y - self.pointerStartY;
 
       if (self.gestureState === 'pending') {
-        // Decide: vertical movement = scroll, horizontal (leftward) = item drag
         if (Math.abs(dy) > DRAG_THRESHOLD) {
           self.gestureState = 'scrolling';
         } else if (dx < -DRAG_THRESHOLD && self.pendingItemDef) {
-          // Dragging leftward → start item drag
           self.gestureState = 'dragging';
           if (self.scene.startItemDrag) {
             self.scene.startItemDrag(self.pendingItemDef, pointer);
@@ -181,25 +187,26 @@
     this.scrollOffset = 0;
 
     var items = window.GameState.inventory[this.activeTab] || [];
+    var centerX = this.px + this.pw / 2;
 
     for (var j = 0; j < items.length; j++) {
       var def = items[j];
       var gridCol = j % ITEM_COLS;
       var gridRow = Math.floor(j / ITEM_COLS);
 
-      var baseX = this.px + SCROLL_PAD + gridCol * ITEM_CELL_W + ITEM_CELL_W / 2;
+      var baseX = centerX - (ITEM_COLS * ITEM_CELL_W) / 2 + gridCol * ITEM_CELL_W + ITEM_CELL_W / 2;
       var baseY = this.scrollY + SCROLL_PAD + gridRow * ITEM_CELL_H + ITEM_CELL_H / 2;
 
       var ct = this.scene.add.container(baseX, baseY).setDepth(103);
 
-      var emoji = this.scene.add.text(0, -8, def.emoji, {
+      var emoji = this.scene.add.text(0, -10, def.emoji, {
         fontSize: ITEM_SIZE + 'px',
         padding: { x: 2, y: 2 }
       }).setOrigin(0.5, 0.5);
 
-      var label = this.scene.add.text(0, ITEM_SIZE / 2 - 4, def.label, {
+      var label = this.scene.add.text(0, ITEM_SIZE / 2 - 2, def.label, {
         fontSize: '8px', fontFamily: '"Baloo 2", cursive', color: '#6b4c3b',
-        align: 'center', wordWrap: { width: ITEM_CELL_W - 8 }
+        align: 'center', wordWrap: { width: ITEM_CELL_W - 6 }
       }).setOrigin(0.5, 0);
 
       ct.add([emoji, label]);
