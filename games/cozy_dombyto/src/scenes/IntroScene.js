@@ -1,7 +1,7 @@
-// Cozy Dombyto — Intro scene (Yaiza's call)
+// Cozy Dombyto — Intro scene (Yaiza's call) — landscape
 (function () {
 
-  var W = 430, H = 932;
+  var W = 932, H = 430;
 
   window.IntroScene = new Phaser.Class({
     Extends: Phaser.Scene,
@@ -34,74 +34,75 @@
         return;
       }
 
-      // --- First round: full intro ---
+      // --- First round: full intro (landscape two-column layout) ---
 
       // Background
       this.add.rectangle(W / 2, H / 2, W, H, 0xfff5eb);
 
       // Title
-      this.add.text(W / 2, H * 0.06, '📞 Llamada entrante...', {
-        fontSize: '18px', fontFamily: '"Baloo 2", cursive',
+      this.add.text(W / 2, 30, '📞 Llamada entrante...', {
+        fontSize: '20px', fontFamily: '"Baloo 2", cursive',
         color: '#e8917a', fontStyle: 'bold'
       }).setOrigin(0.5);
 
-      // --- Yaiza character ---
-      this.add.text(W * 0.25, H * 0.18, '😟', { fontSize: '72px' }).setOrigin(0.5);
-      this.add.text(W * 0.25, H * 0.24, 'Yaiza', {
-        fontSize: '14px', fontFamily: '"Baloo 2", cursive',
+      // --- Left column: Characters ---
+      var leftX = W * 0.25;
+
+      // Yaiza
+      this.add.text(leftX - 60, H * 0.28, '😟', { fontSize: '64px' }).setOrigin(0.5);
+      this.add.text(leftX - 60, H * 0.40, 'Yaiza', {
+        fontSize: '13px', fontFamily: '"Baloo 2", cursive',
         color: '#6b4c3b', fontStyle: 'bold'
       }).setOrigin(0.5);
 
-      // Yaiza bubble
       this._createBubble(
-        W * 0.6, H * 0.18,
+        leftX + 80, H * 0.28,
         '¡Dombyto! ¡Se ha ido la luz\ny es mi cumpleaños!\n¡Ven rápido!',
-        280
+        240
       );
 
-      // --- Dombyto character ---
-      this.add.text(W * 0.75, H * 0.38, '😰', { fontSize: '72px' }).setOrigin(0.5);
-      this.add.text(W * 0.75, H * 0.44, 'Dombyto', {
-        fontSize: '14px', fontFamily: '"Baloo 2", cursive',
+      // Dombyto
+      this.add.text(leftX + 180, H * 0.65, '😰', { fontSize: '64px' }).setOrigin(0.5);
+      this.add.text(leftX + 180, H * 0.77, 'Dombyto', {
+        fontSize: '13px', fontFamily: '"Baloo 2", cursive',
         color: '#6b4c3b', fontStyle: 'bold'
       }).setOrigin(0.5);
 
-      // Dombyto bubble
       this._createBubble(
-        W * 0.35, H * 0.38,
+        leftX + 20, H * 0.65,
         '¡30 segundos y estoy ahí!\n...si encuentro mis cosas.',
-        260
+        220
       );
 
-      // --- Workshop illustration ---
-      this.add.text(W / 2, H * 0.56, '🏠', { fontSize: '48px' }).setOrigin(0.5);
-      this.add.text(W / 2, H * 0.62, 'El taller de Dombyto está\nhecho un desastre.\n¡Ayúdale a organizarlo!', {
-        fontSize: '15px', fontFamily: '"Baloo 2", cursive',
+      // --- Right column: Instructions + CTA ---
+      var rightX = W * 0.7;
+
+      this.add.text(rightX, H * 0.18, '🏠', { fontSize: '44px' }).setOrigin(0.5);
+      this.add.text(rightX, H * 0.30, 'El taller de Dombyto está\nhecho un desastre.\n¡Ayúdale a organizarlo!', {
+        fontSize: '14px', fontFamily: '"Baloo 2", cursive',
         color: '#8b6c5c', align: 'center', lineSpacing: 4
       }).setOrigin(0.5);
 
-      // --- Instructions ---
-      var instrY = H * 0.74;
+      var instrY = H * 0.52;
       var instructions = [
         '🔧  Arrastra muebles al taller',
         '🛠️  Coloca herramientas en los muebles',
         '▶️  Pulsa "¡Sal!" cuando esté listo'
       ];
       for (var i = 0; i < instructions.length; i++) {
-        this.add.text(W / 2, instrY + i * 30, instructions[i], {
-          fontSize: '13px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(rightX, instrY + i * 26, instructions[i], {
+          fontSize: '12px', fontFamily: '"Baloo 2", cursive',
           color: '#a0887a'
         }).setOrigin(0.5);
       }
 
-      // --- CTA Button ---
-      var btn = this.add.text(W / 2, H * 0.9, '🏠 Organizar taller', {
-        fontSize: '22px', fontFamily: '"Baloo 2", cursive',
+      // CTA Button
+      var btn = this.add.text(rightX, H * 0.85, '🏠 Organizar taller', {
+        fontSize: '20px', fontFamily: '"Baloo 2", cursive',
         backgroundColor: '#e8917a', color: '#ffffff',
-        padding: { x: 32, y: 16 }
+        padding: { x: 28, y: 12 }
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-      // Pulse animation
       this.tweens.add({
         targets: btn,
         scaleX: 1.05, scaleY: 1.05,
@@ -118,16 +119,15 @@
     },
 
     _createBubble: function (x, y, text, width) {
-      // White rounded bubble
       var bg = this.add.graphics();
       bg.fillStyle(0xffffff, 1);
-      bg.fillRoundedRect(x - width / 2, y - 40, width, 80, 14);
+      bg.fillRoundedRect(x - width / 2, y - 36, width, 72, 12);
       bg.lineStyle(2, 0xe8d4c0, 1);
-      bg.strokeRoundedRect(x - width / 2, y - 40, width, 80, 14);
+      bg.strokeRoundedRect(x - width / 2, y - 36, width, 72, 12);
 
       this.add.text(x, y, text, {
-        fontSize: '13px', fontFamily: '"Baloo 2", cursive',
-        color: '#3d2b1f', wordWrap: { width: width - 24 },
+        fontSize: '12px', fontFamily: '"Baloo 2", cursive',
+        color: '#3d2b1f', wordWrap: { width: width - 20 },
         align: 'center', lineSpacing: 2
       }).setOrigin(0.5);
     }

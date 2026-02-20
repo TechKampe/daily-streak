@@ -4,15 +4,15 @@
 
   const config = {
     type: Phaser.AUTO,
-    width: 430,
-    height: 932,
+    width: 932,
+    height: 430,
     backgroundColor: '#fff5eb',
     parent: 'game-container',
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
-      width: 430,
-      height: 932
+      width: 932,
+      height: 430
     },
     scene: [IntroScene, WorkshopScene, EvalScene, VictoryScene],
     render: {

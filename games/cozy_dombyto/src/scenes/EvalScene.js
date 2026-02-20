@@ -1,7 +1,7 @@
-// Cozy Dombyto — Evaluation scene
+// Cozy Dombyto — Evaluation scene (landscape)
 (function () {
 
-  var W = 430, H = 932;
+  var W = 932, H = 430;
 
   window.EvalScene = new Phaser.Class({
     Extends: Phaser.Scene,
@@ -17,22 +17,22 @@
       // Warm cream background
       this.add.rectangle(W / 2, H / 2, W, H, 0xfff5eb);
 
-      // Dombyto emoji expression
       var isVictory = result.score === 100;
+
+      // --- Left side: Dombyto + Score ---
+      var leftX = W * 0.3;
+
       var expr = isVictory ? '🎉' : result.score >= 50 ? '😟' : '😫';
+      this.add.text(leftX, H * 0.22, expr, { fontSize: '72px' }).setOrigin(0.5);
 
-      this.add.text(W / 2, H * 0.12, expr, { fontSize: '80px' }).setOrigin(0.5);
-
-      // Dombyto label
-      this.add.text(W / 2, H * 0.18, 'Dombyto', {
-        fontSize: '16px', fontFamily: '"Baloo 2", cursive',
+      this.add.text(leftX, H * 0.38, 'Dombyto', {
+        fontSize: '15px', fontFamily: '"Baloo 2", cursive',
         color: '#6b4c3b', fontStyle: 'bold'
       }).setOrigin(0.5);
 
-      // Percentage display with animated count-up
       var scoreColor = isVictory ? '#2ECC71' : '#e8917a';
-      this.pctText = this.add.text(W / 2, H * 0.27, '0%', {
-        fontSize: '72px', fontFamily: '"Baloo 2", cursive',
+      this.pctText = this.add.text(leftX, H * 0.58, '0%', {
+        fontSize: '64px', fontFamily: '"Baloo 2", cursive',
         color: scoreColor, fontStyle: 'bold'
       }).setOrigin(0.5);
 
@@ -46,71 +46,67 @@
         }.bind(this)
       });
 
-      // "Tu taller estaba al X%" subtitle
-      this.add.text(W / 2, H * 0.33, 'Tu taller estaba al ' + result.score + '%', {
-        fontSize: '16px', fontFamily: '"Baloo 2", cursive',
+      this.add.text(leftX, H * 0.72, 'Tu taller estaba al ' + result.score + '%', {
+        fontSize: '14px', fontFamily: '"Baloo 2", cursive',
         color: '#6b4c3b'
       }).setOrigin(0.5);
 
+      // --- Right side: Results ---
+      var rightX = W * 0.68;
+
       // Successes
-      var successY = H * 0.39;
+      var successY = H * 0.15;
       for (var i = 0; i < result.successes.length; i++) {
-        this.add.text(W / 2, successY + i * 28, '✅ ' + result.successes[i], {
-          fontSize: '14px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(rightX, successY + i * 26, '✅ ' + result.successes[i], {
+          fontSize: '13px', fontFamily: '"Baloo 2", cursive',
           color: '#27ae60'
         }).setOrigin(0.5);
       }
 
       // Failure message
       if (result.failedRule) {
-        var failY = successY + result.successes.length * 28 + 20;
+        var failY = successY + result.successes.length * 26 + 16;
         this.time.delayedCall(1400, function () {
-          this.add.text(W / 2, failY, '❌ ' + result.failMessage, {
-            fontSize: '15px', fontFamily: '"Baloo 2", cursive',
-            color: '#c0392b', wordWrap: { width: 360 }, align: 'center'
+          this.add.text(rightX, failY, '❌ ' + result.failMessage, {
+            fontSize: '14px', fontFamily: '"Baloo 2", cursive',
+            color: '#c0392b', wordWrap: { width: 340 }, align: 'center'
           }).setOrigin(0.5, 0);
 
-          // Yaiza sad scene
-          this._showYaizaSad(failY + 80);
+          this._showYaizaSad(rightX, failY + 50);
         }.bind(this));
       } else {
-        // Victory! transition after showing score
         this.time.delayedCall(2200, function () {
           this.scene.start('VictoryScene');
         }.bind(this));
       }
     },
 
-    _showYaizaSad: function (startY) {
-      // Yaiza alone, sad
-      this.add.text(W / 2, startY + 30, '😢', { fontSize: '60px' }).setOrigin(0.5);
+    _showYaizaSad: function (cx, startY) {
+      this.add.text(cx, startY + 20, '😢', { fontSize: '48px' }).setOrigin(0.5);
 
-      // Sad message
-      this.add.text(W / 2, startY + 80, 'Yaiza sigue sin luz en su cumpleaños...\n🎂🕯️', {
-        fontSize: '14px', fontFamily: '"Baloo 2", cursive',
-        color: '#8b6c5c', align: 'center', wordWrap: { width: 340 }
+      this.add.text(cx, startY + 60, 'Yaiza sigue sin luz en su cumpleaños...\n🎂🕯️', {
+        fontSize: '13px', fontFamily: '"Baloo 2", cursive',
+        color: '#8b6c5c', align: 'center', wordWrap: { width: 300 }
       }).setOrigin(0.5, 0);
 
-      // Encouragement
       var round = window.GameState.roundNumber;
       var encouragement = round <= 2
         ? '¡No te rindas! Organiza mejor el taller.'
         : '¡Casi lo tienes! Revisa lo que falta.';
 
-      this.add.text(W / 2, startY + 150, encouragement, {
-        fontSize: '13px', fontFamily: '"Baloo 2", cursive',
+      this.add.text(cx, startY + 110, encouragement, {
+        fontSize: '12px', fontFamily: '"Baloo 2", cursive',
         color: '#a0887a', fontStyle: 'italic'
       }).setOrigin(0.5);
 
       // Retry button
       this.time.delayedCall(800, function () {
-        var btn = this.add.text(W / 2, H * 0.88, '🔄 Corregir taller', {
-          fontSize: '20px', fontFamily: '"Baloo 2", cursive',
+        var btn = this.add.text(cx, startY + 150, '🔄 Corregir taller', {
+          fontSize: '18px', fontFamily: '"Baloo 2", cursive',
           backgroundColor: '#e8917a', color: '#ffffff',
-          padding: { x: 28, y: 14 }
+          padding: { x: 24, y: 10 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-        // Fade in
         btn.setAlpha(0);
         this.tweens.add({ targets: btn, alpha: 1, duration: 400 });
 

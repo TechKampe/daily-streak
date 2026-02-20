@@ -1,7 +1,7 @@
-// Cozy Dombyto — Victory scene
+// Cozy Dombyto — Victory scene (landscape)
 (function () {
 
-  var W = 430, H = 932;
+  var W = 932, H = 430;
 
   window.VictoryScene = new Phaser.Class({
     Extends: Phaser.Scene,
@@ -20,9 +20,11 @@
       // Confetti particles
       this._spawnConfetti();
 
-      // Big victory text
-      var title = this.add.text(W / 2, H * 0.1, '🎉 ¡100%! 🎉', {
-        fontSize: '48px', fontFamily: '"Baloo 2", cursive',
+      // --- Left side: Title + Party + Dombyto ---
+      var leftX = W * 0.28;
+
+      var title = this.add.text(leftX, H * 0.10, '🎉 ¡100%! 🎉', {
+        fontSize: '42px', fontFamily: '"Baloo 2", cursive',
         color: '#e8917a', fontStyle: 'bold'
       }).setOrigin(0.5).setAlpha(0);
 
@@ -33,72 +35,70 @@
         ease: 'Back.easeOut'
       });
 
-      // Yaiza party scene
       this.time.delayedCall(400, function () {
-        // Party emojis
-        this.add.text(W / 2, H * 0.22, '🥳👯‍♀️🎊✨🎂', {
-          fontSize: '48px'
+        this.add.text(leftX, H * 0.28, '🥳👯‍♀️🎊✨🎂', {
+          fontSize: '40px'
         }).setOrigin(0.5);
 
-        this.add.text(W / 2, H * 0.30, '¡Yaiza y sus amigas celebran!', {
-          fontSize: '18px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(leftX, H * 0.40, '¡Yaiza y sus amigas celebran!', {
+          fontSize: '16px', fontFamily: '"Baloo 2", cursive',
           color: '#6b4c3b', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        this.add.text(W / 2, H * 0.35, '¡La luz está de vuelta gracias a Dombyto!', {
-          fontSize: '14px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(leftX, H * 0.48, '¡La luz está de vuelta gracias a Dombyto!', {
+          fontSize: '13px', fontFamily: '"Baloo 2", cursive',
           color: '#8b6c5c'
         }).setOrigin(0.5);
       }.bind(this));
 
       // Dombyto hero
       this.time.delayedCall(800, function () {
-        this.add.text(W / 2, H * 0.44, '🎉', { fontSize: '72px' }).setOrigin(0.5);
-        this.add.text(W / 2, H * 0.51, 'Dombyto', {
-          fontSize: '16px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(leftX, H * 0.64, '🎉', { fontSize: '56px' }).setOrigin(0.5);
+        this.add.text(leftX, H * 0.76, 'Dombyto', {
+          fontSize: '14px', fontFamily: '"Baloo 2", cursive',
           color: '#6b4c3b', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        // Bubble
         var bg = this.add.graphics();
         bg.fillStyle(0xffffff, 1);
-        bg.fillRoundedRect(W / 2 - 160, H * 0.54, 320, 60, 14);
+        bg.fillRoundedRect(leftX - 150, H * 0.80, 300, 48, 12);
         bg.lineStyle(2, 0xe8d4c0, 1);
-        bg.strokeRoundedRect(W / 2 - 160, H * 0.54, 320, 60, 14);
+        bg.strokeRoundedRect(leftX - 150, H * 0.80, 300, 48, 12);
 
-        this.add.text(W / 2, H * 0.54 + 30, '¡Lo logré gracias a mi taller organizado!', {
-          fontSize: '14px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(leftX, H * 0.80 + 24, '¡Lo logré gracias a mi taller organizado!', {
+          fontSize: '12px', fontFamily: '"Baloo 2", cursive',
           color: '#3d2b1f', fontStyle: 'italic', align: 'center'
         }).setOrigin(0.5);
       }.bind(this));
 
-      // Educational closing: checklist items 9-10
+      // --- Right side: Checklist + Rounds ---
+      var rightX = W * 0.72;
+
       this.time.delayedCall(1200, function () {
         var closingBg = this.add.graphics();
         closingBg.fillStyle(0xf0e4d8, 0.8);
-        closingBg.fillRoundedRect(30, H * 0.66, W - 60, 120, 12);
+        closingBg.fillRoundedRect(rightX - 160, H * 0.15, 320, 120, 12);
 
-        this.add.text(W / 2, H * 0.68, '📋 Recuerda para completar tu checklist:', {
-          fontSize: '13px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(rightX, H * 0.19, '📋 Recuerda para completar tu checklist:', {
+          fontSize: '12px', fontFamily: '"Baloo 2", cursive',
           color: '#6b4c3b', fontStyle: 'bold'
         }).setOrigin(0.5, 0);
 
-        this.add.text(W / 2, H * 0.72, '📸 Haz una foto del puesto listo', {
-          fontSize: '12px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(rightX, H * 0.28, '📸 Haz una foto del puesto listo', {
+          fontSize: '11px', fontFamily: '"Baloo 2", cursive',
           color: '#8b6c5c'
         }).setOrigin(0.5, 0);
 
-        this.add.text(W / 2, H * 0.76, '📝 Escribe 3 líneas en la bitácora', {
-          fontSize: '12px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(rightX, H * 0.36, '📝 Escribe 3 líneas en la bitácora', {
+          fontSize: '11px', fontFamily: '"Baloo 2", cursive',
           color: '#8b6c5c'
         }).setOrigin(0.5, 0);
       }.bind(this));
 
-      // Rounds taken
       this.time.delayedCall(1600, function () {
         var rounds = window.GameState.roundNumber;
-        this.add.text(W / 2, H * 0.84, '🏆 Lo lograste en ' + rounds + ' intento' + (rounds > 1 ? 's' : ''), {
-          fontSize: '15px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(rightX, H * 0.60, '🏆 Lo lograste en ' + rounds + ' intento' + (rounds > 1 ? 's' : ''), {
+          fontSize: '14px', fontFamily: '"Baloo 2", cursive',
           color: '#e8917a', fontStyle: 'bold'
         }).setOrigin(0.5);
       }.bind(this));

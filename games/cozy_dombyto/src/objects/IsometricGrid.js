@@ -1,8 +1,8 @@
 // Cozy Dombyto — Isometric grid 6×8
 (function () {
 
-  var TILE_W = 62;
-  var TILE_H = 31;
+  var TILE_W = 82;
+  var TILE_H = 41;
   var COLS = 6;
   var ROWS = 8;
 
