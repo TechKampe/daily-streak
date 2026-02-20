@@ -5,6 +5,7 @@
   var HEADER_H = 44;
   var INVENTORY_W = 200;
   var GRID_AREA_RIGHT = W - INVENTORY_W;
+  var GRID_DRAG_THRESHOLD = 10;
 
   window.WorkshopScene = new Phaser.Class({
     Extends: Phaser.Scene,
@@ -20,6 +21,7 @@
       this.placedItems = [];
       this.floorItems = [];
       this.activeDrag = null;
+      this._pendingGridDrag = null;
 
       // Zoom & pan state
       this.gridLayer = this.add.container(0, 0).setDepth(5);
@@ -317,6 +319,20 @@
     _onPointerMove: function (pointer) {
       if (this._isPinching) return;
 
+      // Check pending grid drag — promote to real drag after threshold
+      if (this._pendingGridDrag) {
+        var pdx = pointer.x - this._pendingGridDrag.startX;
+        var pdy = pointer.y - this._pendingGridDrag.startY;
+        if (pdx * pdx + pdy * pdy > GRID_DRAG_THRESHOLD * GRID_DRAG_THRESHOLD) {
+          var pending = this._pendingGridDrag;
+          this._pendingGridDrag = null;
+          if (pending.type === 'furniture') this._startFurnitureDragFromGrid(pending.obj);
+          else if (pending.type === 'item') this._startItemDragFromGrid(pending.obj);
+          else if (pending.type === 'floorItem') this._startFloorItemDragFromGrid(pending.obj);
+        }
+        return;
+      }
+
       // Active item/furniture drag
       if (this.activeDrag) {
         this._isPanning = false;
@@ -341,8 +357,8 @@
         return;
       }
 
-      // Pan the grid (only when zoomed in)
-      if (this._isPanning && this.zoomLevel > 1) {
+      // Pan the grid
+      if (this._isPanning) {
         var dx = pointer.x - this._panStartX;
         var dy = pointer.y - this._panStartY;
         this.gridLayer.x = this._gridLayerStartX + dx;
@@ -353,6 +369,16 @@
 
     _onPointerUp: function (pointer) {
       this._isPanning = false;
+
+      // Pending grid drag without movement = tap to return to inventory
+      if (this._pendingGridDrag) {
+        var pending = this._pendingGridDrag;
+        this._pendingGridDrag = null;
+        if (pending.type === 'furniture') this._returnFurnitureToInventory(pending.obj);
+        else if (pending.type === 'item') this._returnItemToInventory(pending.obj);
+        else if (pending.type === 'floorItem') this._returnFloorItemToInventory(pending.obj);
+        return;
+      }
 
       if (!this.activeDrag) return;
       var drag = this.activeDrag;
@@ -438,29 +464,73 @@
 
     _setupFurnitureTap: function (furn) {
       var scene = this;
-      furn.container.on('pointerdown', function () {
-        if (!scene.activeDrag) {
-          scene._startFurnitureDragFromGrid(furn);
+      furn.container.on('pointerdown', function (pointer) {
+        if (!scene.activeDrag && !scene._pendingGridDrag) {
+          scene._pendingGridDrag = {
+            type: 'furniture', obj: furn,
+            startX: pointer.x, startY: pointer.y
+          };
+          scene._isPanning = false;
         }
       });
     },
 
     _setupItemTap: function (item) {
       var scene = this;
-      item.container.on('pointerdown', function () {
-        if (!scene.activeDrag) {
-          scene._startItemDragFromGrid(item);
+      item.container.on('pointerdown', function (pointer) {
+        if (!scene.activeDrag && !scene._pendingGridDrag) {
+          scene._pendingGridDrag = {
+            type: 'item', obj: item,
+            startX: pointer.x, startY: pointer.y
+          };
+          scene._isPanning = false;
         }
       });
     },
 
     _setupFloorItemTap: function (floorItem) {
       var scene = this;
-      floorItem.container.on('pointerdown', function () {
-        if (!scene.activeDrag) {
-          scene._startFloorItemDragFromGrid(floorItem);
+      floorItem.container.on('pointerdown', function (pointer) {
+        if (!scene.activeDrag && !scene._pendingGridDrag) {
+          scene._pendingGridDrag = {
+            type: 'floorItem', obj: floorItem,
+            startX: pointer.x, startY: pointer.y
+          };
+          scene._isPanning = false;
         }
       });
+    },
+
+    // --- Return-to-inventory helpers (for tap on placed objects) ---
+
+    _returnFurnitureToInventory: function (furn) {
+      var def = furn.def;
+      window.GameState.returnFurniture(def, furn.col, furn.row);
+      this.grid.freeCells(furn.col, furn.row, def.gridW, def.gridH);
+      for (var i = 0; i < furn.attachedItems.length; i++) {
+        var idx = this.placedItems.indexOf(furn.attachedItems[i]);
+        if (idx !== -1) this.placedItems.splice(idx, 1);
+      }
+      delete this.placedFurnitures[def.id];
+      furn.destroy();
+      this.inventory.refreshItems();
+    },
+
+    _returnItemToInventory: function (item) {
+      if (item.placedOnFurniture) item.placedOnFurniture.detachItem(item);
+      if (item.furnitureOriginKey) window.GameState.returnItem(item.def, item.furnitureOriginKey);
+      var idx = this.placedItems.indexOf(item);
+      if (idx !== -1) this.placedItems.splice(idx, 1);
+      item.destroy();
+      this.inventory.refreshItems();
+    },
+
+    _returnFloorItemToInventory: function (floorItem) {
+      window.GameState.removeFloorItem(floorItem.def.id, floorItem.floorCol, floorItem.floorRow);
+      var idx = this.floorItems.indexOf(floorItem);
+      if (idx !== -1) this.floorItems.splice(idx, 1);
+      floorItem.destroy();
+      this.inventory.refreshItems();
     },
 
     // --- Pinch-to-zoom (update loop) ---
@@ -472,6 +542,9 @@
       var pointer2 = this.input.pointer2;
 
       if (pointer1 && pointer2 && pointer1.isDown && pointer2.isDown) {
+        // Cancel any pending grid drag — user is pinching, not tapping
+        if (this._pendingGridDrag) this._pendingGridDrag = null;
+
         var dist = Phaser.Math.Distance.Between(
           pointer1.x, pointer1.y, pointer2.x, pointer2.y
         );
@@ -493,13 +566,9 @@
     },
 
     _clampPan: function () {
-      if (this.zoomLevel <= 1) {
-        this.gridLayer.x = 0;
-        this.gridLayer.y = 0;
-        return;
-      }
-      var maxPanX = (this.zoomLevel - 1) * GRID_AREA_RIGHT * 0.5;
-      var maxPanY = (this.zoomLevel - 1) * (H - HEADER_H) * 0.5;
+      var basePan = 40; // allow small pan even at 1x for feel
+      var maxPanX = basePan + (this.zoomLevel - 1) * GRID_AREA_RIGHT * 0.5;
+      var maxPanY = basePan + (this.zoomLevel - 1) * (H - HEADER_H) * 0.5;
       this.gridLayer.x = Phaser.Math.Clamp(this.gridLayer.x, -maxPanX, maxPanX);
       this.gridLayer.y = Phaser.Math.Clamp(this.gridLayer.y, -maxPanY, maxPanY);
     },
