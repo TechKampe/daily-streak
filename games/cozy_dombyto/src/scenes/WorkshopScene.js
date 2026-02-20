@@ -38,6 +38,7 @@
       this._buildInventory();
       this._restoreGridFromState();
       this._setupInput();
+      this._buildZoomButtons();
     },
 
     _buildBackground: function () {
@@ -185,6 +186,41 @@
 
       this.input.on('pointermove', this._onPointerMove, this);
       this.input.on('pointerup', this._onPointerUp, this);
+
+      // Mouse wheel zoom (desktop)
+      this.input.on('wheel', function (pointer, gameObjects, deltaX, deltaY) {
+        if (pointer.x >= scene.inventoryLeft) return;
+        scene._applyZoom(deltaY > 0 ? 0.9 : 1.1);
+      });
+    },
+
+    _buildZoomButtons: function () {
+      var scene = this;
+      var btnStyle = {
+        fontSize: '20px', fontFamily: '"Baloo 2", cursive',
+        backgroundColor: '#d4a99a', color: '#ffffff',
+        padding: { x: 10, y: 4 }
+      };
+
+      var plusBtn = this.add.text(GRID_AREA_RIGHT - 60, H - 36, '🔍+', btnStyle)
+        .setOrigin(0.5).setDepth(210).setInteractive({ useHandCursor: true });
+      var minusBtn = this.add.text(GRID_AREA_RIGHT - 20, H - 36, '🔍−', btnStyle)
+        .setOrigin(0.5).setDepth(210).setInteractive({ useHandCursor: true });
+
+      plusBtn.on('pointerdown', function () { scene._applyZoom(1.25); });
+      minusBtn.on('pointerdown', function () { scene._applyZoom(0.8); });
+    },
+
+    _applyZoom: function (factor) {
+      var oldZoom = this.zoomLevel;
+      var newZoom = Phaser.Math.Clamp(oldZoom * factor, 1, 2);
+      if (newZoom === oldZoom) return;
+
+      this.gridLayer.x += this._gridPivotX * (oldZoom - newZoom);
+      this.gridLayer.y += this._gridPivotY * (oldZoom - newZoom);
+      this.zoomLevel = newZoom;
+      this.gridLayer.setScale(newZoom);
+      this._clampPan();
     },
 
     // --- Drag from inventory ---
@@ -435,24 +471,14 @@
       var pointer1 = this.input.pointer1;
       var pointer2 = this.input.pointer2;
 
-      if (pointer1.isDown && pointer2.isDown) {
+      if (pointer1 && pointer2 && pointer1.isDown && pointer2.isDown) {
         var dist = Phaser.Math.Distance.Between(
           pointer1.x, pointer1.y, pointer2.x, pointer2.y
         );
 
         if (this._lastPinchDist > 0) {
           var ratio = dist / this._lastPinchDist;
-          var oldZoom = this.zoomLevel;
-          var newZoom = Phaser.Math.Clamp(oldZoom * ratio, 1, 2);
-
-          if (newZoom !== oldZoom) {
-            // Zoom around grid pivot point
-            this.gridLayer.x += this._gridPivotX * (oldZoom - newZoom);
-            this.gridLayer.y += this._gridPivotY * (oldZoom - newZoom);
-            this.zoomLevel = newZoom;
-            this.gridLayer.setScale(newZoom);
-            this._clampPan();
-          }
+          this._applyZoom(ratio);
         }
 
         this._lastPinchDist = dist;
