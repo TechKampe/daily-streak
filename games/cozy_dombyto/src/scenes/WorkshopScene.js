@@ -40,7 +40,6 @@
       this._buildInventory();
       this._restoreGridFromState();
       this._setupInput();
-      this._buildZoomButtons();
     },
 
     _buildBackground: function () {
@@ -194,23 +193,6 @@
         if (pointer.x >= scene.inventoryLeft) return;
         scene._applyZoom(deltaY > 0 ? 0.9 : 1.1);
       });
-    },
-
-    _buildZoomButtons: function () {
-      var scene = this;
-      var btnStyle = {
-        fontSize: '20px', fontFamily: '"Baloo 2", cursive',
-        backgroundColor: '#d4a99a', color: '#ffffff',
-        padding: { x: 10, y: 4 }
-      };
-
-      var plusBtn = this.add.text(GRID_AREA_RIGHT - 60, H - 36, '🔍+', btnStyle)
-        .setOrigin(0.5).setDepth(210).setInteractive({ useHandCursor: true });
-      var minusBtn = this.add.text(GRID_AREA_RIGHT - 20, H - 36, '🔍−', btnStyle)
-        .setOrigin(0.5).setDepth(210).setInteractive({ useHandCursor: true });
-
-      plusBtn.on('pointerdown', function () { scene._applyZoom(1.25); });
-      minusBtn.on('pointerdown', function () { scene._applyZoom(0.8); });
     },
 
     _applyZoom: function (factor) {
