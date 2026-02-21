@@ -21,7 +21,7 @@
       antialias: true
     },
     input: {
-      activePointers: 2
+      activePointers: 1
     }
   };
 

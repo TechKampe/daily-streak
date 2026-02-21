@@ -1,4 +1,4 @@
-// Cozy Dombyto — Core gameplay scene (landscape layout + pinch zoom + pan)
+// Cozy Dombyto — Core gameplay scene (landscape layout)
 (function () {
 
   var W = 1864, H = 860;
@@ -22,17 +22,6 @@
       this.floorItems = [];
       this.activeDrag = null;
       this._pendingGridDrag = null;
-
-      // Zoom & pan state
-      this.gridLayer = this.add.container(0, 0).setDepth(5);
-      this.zoomLevel = 1;
-      this._isPanning = false;
-      this._isPinching = false;
-      this._lastPinchDist = 0;
-      this._panStartX = 0;
-      this._panStartY = 0;
-      this._gridLayerStartX = 0;
-      this._gridLayerStartY = 0;
 
       this._buildBackground();
       this._buildHeader();
@@ -88,13 +77,6 @@
 
       this.grid = new IsometricGrid(this, originX, originY);
 
-      // Add grid graphics to the zoomable layer
-      this.gridLayer.add([this.grid.floorGfx, this.grid.highlightGfx]);
-
-      // Store pivot point for zoom (center of grid diamond)
-      this._gridPivotX = originX + (cols - rows) * tileW / 4;
-      this._gridPivotY = originY + (cols + rows) * tileH / 4;
-
       this.inventoryLeft = GRID_AREA_RIGHT;
     },
 
@@ -115,7 +97,6 @@
         if (!furnitureDef) continue;
 
         var furn = new FurnitureObject(this, furnitureDef, col, row, this.grid);
-        this.gridLayer.add(furn.container);
         this.placedFurnitures[furnitureDef.id] = furn;
         this.grid.occupyCells(col, row, furnitureDef.gridW, furnitureDef.gridH, furnitureDef.id);
         this._setupFurnitureTap(furn);
@@ -127,7 +108,6 @@
           item.placedOnFurniture = furn;
           item.furnitureOriginKey = origins[i].key;
           furn.attachItem(item);
-          this.gridLayer.add(item.container);
           this.placedItems.push(item);
           this._setupItemTap(item);
         }
@@ -144,28 +124,9 @@
         floorItem.setPosition(pos.x, pos.y - 20);
         floorItem.floorCol = fi.col;
         floorItem.floorRow = fi.row;
-        this.gridLayer.add(floorItem.container);
         this.floorItems.push(floorItem);
         this._setupFloorItemTap(floorItem);
       }
-
-      this.gridLayer.sort('depth');
-    },
-
-    // --- Coordinate helpers ---
-
-    _screenToGridCoords: function (sx, sy) {
-      return {
-        x: (sx - this.gridLayer.x) / this.gridLayer.scaleX,
-        y: (sy - this.gridLayer.y) / this.gridLayer.scaleY
-      };
-    },
-
-    _gridToScreenCoords: function (gx, gy) {
-      return {
-        x: gx * this.gridLayer.scaleX + this.gridLayer.x,
-        y: gy * this.gridLayer.scaleY + this.gridLayer.y
-      };
     },
 
     // --- Input setup ---
@@ -174,44 +135,43 @@
       var scene = this;
 
       this.input.on('pointerdown', function (pointer) {
-        // Start pan if in grid area and no active drag
-        if (!scene.activeDrag && !scene._isPinching &&
-            pointer.x < scene.inventoryLeft && pointer.y > HEADER_H) {
-          scene._isPanning = true;
-          scene._panStartX = pointer.x;
-          scene._panStartY = pointer.y;
-          scene._gridLayerStartX = scene.gridLayer.x;
-          scene._gridLayerStartY = scene.gridLayer.y;
+        if (scene.activeDrag || scene._pendingGridDrag) return;
+        if (pointer.x >= scene.inventoryLeft || pointer.y <= HEADER_H) return;
+
+        var cell = scene.grid.screenToCell(pointer.x, pointer.y);
+        if (!scene.grid.isValidCell(cell.col, cell.row)) return;
+
+        // Check if a furniture occupies this cell
+        var furnId = scene.grid.getFurnitureIdAtCell(cell.col, cell.row);
+        if (furnId && scene.placedFurnitures[furnId]) {
+          scene._pendingGridDrag = {
+            type: 'furniture', obj: scene.placedFurnitures[furnId],
+            startX: pointer.x, startY: pointer.y
+          };
+          return;
+        }
+
+        // Check floor items at this cell
+        for (var i = 0; i < scene.floorItems.length; i++) {
+          var fi = scene.floorItems[i];
+          if (fi.floorCol === cell.col && fi.floorRow === cell.row) {
+            scene._pendingGridDrag = {
+              type: 'floorItem', obj: fi,
+              startX: pointer.x, startY: pointer.y
+            };
+            return;
+          }
         }
       });
 
       this.input.on('pointermove', this._onPointerMove, this);
       this.input.on('pointerup', this._onPointerUp, this);
-
-      // Mouse wheel zoom (desktop)
-      this.input.on('wheel', function (pointer, gameObjects, deltaX, deltaY) {
-        if (pointer.x >= scene.inventoryLeft) return;
-        scene._applyZoom(deltaY > 0 ? 0.9 : 1.1);
-      });
-    },
-
-    _applyZoom: function (factor) {
-      var oldZoom = this.zoomLevel;
-      var newZoom = Phaser.Math.Clamp(oldZoom * factor, 1, 2);
-      if (newZoom === oldZoom) return;
-
-      this.gridLayer.x += this._gridPivotX * (oldZoom - newZoom);
-      this.gridLayer.y += this._gridPivotY * (oldZoom - newZoom);
-      this.zoomLevel = newZoom;
-      this.gridLayer.setScale(newZoom);
-      this._clampPan();
     },
 
     // --- Drag from inventory ---
 
     startItemDrag: function (def, pointer) {
       if (this.activeDrag) return;
-      this._isPanning = false;
       var isFurniture = def.gridW !== undefined;
 
       var ghostScale = isFurniture ? 0.56 : 0.44;
@@ -225,11 +185,9 @@
 
     _startItemDragFromGrid: function (item) {
       if (this.activeDrag) return;
-      this._isPanning = false;
 
       var def = item.def;
-      var screenPos = this._gridToScreenCoords(item.container.x, item.container.y);
-      var ghost = this.add.image(screenPos.x, screenPos.y, 'item_' + def.id)
+      var ghost = this.add.image(item.container.x, item.container.y, 'item_' + def.id)
         .setScale(0.44).setDepth(500).setAlpha(0.85);
 
       if (item.placedOnFurniture) {
@@ -250,11 +208,9 @@
 
     _startFloorItemDragFromGrid: function (floorItem) {
       if (this.activeDrag) return;
-      this._isPanning = false;
 
       var def = floorItem.def;
-      var screenPos = this._gridToScreenCoords(floorItem.container.x, floorItem.container.y);
-      var ghost = this.add.image(screenPos.x, screenPos.y, 'item_' + def.id)
+      var ghost = this.add.image(floorItem.container.x, floorItem.container.y, 'item_' + def.id)
         .setScale(0.44).setDepth(500).setAlpha(0.85);
 
       window.GameState.removeFloorItem(def.id, floorItem.floorCol, floorItem.floorRow);
@@ -270,11 +226,9 @@
 
     _startFurnitureDragFromGrid: function (furn) {
       if (this.activeDrag) return;
-      this._isPanning = false;
 
       var def = furn.def;
-      var screenPos = this._gridToScreenCoords(furn.container.x, furn.container.y);
-      var ghost = this.add.image(screenPos.x, screenPos.y, 'item_' + def.id)
+      var ghost = this.add.image(furn.container.x, furn.container.y, 'item_' + def.id)
         .setScale(0.56).setDepth(500).setAlpha(0.85);
 
       window.GameState.returnFurniture(def, furn.col, furn.row);
@@ -295,8 +249,6 @@
     // --- Pointer events ---
 
     _onPointerMove: function (pointer) {
-      if (this._isPinching) return;
-
       // Check pending grid drag — promote to real drag after threshold
       if (this._pendingGridDrag) {
         var pdx = pointer.x - this._pendingGridDrag.startX;
@@ -313,13 +265,11 @@
 
       // Active item/furniture drag
       if (this.activeDrag) {
-        this._isPanning = false;
         var drag = this.activeDrag;
         drag.ghost.setPosition(pointer.x, pointer.y);
 
         if (pointer.x < this.inventoryLeft) {
-          var gc = this._screenToGridCoords(pointer.x, pointer.y);
-          var cell = this.grid.screenToCell(gc.x, gc.y);
+          var cell = this.grid.screenToCell(pointer.x, pointer.y);
           if (this.grid.isValidCell(cell.col, cell.row)) {
             if (drag.isFurniture) {
               this.grid.highlightCells(cell.col, cell.row, drag.def.gridW, drag.def.gridH);
@@ -332,22 +282,10 @@
         } else {
           this.grid.clearHighlights();
         }
-        return;
-      }
-
-      // Pan the grid
-      if (this._isPanning) {
-        var dx = pointer.x - this._panStartX;
-        var dy = pointer.y - this._panStartY;
-        this.gridLayer.x = this._gridLayerStartX + dx;
-        this.gridLayer.y = this._gridLayerStartY + dy;
-        this._clampPan();
       }
     },
 
     _onPointerUp: function (pointer) {
-      this._isPanning = false;
-
       // Pending grid drag without movement = tap to return to inventory
       if (this._pendingGridDrag) {
         var pending = this._pendingGridDrag;
@@ -363,8 +301,7 @@
       this.activeDrag = null;
       this.grid.clearHighlights();
 
-      var gc = this._screenToGridCoords(pointer.x, pointer.y);
-      var cell = this.grid.screenToCell(gc.x, gc.y);
+      var cell = this.grid.screenToCell(pointer.x, pointer.y);
       var isOnGrid = pointer.x < this.inventoryLeft && this.grid.isValidCell(cell.col, cell.row);
 
       if (isOnGrid && drag.isFurniture) {
@@ -388,8 +325,6 @@
       this.grid.occupyCells(col, row, def.gridW, def.gridH, def.id);
 
       var furn = new FurnitureObject(this, def, col, row, this.grid);
-      this.gridLayer.add(furn.container);
-      this.gridLayer.sort('depth');
       this.placedFurnitures[def.id] = furn;
       this._setupFurnitureTap(furn);
       this.inventory.refreshItems();
@@ -410,8 +345,6 @@
           item.placedOnFurniture = furnObj;
           item.furnitureOriginKey = originKey;
           furnObj.attachItem(item);
-          this.gridLayer.add(item.container);
-          this.gridLayer.sort('depth');
           this.placedItems.push(item);
           this._setupItemTap(item);
         }
@@ -425,8 +358,6 @@
         floorItem.setPosition(pos.x, pos.y - 20);
         floorItem.floorCol = col;
         floorItem.floorRow = row;
-        this.gridLayer.add(floorItem.container);
-        this.gridLayer.sort('depth');
         this.floorItems.push(floorItem);
         this._setupFloorItemTap(floorItem);
 
@@ -448,7 +379,6 @@
             type: 'furniture', obj: furn,
             startX: pointer.x, startY: pointer.y
           };
-          scene._isPanning = false;
         }
       });
     },
@@ -461,7 +391,6 @@
             type: 'item', obj: item,
             startX: pointer.x, startY: pointer.y
           };
-          scene._isPanning = false;
         }
       });
     },
@@ -474,7 +403,6 @@
             type: 'floorItem', obj: floorItem,
             startX: pointer.x, startY: pointer.y
           };
-          scene._isPanning = false;
         }
       });
     },
@@ -509,46 +437,6 @@
       if (idx !== -1) this.floorItems.splice(idx, 1);
       floorItem.destroy();
       this.inventory.refreshItems();
-    },
-
-    // --- Pinch-to-zoom (update loop) ---
-
-    update: function () {
-      if (this.activeDrag) return;
-
-      var pointer1 = this.input.pointer1;
-      var pointer2 = this.input.pointer2;
-
-      if (pointer1 && pointer2 && pointer1.isDown && pointer2.isDown) {
-        // Cancel any pending grid drag — user is pinching, not tapping
-        if (this._pendingGridDrag) this._pendingGridDrag = null;
-
-        var dist = Phaser.Math.Distance.Between(
-          pointer1.x, pointer1.y, pointer2.x, pointer2.y
-        );
-
-        if (this._lastPinchDist > 0) {
-          var ratio = dist / this._lastPinchDist;
-          this._applyZoom(ratio);
-        }
-
-        this._lastPinchDist = dist;
-        this._isPinching = true;
-        this._isPanning = false;
-      } else {
-        if (this._isPinching) {
-          this._isPinching = false;
-        }
-        this._lastPinchDist = 0;
-      }
-    },
-
-    _clampPan: function () {
-      var basePan = 80;
-      var maxPanX = basePan + (this.zoomLevel - 1) * GRID_AREA_RIGHT * 0.5;
-      var maxPanY = basePan + (this.zoomLevel - 1) * (H - HEADER_H) * 0.5;
-      this.gridLayer.x = Phaser.Math.Clamp(this.gridLayer.x, -maxPanX, maxPanX);
-      this.gridLayer.y = Phaser.Math.Clamp(this.gridLayer.y, -maxPanY, maxPanY);
     },
 
     shutdown: function () {

@@ -17,17 +17,12 @@
 
     this.container = scene.add.container(pos.x, pos.y).setDepth(10 + row + col);
 
-    // Background highlight for the furniture area
     var hw = grid.tileW * def.gridW / 2;
     var hh = grid.tileH * def.gridH / 2;
-    this.bgGfx = scene.add.graphics();
-    this.bgGfx.fillStyle(0xc4a46d, 0.35);
-    this.bgGfx.fillRoundedRect(-hw, -hh - 8, hw * 2, hh * 2 + 16, 12);
-    this.container.add(this.bgGfx);
 
-    // Sprite from atlas
-    var spriteScale = def.gridW >= 2 ? 0.60 : 0.50;
-    this.sprite = scene.add.image(0, -12, 'item_' + def.id).setScale(spriteScale);
+    // Sprite
+    var spriteScale = def.gridW >= 2 ? 0.90 : 0.50;
+    this.sprite = scene.add.image(-20, -30, 'item_' + def.id).setScale(spriteScale);
     this.container.add(this.sprite);
 
     // Label
