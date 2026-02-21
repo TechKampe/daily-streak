@@ -6,8 +6,8 @@
     evaluate: function (state) {
       var result = { score: 0, failedRule: null, failMessage: '', successes: [] };
 
-      // ---- Rule 1: Main furniture placed (pegboard, mesa, estantería, contenedor) ----
-      var mainFurniture = ['pegboard', 'mesa', 'estanteria', 'contenedor'];
+      // ---- Rule 1: Main furniture placed (tablero, mesa, estantería, contenedor) ----
+      var mainFurniture = ['tablero', 'mesa', 'estanteria', 'contenedor'];
       var placed = state.getPlacedFurnitureIds();
       for (var i = 0; i < mainFurniture.length; i++) {
         if (placed.indexOf(mainFurniture[i]) === -1) {

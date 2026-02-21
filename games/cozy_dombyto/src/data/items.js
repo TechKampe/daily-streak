@@ -3,7 +3,7 @@
 
   window.ITEMS_DATA = {
     furniture: [
-      { id: 'pegboard',   emoji: '🔲', label: 'Pegboard',      gridW: 2, gridH: 1, accepts: ['herramienta'], required: true },
+      { id: 'tablero',    emoji: '🔲', label: 'Tablero',        gridW: 2, gridH: 1, accepts: ['herramienta'], required: true },
       { id: 'mesa',       emoji: '🪑', label: 'Mesa',           gridW: 2, gridH: 2, accepts: ['herramienta'], required: true },
       { id: 'estanteria', emoji: '🗄️', label: 'Estantería',    gridW: 1, gridH: 2, accepts: ['material'],    required: true },
       { id: 'contenedor', emoji: '🗑️', label: 'Contenedor',    gridW: 1, gridH: 1, accepts: ['residuo'],     required: true },
@@ -12,14 +12,14 @@
     ],
 
     herramientas: [
-      { id: 'destornillador', emoji: '🪛', label: 'Destornillador', category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['pegboard', 'mesa'] },
-      { id: 'alicates',      emoji: '🔧', label: 'Alicates',       category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['pegboard', 'mesa'] },
-      { id: 'pelacables',    emoji: '✂️', label: 'Pelacables',     category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['pegboard', 'mesa'] },
-      { id: 'multimetro',    emoji: '📟', label: 'Multímetro',     category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['pegboard', 'mesa'] },
-      { id: 'tijera',        emoji: '✂️', label: 'Tijera eléctr.', category: 'herramienta', requiredByYaiza: false, correctFurniture: ['pegboard', 'mesa'] },
-      { id: 'llave',         emoji: '🔩', label: 'Llave inglesa',  category: 'herramienta', requiredByYaiza: false, correctFurniture: ['pegboard', 'mesa'] },
-      { id: 'taladro',       emoji: '🔨', label: 'Taladro',        category: 'herramienta', requiredByYaiza: false, correctFurniture: ['pegboard', 'mesa'] },
-      { id: 'nivel_laser',   emoji: '📐', label: 'Nivel láser',    category: 'herramienta', requiredByYaiza: false, correctFurniture: ['pegboard', 'mesa'] }
+      { id: 'destornillador', emoji: '🪛', label: 'Destornillador', category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero', 'mesa'] },
+      { id: 'alicates',      emoji: '🔧', label: 'Alicates',       category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero', 'mesa'] },
+      { id: 'pelacables',    emoji: '✂️', label: 'Pelacables',     category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero', 'mesa'] },
+      { id: 'multimetro',    emoji: '📟', label: 'Multímetro',     category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero', 'mesa'] },
+      { id: 'tijera',        emoji: '✂️', label: 'Tijera eléctr.', category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
+      { id: 'llave',         emoji: '🔩', label: 'Llave inglesa',  category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
+      { id: 'taladro',       emoji: '🔨', label: 'Taladro',        category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
+      { id: 'nivel_laser',   emoji: '📐', label: 'Nivel láser',    category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] }
     ],
 
     material: [
@@ -66,7 +66,7 @@
   window.RULES_DATA = {
     rule1: {
       messages: {
-        pegboard:   '¡No tengo dónde colgar las herramientas! ¡Falta el pegboard!',
+        tablero:    '¡No tengo dónde colgar las herramientas! ¡Falta el tablero!',
         mesa:       '¡No tengo ni una mesa! ¿Dónde preparo la bolsa?',
         estanteria: '¡No hay estantería! ¿Dónde guardo el material?',
         contenedor: '¡No hay contenedor de residuos! ¡Esto es un desastre!'
