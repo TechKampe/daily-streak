@@ -1,8 +1,8 @@
 // Cozy Dombyto — Isometric grid 6×8
 (function () {
 
-  var TILE_W = 96;
-  var TILE_H = 48;
+  var TILE_W = 192;
+  var TILE_H = 96;
   var COLS = 6;
   var ROWS = 8;
 
@@ -12,7 +12,7 @@
   var RIGHT_COLOR = 0xa6845e;  // darker wood shadow
   var STROKE_COLOR = 0x8b7355; // wood grain outline
   var HIGHLIGHT_COLOR = 0x5b8c5a; // green placement highlight
-  var DEPTH = 6; // tile depth in pixels for 3D effect
+  var DEPTH = 12; // tile depth in pixels for 3D effect
 
   window.IsometricGrid = function (scene, originX, originY) {
     this.scene = scene;
@@ -136,7 +136,7 @@
     g.fillPath();
 
     // Stroke
-    g.lineStyle(1, stroke, 0.5);
+    g.lineStyle(2, stroke, 0.5);
     g.beginPath();
     g.moveTo(cx, cy - hh);
     g.lineTo(cx + hw, cy);
@@ -179,7 +179,7 @@
     g.lineTo(cx - hw, cy);
     g.closePath();
     g.fillPath();
-    g.lineStyle(2, color, 0.8);
+    g.lineStyle(4, color, 0.8);
     g.strokePath();
   };
 

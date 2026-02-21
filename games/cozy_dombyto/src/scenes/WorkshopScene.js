@@ -1,11 +1,11 @@
 // Cozy Dombyto — Core gameplay scene (landscape layout + pinch zoom + pan)
 (function () {
 
-  var W = 932, H = 430;
-  var HEADER_H = 44;
-  var INVENTORY_W = 200;
+  var W = 1864, H = 860;
+  var HEADER_H = 88;
+  var INVENTORY_W = 400;
   var GRID_AREA_RIGHT = W - INVENTORY_W;
-  var GRID_DRAG_THRESHOLD = 10;
+  var GRID_DRAG_THRESHOLD = 20;
 
   window.WorkshopScene = new Phaser.Class({
     Extends: Phaser.Scene,
@@ -54,14 +54,14 @@
         ? '📞 ¡Yaiza necesita a Dombyto!'
         : '🔄 Intento #' + roundNum + ' — ¡Corrige!';
 
-      this.add.text(14, HEADER_H / 2, msg, {
-        fontSize: '13px', fontFamily: '"Baloo 2", cursive', color: '#ffffff'
+      this.add.text(28, HEADER_H / 2, msg, {
+        fontSize: '26px', fontFamily: '"Baloo 2", cursive', color: '#ffffff'
       }).setOrigin(0, 0.5).setDepth(201);
 
-      var btn = this.add.text(W - INVENTORY_W - 20, HEADER_H / 2, '▶️ ¡Sal!', {
-        fontSize: '14px', fontFamily: '"Baloo 2", cursive',
+      var btn = this.add.text(W - INVENTORY_W - 40, HEADER_H / 2, '▶️ ¡Sal!', {
+        fontSize: '28px', fontFamily: '"Baloo 2", cursive',
         backgroundColor: '#d9534f', color: '#ffffff',
-        padding: { x: 12, y: 6 }
+        padding: { x: 24, y: 12 }
       }).setOrigin(1, 0.5).setDepth(201).setInteractive({ useHandCursor: true });
 
       btn.on('pointerdown', function () {
@@ -83,8 +83,8 @@
       var areaH = H - HEADER_H;
 
       var originX = areaW / 2 + (gridLeftExtent - gridRightExtent) / 2;
-      // Center vertically + nudge down 15px
-      var originY = HEADER_H + (areaH - gridTotalH) / 2 + 15;
+      // Center vertically + nudge down 30px
+      var originY = HEADER_H + (areaH - gridTotalH) / 2 + 30;
 
       this.grid = new IsometricGrid(this, originX, originY);
 
@@ -141,7 +141,7 @@
         if (!fiDef) continue;
         var floorItem = new ItemObject(this, fiDef);
         var pos = this.grid.cellToScreen(fi.col, fi.row);
-        floorItem.setPosition(pos.x, pos.y - 10);
+        floorItem.setPosition(pos.x, pos.y - 20);
         floorItem.floorCol = fi.col;
         floorItem.floorRow = fi.row;
         this.gridLayer.add(floorItem.container);
@@ -214,7 +214,7 @@
       this._isPanning = false;
       var isFurniture = def.gridW !== undefined;
 
-      var ghostScale = isFurniture ? 0.28 : 0.22;
+      var ghostScale = isFurniture ? 0.56 : 0.44;
       var ghost = this.add.image(pointer.x, pointer.y, 'item_' + def.id)
         .setScale(ghostScale).setDepth(500).setAlpha(0.85);
 
@@ -230,7 +230,7 @@
       var def = item.def;
       var screenPos = this._gridToScreenCoords(item.container.x, item.container.y);
       var ghost = this.add.image(screenPos.x, screenPos.y, 'item_' + def.id)
-        .setScale(0.22).setDepth(500).setAlpha(0.85);
+        .setScale(0.44).setDepth(500).setAlpha(0.85);
 
       if (item.placedOnFurniture) {
         item.placedOnFurniture.detachItem(item);
@@ -255,7 +255,7 @@
       var def = floorItem.def;
       var screenPos = this._gridToScreenCoords(floorItem.container.x, floorItem.container.y);
       var ghost = this.add.image(screenPos.x, screenPos.y, 'item_' + def.id)
-        .setScale(0.22).setDepth(500).setAlpha(0.85);
+        .setScale(0.44).setDepth(500).setAlpha(0.85);
 
       window.GameState.removeFloorItem(def.id, floorItem.floorCol, floorItem.floorRow);
 
@@ -275,7 +275,7 @@
       var def = furn.def;
       var screenPos = this._gridToScreenCoords(furn.container.x, furn.container.y);
       var ghost = this.add.image(screenPos.x, screenPos.y, 'item_' + def.id)
-        .setScale(0.28).setDepth(500).setAlpha(0.85);
+        .setScale(0.56).setDepth(500).setAlpha(0.85);
 
       window.GameState.returnFurniture(def, furn.col, furn.row);
       this.grid.freeCells(furn.col, furn.row, def.gridW, def.gridH);
@@ -422,7 +422,7 @@
 
         var floorItem = new ItemObject(this, def);
         var pos = this.grid.cellToScreen(col, row);
-        floorItem.setPosition(pos.x, pos.y - 10);
+        floorItem.setPosition(pos.x, pos.y - 20);
         floorItem.floorCol = col;
         floorItem.floorRow = row;
         this.gridLayer.add(floorItem.container);
@@ -544,7 +544,7 @@
     },
 
     _clampPan: function () {
-      var basePan = 40; // allow small pan even at 1x for feel
+      var basePan = 80;
       var maxPanX = basePan + (this.zoomLevel - 1) * GRID_AREA_RIGHT * 0.5;
       var maxPanY = basePan + (this.zoomLevel - 1) * (H - HEADER_H) * 0.5;
       this.gridLayer.x = Phaser.Math.Clamp(this.gridLayer.x, -maxPanX, maxPanX);

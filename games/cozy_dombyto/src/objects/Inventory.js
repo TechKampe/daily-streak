@@ -1,13 +1,13 @@
 // Cozy Dombyto — Inventory panel (right side, compact 2×4 grid)
 (function () {
 
-  var TAB_H = 32;
-  var ITEM_SIZE = 36;
+  var TAB_H = 64;
+  var ITEM_SIZE = 72;
   var ITEM_COLS = 2;
-  var ITEM_CELL_W = 90;
-  var ITEM_CELL_H = 80;
-  var SCROLL_PAD = 6;
-  var DRAG_THRESHOLD = 12;
+  var ITEM_CELL_W = 180;
+  var ITEM_CELL_H = 160;
+  var SCROLL_PAD = 12;
+  var DRAG_THRESHOLD = 24;
   var PANEL_COLOR = 0xe8dcc8;
   var TAB_ACTIVE = 0x5b8c5a;
   var TAB_INACTIVE = 0xc4b8a4;
@@ -50,7 +50,7 @@
     ).setDepth(99);
 
     this.leftBorder = this.scene.add.rectangle(
-      this.px, this.py + this.ph / 2, 2, this.ph, 0x5b8c5a, 0.6
+      this.px, this.py + this.ph / 2, 4, this.ph, 0x5b8c5a, 0.6
     ).setDepth(99);
   };
 
@@ -68,15 +68,15 @@
         var tc = index % colCount;
         var tr = Math.floor(index / colCount);
         var tx = self.px + tc * tabCellW + tabCellW / 2;
-        var ty = self.py + tr * tabRowH + tabRowH / 2 + 3;
+        var ty = self.py + tr * tabRowH + tabRowH / 2 + 6;
 
-        var bg = self.scene.add.rectangle(tx, ty, tabCellW - 4, tabRowH - 4, TAB_INACTIVE, 1)
+        var bg = self.scene.add.rectangle(tx, ty, tabCellW - 8, tabRowH - 8, TAB_INACTIVE, 1)
           .setInteractive({ useHandCursor: true })
           .setDepth(101);
-        bg.setStrokeStyle(1, 0x8b7355, 0.4);
+        bg.setStrokeStyle(2, 0x8b7355, 0.4);
 
         var label = self.scene.add.text(tx, ty, tab.label, {
-          fontSize: '10px', fontFamily: '"Baloo 2", cursive', color: '#3d2b1f',
+          fontSize: '20px', fontFamily: '"Baloo 2", cursive', color: '#3d2b1f',
           align: 'center'
         }).setOrigin(0.5, 0.5).setDepth(102);
 
@@ -89,7 +89,7 @@
       })(tabs[i], i);
     }
 
-    this._tabTotalH = rowCount * tabRowH + 6;
+    this._tabTotalH = rowCount * tabRowH + 12;
     this._updateTabHighlights();
   };
 
@@ -110,7 +110,7 @@
 
   proto._buildScrollArea = function () {
     this.scrollY = this.py + this._tabTotalH;
-    this.scrollH = this.ph - this._tabTotalH - 4;
+    this.scrollH = this.ph - this._tabTotalH - 8;
 
     var maskGfx = this.scene.make.graphics({ add: false });
     maskGfx.fillRect(this.px, this.scrollY, this.pw, this.scrollH);
@@ -199,11 +199,11 @@
 
       var ct = this.scene.add.container(baseX, baseY).setDepth(103);
 
-      var emoji = this.scene.add.image(0, -10, 'item_' + def.id).setScale(0.25);
+      var emoji = this.scene.add.image(0, -20, 'item_' + def.id).setScale(0.50);
 
-      var label = this.scene.add.text(0, ITEM_SIZE / 2 - 2, def.label, {
-        fontSize: '8px', fontFamily: '"Baloo 2", cursive', color: '#5a4a3a',
-        align: 'center', wordWrap: { width: ITEM_CELL_W - 6 }
+      var label = this.scene.add.text(0, ITEM_SIZE / 2 - 4, def.label, {
+        fontSize: '16px', fontFamily: '"Baloo 2", cursive', color: '#5a4a3a',
+        align: 'center', wordWrap: { width: ITEM_CELL_W - 12 }
       }).setOrigin(0.5, 0);
 
       ct.add([emoji, label]);

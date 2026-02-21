@@ -4,20 +4,21 @@
 
   const config = {
     type: Phaser.AUTO,
-    width: 932,
-    height: 430,
+    width: 1864,
+    height: 860,
     backgroundColor: '#f5e6d3',
     parent: 'game-container',
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
-      width: 932,
-      height: 430
+      width: 1864,
+      height: 860
     },
     scene: [IntroScene, WorkshopScene, EvalScene, VictoryScene],
     render: {
       pixelArt: false,
-      roundPixels: true
+      roundPixels: false,
+      antialias: true
     },
     input: {
       activePointers: 2

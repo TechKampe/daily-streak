@@ -22,26 +22,26 @@
     var hh = grid.tileH * def.gridH / 2;
     this.bgGfx = scene.add.graphics();
     this.bgGfx.fillStyle(0xc4a46d, 0.35);
-    this.bgGfx.fillRoundedRect(-hw, -hh - 4, hw * 2, hh * 2 + 8, 6);
+    this.bgGfx.fillRoundedRect(-hw, -hh - 8, hw * 2, hh * 2 + 16, 12);
     this.container.add(this.bgGfx);
 
     // Sprite from atlas
-    var spriteScale = def.gridW >= 2 ? 0.30 : 0.25;
-    this.sprite = scene.add.image(0, -6, 'item_' + def.id).setScale(spriteScale);
+    var spriteScale = def.gridW >= 2 ? 0.60 : 0.50;
+    this.sprite = scene.add.image(0, -12, 'item_' + def.id).setScale(spriteScale);
     this.container.add(this.sprite);
 
     // Label
-    this.label = scene.add.text(0, 18, def.label, {
-      fontSize: '9px', fontFamily: '"Baloo 2", cursive',
+    this.label = scene.add.text(0, 36, def.label, {
+      fontSize: '18px', fontFamily: '"Baloo 2", cursive',
       color: '#5a4a3a', backgroundColor: 'rgba(245,230,211,0.9)',
-      padding: { x: 4, y: 2 }
+      padding: { x: 8, y: 4 }
     }).setOrigin(0.5, 0);
     this.container.add(this.label);
 
     // Make interactive for tap-to-remove
-    this.container.setSize(hw * 2 + 10, hh * 2 + 30);
+    this.container.setSize(hw * 2 + 20, hh * 2 + 60);
     this.container.setInteractive(
-      new Phaser.Geom.Rectangle(-(hw + 5), -(hh + 10), hw * 2 + 10, hh * 2 + 30),
+      new Phaser.Geom.Rectangle(-(hw + 10), -(hh + 20), hw * 2 + 20, hh * 2 + 60),
       Phaser.Geom.Rectangle.Contains
     );
   };
@@ -61,13 +61,13 @@
 
   proto._layoutItems = function () {
     var count = this.attachedItems.length;
-    var spacing = Math.min(24, 60 / Math.max(count, 1));
+    var spacing = Math.min(48, 120 / Math.max(count, 1));
     var startX = -(count - 1) * spacing / 2;
 
     for (var i = 0; i < count; i++) {
       var item = this.attachedItems[i];
       var tx = startX + i * spacing;
-      var ty = -28 - (i % 2) * 10;
+      var ty = -56 - (i % 2) * 20;
       item.container.setPosition(this.container.x + tx, this.container.y + ty);
     }
   };

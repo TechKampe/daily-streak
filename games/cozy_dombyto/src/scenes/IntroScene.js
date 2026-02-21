@@ -1,7 +1,7 @@
 // Cozy Dombyto — Intro scene (Yaiza's call) — landscape
 (function () {
 
-  var W = 932, H = 430;
+  var W = 1864, H = 860;
 
   window.IntroScene = new Phaser.Class({
     Extends: Phaser.Scene,
@@ -11,12 +11,12 @@
     },
 
     preload: function () {
-      this.load.image('dombyto_still', 'assets/character/dombyto_still.png');
-      this.load.image('dombyto_happy', 'assets/character/dombyto_happy.png');
-      this.load.image('dombyto_worried', 'assets/character/dombyto_worried.png');
-      this.load.image('dombyto_celebrating', 'assets/character/dombyto_celebrating.png');
-      this.load.image('yaiza_worried', 'assets/character/yaiza_worried.png');
-      this.load.image('yaiza_celebrating', 'assets/character/yaiza_celebrating.png');
+      this.load.image('dombyto_still', 'assets/characters/dombyto_still.png');
+      this.load.image('dombyto_happy', 'assets/characters/dombyto_happy.png');
+      this.load.image('dombyto_worried', 'assets/characters/dombyto_worried.png');
+      this.load.image('dombyto_celebrating', 'assets/characters/dombyto_celebrating.png');
+      this.load.image('yaiza_worried', 'assets/characters/yaiza_worried.png');
+      this.load.image('yaiza_happy', 'assets/characters/yaiza_happy.png');
 
       // Item sprites
       var allItems = window.ITEMS_DATA;
@@ -36,7 +36,7 @@
         // Quick skip on repeat rounds
         var skipBg = this.add.rectangle(W / 2, H / 2, W, H, 0xf5e6d3);
         var skipText = this.add.text(W / 2, H / 2, '🔄 ¡Inténtalo de nuevo!', {
-          fontSize: '22px', fontFamily: '"Baloo 2", cursive',
+          fontSize: '44px', fontFamily: '"Baloo 2", cursive',
           color: '#e8a435', fontStyle: 'bold'
         }).setOrigin(0.5).setAlpha(0);
 
@@ -59,8 +59,8 @@
       this.add.rectangle(W / 2, H / 2, W, H, 0xf5e6d3);
 
       // Title
-      this.add.text(W / 2, 30, '📞 Llamada entrante...', {
-        fontSize: '20px', fontFamily: '"Baloo 2", cursive',
+      this.add.text(W / 2, 60, '📞 Llamada entrante...', {
+        fontSize: '40px', fontFamily: '"Baloo 2", cursive',
         color: '#e8a435', fontStyle: 'bold'
       }).setOrigin(0.5);
 
@@ -68,38 +68,38 @@
       var leftX = W * 0.25;
 
       // Yaiza
-      this.add.image(leftX - 60, H * 0.28, 'yaiza_worried').setOrigin(0.5).setScale(0.28);
-      this.add.text(leftX - 60, H * 0.40, 'Yaiza', {
-        fontSize: '13px', fontFamily: '"Baloo 2", cursive',
+      this.add.image(leftX - 120, H * 0.28, 'yaiza_worried').setOrigin(0.5).setScale(0.56);
+      this.add.text(leftX - 120, H * 0.40, 'Yaiza', {
+        fontSize: '26px', fontFamily: '"Baloo 2", cursive',
         color: '#5a4a3a', fontStyle: 'bold'
       }).setOrigin(0.5);
 
       this._createBubble(
-        leftX + 80, H * 0.28,
+        leftX + 160, H * 0.28,
         '¡Dombyto! ¡Se ha ido la luz\ny es mi cumpleaños!\n¡Ven rápido!',
-        240
+        480
       );
 
       // Dombyto
-      this.add.image(leftX + 180, H * 0.65, 'dombyto_worried').setOrigin(0.5).setScale(0.28);
-      this.add.text(leftX + 180, H * 0.77, 'Dombyto', {
-        fontSize: '13px', fontFamily: '"Baloo 2", cursive',
+      this.add.image(leftX + 360, H * 0.65, 'dombyto_worried').setOrigin(0.5).setScale(0.56);
+      this.add.text(leftX + 360, H * 0.77, 'Dombyto', {
+        fontSize: '26px', fontFamily: '"Baloo 2", cursive',
         color: '#5a4a3a', fontStyle: 'bold'
       }).setOrigin(0.5);
 
       this._createBubble(
-        leftX + 20, H * 0.65,
+        leftX + 40, H * 0.65,
         '¡30 segundos y estoy ahí!\n...si encuentro mis cosas.',
-        220
+        440
       );
 
       // --- Right column: Instructions + CTA ---
       var rightX = W * 0.7;
 
-      this.add.text(rightX, H * 0.18, '🏠', { fontSize: '44px' }).setOrigin(0.5);
+      this.add.text(rightX, H * 0.18, '🏠', { fontSize: '88px' }).setOrigin(0.5);
       this.add.text(rightX, H * 0.30, 'El taller de Dombyto está\nhecho un desastre.\n¡Ayúdale a organizarlo!', {
-        fontSize: '14px', fontFamily: '"Baloo 2", cursive',
-        color: '#7a6a5a', align: 'center', lineSpacing: 4
+        fontSize: '28px', fontFamily: '"Baloo 2", cursive',
+        color: '#7a6a5a', align: 'center', lineSpacing: 8
       }).setOrigin(0.5);
 
       var instrY = H * 0.52;
@@ -109,17 +109,17 @@
         '▶️  Pulsa "¡Sal!" cuando esté listo'
       ];
       for (var i = 0; i < instructions.length; i++) {
-        this.add.text(rightX, instrY + i * 26, instructions[i], {
-          fontSize: '12px', fontFamily: '"Baloo 2", cursive',
+        this.add.text(rightX, instrY + i * 52, instructions[i], {
+          fontSize: '24px', fontFamily: '"Baloo 2", cursive',
           color: '#8a7a6a'
         }).setOrigin(0.5);
       }
 
       // CTA Button
       var btn = this.add.text(rightX, H * 0.85, '🏠 Organizar taller', {
-        fontSize: '20px', fontFamily: '"Baloo 2", cursive',
+        fontSize: '40px', fontFamily: '"Baloo 2", cursive',
         backgroundColor: '#5b8c5a', color: '#ffffff',
-        padding: { x: 28, y: 12 }
+        padding: { x: 56, y: 24 }
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
       this.tweens.add({
@@ -140,14 +140,14 @@
     _createBubble: function (x, y, text, width) {
       var bg = this.add.graphics();
       bg.fillStyle(0xfaf6f0, 1);
-      bg.fillRoundedRect(x - width / 2, y - 36, width, 72, 12);
-      bg.lineStyle(2, 0xc4b8a4, 1);
-      bg.strokeRoundedRect(x - width / 2, y - 36, width, 72, 12);
+      bg.fillRoundedRect(x - width / 2, y - 72, width, 144, 24);
+      bg.lineStyle(4, 0xc4b8a4, 1);
+      bg.strokeRoundedRect(x - width / 2, y - 72, width, 144, 24);
 
       this.add.text(x, y, text, {
-        fontSize: '12px', fontFamily: '"Baloo 2", cursive',
-        color: '#3d2b1f', wordWrap: { width: width - 20 },
-        align: 'center', lineSpacing: 2
+        fontSize: '24px', fontFamily: '"Baloo 2", cursive',
+        color: '#3d2b1f', wordWrap: { width: width - 40 },
+        align: 'center', lineSpacing: 4
       }).setOrigin(0.5);
     }
   });
