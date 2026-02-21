@@ -43,11 +43,11 @@
     },
 
     _buildBackground: function () {
-      this.add.rectangle(W / 2, H / 2, W, H, 0xfff5eb);
+      this.add.rectangle(W / 2, H / 2, W, H, 0xf5e6d3);
     },
 
     _buildHeader: function () {
-      this.add.rectangle(W / 2, HEADER_H / 2, W, HEADER_H, 0xe8917a, 0.95).setDepth(200);
+      this.add.rectangle(W / 2, HEADER_H / 2, W, HEADER_H, 0x5b8c5a, 0.95).setDepth(200);
 
       var roundNum = window.GameState.roundNumber;
       var msg = roundNum <= 1
@@ -60,7 +60,7 @@
 
       var btn = this.add.text(W - INVENTORY_W - 20, HEADER_H / 2, '▶️ ¡Sal!', {
         fontSize: '14px', fontFamily: '"Baloo 2", cursive',
-        backgroundColor: '#c0392b', color: '#ffffff',
+        backgroundColor: '#d9534f', color: '#ffffff',
         padding: { x: 12, y: 6 }
       }).setOrigin(1, 0.5).setDepth(201).setInteractive({ useHandCursor: true });
 
@@ -214,10 +214,9 @@
       this._isPanning = false;
       var isFurniture = def.gridW !== undefined;
 
-      var ghost = this.add.text(pointer.x, pointer.y, def.emoji, {
-        fontSize: isFurniture ? '44px' : '32px',
-        padding: { x: 4, y: 4 }
-      }).setOrigin(0.5, 0.5).setDepth(500).setAlpha(0.85);
+      var ghostScale = isFurniture ? 0.28 : 0.22;
+      var ghost = this.add.image(pointer.x, pointer.y, 'item_' + def.id)
+        .setScale(ghostScale).setDepth(500).setAlpha(0.85);
 
       this.activeDrag = { def: def, ghost: ghost, isFurniture: isFurniture };
     },
@@ -230,9 +229,8 @@
 
       var def = item.def;
       var screenPos = this._gridToScreenCoords(item.container.x, item.container.y);
-      var ghost = this.add.text(screenPos.x, screenPos.y, def.emoji, {
-        fontSize: '32px', padding: { x: 4, y: 4 }
-      }).setOrigin(0.5, 0.5).setDepth(500).setAlpha(0.85);
+      var ghost = this.add.image(screenPos.x, screenPos.y, 'item_' + def.id)
+        .setScale(0.22).setDepth(500).setAlpha(0.85);
 
       if (item.placedOnFurniture) {
         item.placedOnFurniture.detachItem(item);
@@ -256,9 +254,8 @@
 
       var def = floorItem.def;
       var screenPos = this._gridToScreenCoords(floorItem.container.x, floorItem.container.y);
-      var ghost = this.add.text(screenPos.x, screenPos.y, def.emoji, {
-        fontSize: '32px', padding: { x: 4, y: 4 }
-      }).setOrigin(0.5, 0.5).setDepth(500).setAlpha(0.85);
+      var ghost = this.add.image(screenPos.x, screenPos.y, 'item_' + def.id)
+        .setScale(0.22).setDepth(500).setAlpha(0.85);
 
       window.GameState.removeFloorItem(def.id, floorItem.floorCol, floorItem.floorRow);
 
@@ -277,9 +274,8 @@
 
       var def = furn.def;
       var screenPos = this._gridToScreenCoords(furn.container.x, furn.container.y);
-      var ghost = this.add.text(screenPos.x, screenPos.y, def.emoji, {
-        fontSize: '44px', padding: { x: 4, y: 4 }
-      }).setOrigin(0.5, 0.5).setDepth(500).setAlpha(0.85);
+      var ghost = this.add.image(screenPos.x, screenPos.y, 'item_' + def.id)
+        .setScale(0.28).setDepth(500).setAlpha(0.85);
 
       window.GameState.returnFurniture(def, furn.col, furn.row);
       this.grid.freeCells(furn.col, furn.row, def.gridW, def.gridH);

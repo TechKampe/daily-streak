@@ -8,9 +8,9 @@
   var ITEM_CELL_H = 80;
   var SCROLL_PAD = 6;
   var DRAG_THRESHOLD = 12;
-  var PANEL_COLOR = 0xf5e1d0;
-  var TAB_ACTIVE = 0xe8917a;
-  var TAB_INACTIVE = 0xd4a99a;
+  var PANEL_COLOR = 0xe8dcc8;
+  var TAB_ACTIVE = 0x5b8c5a;
+  var TAB_INACTIVE = 0xc4b8a4;
 
   window.Inventory = function (scene, x, y, width, height) {
     this.scene = scene;
@@ -50,7 +50,7 @@
     ).setDepth(99);
 
     this.leftBorder = this.scene.add.rectangle(
-      this.px, this.py + this.ph / 2, 2, this.ph, 0xe8917a, 0.6
+      this.px, this.py + this.ph / 2, 2, this.ph, 0x5b8c5a, 0.6
     ).setDepth(99);
   };
 
@@ -73,7 +73,7 @@
         var bg = self.scene.add.rectangle(tx, ty, tabCellW - 4, tabRowH - 4, TAB_INACTIVE, 1)
           .setInteractive({ useHandCursor: true })
           .setDepth(101);
-        bg.setStrokeStyle(1, 0xc48878, 0.4);
+        bg.setStrokeStyle(1, 0x8b7355, 0.4);
 
         var label = self.scene.add.text(tx, ty, tab.label, {
           fontSize: '10px', fontFamily: '"Baloo 2", cursive', color: '#3d2b1f',
@@ -199,13 +199,10 @@
 
       var ct = this.scene.add.container(baseX, baseY).setDepth(103);
 
-      var emoji = this.scene.add.text(0, -10, def.emoji, {
-        fontSize: ITEM_SIZE + 'px',
-        padding: { x: 2, y: 2 }
-      }).setOrigin(0.5, 0.5);
+      var emoji = this.scene.add.image(0, -10, 'item_' + def.id).setScale(0.25);
 
       var label = this.scene.add.text(0, ITEM_SIZE / 2 - 2, def.label, {
-        fontSize: '8px', fontFamily: '"Baloo 2", cursive', color: '#6b4c3b',
+        fontSize: '8px', fontFamily: '"Baloo 2", cursive', color: '#5a4a3a',
         align: 'center', wordWrap: { width: ITEM_CELL_W - 6 }
       }).setOrigin(0.5, 0);
 

@@ -9,11 +9,8 @@
 
     this.container = scene.add.container(0, 0).setDepth(50);
 
-    this.emoji = scene.add.text(0, 0, def.emoji, {
-      fontSize: '28px',
-      padding: { x: 2, y: 2 }
-    }).setOrigin(0.5, 0.5);
-    this.container.add(this.emoji);
+    this.sprite = scene.add.image(0, 0, 'item_' + def.id).setScale(0.22);
+    this.container.add(this.sprite);
 
     // Make interactive
     this.container.setSize(36, 36);

@@ -6,12 +6,12 @@
   var COLS = 6;
   var ROWS = 8;
 
-  // Colors — warm pink/salmon kawaii palette (from reference)
-  var TOP_COLOR   = 0xf0c4b8;  // warm salmon/pink floor
-  var LEFT_COLOR  = 0xdba99c;  // slightly darker left face
-  var RIGHT_COLOR = 0xcd9688;  // darker right face
-  var STROKE_COLOR = 0xc48878; // subtle pink-brown stroke
-  var HIGHLIGHT_COLOR = 0x888888; // gray hover highlight
+  // Colors — warm wood casual palette (Homescapes-inspired)
+  var TOP_COLOR   = 0xd4b896;  // light hardwood floor
+  var LEFT_COLOR  = 0xb89a78;  // medium wood shadow
+  var RIGHT_COLOR = 0xa6845e;  // darker wood shadow
+  var STROKE_COLOR = 0x8b7355; // wood grain outline
+  var HIGHLIGHT_COLOR = 0x5b8c5a; // green placement highlight
   var DEPTH = 6; // tile depth in pixels for 3D effect
 
   window.IsometricGrid = function (scene, originX, originY) {

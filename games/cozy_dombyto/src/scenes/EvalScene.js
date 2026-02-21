@@ -15,22 +15,22 @@
       window.GameState.lastResult = result;
 
       // Warm cream background
-      this.add.rectangle(W / 2, H / 2, W, H, 0xfff5eb);
+      this.add.rectangle(W / 2, H / 2, W, H, 0xf5e6d3);
 
       var isVictory = result.score === 100;
 
       // --- Left side: Dombyto + Score ---
       var leftX = W * 0.3;
 
-      var expr = isVictory ? '🎉' : result.score >= 50 ? '😟' : '😫';
-      this.add.text(leftX, H * 0.22, expr, { fontSize: '72px' }).setOrigin(0.5);
+      var exprKey = isVictory ? 'dombyto_celebrating' : result.score >= 50 ? 'dombyto_worried' : 'dombyto_worried';
+      this.add.image(leftX, H * 0.22, exprKey).setOrigin(0.5).setScale(0.32);
 
       this.add.text(leftX, H * 0.38, 'Dombyto', {
         fontSize: '15px', fontFamily: '"Baloo 2", cursive',
-        color: '#6b4c3b', fontStyle: 'bold'
+        color: '#5a4a3a', fontStyle: 'bold'
       }).setOrigin(0.5);
 
-      var scoreColor = isVictory ? '#2ECC71' : '#e8917a';
+      var scoreColor = isVictory ? '#2ECC71' : '#e8a435';
       this.pctText = this.add.text(leftX, H * 0.58, '0%', {
         fontSize: '64px', fontFamily: '"Baloo 2", cursive',
         color: scoreColor, fontStyle: 'bold'
@@ -48,7 +48,7 @@
 
       this.add.text(leftX, H * 0.72, 'Tu taller estaba al ' + result.score + '%', {
         fontSize: '14px', fontFamily: '"Baloo 2", cursive',
-        color: '#6b4c3b'
+        color: '#5a4a3a'
       }).setOrigin(0.5);
 
       // --- Right side: Results ---
@@ -69,7 +69,7 @@
         this.time.delayedCall(1400, function () {
           this.add.text(rightX, failY, '❌ ' + result.failMessage, {
             fontSize: '14px', fontFamily: '"Baloo 2", cursive',
-            color: '#c0392b', wordWrap: { width: 340 }, align: 'center'
+            color: '#d9534f', wordWrap: { width: 340 }, align: 'center'
           }).setOrigin(0.5, 0);
 
           this._showYaizaSad(rightX, failY + 50);
@@ -82,11 +82,11 @@
     },
 
     _showYaizaSad: function (cx, startY) {
-      this.add.text(cx, startY + 20, '😢', { fontSize: '48px' }).setOrigin(0.5);
+      this.add.image(cx, startY + 20, 'yaiza_worried').setOrigin(0.5).setScale(0.22);
 
       this.add.text(cx, startY + 60, 'Yaiza sigue sin luz en su cumpleaños...\n🎂🕯️', {
         fontSize: '13px', fontFamily: '"Baloo 2", cursive',
-        color: '#8b6c5c', align: 'center', wordWrap: { width: 300 }
+        color: '#7a6a5a', align: 'center', wordWrap: { width: 300 }
       }).setOrigin(0.5, 0);
 
       var round = window.GameState.roundNumber;
@@ -96,14 +96,14 @@
 
       this.add.text(cx, startY + 110, encouragement, {
         fontSize: '12px', fontFamily: '"Baloo 2", cursive',
-        color: '#a0887a', fontStyle: 'italic'
+        color: '#8a7a6a', fontStyle: 'italic'
       }).setOrigin(0.5);
 
       // Retry button
       this.time.delayedCall(800, function () {
         var btn = this.add.text(cx, startY + 150, '🔄 Corregir taller', {
           fontSize: '18px', fontFamily: '"Baloo 2", cursive',
-          backgroundColor: '#e8917a', color: '#ffffff',
+          backgroundColor: '#5b8c5a', color: '#ffffff',
           padding: { x: 24, y: 10 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 

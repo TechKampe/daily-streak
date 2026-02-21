@@ -21,22 +21,19 @@
     var hw = grid.tileW * def.gridW / 2;
     var hh = grid.tileH * def.gridH / 2;
     this.bgGfx = scene.add.graphics();
-    this.bgGfx.fillStyle(0xd4a99a, 0.35);
+    this.bgGfx.fillStyle(0xc4a46d, 0.35);
     this.bgGfx.fillRoundedRect(-hw, -hh - 4, hw * 2, hh * 2 + 8, 6);
     this.container.add(this.bgGfx);
 
-    // Emoji
-    var fontSize = def.gridW >= 2 ? '44px' : '36px';
-    this.emoji = scene.add.text(0, -6, def.emoji, {
-      fontSize: fontSize,
-      padding: { x: 4, y: 4 }
-    }).setOrigin(0.5, 0.5);
-    this.container.add(this.emoji);
+    // Sprite from atlas
+    var spriteScale = def.gridW >= 2 ? 0.30 : 0.25;
+    this.sprite = scene.add.image(0, -6, 'item_' + def.id).setScale(spriteScale);
+    this.container.add(this.sprite);
 
     // Label
     this.label = scene.add.text(0, 18, def.label, {
       fontSize: '9px', fontFamily: '"Baloo 2", cursive',
-      color: '#5a3e28', backgroundColor: 'rgba(255,245,235,0.85)',
+      color: '#5a4a3a', backgroundColor: 'rgba(245,230,211,0.9)',
       padding: { x: 4, y: 2 }
     }).setOrigin(0.5, 0);
     this.container.add(this.label);
