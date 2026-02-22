@@ -6,7 +6,7 @@
   var ITEM_COLS = 2;
   var ITEM_CELL_W = 180;
   var ITEM_CELL_H = 160;
-  var SCROLL_PAD = 12;
+  var SCROLL_PAD = 35;
   var DRAG_THRESHOLD = 24;
   var PANEL_COLOR = 0xf0e6d2;
 
@@ -47,8 +47,12 @@
     var r = 16;
     this.panelGfx = this.scene.add.graphics().setDepth(99);
     var g = this.panelGfx;
-    g.fillStyle(0x5b9bd5, 1);
-    g.fillRoundedRect(this.px + pad, this.py + pad, this.pw - pad * 2, this.ph - pad * 2, r);
+    // Outer leather border
+    g.fillStyle(0xb0623a, 1);
+    g.fillRoundedRect(this.px + pad, this.py, this.pw - pad * 2, this.ph, r);
+    // Stitching line
+    g.lineStyle(2, 0xd4926a, 0.7);
+    g.strokeRoundedRect(this.px + pad + 6, this.py + 6, this.pw - pad * 2 - 12, this.ph - 12, r - 4);
   };
 
   proto._buildTabs = function () {
@@ -68,8 +72,8 @@
 
         // Button image as background — stretch to fit
         var btnImg = self.scene.add.image(cx, cy, 'ui_button').setDepth(101);
-        var scaleX = (tabCellW - 8) / btnImg.width;
-        var scaleY = (tabRowH - 8) / btnImg.height;
+        var scaleX = (tabCellW - 24) / btnImg.width;
+        var scaleY = (tabRowH - 14) / btnImg.height;
         btnImg.setScale(scaleX, scaleY);
         btnImg.setInteractive({ useHandCursor: true });
         btnImg.on('pointerdown', function () {
@@ -116,7 +120,7 @@
     // Inner navy rect — content area below tabs
     var inPad = 12;
     this.contentGfx = this.scene.add.graphics().setDepth(100);
-    this.contentGfx.fillStyle(0x2a3a6a, 1);
+    this.contentGfx.fillStyle(0xf0dcc0, 1);
     this.contentGfx.fillRoundedRect(
       this.px + inPad, this.scrollY,
       this.pw - inPad * 2, this.scrollH,
@@ -210,11 +214,14 @@
 
       var ct = this.scene.add.container(baseX, baseY).setDepth(103);
 
-      var emoji = this.scene.add.image(0, -20, 'item_' + def.id).setScale(0.50);
+      var isFurniture = def.gridW !== undefined;
+      var emojiY = isFurniture ? -10 : -24;
+      var emojiScale = isFurniture ? 0.50 : 0.65;
+      var emoji = this.scene.add.image(0, emojiY, 'item_' + def.id).setScale(emojiScale);
 
       var labelY = def.gridW !== undefined ? ITEM_SIZE / 2 + 16 : ITEM_SIZE / 2 - 4;
       var label = this.scene.add.text(0, labelY, def.label, {
-        fontSize: '16px', fontFamily: '"Baloo 2", cursive', color: '#e8dcc8',
+        fontSize: '24px', fontFamily: '"Baloo 2", cursive', color: '#5a4a3a',
         align: 'center', wordWrap: { width: ITEM_CELL_W - 12 }
       }).setOrigin(0.5, 0);
 

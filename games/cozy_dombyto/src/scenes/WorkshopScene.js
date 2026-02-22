@@ -46,10 +46,10 @@
     _buildHeader: function () {
       // Play button — bottom-left corner using ui_play image
       var btnX = 140, btnY = H - 84;
-      var btnImg = this.add.image(btnX, btnY, 'ui_play').setScale(1.4).setDepth(201)
+      var btnImg = this.add.image(btnX, btnY, 'ui_play').setScale(1.75).setDepth(201)
         .setInteractive({ useHandCursor: true });
       var btnLabel = this.add.text(btnX, btnY, 'Sal a la urgencia', {
-        fontSize: '22px', fontFamily: '"Baloo 2", cursive',
+        fontSize: '28px', fontFamily: '"Baloo 2", cursive',
         color: '#ffffff', fontStyle: 'bold',
         stroke: '#3a1a5a', strokeThickness: 3
       }).setOrigin(0.5, 0.5).setDepth(202);
