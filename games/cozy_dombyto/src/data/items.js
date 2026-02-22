@@ -11,10 +11,10 @@
     ],
 
     herramientas: [
-      { id: 'destornillador', emoji: '🪛', label: 'Destornillador', category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero', 'mesa'] },
-      { id: 'alicates',      emoji: '🔧', label: 'Alicates',       category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero', 'mesa'] },
-      { id: 'pelacables',    emoji: '✂️', label: 'Pelacables',     category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero', 'mesa'] },
-      { id: 'multimetro',    emoji: '📟', label: 'Multímetro',     category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero', 'mesa'] },
+      { id: 'destornillador', emoji: '🪛', label: 'Destornillador', category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero'] },
+      { id: 'alicates',      emoji: '🔧', label: 'Alicates',       category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero'] },
+      { id: 'pelacables',    emoji: '✂️', label: 'Pelacables',     category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['tablero'] },
+      { id: 'multimetro',    emoji: '📟', label: 'Multímetro',     category: 'herramienta', requiredByYaiza: true,  correctFurniture: ['mesa'] },
       { id: 'tijera',        emoji: '✂️', label: 'Tijera eléctr.', category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
       { id: 'llave',         emoji: '🔩', label: 'Llave inglesa',  category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
       { id: 'taladro',       emoji: '🔨', label: 'Taladro',        category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
@@ -66,29 +66,30 @@
   window.RULES_DATA = {
     rule1: {
       messages: {
-        tablero:    '¡No tengo dónde colgar las herramientas! ¡Falta el tablero!',
+        tablero:    '¡No tengo dónde colgar las herramientas! Sin tablero no arranco en 30 segundos.',
         mesa:       '¡No tengo ni una mesa! ¿Dónde preparo la bolsa?',
-        estanteria: '¡No hay estantería! ¿Dónde guardo el material?',
-        contenedor: '¡No hay contenedor de residuos! ¡Esto es un desastre!'
+        estanteria: '¡No hay estantería! ¿Dónde guardo el material? Así pierdo tiempo mañana.',
+        contenedor: '¡No hay contenedor de residuos! ¡Los retales por el suelo son un peligro!'
       }
     },
     rule2: {
       messages: {
-        lampara: '¡No veo nada! ¡La luz no está puesta!'
+        lampara: '¡No veo nada! Sin luz no puedo ni empezar.'
       }
     },
     rule3: {
       messages: {
-        destornillador: '¡El destornillador sigue en la caja sin abrir! No me lo puedo llevar.',
-        alicates:       '¡Los alicates no están en el taller! ¡Los necesito!',
-        pelacables:     '¡El pelacables no está! ¿Cómo pelo los cables?',
-        multimetro:     '¡El multímetro sigue en la caja sin abrir! No me lo puedo llevar.',
-        diferencial:    '¡El diferencial de repuesto no está en la estantería! Lo necesito.',
-        soporte:        '¡No tengo el móvil a mano! ¡No puedo ver la dirección de Yaiza!'
+        destornillador: '¡El destornillador no estaba a mano! He perdido 5 minutos buscándolo.',
+        alicates:       '¡Los alicates no estaban en el taller! No he podido arrancar en 30 segundos.',
+        pelacables:     '¡El pelacables no estaba preparado! ¿Cómo pelo los cables así?',
+        multimetro:     '¡El multímetro no estaba en la mesa! He tardado un montón en encontrarlo.',
+        diferencial:    '¡El diferencial no estaba en la estantería! He perdido tiempo buscándolo.',
+        soporte:        '¡El móvil no estaba a mano! No he podido ver la dirección de Yaiza.'
       }
     },
     rule4: {
-      misplaced: '¡{item} estaba en {furniture}! He tardado un montón buscando.'
+      misplaced: '¡He encontrado {item} en {furniture}! No estaba en su sitio y he tardado un montón buscando.',
+      overloaded: '¡Hay demasiadas cosas en {furniture}! He tardado un montón rebuscando entre el montón.'
     }
   };
 

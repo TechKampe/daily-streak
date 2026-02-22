@@ -45,7 +45,7 @@
 
     _buildHeader: function () {
       // Play button — bottom-left corner using ui_play image
-      var btnX = 140, btnY = H - 84;
+      var btnX = 160, btnY = H - 84;
       var btnImg = this.add.image(btnX, btnY, 'ui_play').setScale(1.75).setDepth(201)
         .setInteractive({ useHandCursor: true });
       var btnLabel = this.add.text(btnX, btnY, 'Sal a la urgencia', {

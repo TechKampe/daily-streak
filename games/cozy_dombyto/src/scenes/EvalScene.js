@@ -78,8 +78,8 @@
 
       var round = window.GameState.roundNumber;
       var encouragement = round <= 2
-        ? '¡No te rindas! Organiza mejor el taller.'
-        : '¡Casi lo tienes! Revisa lo que falta.';
+        ? '¡Recuerda el checklist de cierre!'
+        : '¡Casi lo tienes! Cada cosa en su sitio fijo.';
 
       var bubbleText = '¡Sigo sin luz en mi cumpleaños!\n' + encouragement;
       this._createBubble(cx, H * 0.40, 'Yaiza', bubbleText, 540);

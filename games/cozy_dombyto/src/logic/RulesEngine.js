@@ -72,7 +72,21 @@
         }
       }
 
-      // 4c: Check items are on correct furniture type
+      // 4c: Check furniture not overloaded (max 4 items on tablero/mesa/estanteria)
+      var maxItems = 4;
+      var overloadFurniture = ['tablero', 'mesa', 'estanteria'];
+      var furnitureArticles = { tablero: 'el tablero', mesa: 'la mesa', estanteria: 'la estantería', contenedor: 'el contenedor', lampara: 'la lámpara' };
+      for (var o = 0; o < origins.length; o++) {
+        var oc = origins[o].cell;
+        if (overloadFurniture.indexOf(oc.furnitureId) !== -1 && oc.items.length > maxItems) {
+          result.failedRule = 4;
+          var fName = furnitureArticles[oc.furnitureId] || oc.furnitureId;
+          result.failMessage = RULES_DATA.rule4.overloaded.replace('{furniture}', fName);
+          return result;
+        }
+      }
+
+      // 4d: Check items are on correct furniture type
       for (var p = 0; p < origins.length; p++) {
         var c = origins[p].cell;
         for (var q = 0; q < c.items.length; q++) {
@@ -81,10 +95,9 @@
           if (itemDef.correctFurniture.length === 0) continue; // decorativo_neutro — anywhere is fine
           if (itemDef.correctFurniture.indexOf(c.furnitureId) === -1) {
             result.failedRule = 4;
-            var furnitureDef = window.findItemDef(c.furnitureId);
-            var furnitureName = furnitureDef ? furnitureDef.label : c.furnitureId;
+            var furnitureName = furnitureArticles[c.furnitureId] || c.furnitureId;
             result.failMessage = RULES_DATA.rule4.misplaced
-              .replace('{item}', itemDef.label)
+              .replace('{item}', itemDef.label.toLowerCase())
               .replace('{furniture}', furnitureName);
             return result;
           }

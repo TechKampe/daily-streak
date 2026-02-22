@@ -154,15 +154,20 @@
       var dy = pointer.y - self.pointerStartY;
 
       if (self.gestureState === 'pending') {
-        if (Math.abs(dy) > DRAG_THRESHOLD) {
-          self.gestureState = 'scrolling';
-        } else if (dx < -DRAG_THRESHOLD && self.pendingItemDef) {
-          self.gestureState = 'dragging';
-          if (self.scene.startItemDrag) {
-            self.scene.startItemDrag(self.pendingItemDef, pointer);
+        var absDx = Math.abs(dx);
+        var absDy = Math.abs(dy);
+        var pastThreshold = absDx > DRAG_THRESHOLD || absDy > DRAG_THRESHOLD;
+
+        if (pastThreshold) {
+          // If item under pointer and moving left (or mostly horizontal), drag it
+          if (self.pendingItemDef && dx < -DRAG_THRESHOLD / 2 && absDx >= absDy) {
+            self.gestureState = 'dragging';
+            if (self.scene.startItemDrag) {
+              self.scene.startItemDrag(self.pendingItemDef, pointer);
+            }
+            return;
           }
-          return;
-        } else if (Math.abs(dx) + Math.abs(dy) > DRAG_THRESHOLD * 2) {
+          // Otherwise scroll
           self.gestureState = 'scrolling';
         }
       }
@@ -182,6 +187,7 @@
   };
 
   proto._getItemAtPointer = function (px, py) {
+    // Exact cell hit first
     for (var i = 0; i < this.itemEmojis.length; i++) {
       var ct = this.itemEmojis[i];
       var halfW = ITEM_CELL_W / 2;
@@ -191,7 +197,20 @@
         return ct.getData('itemDef');
       }
     }
-    return null;
+    // Fallback: pick nearest item (helps when only 1-2 items left)
+    var bestDist = Infinity;
+    var bestDef = null;
+    for (var j = 0; j < this.itemEmojis.length; j++) {
+      var c = this.itemEmojis[j];
+      var dx = px - c.x;
+      var dy = py - c.y;
+      var dist = dx * dx + dy * dy;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestDef = c.getData('itemDef');
+      }
+    }
+    return bestDef;
   };
 
   proto.refreshItems = function () {
