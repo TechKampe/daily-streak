@@ -181,33 +181,92 @@
       var objs = [];
       var cx = W / 2;
 
-      objs.push(this.add.text(cx, H * 0.12, '🏠', { fontSize: '88px' }).setOrigin(0.5));
-
-      objs.push(this.add.text(cx, H * 0.26, 'El taller de Dombyto está\nhecho un desastre.\n¡Ayúdale a organizarlo!', {
+      // Title
+      objs.push(this.add.text(cx - 80, H * 0.08, 'El taller de Dombyto está\nhecho un desastre.\n¡Ayúdale a organizarlo!', {
         fontSize: '32px', fontFamily: '"Baloo 2", cursive',
-        color: '#7a6a5a', align: 'center', lineSpacing: 8
+        color: '#7a6a5a', align: 'center', lineSpacing: 6
       }).setOrigin(0.5));
 
-      var instrY = H * 0.50;
+      // Instruction panel background
+      var panelW = 680, panelH = 420;
+      var panelX = cx - 80 - panelW / 2;
+      var panelY = H * 0.22;
+      var panelGfx = this.add.graphics();
+      panelGfx.fillStyle(0xe8d5b8, 1);
+      panelGfx.fillRoundedRect(panelX, panelY, panelW, panelH, 20);
+      panelGfx.lineStyle(3, 0xc4a882, 1);
+      panelGfx.strokeRoundedRect(panelX, panelY, panelW, panelH, 20);
+      objs.push(panelGfx);
+
+      // Instruction rows with item sprites
       var instructions = [
-        '🔧  Arrastra muebles al taller',
-        '🛠️  Coloca herramientas en los muebles',
-        '▶️  Pulsa "Sal a la urgencia" cuando esté listo'
+        { sprite: 'item_estanteria',     text: 'Arrastra muebles al taller',        scale: 0.40 },
+        { sprite: 'item_destornillador', text: 'Coloca herramientas en los muebles', scale: 0.45 }
       ];
+      var rowH = panelH / 3;
+      var iconX = panelX + 80;
+      var textX = panelX + 160;
+
       for (var i = 0; i < instructions.length; i++) {
-        objs.push(this.add.text(cx, instrY + i * 56, instructions[i], {
-          fontSize: '28px', fontFamily: '"Baloo 2", cursive',
-          color: '#8a7a6a'
-        }).setOrigin(0.5));
+        var rowY = panelY + rowH / 2 + i * rowH;
+
+        // Separator line between rows
+        if (i > 0) {
+          var sepGfx = this.add.graphics();
+          sepGfx.lineStyle(1, 0xc4a882, 0.5);
+          sepGfx.lineBetween(panelX + 20, panelY + i * rowH, panelX + panelW - 20, panelY + i * rowH);
+          objs.push(sepGfx);
+        }
+
+        // Item sprite
+        objs.push(this.add.image(iconX, rowY, instructions[i].sprite)
+          .setOrigin(0.5).setScale(instructions[i].scale));
+
+        // Instruction text
+        objs.push(this.add.text(textX, rowY, instructions[i].text, {
+          fontSize: '26px', fontFamily: '"Baloo 2", cursive',
+          color: '#5a4a3a', lineSpacing: 4
+        }).setOrigin(0, 0.5));
       }
 
+      // Row 3: "Pulsa [mini button] cuando esté listo"
+      var row3Y = panelY + rowH / 2 + 2 * rowH;
+      var sep3 = this.add.graphics();
+      sep3.lineStyle(1, 0xc4a882, 0.5);
+      sep3.lineBetween(panelX + 20, panelY + 2 * rowH, panelX + panelW - 20, panelY + 2 * rowH);
+      objs.push(sep3);
+
+      // "Pulsa" aligned to iconX (same left edge as icon in rows above)
+      objs.push(this.add.text(iconX, row3Y, 'Pulsa', {
+        fontSize: '26px', fontFamily: '"Baloo 2", cursive',
+        color: '#5a4a3a'
+      }).setOrigin(0, 0.5));
+
+      // Mini replica of the "Sal a la urgencia" button
+      var miniBtnX = iconX + 175;
+      var miniBtnImg = this.add.image(miniBtnX, row3Y, 'ui_play').setScale(1.2);
+      objs.push(miniBtnImg);
+      objs.push(this.add.text(miniBtnX, row3Y, 'Sal a la urgencia', {
+        fontSize: '16px', fontFamily: '"Baloo 2", cursive',
+        color: '#ffffff', fontStyle: 'bold',
+        stroke: '#3a1a5a', strokeThickness: 2
+      }).setOrigin(0.5));
+
+      objs.push(this.add.text(miniBtnX + 105, row3Y, 'cuando esté listo', {
+        fontSize: '26px', fontFamily: '"Baloo 2", cursive',
+        color: '#5a4a3a'
+      }).setOrigin(0, 0.5));
+
+      // Dombyto happy on the right, slightly overlapping the panel
+      objs.push(this.add.image(panelX + panelW + 40, H * 0.42, 'dombyto_happy').setOrigin(0.5).setScale(0.7));
+
       // CTA Button
-      var btnY = H * 0.85;
-      var btnImg = this.add.image(cx, btnY, 'ui_play').setScale(2.4)
+      var btnY = H * 0.88;
+      var btnImg = this.add.image(cx - 80, btnY, 'ui_play').setScale(2.4)
         .setInteractive({ useHandCursor: true });
       objs.push(btnImg);
 
-      var btnLabel = this.add.text(cx, btnY, 'Organizar taller', {
+      var btnLabel = this.add.text(cx - 80, btnY, 'Organizar taller', {
         fontSize: '32px', fontFamily: '"Baloo 2", cursive',
         color: '#ffffff', fontStyle: 'bold',
         stroke: '#3a1a5a', strokeThickness: 3
