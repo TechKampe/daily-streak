@@ -18,6 +18,9 @@
       this.load.image('yaiza_worried', 'assets/characters/yaiza_worried.png');
       this.load.image('yaiza_happy', 'assets/characters/yaiza_happy.png');
 
+      // Workshop background
+      this.load.image('workshop_bg', 'assets/background/bg.jpg');
+
       // Item sprites
       var allItems = window.ITEMS_DATA;
       var cats = Object.keys(allItems);
@@ -69,27 +72,19 @@
 
       // Yaiza
       this.add.image(leftX - 120, H * 0.28, 'yaiza_worried').setOrigin(0.5).setScale(0.56);
-      this.add.text(leftX - 120, H * 0.40, 'Yaiza', {
-        fontSize: '26px', fontFamily: '"Baloo 2", cursive',
-        color: '#5a4a3a', fontStyle: 'bold'
-      }).setOrigin(0.5);
 
       this._createBubble(
-        leftX + 160, H * 0.28,
+        leftX + 160, H * 0.28, 'Yaiza',
         '¡Dombyto! ¡Se ha ido la luz\ny es mi cumpleaños!\n¡Ven rápido!',
         480
       );
 
       // Dombyto
       this.add.image(leftX + 360, H * 0.65, 'dombyto_worried').setOrigin(0.5).setScale(0.56);
-      this.add.text(leftX + 360, H * 0.77, 'Dombyto', {
-        fontSize: '26px', fontFamily: '"Baloo 2", cursive',
-        color: '#5a4a3a', fontStyle: 'bold'
-      }).setOrigin(0.5);
 
       this._createBubble(
-        leftX + 40, H * 0.65,
-        '¡30 segundos y estoy ahí!\n...si encuentro mis cosas.',
+        leftX + 40, H * 0.65, 'Dombyto',
+        '¡30 segundos y estoy ahí!\n...si encuentro mis cosas.\n¡Que no cunda el pánico!',
         440
       );
 
@@ -137,18 +132,25 @@
       }, this);
     },
 
-    _createBubble: function (x, y, text, width) {
+    _createBubble: function (x, y, name, text, width) {
+      var bubbleH = 180;
+      var top = y - bubbleH / 2;
       var bg = this.add.graphics();
       bg.fillStyle(0xfaf6f0, 1);
-      bg.fillRoundedRect(x - width / 2, y - 72, width, 144, 24);
+      bg.fillRoundedRect(x - width / 2, top, width, bubbleH, 24);
       bg.lineStyle(4, 0xc4b8a4, 1);
-      bg.strokeRoundedRect(x - width / 2, y - 72, width, 144, 24);
+      bg.strokeRoundedRect(x - width / 2, top, width, bubbleH, 24);
 
-      this.add.text(x, y, text, {
+      this.add.text(x, top + 24, name, {
+        fontSize: '18px', fontFamily: '"Baloo 2", cursive',
+        color: '#5b8c5a', fontStyle: 'bold'
+      }).setOrigin(0.5, 0);
+
+      this.add.text(x, top + 52, text, {
         fontSize: '24px', fontFamily: '"Baloo 2", cursive',
         color: '#3d2b1f', wordWrap: { width: width - 40 },
         align: 'center', lineSpacing: 4
-      }).setOrigin(0.5);
+      }).setOrigin(0.5, 0);
     }
   });
 

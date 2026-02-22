@@ -60,15 +60,20 @@
     var count = this.attachedItems.length;
     if (count === 0) return;
 
-    // Spread items across the furniture footprint with generous spacing
-    var footprintW = this.grid.tileW * this.def.gridW;
-    var spacing = Math.min(80, (footprintW * 0.7) / Math.max(count, 1));
-    var startX = -(count - 1) * spacing / 2;
+    // Position items on the furniture sprite's visual area
+    var spriteX = this.def.spriteX || 0;
+    var spriteY = this.def.spriteY || 0;
+    var spriteW = this.sprite.displayWidth * 0.7;
+    var spriteH = this.sprite.displayHeight * 0.5;
+
+    // Distribute horizontally across the sprite
+    var spacing = count > 1 ? spriteW / (count - 1) : 0;
+    var startX = spriteX - spriteW / 2;
 
     for (var i = 0; i < count; i++) {
       var item = this.attachedItems[i];
       var tx = startX + i * spacing;
-      var ty = -50 - (i % 2) * 24;
+      var ty = spriteY - (i % 2) * (spriteH * 0.3);
       item.container.setPosition(this.container.x + tx, this.container.y + ty);
     }
   };

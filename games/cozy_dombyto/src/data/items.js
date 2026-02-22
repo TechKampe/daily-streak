@@ -4,7 +4,7 @@
   window.ITEMS_DATA = {
     furniture: [
       { id: 'tablero',    emoji: '🔲', label: 'Tablero',        gridW: 2, gridH: 1, accepts: ['herramienta'], required: true, spriteScale: 0.90, spriteX: 0, spriteY: -70 },
-      { id: 'mesa',       emoji: '🪑', label: 'Mesa',           gridW: 2, gridH: 2, accepts: ['herramienta'], required: true, spriteScale: 1.0, spriteX: 5,   spriteY: -55 },
+      { id: 'mesa',       emoji: '🪑', label: 'Mesa',           gridW: 2, gridH: 2, accepts: ['herramienta', 'decorativo_neutro'], required: true, spriteScale: 1.0, spriteX: 5,   spriteY: -55 },
       { id: 'estanteria', emoji: '🗄️', label: 'Estantería',    gridW: 1, gridH: 2, accepts: ['material'],    required: true, spriteScale: 1.40, spriteX: 0,   spriteY: -125 },
       { id: 'contenedor', emoji: '🗑️', label: 'Contenedor',    gridW: 1, gridH: 1, accepts: ['residuo'],     required: true, spriteScale: 1.0, spriteX: 0,   spriteY: -50 },
       { id: 'lampara',    emoji: '💡', label: 'Lámpara',        gridW: 1, gridH: 1, accepts: [],              required: true, spriteScale: 1.0, spriteX: -20,   spriteY: -80 },
@@ -19,7 +19,7 @@
       { id: 'llave',         emoji: '🔩', label: 'Llave inglesa',  category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
       { id: 'taladro',       emoji: '🔨', label: 'Taladro',        category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
       { id: 'nivel_laser',   emoji: '📐', label: 'Nivel láser',    category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
-      { id: 'soporte',       emoji: '📱', label: 'Soporte móvil',  category: 'herramienta', requiredByYaiza: true, correctFurniture: ['tablero', 'mesa'] }
+      { id: 'soporte',       emoji: '📱', label: 'Soporte móvil',  category: 'herramienta', requiredByYaiza: true, correctFurniture: ['mesa'] }
     ],
 
     material: [
@@ -40,26 +40,26 @@
     ],
 
     decorativos_neutros: [
-      { id: 'poster',     emoji: '🖼️', label: 'Póster',     category: 'decorativo_neutro', correctFurniture: [] },
-      { id: 'calendario', emoji: '📅', label: 'Calendario', category: 'decorativo_neutro', correctFurniture: [] },
-      { id: 'radio',      emoji: '📻', label: 'Radio',      category: 'decorativo_neutro', correctFurniture: [] }
+      { id: 'poster',     emoji: '🖼️', label: 'Póster',     category: 'decorativo_neutro', correctFurniture: [], spriteScale: 0.44, spriteX: 0, spriteY: 0 },
+      { id: 'calendario', emoji: '📅', label: 'Calendario', category: 'decorativo_neutro', correctFurniture: [], spriteScale: 0.44, spriteX: 0, spriteY: 0 },
+      { id: 'radio',      emoji: '📻', label: 'Radio',      category: 'decorativo_neutro', correctFurniture: [], spriteScale: 0.44, spriteX: 0, spriteY: 0 }
     ],
 
     decorativos_comicos: [
-      { id: 'perro',     emoji: '🐕', label: 'Perro',     category: 'decorativo_comico', failMessage: '¡El perro quería caricias y no he podido salir!' },
-      { id: 'consola',   emoji: '🎮', label: 'Consola',   category: 'decorativo_comico', failMessage: '¡Me he tropezado con el mando de la consola!' },
-      { id: 'monopatin', emoji: '🛹', label: 'Monopatín', category: 'decorativo_comico', failMessage: '¡He resbalado con el monopatín!' },
-      { id: 'pelota',    emoji: '⚽', label: 'Pelota',    category: 'decorativo_comico', failMessage: '¡He pisado la pelota y he salido volando!' },
-      { id: 'hamaca',    emoji: '🏖️', label: 'Hamaca',    category: 'decorativo_comico', failMessage: '¡Me he sentado en la hamaca y no me he podido levantar!' }
+      { id: 'perro',     emoji: '🐕', label: 'Perro',     category: 'decorativo_comico', failMessage: '¡El perro quería caricias y no he podido salir!', spriteScale: 0.75, spriteX: 0, spriteY: 0 },
+      { id: 'consola',   emoji: '🎮', label: 'Consola',   category: 'decorativo_comico', failMessage: '¡Me he entretenido jugando con la consola! El almacén no es sitio para esto', spriteScale: 0.44, spriteX: 0, spriteY: 0 },
+      { id: 'monopatin', emoji: '🛹', label: 'Monopatín', category: 'decorativo_comico', failMessage: '¡He resbalado con el monopatín! ¿Por qué lo he guardado ahí?', spriteScale: 0.64, spriteX: 0, spriteY: 0 },
+      { id: 'pelota',    emoji: '⚽', label: 'Pelota',    category: 'decorativo_comico', failMessage: '¡He pisado la pelota y he salido volando! No debería guardarla en el almacén', spriteScale: 0.44, spriteX: 0, spriteY: 0 },
+      { id: 'hamaca',    emoji: '🏖️', label: 'Hamaca',    category: 'decorativo_comico', failMessage: '¡Me he sentado en la hamaca y no me he podido levantar! El almacén no es para descansar', spriteScale: 1.00, spriteX: 0, spriteY: 0 }
     ]
   };
 
   // Inventory tabs map to data keys
   window.INVENTORY_TABS = [
-    { id: 'muebles',       label: '🔧 Muebles',  dataKey: 'furniture' },
-    { id: 'herramientas',  label: '🛠️ Herr.',     dataKey: 'herramientas' },
-    { id: 'material',      label: '📦 Mat.',       dataKeys: ['material', 'residuos'] },
-    { id: 'otros',         label: '🎲 Otros',      dataKeys: ['decorativos_neutros', 'decorativos_comicos'] }
+    { id: 'muebles',       label: 'Muebles',  dataKey: 'furniture' },
+    { id: 'herramientas',  label: 'Herramientas',     dataKey: 'herramientas' },
+    { id: 'material',      label: 'Material',       dataKeys: ['material', 'residuos'] },
+    { id: 'otros',         label: 'Otros',      dataKeys: ['decorativos_neutros', 'decorativos_comicos'] }
   ];
 
   // Rule failure messages

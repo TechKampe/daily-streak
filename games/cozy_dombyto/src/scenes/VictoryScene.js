@@ -36,12 +36,12 @@
       });
 
       this.time.delayedCall(400, function () {
-        this.add.image(leftX - 80, H * 0.30, 'yaiza_happy').setOrigin(0.5).setScale(0.56);
-        this.add.text(leftX + 60, H * 0.28, '🎊✨🎂', {
+        this.add.image(leftX - 80, H * 0.40, 'yaiza_happy').setOrigin(0.5).setScale(0.56);
+        this.add.text(leftX + 100, H * 0.28, '🎊✨🎂', {
           fontSize: '72px'
         }).setOrigin(0.5);
 
-        this.add.text(leftX, H * 0.43, '¡Yaiza y sus amigas celebran!', {
+        this.add.text(leftX, H * 0.43, '¡Yaiza y sus amigas celebran el cumple!', {
           fontSize: '32px', fontFamily: '"Baloo 2", cursive',
           color: '#5a4a3a', fontStyle: 'bold'
         }).setOrigin(0.5);
@@ -102,6 +102,24 @@
           fontSize: '28px', fontFamily: '"Baloo 2", cursive',
           color: '#e8a435', fontStyle: 'bold'
         }).setOrigin(0.5);
+
+        // "Volver a jugar" button
+        var btnY = H * 0.72;
+        var btnW = 320, btnH = 64, btnR = 16;
+        var btnBg = this.add.graphics();
+        btnBg.fillStyle(0x5b8c5a, 1);
+        btnBg.fillRoundedRect(rightX - btnW / 2, btnY - btnH / 2, btnW, btnH, btnR);
+
+        var btnLabel = this.add.text(rightX, btnY, '🔄 Volver a jugar', {
+          fontSize: '26px', fontFamily: '"Baloo 2", cursive',
+          color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        var btnZone = this.add.zone(rightX, btnY, btnW, btnH).setInteractive({ useHandCursor: true });
+        btnZone.on('pointerdown', function () {
+          window.GameState.reset();
+          this.scene.start('IntroScene');
+        }.bind(this));
       }.bind(this));
 
       // TASK_COMPLETED after 2.5s

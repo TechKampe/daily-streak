@@ -1,10 +1,10 @@
-// Cozy Dombyto — Isometric grid 6×8
+// Cozy Dombyto — Isometric grid 5×5
 (function () {
 
   var TILE_W = 192;
   var TILE_H = 96;
   var COLS = 6;
-  var ROWS = 8;
+  var ROWS = 6;
 
   // Colors — warm wood casual palette (Homescapes-inspired)
   var TOP_COLOR   = 0xd4b896;  // light hardwood floor
@@ -89,15 +89,8 @@
   // --- Drawing ---
 
   proto._drawFloor = function () {
-    var g = this.floorGfx;
-    g.clear();
-    // Draw back-to-front for correct overlap of depth faces
-    for (var row = 0; row < this.rows; row++) {
-      for (var col = 0; col < this.cols; col++) {
-        var p = this.cellToScreen(col, row);
-        this._drawTile(g, p.x, p.y, TOP_COLOR, LEFT_COLOR, RIGHT_COLOR, STROKE_COLOR);
-      }
-    }
+    // Floor tiles hidden — background image provides the floor visual.
+    // Only the highlight layer is used for drag feedback.
   };
 
   proto._drawTile = function (g, cx, cy, top, left, right, stroke) {

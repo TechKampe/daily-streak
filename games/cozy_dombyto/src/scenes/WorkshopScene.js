@@ -33,7 +33,14 @@
     },
 
     _buildBackground: function () {
-      this.add.rectangle(W / 2, H / 2, W, H, 0xf5e6d3);
+      this.add.rectangle(W / 2, H / 2, W, H, 0xf5e6d3).setDepth(-2);
+
+      // Workshop background image — show bottom portion, centered horizontally
+      // Manual scale factor — tweak to align background with grid tiles
+      var BG_SCALE_FACTOR = 1.135;
+      var bg = this.add.image(GRID_AREA_RIGHT / 2, H, 'workshop_bg').setOrigin(0.5, 1).setDepth(-1);
+      var scale = (GRID_AREA_RIGHT / bg.width) * BG_SCALE_FACTOR;
+      bg.setScale(scale);
     },
 
     _buildHeader: function () {
@@ -73,8 +80,13 @@
       var areaH = H - HEADER_H;
 
       var originX = areaW / 2 + (gridLeftExtent - gridRightExtent) / 2;
-      // Center vertically + nudge down 30px
-      var originY = HEADER_H + (areaH - gridTotalH) / 2 + 30;
+      var originY = HEADER_H + (areaH - gridTotalH) / 2;
+
+      // Manual offset — tweak these to align grid with background
+      var GRID_OFFSET_X = 0;
+      var GRID_OFFSET_Y = 100;
+      originX += GRID_OFFSET_X;
+      originY += GRID_OFFSET_Y;
 
       this.grid = new IsometricGrid(this, originX, originY);
 

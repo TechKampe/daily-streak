@@ -201,7 +201,8 @@
 
       var emoji = this.scene.add.image(0, -20, 'item_' + def.id).setScale(0.50);
 
-      var label = this.scene.add.text(0, ITEM_SIZE / 2 - 4, def.label, {
+      var labelY = def.gridW !== undefined ? ITEM_SIZE / 2 + 16 : ITEM_SIZE / 2 - 4;
+      var label = this.scene.add.text(0, labelY, def.label, {
         fontSize: '16px', fontFamily: '"Baloo 2", cursive', color: '#5a4a3a',
         align: 'center', wordWrap: { width: ITEM_CELL_W - 12 }
       }).setOrigin(0.5, 0);

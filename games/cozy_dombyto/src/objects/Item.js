@@ -9,7 +9,8 @@
 
     this.container = scene.add.container(0, 0).setDepth(50);
 
-    this.sprite = scene.add.image(0, 0, 'item_' + def.id).setScale(0.44);
+    var itemScale = def.spriteScale !== undefined ? def.spriteScale : 0.44;
+    this.sprite = scene.add.image(0, 0, 'item_' + def.id).setScale(itemScale);
     this.container.add(this.sprite);
 
     // Make interactive
