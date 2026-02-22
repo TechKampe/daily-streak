@@ -100,7 +100,6 @@
         var furn = new FurnitureObject(this, furnitureDef, col, row, this.grid);
         this.placedFurnitures[furnitureDef.id] = furn;
         this.grid.occupyCells(col, row, furnitureDef.gridW, furnitureDef.gridH, furnitureDef.id);
-        this._setupFurnitureTap(furn);
 
         for (var j = 0; j < cell.items.length; j++) {
           var itemDef = window.findItemDef(cell.items[j]);
@@ -110,7 +109,6 @@
           item.furnitureOriginKey = origins[i].key;
           furn.attachItem(item);
           this.placedItems.push(item);
-          this._setupItemTap(item);
         }
       }
 
@@ -126,7 +124,6 @@
         floorItem.floorCol = fi.col;
         floorItem.floorRow = fi.row;
         this.floorItems.push(floorItem);
-        this._setupFloorItemTap(floorItem);
       }
     },
 
@@ -139,51 +136,44 @@
         if (scene.activeDrag || scene._pendingGridDrag) return;
         if (pointer.x >= scene.inventoryLeft || pointer.y <= HEADER_H) return;
 
-        var cell = scene.grid.screenToCell(pointer.x, pointer.y);
-        if (!scene.grid.isValidCell(cell.col, cell.row)) return;
+        // Collect all hittable objects with bounding rects
+        var candidates = [];
+        var ITEM_HW = 36, ITEM_HH = 36;
 
-        // Check if a furniture occupies this cell
-        var furnId = scene.grid.getFurnitureIdAtCell(cell.col, cell.row);
-        if (furnId && scene.placedFurnitures[furnId]) {
-          var furn = scene.placedFurnitures[furnId];
-
-          // Check attached items first — pick the closest one to the pointer
-          if (furn.attachedItems.length > 0) {
-            var closestItem = null;
-            var closestDist = Infinity;
-            for (var j = 0; j < furn.attachedItems.length; j++) {
-              var ai = furn.attachedItems[j];
-              var dx = pointer.x - ai.container.x;
-              var dy = pointer.y - ai.container.y;
-              var dist = dx * dx + dy * dy;
-              if (dist < closestDist) {
-                closestDist = dist;
-                closestItem = ai;
-              }
-            }
-            // If pointer is within ~60px of an item, select the item
-            if (closestItem && closestDist < 60 * 60) {
-              scene._pendingGridDrag = {
-                type: 'item', obj: closestItem,
-                startX: pointer.x, startY: pointer.y
-              };
-              return;
-            }
-          }
-
-          scene._pendingGridDrag = {
-            type: 'furniture', obj: furn,
-            startX: pointer.x, startY: pointer.y
-          };
-          return;
+        // Attached items on furniture
+        for (var i = 0; i < scene.placedItems.length; i++) {
+          var item = scene.placedItems[i];
+          var ic = item.container;
+          candidates.push({ type: 'item', obj: item, depth: ic.depth, x: ic.x, y: ic.y, hw: ITEM_HW, hh: ITEM_HH });
         }
 
-        // Check floor items at this cell
-        for (var i = 0; i < scene.floorItems.length; i++) {
-          var fi = scene.floorItems[i];
-          if (fi.floorCol === cell.col && fi.floorRow === cell.row) {
+        // Floor items
+        for (var j = 0; j < scene.floorItems.length; j++) {
+          var fi = scene.floorItems[j];
+          var fc = fi.container;
+          candidates.push({ type: 'floorItem', obj: fi, depth: fc.depth, x: fc.x, y: fc.y, hw: ITEM_HW, hh: ITEM_HH });
+        }
+
+        // Furniture
+        var furnKeys = Object.keys(scene.placedFurnitures);
+        for (var k = 0; k < furnKeys.length; k++) {
+          var furn = scene.placedFurnitures[furnKeys[k]];
+          var cc = furn.container;
+          var hw = furn.grid.tileW * furn.def.gridW / 2 + 10;
+          var hh = furn.grid.tileH * furn.def.gridH / 2 + 30;
+          candidates.push({ type: 'furniture', obj: furn, depth: cc.depth, x: cc.x, y: cc.y, hw: hw, hh: hh });
+        }
+
+        // Sort by depth descending — frontmost wins
+        candidates.sort(function (a, b) { return b.depth - a.depth; });
+
+        // First candidate whose rect contains the pointer
+        for (var m = 0; m < candidates.length; m++) {
+          var c = candidates[m];
+          if (pointer.x >= c.x - c.hw && pointer.x <= c.x + c.hw &&
+              pointer.y >= c.y - c.hh && pointer.y <= c.y + c.hh) {
             scene._pendingGridDrag = {
-              type: 'floorItem', obj: fi,
+              type: c.type, obj: c.obj,
               startX: pointer.x, startY: pointer.y
             };
             return;
@@ -249,7 +239,7 @@
       this.activeDrag = { def: def, ghost: ghost, isFurniture: false };
     },
 
-    // --- Drag from placed furniture ---
+    // --- Drag from placed furniture (carries attached items along) ---
 
     _startFurnitureDragFromGrid: function (furn) {
       if (this.activeDrag) return;
@@ -258,19 +248,21 @@
       var ghost = this.add.image(furn.container.x, furn.container.y, 'item_' + def.id)
         .setScale(0.56).setDepth(500).setAlpha(0.85);
 
-      window.GameState.returnFurniture(def, furn.col, furn.row);
-      this.grid.freeCells(furn.col, furn.row, def.gridW, def.gridH);
-
+      // Remember attached item defs before removing from state
+      var carriedItemDefs = [];
       for (var i = 0; i < furn.attachedItems.length; i++) {
+        carriedItemDefs.push(furn.attachedItems[i].def);
         var idx = this.placedItems.indexOf(furn.attachedItems[i]);
         if (idx !== -1) this.placedItems.splice(idx, 1);
       }
 
+      window.GameState.returnFurniture(def, furn.col, furn.row);
+      this.grid.freeCells(furn.col, furn.row, def.gridW, def.gridH);
+
       delete this.placedFurnitures[def.id];
       furn.destroy();
-      this.inventory.refreshItems();
 
-      this.activeDrag = { def: def, ghost: ghost, isFurniture: true };
+      this.activeDrag = { def: def, ghost: ghost, isFurniture: true, carriedItems: carriedItemDefs };
     },
 
     // --- Pointer events ---
@@ -295,6 +287,9 @@
         var drag = this.activeDrag;
         drag.ghost.setPosition(pointer.x, pointer.y);
 
+        // Clear previous furniture highlight tint
+        this._clearFurnitureHighlight();
+
         if (pointer.x < this.inventoryLeft) {
           var cell = this.grid.screenToCell(pointer.x, pointer.y + DRAG_CELL_OFFSET_Y);
           if (this.grid.isValidCell(cell.col, cell.row)) {
@@ -302,6 +297,16 @@
               this.grid.highlightCells(cell.col, cell.row, drag.def.gridW, drag.def.gridH);
             } else {
               this.grid.highlightSingleCell(cell.col, cell.row);
+              // Tint furniture that accepts this item's category
+              var furnCell = window.GameState.getFurnitureAtCell(cell.col, cell.row);
+              if (furnCell) {
+                var furnObj = this.placedFurnitures[furnCell.furnitureId];
+                if (furnObj && furnObj.def.accepts &&
+                    furnObj.def.accepts.indexOf(drag.def.category) !== -1) {
+                  furnObj.sprite.setTint(0x88cc88); // green tint = valid drop
+                  this._highlightedFurniture = furnObj;
+                }
+              }
             }
           } else {
             this.grid.clearHighlights();
@@ -312,7 +317,15 @@
       }
     },
 
+    _clearFurnitureHighlight: function () {
+      if (this._highlightedFurniture) {
+        this._highlightedFurniture.sprite.clearTint();
+        this._highlightedFurniture = null;
+      }
+    },
+
     _onPointerUp: function (pointer) {
+      this._clearFurnitureHighlight();
       // Pending grid drag without movement = tap to return to inventory
       if (this._pendingGridDrag) {
         var pending = this._pendingGridDrag;
@@ -353,7 +366,20 @@
 
       var furn = new FurnitureObject(this, def, col, row, this.grid);
       this.placedFurnitures[def.id] = furn;
-      this._setupFurnitureTap(furn);
+
+      // Re-attach carried items
+      var carried = drag.carriedItems || [];
+      var originKey = col + ',' + row;
+      for (var i = 0; i < carried.length; i++) {
+        var itemDef = carried[i];
+        window.GameState.placeItem(col, row, itemDef);
+        var item = new ItemObject(this, itemDef);
+        item.placedOnFurniture = furn;
+        item.furnitureOriginKey = originKey;
+        furn.attachItem(item);
+        this.placedItems.push(item);
+      }
+
       this.inventory.refreshItems();
     },
 
@@ -373,7 +399,6 @@
           item.furnitureOriginKey = originKey;
           furnObj.attachItem(item);
           this.placedItems.push(item);
-          this._setupItemTap(item);
         }
         this.inventory.refreshItems();
       } else {
@@ -386,7 +411,6 @@
         floorItem.floorCol = col;
         floorItem.floorRow = row;
         this.floorItems.push(floorItem);
-        this._setupFloorItemTap(floorItem);
 
         window.GameState._removeFromInventory(window.GameState._tabForItem(def), def.id);
         this.inventory.refreshItems();
@@ -394,44 +418,14 @@
     },
 
     _cancelDrag: function (drag) {
+      // If furniture drag with carried items, return everything to inventory
+      if (drag.carriedItems && drag.carriedItems.length > 0) {
+        for (var i = 0; i < drag.carriedItems.length; i++) {
+          window.GameState._addToInventory(drag.carriedItems[i]);
+        }
+      }
       drag.ghost.destroy();
       this.inventory.refreshItems();
-    },
-
-    _setupFurnitureTap: function (furn) {
-      var scene = this;
-      furn.container.on('pointerdown', function (pointer) {
-        if (!scene.activeDrag && !scene._pendingGridDrag) {
-          scene._pendingGridDrag = {
-            type: 'furniture', obj: furn,
-            startX: pointer.x, startY: pointer.y
-          };
-        }
-      });
-    },
-
-    _setupItemTap: function (item) {
-      var scene = this;
-      item.container.on('pointerdown', function (pointer) {
-        if (!scene.activeDrag && !scene._pendingGridDrag) {
-          scene._pendingGridDrag = {
-            type: 'item', obj: item,
-            startX: pointer.x, startY: pointer.y
-          };
-        }
-      });
-    },
-
-    _setupFloorItemTap: function (floorItem) {
-      var scene = this;
-      floorItem.container.on('pointerdown', function (pointer) {
-        if (!scene.activeDrag && !scene._pendingGridDrag) {
-          scene._pendingGridDrag = {
-            type: 'floorItem', obj: floorItem,
-            startX: pointer.x, startY: pointer.y
-          };
-        }
-      });
     },
 
     // --- Return-to-inventory helpers (for tap on placed objects) ---
