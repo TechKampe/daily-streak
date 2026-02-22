@@ -14,16 +14,13 @@
       // Warm cream background
       this.add.rectangle(W / 2, H / 2, W, H, 0xf5e6d3);
 
-      // Generate confetti texture
+      // Confetti
       this._generateConfettiTextures();
-
-      // Confetti particles
       this._spawnConfetti();
 
-      // --- Left side: Title + Party + Dombyto ---
-      var leftX = W * 0.28;
-
-      var title = this.add.text(leftX, H * 0.10, '🎉 ¡100%! 🎉', {
+      // --- Title ---
+      var cx = W / 2;
+      var title = this.add.text(cx, H * 0.08, '🎉 ¡100%! 🎉', {
         fontSize: '84px', fontFamily: '"Baloo 2", cursive',
         color: '#e8a435', fontStyle: 'bold'
       }).setOrigin(0.5).setAlpha(0);
@@ -35,88 +32,58 @@
         ease: 'Back.easeOut'
       });
 
+      // --- Left side: Yaiza happy + bubble ---
+      var leftX = W * 0.28;
+
       this.time.delayedCall(400, function () {
-        this.add.image(leftX - 80, H * 0.40, 'yaiza_happy').setOrigin(0.5).setScale(0.56);
-        this.add.text(leftX + 100, H * 0.28, '🎊✨🎂', {
-          fontSize: '72px'
-        }).setOrigin(0.5);
+        this.add.image(leftX, H * 0.26, 'yaiza_happy').setOrigin(0.5).setScale(0.56);
 
-        this.add.text(leftX, H * 0.43, '¡Yaiza y sus amigas celebran el cumple!', {
-          fontSize: '32px', fontFamily: '"Baloo 2", cursive',
-          color: '#5a4a3a', fontStyle: 'bold'
-        }).setOrigin(0.5);
-
-        this.add.text(leftX, H * 0.48, '¡La luz está de vuelta gracias a Dombyto!', {
-          fontSize: '26px', fontFamily: '"Baloo 2", cursive',
-          color: '#7a6a5a'
-        }).setOrigin(0.5);
+        this._createBubble(leftX, H * 0.46, 'Yaiza',
+          '¡Tenemos luz! ¡Gracias Dombyto!\n¡Ya podemos soplar las velas!', 500);
       }.bind(this));
 
-      // Dombyto hero
-      this.time.delayedCall(800, function () {
-        this.add.image(leftX, H * 0.64, 'dombyto_celebrating').setOrigin(0.5).setScale(0.56);
-        this.add.text(leftX, H * 0.76, 'Dombyto', {
-          fontSize: '28px', fontFamily: '"Baloo 2", cursive',
-          color: '#5a4a3a', fontStyle: 'bold'
-        }).setOrigin(0.5);
-
-        var bg = this.add.graphics();
-        bg.fillStyle(0xfaf6f0, 1);
-        bg.fillRoundedRect(leftX - 300, H * 0.80, 600, 96, 24);
-        bg.lineStyle(4, 0xc4b8a4, 1);
-        bg.strokeRoundedRect(leftX - 300, H * 0.80, 600, 96, 24);
-
-        this.add.text(leftX, H * 0.80 + 48, '¡Lo logré gracias a mi taller organizado!', {
-          fontSize: '24px', fontFamily: '"Baloo 2", cursive',
-          color: '#3d2b1f', fontStyle: 'italic', align: 'center'
-        }).setOrigin(0.5);
-      }.bind(this));
-
-      // --- Right side: Checklist + Rounds ---
+      // --- Right side: Dombyto celebrating + bubble ---
       var rightX = W * 0.72;
 
-      this.time.delayedCall(1200, function () {
-        var closingBg = this.add.graphics();
-        closingBg.fillStyle(0xe0d4c0, 0.8);
-        closingBg.fillRoundedRect(rightX - 320, H * 0.15, 640, 240, 24);
+      this.time.delayedCall(800, function () {
+        this.add.image(rightX, H * 0.26, 'dombyto_celebrating').setOrigin(0.5).setScale(0.56);
 
-        this.add.text(rightX, H * 0.19, '📋 Recuerda para completar tu checklist:', {
-          fontSize: '24px', fontFamily: '"Baloo 2", cursive',
-          color: '#5a4a3a', fontStyle: 'bold'
-        }).setOrigin(0.5, 0);
-
-        this.add.text(rightX, H * 0.28, '📸 Haz una foto del puesto listo', {
-          fontSize: '22px', fontFamily: '"Baloo 2", cursive',
-          color: '#7a6a5a'
-        }).setOrigin(0.5, 0);
-
-        this.add.text(rightX, H * 0.36, '📝 Escribe 3 líneas en la bitácora', {
-          fontSize: '22px', fontFamily: '"Baloo 2", cursive',
-          color: '#7a6a5a'
-        }).setOrigin(0.5, 0);
+        this._createBubble(rightX, H * 0.46, 'Dombyto',
+          '¡Taller organizado, urgencia resuelta!\nEl checklist de cierre funciona.', 500);
       }.bind(this));
 
-      this.time.delayedCall(1600, function () {
+      // --- Bottom: Rounds + Checklist + Replay ---
+      this.time.delayedCall(1200, function () {
         var rounds = window.GameState.roundNumber;
-        this.add.text(rightX, H * 0.60, '🏆 Lo lograste en ' + rounds + ' intento' + (rounds > 1 ? 's' : ''), {
+        this.add.text(cx, H * 0.70, '🏆 Lo lograste en ' + rounds + ' intento' + (rounds > 1 ? 's' : ''), {
           fontSize: '28px', fontFamily: '"Baloo 2", cursive',
           color: '#e8a435', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        // "Volver a jugar" button
-        var btnY = H * 0.72;
-        var btnW = 320, btnH = 64, btnR = 16;
-        var btnBg = this.add.graphics();
-        btnBg.fillStyle(0x5b8c5a, 1);
-        btnBg.fillRoundedRect(rightX - btnW / 2, btnY - btnH / 2, btnW, btnH, btnR);
-
-        var btnLabel = this.add.text(rightX, btnY, '🔄 Volver a jugar', {
-          fontSize: '26px', fontFamily: '"Baloo 2", cursive',
-          color: '#ffffff', fontStyle: 'bold'
+        // Checklist reminder
+        this.add.text(cx, H * 0.77, 'Recuerda: un cierre pro = mañana arrancas en 30 segundos', {
+          fontSize: '22px', fontFamily: '"Baloo 2", cursive',
+          color: '#7a6a5a'
         }).setOrigin(0.5);
 
-        var btnZone = this.add.zone(rightX, btnY, btnW, btnH).setInteractive({ useHandCursor: true });
-        btnZone.on('pointerdown', function () {
+        // Replay button (ui_play style)
+        var btnY = H * 0.90;
+        var btnImg = this.add.image(cx, btnY, 'ui_play').setScale(2.4)
+          .setInteractive({ useHandCursor: true });
+        var btnLabel = this.add.text(cx, btnY, 'Volver a jugar', {
+          fontSize: '32px', fontFamily: '"Baloo 2", cursive',
+          color: '#ffffff', fontStyle: 'bold',
+          stroke: '#3a1a5a', strokeThickness: 3
+        }).setOrigin(0.5);
+
+        this.tweens.add({
+          targets: [btnImg, btnLabel],
+          scaleX: '+=0.05', scaleY: '+=0.05',
+          duration: 800, yoyo: true, repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+
+        btnImg.on('pointerdown', function () {
           window.GameState.reset();
           this.scene.start('IntroScene');
         }.bind(this));
@@ -130,6 +97,27 @@
           console.log('TASK_COMPLETED');
         }
       });
+    },
+
+    _createBubble: function (x, y, name, text, width) {
+      var bubbleH = 140;
+      var top = y - bubbleH / 2;
+      var bg = this.add.graphics();
+      bg.fillStyle(0xfaf6f0, 1);
+      bg.fillRoundedRect(x - width / 2, top, width, bubbleH, 24);
+      bg.lineStyle(4, 0xc4b8a4, 1);
+      bg.strokeRoundedRect(x - width / 2, top, width, bubbleH, 24);
+
+      this.add.text(x, top + 18, name, {
+        fontSize: '18px', fontFamily: '"Baloo 2", cursive',
+        color: '#5b8c5a', fontStyle: 'bold'
+      }).setOrigin(0.5, 0);
+
+      this.add.text(x, top + 44, text, {
+        fontSize: '22px', fontFamily: '"Baloo 2", cursive',
+        color: '#3d2b1f', wordWrap: { width: width - 40 },
+        align: 'center', lineSpacing: 4
+      }).setOrigin(0.5, 0);
     },
 
     _generateConfettiTextures: function () {

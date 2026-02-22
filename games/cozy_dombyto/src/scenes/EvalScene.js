@@ -19,58 +19,59 @@
 
       var isVictory = result.score === 100;
 
-      // --- Left side: Dombyto + Score ---
+      // --- Left side: Dombyto + bubble + score ---
       var leftX = W * 0.3;
 
-      var exprKey = isVictory ? 'dombyto_celebrating' : result.score >= 50 ? 'dombyto_worried' : 'dombyto_worried';
+      var exprKey = isVictory ? 'dombyto_celebrating' : 'dombyto_worried';
       this.add.image(leftX, H * 0.22, exprKey).setOrigin(0.5).setScale(0.64);
 
-      var scoreColor = isVictory ? '#2ECC71' : '#e8a435';
-      this.add.text(leftX, H * 0.52, 'Tu taller estaba al:', {
-        fontSize: '36px', fontFamily: '"Baloo 2", cursive',
-        color: scoreColor, fontStyle: 'bold'
-      }).setOrigin(0.5);
+      // Build Dombyto's bubble content: successes + failure
+      var bubbleLines = [];
+      for (var i = 0; i < result.successes.length; i++) {
+        bubbleLines.push({ text: '✅ ' + result.successes[i], color: '#27ae60' });
+      }
 
-      this.pctText = this.add.text(leftX, H * 0.62, '0%', {
+      // --- Right side: Yaiza ---
+      var rightX = W * 0.68;
+      var scoreColor = isVictory ? '#2ECC71' : '#e8a435';
+      var self = this;
+
+      if (result.failedRule) {
+        this.time.delayedCall(1400, function () {
+          bubbleLines.push({ text: '❌ ' + result.failMessage, color: '#d9534f' });
+          var bubbleBottom = self._createBubbleMulti(leftX, H * 0.40, 'Dombyto', bubbleLines, 540);
+          self._showScore(leftX, bubbleBottom + 16, scoreColor, result.score);
+          self._showYaizaSad(rightX);
+        });
+      } else {
+        var bubbleBottom = this._createBubbleMulti(leftX, H * 0.40, 'Dombyto', bubbleLines, 540);
+        this._showScore(leftX, bubbleBottom + 16, scoreColor, result.score);
+        this.time.delayedCall(2200, function () {
+          self.scene.start('VictoryScene');
+        });
+      }
+    },
+
+    _showScore: function (x, topY, color, score) {
+      this.add.text(x, topY, 'Tu taller estaba al:', {
+        fontSize: '36px', fontFamily: '"Baloo 2", cursive',
+        color: color, fontStyle: 'bold'
+      }).setOrigin(0.5, 0);
+
+      this.pctText = this.add.text(x, topY + 44, '0%', {
         fontSize: '128px', fontFamily: '"Baloo 2", cursive',
-        color: scoreColor, fontStyle: 'bold'
-      }).setOrigin(0.5);
+        color: color, fontStyle: 'bold'
+      }).setOrigin(0.5, 0);
 
       this.tweens.addCounter({
         from: 0,
-        to: result.score,
+        to: score,
         duration: 1200,
         ease: 'Power2',
         onUpdate: function (tween) {
           this.pctText.setText(Math.floor(tween.getValue()) + '%');
         }.bind(this)
       });
-
-      // --- Right side: Results ---
-      var rightX = W * 0.68;
-
-      // Successes
-      var successY = H * 0.15;
-      for (var i = 0; i < result.successes.length; i++) {
-        this.add.text(rightX, successY + i * 52, '✅ ' + result.successes[i], {
-          fontSize: '26px', fontFamily: '"Baloo 2", cursive',
-          color: '#27ae60'
-        }).setOrigin(0.5);
-      }
-
-      // Failure message
-      if (result.failedRule) {
-        this.time.delayedCall(1400, function () {
-          // Dombyto speech bubble — positioned next to his image
-          this._createBubble(leftX, H * 0.40, 'Dombyto', '❌ ' + result.failMessage, 500, '#d9534f');
-
-          this._showYaizaSad(rightX);
-        }.bind(this));
-      } else {
-        this.time.delayedCall(2200, function () {
-          this.scene.start('VictoryScene');
-        }.bind(this));
-      }
     },
 
     _showYaizaSad: function (cx) {
@@ -132,6 +133,57 @@
         color: textColor || '#3d2b1f', wordWrap: { width: width - 40 },
         align: 'center', lineSpacing: 4
       }).setOrigin(0.5, 0);
+    },
+
+    // Returns the bottom Y of the bubble so callers can position below it
+    _createBubbleMulti: function (x, y, name, lines, width) {
+      var padTop = 48;
+      var padBottom = 24;
+      var textWidth = width - 40;
+      var gap = 14;
+
+      // Measure heights with temporary texts
+      var heights = [];
+      var totalTextH = 0;
+      for (var i = 0; i < lines.length; i++) {
+        var tmp = this.add.text(0, -9999, lines[i].text, {
+          fontSize: '20px', fontFamily: '"Baloo 2", cursive',
+          wordWrap: { width: textWidth }, lineSpacing: 2
+        }).setOrigin(0.5, 0);
+        heights.push(tmp.height);
+        totalTextH += tmp.height + (i < lines.length - 1 ? gap : 0);
+        tmp.destroy();
+      }
+
+      var bubbleH = padTop + totalTextH + padBottom;
+      var top = y - bubbleH / 2;
+
+      // Draw bubble background first
+      var bg = this.add.graphics();
+      bg.fillStyle(0xfaf6f0, 1);
+      bg.fillRoundedRect(x - width / 2, top, width, bubbleH, 24);
+      bg.lineStyle(4, 0xc4b8a4, 1);
+      bg.strokeRoundedRect(x - width / 2, top, width, bubbleH, 24);
+
+      // Name label
+      this.add.text(x, top + 18, name, {
+        fontSize: '18px', fontFamily: '"Baloo 2", cursive',
+        color: '#5b8c5a', fontStyle: 'bold'
+      }).setOrigin(0.5, 0);
+
+      // Create text lines on top of background
+      var curY = top + padTop;
+      for (var j = 0; j < lines.length; j++) {
+        this.add.text(x, curY, lines[j].text, {
+          fontSize: '20px', fontFamily: '"Baloo 2", cursive',
+          color: lines[j].color,
+          wordWrap: { width: textWidth },
+          align: 'center', lineSpacing: 2
+        }).setOrigin(0.5, 0);
+        curY += heights[j] + gap;
+      }
+
+      return top + bubbleH;
     }
   });
 
