@@ -24,6 +24,10 @@
       this.activeDrag = null;
       this._pendingGridDrag = null;
 
+      // Zoomable container for all grid-area content
+      this.gridContainer = this.add.container(0, 0).setDepth(0);
+      this.zoomLevel = 1.0;
+
       this._buildBackground();
       this._buildHeader();
       this._buildGrid();
@@ -33,14 +37,15 @@
     },
 
     _buildBackground: function () {
+      // Full-screen cream fill (stays outside container — always fills screen)
       this.add.rectangle(W / 2, H / 2, W, H, 0xf5e6d3).setDepth(-2);
 
-      // Workshop background image — show bottom portion, centered horizontally
-      // Manual scale factor — tweak to align background with grid tiles
+      // Workshop background image — zooms with grid
       var BG_SCALE_FACTOR = 1.135;
       var bg = this.add.image(GRID_AREA_RIGHT / 2, H, 'workshop_bg').setOrigin(0.5, 1).setDepth(-1);
       var scale = (GRID_AREA_RIGHT / bg.width) * BG_SCALE_FACTOR;
       bg.setScale(scale);
+      this.gridContainer.add(bg);
     },
 
     _buildHeader: function () {
@@ -57,6 +62,61 @@
       btnImg.on('pointerdown', function () {
         this.scene.start('EvalScene');
       }, this);
+
+      // Zoom buttons — right side, between grid and inventory
+      var zoomX = GRID_AREA_RIGHT - 74;
+      var zoomBtnSize = 72;
+      var zoomGap = 12;
+      var zoomY1 = H - zoomBtnSize - zoomGap - zoomBtnSize / 2 - 30;
+      var zoomY2 = H - zoomBtnSize / 2 - 30;
+      var zoomStyle = {
+        fontSize: '44px', fontFamily: '"Baloo 2", cursive',
+        color: '#ffffff', fontStyle: 'bold',
+        stroke: '#3a1a5a', strokeThickness: 3
+      };
+
+      var plusBg = this.add.image(zoomX, zoomY1, 'ui_button').setDepth(201);
+      plusBg.setScale(zoomBtnSize / plusBg.width * 1.5, zoomBtnSize / plusBg.height * 1.3);
+      plusBg.setInteractive({ useHandCursor: true });
+      this.add.text(zoomX, zoomY1, '+', zoomStyle).setOrigin(0.5).setDepth(202);
+
+      var minusBg = this.add.image(zoomX, zoomY2, 'ui_button').setDepth(201);
+      minusBg.setScale(zoomBtnSize / minusBg.width * 1.5, zoomBtnSize / minusBg.height * 1.3);
+      minusBg.setInteractive({ useHandCursor: true });
+      this.add.text(zoomX, zoomY2, '−', zoomStyle).setOrigin(0.5).setDepth(202);
+
+      var self = this;
+      plusBg.on('pointerdown', function () { self._applyZoom(0.15); });
+      minusBg.on('pointerdown', function () { self._applyZoom(-0.15); });
+    },
+
+    _applyZoom: function (delta) {
+      this.zoomLevel = Phaser.Math.Clamp(this.zoomLevel + delta, 1.0, 1.6);
+      var z = this.zoomLevel;
+
+      // Scale around grid area center
+      var cx = GRID_AREA_RIGHT / 2;
+      var cy = H / 2;
+      this.gridContainer.setScale(z);
+      this.gridContainer.setPosition(cx * (1 - z), cy * (1 - z));
+    },
+
+    // Convert screen coords → grid-container-local coords
+    _screenToGrid: function (sx, sy) {
+      var gc = this.gridContainer;
+      return {
+        x: (sx - gc.x) / gc.scaleX,
+        y: (sy - gc.y) / gc.scaleY
+      };
+    },
+
+    // Convert grid-container-local coords → screen coords
+    _gridToScreen: function (gx, gy) {
+      var gc = this.gridContainer;
+      return {
+        x: gc.x + gx * gc.scaleX,
+        y: gc.y + gy * gc.scaleY
+      };
     },
 
     _buildGrid: function () {
@@ -83,6 +143,10 @@
 
       this.grid = new IsometricGrid(this, originX, originY);
 
+      // Add grid graphics to zoomable container
+      this.gridContainer.add(this.grid.floorGfx);
+      this.gridContainer.add(this.grid.highlightGfx);
+
       this.inventoryLeft = GRID_AREA_RIGHT;
     },
 
@@ -103,6 +167,7 @@
         if (!furnitureDef) continue;
 
         var furn = new FurnitureObject(this, furnitureDef, col, row, this.grid);
+        this.gridContainer.add(furn.container);
         this.placedFurnitures[furnitureDef.id] = furn;
         this.grid.occupyCells(col, row, furnitureDef.gridW, furnitureDef.gridH, furnitureDef.id);
 
@@ -110,6 +175,7 @@
           var itemDef = window.findItemDef(cell.items[j]);
           if (!itemDef) continue;
           var item = new ItemObject(this, itemDef);
+          this.gridContainer.add(item.container);
           item.placedOnFurniture = furn;
           item.furnitureOriginKey = origins[i].key;
           furn.attachItem(item);
@@ -124,6 +190,7 @@
         var fiDef = window.findItemDef(fi.itemId);
         if (!fiDef) continue;
         var floorItem = new ItemObject(this, fiDef);
+        this.gridContainer.add(floorItem.container);
         var pos = this.grid.cellToScreen(fi.col, fi.row);
         floorItem.setPosition(pos.x, pos.y - 20);
         floorItem.floorCol = fi.col;
@@ -141,7 +208,10 @@
         if (scene.activeDrag || scene._pendingGridDrag) return;
         if (pointer.x >= scene.inventoryLeft) return;
 
-        // Collect all hittable objects with bounding rects
+        // Convert pointer to grid-local coords for hit testing
+        var gp = scene._screenToGrid(pointer.x, pointer.y);
+
+        // Collect all hittable objects with bounding rects (in grid-local coords)
         var candidates = [];
         var ITEM_HW = 36, ITEM_HH = 36;
 
@@ -172,14 +242,14 @@
         // Sort by depth descending — frontmost wins
         candidates.sort(function (a, b) { return b.depth - a.depth; });
 
-        // First candidate whose rect contains the pointer
+        // First candidate whose rect contains the pointer (grid-local coords)
         for (var m = 0; m < candidates.length; m++) {
           var c = candidates[m];
-          if (pointer.x >= c.x - c.hw && pointer.x <= c.x + c.hw &&
-              pointer.y >= c.y - c.hh && pointer.y <= c.y + c.hh) {
+          if (gp.x >= c.x - c.hw && gp.x <= c.x + c.hw &&
+              gp.y >= c.y - c.hh && gp.y <= c.y + c.hh) {
             scene._pendingGridDrag = {
               type: c.type, obj: c.obj,
-              startX: pointer.x, startY: pointer.y
+              startX: pointer.x, startY: pointer.y // screen coords for drag threshold
             };
             return;
           }
@@ -209,7 +279,8 @@
       if (this.activeDrag) return;
 
       var def = item.def;
-      var ghost = this.add.image(item.container.x, item.container.y, 'item_' + def.id)
+      var sp = this._gridToScreen(item.container.x, item.container.y);
+      var ghost = this.add.image(sp.x, sp.y, 'item_' + def.id)
         .setScale(0.44).setDepth(500).setAlpha(0.85);
 
       if (item.placedOnFurniture) {
@@ -232,7 +303,8 @@
       if (this.activeDrag) return;
 
       var def = floorItem.def;
-      var ghost = this.add.image(floorItem.container.x, floorItem.container.y, 'item_' + def.id)
+      var sp = this._gridToScreen(floorItem.container.x, floorItem.container.y);
+      var ghost = this.add.image(sp.x, sp.y, 'item_' + def.id)
         .setScale(0.44).setDepth(500).setAlpha(0.85);
 
       window.GameState.removeFloorItem(def.id, floorItem.floorCol, floorItem.floorRow);
@@ -250,7 +322,8 @@
       if (this.activeDrag) return;
 
       var def = furn.def;
-      var ghost = this.add.image(furn.container.x, furn.container.y, 'item_' + def.id)
+      var sp = this._gridToScreen(furn.container.x, furn.container.y);
+      var ghost = this.add.image(sp.x, sp.y, 'item_' + def.id)
         .setScale(0.56).setDepth(500).setAlpha(0.85);
 
       // Remember attached item defs before removing from state
@@ -290,13 +363,15 @@
       // Active item/furniture drag
       if (this.activeDrag) {
         var drag = this.activeDrag;
-        drag.ghost.setPosition(pointer.x, pointer.y);
+        drag.ghost.setPosition(pointer.x, pointer.y); // screen coords
 
         // Clear previous furniture highlight tint
         this._clearFurnitureHighlight();
 
         if (pointer.x < this.inventoryLeft) {
-          var cell = this.grid.screenToCell(pointer.x, pointer.y + DRAG_CELL_OFFSET_Y);
+          // Convert to grid-local for cell detection
+          var gp = this._screenToGrid(pointer.x, pointer.y);
+          var cell = this.grid.screenToCell(gp.x, gp.y + DRAG_CELL_OFFSET_Y);
           if (this.grid.isValidCell(cell.col, cell.row)) {
             if (drag.isFurniture) {
               this.grid.highlightCells(cell.col, cell.row, drag.def.gridW, drag.def.gridH);
@@ -346,7 +421,9 @@
       this.activeDrag = null;
       this.grid.clearHighlights();
 
-      var cell = this.grid.screenToCell(pointer.x, pointer.y + DRAG_CELL_OFFSET_Y);
+      // Convert to grid-local for cell detection
+      var gp = this._screenToGrid(pointer.x, pointer.y);
+      var cell = this.grid.screenToCell(gp.x, gp.y + DRAG_CELL_OFFSET_Y);
       var isOnGrid = pointer.x < this.inventoryLeft && this.grid.isValidCell(cell.col, cell.row);
 
       if (isOnGrid && drag.isFurniture) {
@@ -370,6 +447,7 @@
       this.grid.occupyCells(col, row, def.gridW, def.gridH, def.id);
 
       var furn = new FurnitureObject(this, def, col, row, this.grid);
+      this.gridContainer.add(furn.container);
       this.placedFurnitures[def.id] = furn;
 
       // Re-attach carried items
@@ -379,6 +457,7 @@
         var itemDef = carried[i];
         window.GameState.placeItem(col, row, itemDef);
         var item = new ItemObject(this, itemDef);
+        this.gridContainer.add(item.container);
         item.placedOnFurniture = furn;
         item.furnitureOriginKey = originKey;
         furn.attachItem(item);
@@ -400,6 +479,7 @@
         var furnObj = this.placedFurnitures[furnCell.furnitureId];
         if (furnObj) {
           var item = new ItemObject(this, def);
+          this.gridContainer.add(item.container);
           item.placedOnFurniture = furnObj;
           item.furnitureOriginKey = originKey;
           furnObj.attachItem(item);
@@ -411,6 +491,7 @@
         window.GameState.addFloorItem(def, col, row);
 
         var floorItem = new ItemObject(this, def);
+        this.gridContainer.add(floorItem.container);
         var pos = this.grid.cellToScreen(col, row);
         floorItem.setPosition(pos.x, pos.y - 20);
         floorItem.floorCol = col;
