@@ -2,7 +2,7 @@
 (function () {
 
   var W = 1864, H = 860;
-  var HEADER_H = 88;
+  var HEADER_H = 0;
   var INVENTORY_W = 400;
   var GRID_AREA_RIGHT = W - INVENTORY_W;
   var GRID_DRAG_THRESHOLD = 20;
@@ -44,24 +44,17 @@
     },
 
     _buildHeader: function () {
-      this.add.rectangle(W / 2, HEADER_H / 2, W, HEADER_H, 0x5b8c5a, 0.95).setDepth(200);
+      // Play button — bottom-left corner using ui_play image
+      var btnX = 140, btnY = H - 84;
+      var btnImg = this.add.image(btnX, btnY, 'ui_play').setScale(1.4).setDepth(201)
+        .setInteractive({ useHandCursor: true });
+      var btnLabel = this.add.text(btnX, btnY, 'Sal a la urgencia', {
+        fontSize: '22px', fontFamily: '"Baloo 2", cursive',
+        color: '#ffffff', fontStyle: 'bold',
+        stroke: '#3a1a5a', strokeThickness: 3
+      }).setOrigin(0.5, 0.5).setDepth(202);
 
-      var roundNum = window.GameState.roundNumber;
-      var msg = roundNum <= 1
-        ? '📞 ¡Yaiza necesita a Dombyto!'
-        : '🔄 Intento #' + roundNum + ' — ¡Corrige!';
-
-      this.add.text(28, HEADER_H / 2, msg, {
-        fontSize: '26px', fontFamily: '"Baloo 2", cursive', color: '#ffffff'
-      }).setOrigin(0, 0.5).setDepth(201);
-
-      var btn = this.add.text(W - INVENTORY_W - 40, HEADER_H / 2, '▶️ ¡Sal!', {
-        fontSize: '28px', fontFamily: '"Baloo 2", cursive',
-        backgroundColor: '#d9534f', color: '#ffffff',
-        padding: { x: 24, y: 12 }
-      }).setOrigin(1, 0.5).setDepth(201).setInteractive({ useHandCursor: true });
-
-      btn.on('pointerdown', function () {
+      btnImg.on('pointerdown', function () {
         this.scene.start('EvalScene');
       }, this);
     },
@@ -84,7 +77,7 @@
 
       // Manual offset — tweak these to align grid with background
       var GRID_OFFSET_X = 0;
-      var GRID_OFFSET_Y = 100;
+      var GRID_OFFSET_Y = 140;
       originX += GRID_OFFSET_X;
       originY += GRID_OFFSET_Y;
 
@@ -146,7 +139,7 @@
 
       this.input.on('pointerdown', function (pointer) {
         if (scene.activeDrag || scene._pendingGridDrag) return;
-        if (pointer.x >= scene.inventoryLeft || pointer.y <= HEADER_H) return;
+        if (pointer.x >= scene.inventoryLeft) return;
 
         // Collect all hittable objects with bounding rects
         var candidates = [];

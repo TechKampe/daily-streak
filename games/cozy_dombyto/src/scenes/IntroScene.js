@@ -21,6 +21,10 @@
       // Workshop background
       this.load.image('workshop_bg', 'assets/background/bg.jpg');
 
+      // UI buttons
+      this.load.image('ui_button', 'assets/ui/button.png');
+      this.load.image('ui_play', 'assets/ui/play.png');
+
       // Item sprites
       var allItems = window.ITEMS_DATA;
       var cats = Object.keys(allItems);

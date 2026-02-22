@@ -1,16 +1,14 @@
 // Cozy Dombyto — Inventory panel (right side, compact 2×4 grid)
 (function () {
 
-  var TAB_H = 64;
+  var TAB_H = 56;
   var ITEM_SIZE = 72;
   var ITEM_COLS = 2;
   var ITEM_CELL_W = 180;
   var ITEM_CELL_H = 160;
   var SCROLL_PAD = 12;
   var DRAG_THRESHOLD = 24;
-  var PANEL_COLOR = 0xe8dcc8;
-  var TAB_ACTIVE = 0x5b8c5a;
-  var TAB_INACTIVE = 0xc4b8a4;
+  var PANEL_COLOR = 0xf0e6d2;
 
   window.Inventory = function (scene, x, y, width, height) {
     this.scene = scene;
@@ -44,19 +42,17 @@
   var proto = Inventory.prototype;
 
   proto._drawBackground = function () {
-    this.panelBg = this.scene.add.rectangle(
-      this.px + this.pw / 2, this.py + this.ph / 2,
-      this.pw, this.ph, PANEL_COLOR, 0.95
-    ).setDepth(99);
-
-    this.leftBorder = this.scene.add.rectangle(
-      this.px, this.py + this.ph / 2, 4, this.ph, 0x5b8c5a, 0.6
-    ).setDepth(99);
+    // Outer blue rounded rect — wraps the entire inventory
+    var pad = 6;
+    var r = 16;
+    this.panelGfx = this.scene.add.graphics().setDepth(99);
+    var g = this.panelGfx;
+    g.fillStyle(0x5b9bd5, 1);
+    g.fillRoundedRect(this.px + pad, this.py + pad, this.pw - pad * 2, this.ph - pad * 2, r);
   };
 
   proto._buildTabs = function () {
     var tabs = window.INVENTORY_TABS;
-    // 2 tabs per row, 2 rows
     var colCount = 2;
     var rowCount = Math.ceil(tabs.length / colCount);
     var tabCellW = this.pw / colCount;
@@ -67,29 +63,31 @@
       (function (tab, index) {
         var tc = index % colCount;
         var tr = Math.floor(index / colCount);
-        var tx = self.px + tc * tabCellW + tabCellW / 2;
-        var ty = self.py + tr * tabRowH + tabRowH / 2 + 6;
+        var cx = self.px + tc * tabCellW + tabCellW / 2;
+        var cy = self.py + tr * tabRowH + tabRowH / 2 + 4;
 
-        var bg = self.scene.add.rectangle(tx, ty, tabCellW - 8, tabRowH - 8, TAB_INACTIVE, 1)
-          .setInteractive({ useHandCursor: true })
-          .setDepth(101);
-        bg.setStrokeStyle(2, 0x8b7355, 0.4);
-
-        var label = self.scene.add.text(tx, ty, tab.label, {
-          fontSize: '20px', fontFamily: '"Baloo 2", cursive', color: '#3d2b1f',
-          align: 'center'
-        }).setOrigin(0.5, 0.5).setDepth(102);
-
-        bg.on('pointerdown', function () {
+        // Button image as background — stretch to fit
+        var btnImg = self.scene.add.image(cx, cy, 'ui_button').setDepth(101);
+        var scaleX = (tabCellW - 8) / btnImg.width;
+        var scaleY = (tabRowH - 8) / btnImg.height;
+        btnImg.setScale(scaleX, scaleY);
+        btnImg.setInteractive({ useHandCursor: true });
+        btnImg.on('pointerdown', function () {
           self.switchTab(tab.id);
         });
 
-        self.tabBGs.push(bg);
+        var label = self.scene.add.text(cx, cy, tab.label, {
+          fontSize: '18px', fontFamily: '"Baloo 2", cursive', color: '#ffffff',
+          fontStyle: 'bold', align: 'center',
+          stroke: '#2a5a1a', strokeThickness: 3
+        }).setOrigin(0.5, 0.5).setDepth(102);
+
+        self.tabBGs.push(btnImg);
         self.tabLabels.push(label);
       })(tabs[i], i);
     }
 
-    this._tabTotalH = rowCount * tabRowH + 12;
+    this._tabTotalH = rowCount * tabRowH + 8;
     this._updateTabHighlights();
   };
 
@@ -104,13 +102,26 @@
     var tabs = window.INVENTORY_TABS;
     for (var i = 0; i < tabs.length; i++) {
       var isActive = tabs[i].id === this.activeTab;
-      this.tabBGs[i].setFillStyle(isActive ? TAB_ACTIVE : TAB_INACTIVE, 1);
+      this.tabBGs[i].setAlpha(isActive ? 1.0 : 0.7);
+      this.tabBGs[i].setTint(isActive ? 0xffffff : 0xc8a870);
+      this.tabLabels[i].setColor(isActive ? '#ffffff' : '#5a4a3a');
+      this.tabLabels[i].setStroke(isActive ? '#2a5a1a' : 'transparent', isActive ? 3 : 0);
     }
   };
 
   proto._buildScrollArea = function () {
     this.scrollY = this.py + this._tabTotalH;
     this.scrollH = this.ph - this._tabTotalH - 8;
+
+    // Inner navy rect — content area below tabs
+    var inPad = 12;
+    this.contentGfx = this.scene.add.graphics().setDepth(100);
+    this.contentGfx.fillStyle(0x2a3a6a, 1);
+    this.contentGfx.fillRoundedRect(
+      this.px + inPad, this.scrollY,
+      this.pw - inPad * 2, this.scrollH,
+      12
+    );
 
     var maskGfx = this.scene.make.graphics({ add: false });
     maskGfx.fillRect(this.px, this.scrollY, this.pw, this.scrollH);
@@ -203,7 +214,7 @@
 
       var labelY = def.gridW !== undefined ? ITEM_SIZE / 2 + 16 : ITEM_SIZE / 2 - 4;
       var label = this.scene.add.text(0, labelY, def.label, {
-        fontSize: '16px', fontFamily: '"Baloo 2", cursive', color: '#5a4a3a',
+        fontSize: '16px', fontFamily: '"Baloo 2", cursive', color: '#e8dcc8',
         align: 'center', wordWrap: { width: ITEM_CELL_W - 12 }
       }).setOrigin(0.5, 0);
 
@@ -243,8 +254,8 @@
       this.tabBGs[j].destroy();
       this.tabLabels[j].destroy();
     }
-    if (this.panelBg) this.panelBg.destroy();
-    if (this.leftBorder) this.leftBorder.destroy();
+    if (this.panelGfx) this.panelGfx.destroy();
+    if (this.contentGfx) this.contentGfx.destroy();
   };
 
 })();
