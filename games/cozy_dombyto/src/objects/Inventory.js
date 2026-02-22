@@ -1,12 +1,12 @@
 // Cozy Dombyto — Inventory panel (right side, compact 2×4 grid)
 (function () {
 
-  var TAB_H = 56;
+  var TAB_H = 68;
   var ITEM_SIZE = 72;
   var ITEM_COLS = 2;
   var ITEM_CELL_W = 180;
-  var ITEM_CELL_H = 160;
-  var SCROLL_PAD = 35;
+  var ITEM_CELL_H = 140;
+  var SCROLL_PAD = 20;
   var DRAG_THRESHOLD = 24;
   var PANEL_COLOR = 0xf0e6d2;
 
@@ -57,23 +57,20 @@
 
   proto._buildTabs = function () {
     var tabs = window.INVENTORY_TABS;
-    var colCount = 2;
-    var rowCount = Math.ceil(tabs.length / colCount);
-    var tabCellW = this.pw / colCount;
+    var tabCellW = this.pw - 24;  // Full width with padding
     var tabRowH = TAB_H;
+    var gap = 4;
     var self = this;
 
     for (var i = 0; i < tabs.length; i++) {
       (function (tab, index) {
-        var tc = index % colCount;
-        var tr = Math.floor(index / colCount);
-        var cx = self.px + tc * tabCellW + tabCellW / 2;
-        var cy = self.py + tr * tabRowH + tabRowH / 2 + 4;
+        var cx = self.px + self.pw / 2;
+        var cy = self.py + 8 + index * (tabRowH + gap) + tabRowH / 2;
 
         // Button image as background — stretch to fit
         var btnImg = self.scene.add.image(cx, cy, 'ui_button').setDepth(101);
-        var scaleX = (tabCellW - 24) / btnImg.width;
-        var scaleY = (tabRowH - 14) / btnImg.height;
+        var scaleX = (tabCellW - 10) / btnImg.width;
+        var scaleY = (tabRowH - 6) / btnImg.height;
         btnImg.setScale(scaleX, scaleY);
         btnImg.setInteractive({ useHandCursor: true });
         btnImg.on('pointerdown', function () {
@@ -81,7 +78,7 @@
         });
 
         var label = self.scene.add.text(cx, cy, tab.label, {
-          fontSize: '18px', fontFamily: '"Baloo 2", cursive', color: '#ffffff',
+          fontSize: '28px', fontFamily: '"Baloo 2", cursive', color: '#ffffff',
           fontStyle: 'bold', align: 'center',
           stroke: '#2a5a1a', strokeThickness: 3
         }).setOrigin(0.5, 0.5).setDepth(102);
@@ -91,7 +88,7 @@
       })(tabs[i], i);
     }
 
-    this._tabTotalH = rowCount * tabRowH + 8;
+    this._tabTotalH = tabs.length * (tabRowH + gap) + 12;
     this._updateTabHighlights();
   };
 
@@ -222,6 +219,8 @@
 
     var items = window.GameState.inventory[this.activeTab] || [];
     var centerX = this.px + this.pw / 2;
+    var isFurnitureTab = this.activeTab === 'muebles';
+    var cellH = isFurnitureTab ? 180 : ITEM_CELL_H;
 
     for (var j = 0; j < items.length; j++) {
       var def = items[j];
@@ -229,7 +228,7 @@
       var gridRow = Math.floor(j / ITEM_COLS);
 
       var baseX = centerX - (ITEM_COLS * ITEM_CELL_W) / 2 + gridCol * ITEM_CELL_W + ITEM_CELL_W / 2;
-      var baseY = this.scrollY + SCROLL_PAD + gridRow * ITEM_CELL_H + ITEM_CELL_H / 2;
+      var baseY = this.scrollY + SCROLL_PAD + gridRow * cellH + cellH / 2;
 
       var ct = this.scene.add.container(baseX, baseY).setDepth(103);
 
@@ -258,8 +257,10 @@
   };
 
   proto._clampScroll = function () {
+    var isFurnitureTab = this.activeTab === 'muebles';
+    var cellH = isFurnitureTab ? 180 : ITEM_CELL_H;
     var totalRows = Math.ceil(this.itemEmojis.length / ITEM_COLS);
-    var totalH = totalRows * ITEM_CELL_H + SCROLL_PAD * 2;
+    var totalH = totalRows * cellH + SCROLL_PAD * 2;
     var maxScroll = 0;
     var minScroll = Math.min(0, this.scrollH - totalH);
     this.scrollOffset = Math.max(minScroll, Math.min(maxScroll, this.scrollOffset));
