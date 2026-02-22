@@ -14,7 +14,7 @@
       width: 1864,
       height: 860
     },
-    scene: [IntroScene, WorkshopScene, EvalScene, VictoryScene],
+    scene: [BootScene, IntroScene, WorkshopScene, EvalScene, VictoryScene],
     render: {
       pixelArt: false,
       roundPixels: false,

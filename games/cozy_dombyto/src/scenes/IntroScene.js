@@ -10,32 +10,6 @@
       Phaser.Scene.call(this, { key: 'IntroScene' });
     },
 
-    preload: function () {
-      this.load.image('dombyto_still', 'assets/characters/dombyto_still.png');
-      this.load.image('dombyto_happy', 'assets/characters/dombyto_happy.png');
-      this.load.image('dombyto_worried', 'assets/characters/dombyto_worried.png');
-      this.load.image('dombyto_celebrating', 'assets/characters/dombyto_celebrating.png');
-      this.load.image('yaiza_worried', 'assets/characters/yaiza_worried.png');
-      this.load.image('yaiza_happy', 'assets/characters/yaiza_happy.png');
-
-      // Workshop background
-      this.load.image('workshop_bg', 'assets/background/bg.jpg');
-
-      // UI buttons
-      this.load.image('ui_button', 'assets/ui/button.png');
-      this.load.image('ui_play', 'assets/ui/play.png');
-
-      // Item sprites
-      var allItems = window.ITEMS_DATA;
-      var cats = Object.keys(allItems);
-      for (var c = 0; c < cats.length; c++) {
-        var arr = allItems[cats[c]];
-        for (var i = 0; i < arr.length; i++) {
-          this.load.image('item_' + arr[i].id, 'assets/items/' + arr[i].id + '.png');
-        }
-      }
-    },
-
     create: function () {
       var isFirstRound = window.GameState.roundNumber === 0;
 
