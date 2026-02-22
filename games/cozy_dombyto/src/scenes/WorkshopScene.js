@@ -6,6 +6,7 @@
   var INVENTORY_W = 400;
   var GRID_AREA_RIGHT = W - INVENTORY_W;
   var GRID_DRAG_THRESHOLD = 20;
+  var DRAG_CELL_OFFSET_Y = 70; // offset pointer Y when calculating target cell during drag
 
   window.WorkshopScene = new Phaser.Class({
     Extends: Phaser.Scene,
@@ -144,8 +145,34 @@
         // Check if a furniture occupies this cell
         var furnId = scene.grid.getFurnitureIdAtCell(cell.col, cell.row);
         if (furnId && scene.placedFurnitures[furnId]) {
+          var furn = scene.placedFurnitures[furnId];
+
+          // Check attached items first — pick the closest one to the pointer
+          if (furn.attachedItems.length > 0) {
+            var closestItem = null;
+            var closestDist = Infinity;
+            for (var j = 0; j < furn.attachedItems.length; j++) {
+              var ai = furn.attachedItems[j];
+              var dx = pointer.x - ai.container.x;
+              var dy = pointer.y - ai.container.y;
+              var dist = dx * dx + dy * dy;
+              if (dist < closestDist) {
+                closestDist = dist;
+                closestItem = ai;
+              }
+            }
+            // If pointer is within ~60px of an item, select the item
+            if (closestItem && closestDist < 60 * 60) {
+              scene._pendingGridDrag = {
+                type: 'item', obj: closestItem,
+                startX: pointer.x, startY: pointer.y
+              };
+              return;
+            }
+          }
+
           scene._pendingGridDrag = {
-            type: 'furniture', obj: scene.placedFurnitures[furnId],
+            type: 'furniture', obj: furn,
             startX: pointer.x, startY: pointer.y
           };
           return;
@@ -269,7 +296,7 @@
         drag.ghost.setPosition(pointer.x, pointer.y);
 
         if (pointer.x < this.inventoryLeft) {
-          var cell = this.grid.screenToCell(pointer.x, pointer.y);
+          var cell = this.grid.screenToCell(pointer.x, pointer.y + DRAG_CELL_OFFSET_Y);
           if (this.grid.isValidCell(cell.col, cell.row)) {
             if (drag.isFurniture) {
               this.grid.highlightCells(cell.col, cell.row, drag.def.gridW, drag.def.gridH);
@@ -301,7 +328,7 @@
       this.activeDrag = null;
       this.grid.clearHighlights();
 
-      var cell = this.grid.screenToCell(pointer.x, pointer.y);
+      var cell = this.grid.screenToCell(pointer.x, pointer.y + DRAG_CELL_OFFSET_Y);
       var isOnGrid = pointer.x < this.inventoryLeft && this.grid.isValidCell(cell.col, cell.row);
 
       if (isOnGrid && drag.isFurniture) {

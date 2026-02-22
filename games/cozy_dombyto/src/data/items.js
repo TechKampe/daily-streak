@@ -3,12 +3,11 @@
 
   window.ITEMS_DATA = {
     furniture: [
-      { id: 'tablero',    emoji: '🔲', label: 'Tablero',        gridW: 2, gridH: 1, accepts: ['herramienta'], required: true },
-      { id: 'mesa',       emoji: '🪑', label: 'Mesa',           gridW: 2, gridH: 2, accepts: ['herramienta'], required: true },
-      { id: 'estanteria', emoji: '🗄️', label: 'Estantería',    gridW: 1, gridH: 2, accepts: ['material'],    required: true },
-      { id: 'contenedor', emoji: '🗑️', label: 'Contenedor',    gridW: 1, gridH: 1, accepts: ['residuo'],     required: true },
-      { id: 'lampara',    emoji: '💡', label: 'Lámpara',        gridW: 1, gridH: 1, accepts: [],              required: true },
-      { id: 'soporte',    emoji: '📱', label: 'Soporte móvil',  gridW: 1, gridH: 1, accepts: [],              required: true }
+      { id: 'tablero',    emoji: '🔲', label: 'Tablero',        gridW: 2, gridH: 1, accepts: ['herramienta'], required: true, spriteScale: 0.90, spriteX: 0, spriteY: -70 },
+      { id: 'mesa',       emoji: '🪑', label: 'Mesa',           gridW: 2, gridH: 2, accepts: ['herramienta'], required: true, spriteScale: 1.0, spriteX: 5,   spriteY: -55 },
+      { id: 'estanteria', emoji: '🗄️', label: 'Estantería',    gridW: 1, gridH: 2, accepts: ['material'],    required: true, spriteScale: 1.40, spriteX: 0,   spriteY: -125 },
+      { id: 'contenedor', emoji: '🗑️', label: 'Contenedor',    gridW: 1, gridH: 1, accepts: ['residuo'],     required: true, spriteScale: 1.0, spriteX: 0,   spriteY: -50 },
+      { id: 'lampara',    emoji: '💡', label: 'Lámpara',        gridW: 1, gridH: 1, accepts: [],              required: true, spriteScale: 1.0, spriteX: -20,   spriteY: -80 },
     ],
 
     herramientas: [
@@ -19,7 +18,8 @@
       { id: 'tijera',        emoji: '✂️', label: 'Tijera eléctr.', category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
       { id: 'llave',         emoji: '🔩', label: 'Llave inglesa',  category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
       { id: 'taladro',       emoji: '🔨', label: 'Taladro',        category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
-      { id: 'nivel_laser',   emoji: '📐', label: 'Nivel láser',    category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] }
+      { id: 'nivel_laser',   emoji: '📐', label: 'Nivel láser',    category: 'herramienta', requiredByYaiza: false, correctFurniture: ['tablero', 'mesa'] },
+      { id: 'soporte',       emoji: '📱', label: 'Soporte móvil',  category: 'herramienta', requiredByYaiza: true, correctFurniture: ['tablero', 'mesa'] }
     ],
 
     material: [
@@ -74,8 +74,7 @@
     },
     rule2: {
       messages: {
-        lampara: '¡No veo nada! ¡La luz no está puesta!',
-        soporte: '¡No tengo el móvil a mano! ¡No puedo ver la dirección de Yaiza!'
+        lampara: '¡No veo nada! ¡La luz no está puesta!'
       }
     },
     rule3: {
@@ -84,7 +83,8 @@
         alicates:       '¡Los alicates no están en el taller! ¡Los necesito!',
         pelacables:     '¡El pelacables no está! ¿Cómo pelo los cables?',
         multimetro:     '¡El multímetro sigue en la caja sin abrir! No me lo puedo llevar.',
-        diferencial:    '¡El diferencial de repuesto no está en la estantería! Lo necesito.'
+        diferencial:    '¡El diferencial de repuesto no está en la estantería! Lo necesito.',
+        soporte:        '¡No tengo el móvil a mano! ¡No puedo ver la dirección de Yaiza!'
       }
     },
     rule4: {

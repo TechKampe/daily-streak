@@ -19,20 +19,17 @@
       result.score += 25;
       result.successes.push('Muebles principales colocados');
 
-      // ---- Rule 2: Lamp + mobile support placed ----
-      var infra = ['lampara', 'soporte'];
-      for (var j = 0; j < infra.length; j++) {
-        if (placed.indexOf(infra[j]) === -1) {
-          result.failedRule = 2;
-          result.failMessage = RULES_DATA.rule2.messages[infra[j]];
-          return result;
-        }
+      // ---- Rule 2: Lamp placed ----
+      if (placed.indexOf('lampara') === -1) {
+        result.failedRule = 2;
+        result.failMessage = RULES_DATA.rule2.messages.lampara;
+        return result;
       }
       result.score += 25;
-      result.successes.push('Luz y soporte móvil listos');
+      result.successes.push('Luz preparada');
 
       // ---- Rule 3: 5 required items on grid (not in inventory) ----
-      var requiredItems = ['destornillador', 'alicates', 'pelacables', 'multimetro', 'diferencial'];
+      var requiredItems = ['destornillador', 'alicates', 'pelacables', 'multimetro', 'diferencial', 'soporte'];
       var onGrid = state.getItemsOnGrid();
       for (var k = 0; k < requiredItems.length; k++) {
         if (onGrid.indexOf(requiredItems[k]) === -1) {

@@ -20,9 +20,11 @@
     var hw = grid.tileW * def.gridW / 2;
     var hh = grid.tileH * def.gridH / 2;
 
-    // Sprite
-    var spriteScale = def.gridW >= 2 ? 0.90 : 0.50;
-    this.sprite = scene.add.image(-20, -30, 'item_' + def.id).setScale(spriteScale);
+    // Sprite (per-item scale & offset from definition)
+    var spriteScale = def.spriteScale !== undefined ? def.spriteScale : 0.50;
+    var spriteX = def.spriteX || 0;
+    var spriteY = def.spriteY || 0;
+    this.sprite = scene.add.image(spriteX, spriteY, 'item_' + def.id).setScale(spriteScale);
     this.container.add(this.sprite);
 
     // Label
@@ -56,13 +58,17 @@
 
   proto._layoutItems = function () {
     var count = this.attachedItems.length;
-    var spacing = Math.min(48, 120 / Math.max(count, 1));
+    if (count === 0) return;
+
+    // Spread items across the furniture footprint with generous spacing
+    var footprintW = this.grid.tileW * this.def.gridW;
+    var spacing = Math.min(80, (footprintW * 0.7) / Math.max(count, 1));
     var startX = -(count - 1) * spacing / 2;
 
     for (var i = 0; i < count; i++) {
       var item = this.attachedItems[i];
       var tx = startX + i * spacing;
-      var ty = -56 - (i % 2) * 20;
+      var ty = -50 - (i % 2) * 24;
       item.container.setPosition(this.container.x + tx, this.container.y + ty);
     }
   };
