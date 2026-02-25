@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>La Mesa de Mezclas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="W">
+
+  <!-- HUD -->
+  <div id="hud">
+    <span class="pts">⚡ <span id="hud-pts">0</span>pts</span>
+    <span class="local-num" id="hud-local">Local 1/5</span>
+    <div class="timer-bar"><div class="timer-bar-fill" id="hud-timer-fill"></div></div>
+  </div>
+
+  <!-- INTRO -->
+  <div class="screen active" id="intro">
+    <h1>Domina la <span>relación entre magnitudes</span></h1>
+    <div class="intro-chars">
+      <img src="assets/personaje_jesus.png" alt="Jesús">
+      <img src="assets/personaje_irene.png" alt="Irene">
+      <img src="assets/personaje_dani.png" alt="Dani">
+      <img src="assets/personaje_pablo.png" alt="Pablo">
+      <img src="assets/personaje_david.png" alt="David">
+    </div>
+    <p class="sub">5 locales te necesitan. En cada uno, mueve los sliders de <strong style="color:var(--turq)">Voltaje</strong> y <strong style="color:var(--lime)">Resistencia</strong> como una mesa de mezclas para alcanzar la potencia exacta.</p>
+    <div class="magnitudes">
+      <div class="mag-card v"><div class="letter">V</div><div class="unit">voltios</div></div>
+      <div class="mag-card a"><div class="letter">A</div><div class="unit">amperios</div></div>
+      <div class="mag-card o"><div class="letter">Ω</div><div class="unit">ohmios</div></div>
+      <div class="mag-card w"><div class="letter">W</div><div class="unit">vatios</div></div>
+    </div>
+    <button class="btn" onclick="startGame()">¡Vamos!</button>
+  </div>
+
+  <!-- GAMEPLAY -->
+  <div class="screen" id="gameplay">
+    <div class="gp-bg" id="gp-bg"></div>
+    <div class="gp-title">
+      <div class="name" id="gp-name"></div>
+      <div class="desc" id="gp-desc"></div>
+    </div>
+
+    <!-- Circuit -->
+    <div class="circuit">
+      <svg viewBox="0 0 260 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Source -->
+        <rect x="10" y="15" width="60" height="30" rx="6" fill="var(--olive)" stroke="var(--turq)" stroke-width="1.5"/>
+        <text x="40" y="28" text-anchor="middle" class="c-val" fill="var(--turq)" font-size="9">FUENTE</text>
+        <text x="40" y="40" text-anchor="middle" class="c-val" fill="#fff" id="c-v">0V</text>
+        <!-- Wire -->
+        <line x1="70" y1="30" x2="130" y2="30" stroke="var(--turq)" stroke-width="2" stroke-dasharray="4 3"/>
+        <!-- Current label -->
+        <text x="100" y="52" text-anchor="middle" class="c-val" fill="var(--lemon)" font-size="9" id="c-a">0A</text>
+        <!-- Load -->
+        <rect x="130" y="15" width="120" height="30" rx="6" fill="var(--olive)" stroke="var(--lime)" stroke-width="1.5"/>
+        <text x="190" y="28" text-anchor="middle" class="c-val" fill="var(--lime)" font-size="9" id="c-load-label">CARGA</text>
+        <text x="190" y="40" text-anchor="middle" class="c-val" fill="#fff" id="c-w">0W</text>
+      </svg>
+    </div>
+
+    <!-- Gauge -->
+    <div class="gauge-wrap">
+      <div class="gauge" id="gauge">
+        <div class="green-zone" id="green-zone"><span class="gz-line" id="gz-min"></span><span class="gz-line" id="gz-max"></span></div>
+        <div class="needle" id="needle"></div>
+      </div>
+      <div class="gauge-label out-zone" id="gauge-label">0W</div>
+    </div>
+
+    <!-- Hold timer -->
+    <div class="hold-timer-wrap">
+      <div class="hold-timer" id="hold-timer">
+        <div class="hold-bar-bg"><div class="hold-bar-fill" id="hold-fill"></div></div>
+        <span class="hold-label" id="hold-label">0.0s / 5.0s</span>
+      </div>
+    </div>
+
+    <!-- Mixer -->
+    <div class="mixer">
+      <!-- V slider -->
+      <div class="slider-col v-col" id="v-col">
+        <div class="slider-label">Voltaje (V)</div>
+        <div class="slider-track-wrap">
+          <div class="slider-track" id="v-track">
+            <div class="slider-fill" id="v-fill"></div>
+            <div class="slider-knob" id="v-knob"></div>
+          </div>
+        </div>
+        <div class="slider-value" id="v-value">0V</div>
+      </div>
+
+      <!-- Displays -->
+      <div class="displays">
+        <div class="disp-card a-disp">
+          <div class="disp-label">Corriente (A)</div>
+          <div class="disp-val" id="d-a">0.0A</div>
+        </div>
+        <div class="disp-card w-disp">
+          <div class="disp-label">Potencia (W)</div>
+          <div class="disp-val" id="d-w">0W</div>
+        </div>
+      </div>
+
+      <!-- Ω slider -->
+      <div class="slider-col o-col" id="o-col">
+        <div class="slider-label">Resistencia (Ω)</div>
+        <div class="slider-track-wrap">
+          <div class="slider-track" id="o-track">
+            <div class="slider-fill" id="o-fill"></div>
+            <div class="slider-knob" id="o-knob"></div>
+          </div>
+        </div>
+        <div class="slider-value" id="o-value">1Ω</div>
+      </div>
+    </div>
+
+    <!-- Briefing overlay (intro per local) -->
+    <div id="briefing-overlay">
+      <div class="br-char" id="br-char"></div>
+      <div class="br-title" id="br-title"></div>
+      <div class="br-situation" id="br-situation"></div>
+      <button class="btn btn-sm" onclick="dismissBriefing()">¡Vamos!</button>
+    </div>
+
+    <!-- Event banner -->
+    <div id="event-banner">
+      <div class="ev-char" id="ev-char"></div>
+      <div class="ev-body">
+        <div class="ev-text" id="ev-text"></div>
+        <div class="ev-hint" id="ev-hint"></div>
+      </div>
+    </div>
+
+    <!-- Local complete overlay -->
+    <div id="complete-overlay">
+      <div class="co-char" id="co-char"></div>
+      <div class="co-icon" id="co-icon"><img src="https://res.cloudinary.com/kampe/image/upload/v1771531177/icono_check.png" alt="ok"></div>
+      <div class="co-title" id="co-title">¡Local completado!</div>
+      <div class="co-detail" id="co-detail"></div>
+      <div class="co-points" id="co-points"></div>
+      <div class="co-bonus" id="co-bonus"></div>
+      <button class="btn btn-sm" id="co-next-btn" onclick="nextLocal()">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="screen" id="results">
+    <h2><span>¡Resultados!</span></h2>
+    <div class="results-list" id="results-list"></div>
+    <div class="results-total" id="results-total"></div>
+    <div class="results-record" id="results-record"></div>
+    <p class="results-msg" id="results-msg"></p>
+    <button class="btn" onclick="restartGame()">¡Otra ronda!</button>
+  </div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   DATA
+   ══════════════════════════════════════════ */
+
+const LOCALS = [
+  {
+    id: 'taller', icon: '🔧',
+    title: 'El taller de Jesús',
+    loadLabel: 'MOTOR',
+    situation: 'El motor del taladro de Jesús va demasiado rápido. Ajusta la resistencia para frenarlo.',
+    charImg: 'assets/personaje_jesus.png',
+    bgImg: 'assets/fondo_taller.jpg',
+    vLocked: true, oLocked: false,
+    vInit: 230, oInit: 50,
+    vRange: [0, 240], oRange: [1, 100],
+    targetW: [400, 700],
+    events: [],
+    intro: 'Empieza fácil: solo toca la resistencia.',
+    ok: '¡Más resistencia = menos potencia!',
+    okDetail: 'El taladro de Jesús iba demasiado rápido porque tenía demasiada potencia. Al subir la resistencia (Ω), la corriente baja (A = V/Ω) y con ella la potencia (W = V×A). Resultado: el motor gira más lento y controlado.'
+  },
+  {
+    id: 'yoga', icon: '🧘',
+    title: 'El estudio de yoga de Irene',
+    loadLabel: 'ESTUFA',
+    situation: 'Irene necesita calentar el estudio para la clase de las 9. Sube la potencia.',
+    charImg: 'assets/personaje_irene.png',
+    bgImg: 'assets/fondo_yoga.jpg',
+    vLocked: false, oLocked: true,
+    vInit: 80, oInit: 24,
+    vRange: [0, 240], oRange: [1, 100],
+    targetW: [800, 1200],
+    events: [
+      { holdTrigger: 2, text: '¡Alguien abre la ventana!', hint: 'Entra frío → necesitas más potencia', effect: 'zoneUp', amount: 500 }
+    ],
+    intro: 'Ahora toca el voltaje. ¡Que Irene no pase frío!',
+    ok: '¡Más voltaje = más potencia!',
+    okDetail: 'La estufa necesitaba más potencia para calentar el estudio. Al subir V, la potencia crece rápido (W = V²/Ω). Cuando alguien abrió la ventana, entró frío y necesitaste aún más potencia: más voltaje.'
+  },
+  {
+    // V-only max: 200²/50 = 800 < 1500. Ω-only min: 120²/12 = 1200 < 1500. Must use both.
+    id: 'gym', icon: '🏋️',
+    title: 'El gimnasio de Dani',
+    loadLabel: 'CLIMA',
+    situation: 'El gimnasio necesita temperatura exacta para la clase de spinning.',
+    charImg: 'assets/personaje_dani.png',
+    bgImg: 'assets/fondo_gimnasio.jpg',
+    vLocked: false, oLocked: false,
+    vInit: 120, oInit: 50,
+    vRange: [80, 200], oRange: [12, 60],
+    targetW: [1500, 2000],
+    events: [
+      { holdTrigger: 2, text: '¡Llega más gente al gimnasio!', hint: 'La zona objetivo sube', effect: 'zoneUp', amount: 600 }
+    ],
+    intro: 'Ahora controlas todo: V y Ω. Necesitarás mover ambos.',
+    ok: '¡Ya manejas voltaje y resistencia juntos!',
+    okDetail: 'El clima del gimnasio necesitaba potencia precisa. Ni V solo ni Ω solo bastaban: tuviste que subir V y bajar Ω a la vez (W = V²/Ω). Cuando llegó más gente, el sistema necesitó más potencia y la zona objetivo subió.'
+  },
+  {
+    // V-only max: 200²/50 = 800 < 1000. Ω-only min: 100²/15 = 667 < 1000. Must use both.
+    id: 'ensayo', icon: '🎸',
+    title: 'El local de ensayo de Pablo',
+    loadLabel: 'AMPLI',
+    situation: 'Pablo necesita el volumen justo para ensayar sin molestar a los vecinos.',
+    charImg: 'assets/personaje_pablo.png',
+    bgImg: 'assets/fondo_ensayo.jpg',
+    vLocked: false, oLocked: false,
+    vInit: 100, oInit: 50,
+    vRange: [80, 200], oRange: [15, 60],
+    targetW: [1000, 1400],
+    events: [
+      { holdTrigger: 1.5, text: '¡Conectan otro ampli!', hint: 'Baja la Ω → sube la potencia', effect: 'oDown', amount: 0.35 },
+      { holdTrigger: 3.5, text: '¡Los vecinos se quejan!', hint: 'La zona objetivo baja', effect: 'zoneDown', amount: 500 }
+    ],
+    intro: 'Ojo, aquí pasan cosas. Mantén la potencia estable.',
+    ok: '¡Sabes reaccionar cuando cambia el escenario!',
+    okDetail: 'Pablo necesitaba volumen justo para ensayar. Al conectar otro ampli, la resistencia bajó (Ω↓) y la potencia se disparó (W = V²/Ω). Tuviste que compensar para no molestar. Cuando los vecinos se quejaron, tocó reducir la potencia objetivo.'
+  },
+  {
+    // V-only max: 220²/50 = 968 < 1800. Ω-only min: 130²/10 = 1690 < 1800. Must use both.
+    id: 'vestuario', icon: '💡',
+    title: 'El vestuario del equipo de David',
+    loadLabel: 'LUCES',
+    situation: 'El vestuario necesita iluminación exacta: ni oscuro ni cegador.',
+    charImg: 'assets/personaje_david.png',
+    bgImg: 'assets/fondo_vestuario.jpg',
+    vLocked: false, oLocked: false,
+    vInit: 130, oInit: 50,
+    vRange: [100, 220], oRange: [10, 60],
+    targetW: [1800, 2100],
+    events: [
+      { holdTrigger: 1, text: '¡Bajón de tensión en la red!', hint: 'Baja el V → baja la potencia', effect: 'vDown', amount: 0.25 },
+      { holdTrigger: 2.5, text: '¡Encienden los focos del campo!', hint: 'Baja la Ω → sube la potencia', effect: 'oDown', amount: 0.35 },
+      { holdTrigger: 4, text: '¡Apagan la mitad de luces!', hint: 'La zona objetivo baja', effect: 'zoneDown', amount: 500 }
+    ],
+    intro: 'Nivel experto. Zona verde mínima y muchos cambios.',
+    ok: '¡Electricista nivel PRO!',
+    okDetail: 'El vestuario necesitaba luz exacta. Un bajón de tensión redujo V y la potencia cayó. Los focos del campo bajaron la Ω y la potencia subió. Al apagar luces, la demanda bajó. En cada caso: W = V²/Ω, y tú supiste re-equilibrar.'
+  }
+];
+
+const COMPLETE_MSGS = ['¡Rapidísimo!','¡Manos de pro!','¡Nivel jefe!','¡Potencia controlada!','¡Así se hace!','¡Perfecto!'];
+
+/* ══════════════════════════════════════════
+   STATE
+   ══════════════════════════════════════════ */
+
+let currentLocal = 0;
+let totalPoints = 0;
+let localResults = []; // {completed, points, bonus}
+let vVal = 0, oVal = 1;
+let targetLow = 0, targetHigh = 0;
+let gaugeMin = 0, gaugeMax = 3000;
+let holdTime = 0;
+let holdTarget = 5;
+let localStartTime = 0;
+let localTimeout = 30;
+let localElapsed = 0;
+let paused = false;
+let localDone = false;
+let firedEvents = [];
+let rafId = null;
+let lastFrameTime = 0;
+let activeTouches = new Map(); // touchId -> { which, startY, startVal }
+
+/* ══════════════════════════════════════════
+   DOM REFS
+   ══════════════════════════════════════════ */
+
+const $ = id => document.getElementById(id);
+const hud = $('hud');
+const hudPts = $('hud-pts');
+const hudLocal = $('hud-local');
+const hudTimerFill = $('hud-timer-fill');
+
+const vKnob = $('v-knob'), oKnob = $('o-knob');
+const vTrack = $('v-track'), oTrack = $('o-track');
+const vFill = $('v-fill'), oFill = $('o-fill');
+const vValue = $('v-value'), oValue = $('o-value');
+const vCol = $('v-col'), oCol = $('o-col');
+
+const dA = $('d-a'), dW = $('d-w');
+const cV = $('c-v'), cA = $('c-a'), cW = $('c-w'), cLoadLabel = $('c-load-label');
+
+const gauge = $('gauge');
+const greenZone = $('green-zone');
+const needle = $('needle');
+const gaugeLabel = $('gauge-label');
+
+const holdTimer = $('hold-timer');
+const holdFill = $('hold-fill');
+const holdLabel = $('hold-label');
+
+const eventBanner = $('event-banner');
+const completeOverlay = $('complete-overlay');
+
+/* ══════════════════════════════════════════
+   SCREENS
+   ══════════════════════════════════════════ */
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+  hud.style.display = (id === 'gameplay') ? 'flex' : 'none';
+}
+
+/* ══════════════════════════════════════════
+   GAME FLOW
+   ══════════════════════════════════════════ */
+
+function startGame() {
+  currentLocal = 0;
+  totalPoints = 0;
+  localResults = [];
+  hudPts.textContent = '0';
+  startLocal();
+}
+
+function startLocal() {
+  const loc = LOCALS[currentLocal];
+
+  // Reset state
+  vVal = loc.vInit;
+  oVal = loc.oInit;
+  targetLow = loc.targetW[0];
+  targetHigh = loc.targetW[1];
+  holdTime = 0;
+  firedEvents = [];
+  // holdTarget = last event trigger + 3s, or 5s if no events
+  const lastTrigger = loc.events.length > 0
+    ? Math.max(...loc.events.map(e => e.holdTrigger))
+    : 0;
+  holdTarget = lastTrigger > 0 ? lastTrigger + 3 : 5;
+  localElapsed = 0;
+  paused = false;
+  localDone = false;
+  activeSlider = null;
+
+  // Gauge range: set dynamically based on target
+  gaugeMax = Math.max(targetHigh * 2, 3000);
+
+  // Setup slider locks
+  vCol.classList.toggle('locked', loc.vLocked);
+  oCol.classList.toggle('locked', loc.oLocked);
+  vKnob.classList.toggle('locked', loc.vLocked);
+  oKnob.classList.toggle('locked', loc.oLocked);
+
+  // Lock icons
+  vCol.querySelector('.lock-icon')?.remove();
+  oCol.querySelector('.lock-icon')?.remove();
+  if (loc.vLocked) {
+    const lock = document.createElement('div');
+    lock.className = 'lock-icon';
+    lock.textContent = '🔒';
+    vCol.querySelector('.slider-track-wrap').appendChild(lock);
+  }
+  if (loc.oLocked) {
+    const lock = document.createElement('div');
+    lock.className = 'lock-icon';
+    lock.textContent = '🔒';
+    oCol.querySelector('.slider-track-wrap').appendChild(lock);
+  }
+
+  // Background image
+  const bgEl = $('gp-bg');
+  bgEl.style.backgroundImage = 'url(' + loc.bgImg + ')';
+
+  // UI
+  $('gp-name').textContent = loc.title;
+  $('gp-desc').textContent = loc.situation;
+  cLoadLabel.textContent = loc.loadLabel;
+  hudLocal.textContent = 'Local ' + (currentLocal + 1) + '/5';
+  hudPts.textContent = totalPoints;
+
+  // Overlays
+  eventBanner.classList.remove('enter', 'exit');
+  completeOverlay.classList.remove('active');
+
+  // Hold timer
+  holdTimer.classList.remove('visible');
+
+  // Show gameplay screen with briefing
+  showScreen('gameplay');
+  updateAll();
+
+  // Briefing overlay
+  const brCharEl = $('br-char');
+  brCharEl.innerHTML = '';
+  const brImg = new Image();
+  brImg.src = loc.charImg;
+  brImg.onload = function() { brCharEl.appendChild(brImg); };
+  brImg.onerror = function() { brCharEl.innerHTML = '<div style="font-size:64px">' + loc.icon + '</div>'; };
+  $('br-title').textContent = loc.title;
+  $('br-situation').textContent = loc.situation;
+  $('gp-bg').classList.add('briefing');
+  $('briefing-overlay').classList.add('active');
+  paused = true;
+}
+
+function dismissBriefing() {
+  $('briefing-overlay').classList.remove('active');
+  $('gp-bg').classList.remove('briefing');
+  paused = false;
+
+  // Reset event tracking
+  firedEvents = [];
+  localStartTime = performance.now();
+
+  lastFrameTime = performance.now();
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(gameLoop);
+}
+
+
+/* ══════════════════════════════════════════
+   GAME LOOP
+   ══════════════════════════════════════════ */
+
+const DECAY_RATE = 15; // units per second that untouched sliders fall
+
+function gameLoop(now) {
+  if (localDone) return;
+  const dt = (now - lastFrameTime) / 1000;
+  lastFrameTime = now;
+
+  // Knob decay — always runs (even during event pause), affects untouched sliders
+  const loc = LOCALS[currentLocal];
+  const touchingV = [...activeTouches.values()].some(t => t.which === 'v');
+  const touchingO = [...activeTouches.values()].some(t => t.which === 'o');
+  let decayed = false;
+  if (!loc.vLocked && !touchingV) {
+    const newV = Math.max(loc.vRange[0], vVal - DECAY_RATE * dt);
+    if (newV !== vVal) { vVal = newV; decayed = true; }
+  }
+  if (!loc.oLocked && !touchingO) {
+    // Resistance falls = goes UP (more resistance = less power), making it harder
+    const newO = Math.min(loc.oRange[1], oVal + DECAY_RATE * dt);
+    if (newO !== oVal) { oVal = newO; decayed = true; }
+  }
+  if (decayed) updateAll();
+
+  if (!paused) {
+    localElapsed += dt;
+
+    // Timeout bar
+    const pct = Math.min(localElapsed / localTimeout, 1);
+    hudTimerFill.style.transform = 'scaleX(' + (1 - pct) + ')';
+
+    if (localElapsed >= localTimeout) {
+      // Timeout - local failed
+      finishLocal(false);
+      return;
+    }
+
+    // Check if in green zone
+    const w = calcW();
+    if (w >= targetLow && w <= targetHigh) {
+      const prevHold = holdTime;
+      holdTime += dt;
+      holdTimer.classList.add('visible');
+      holdFill.style.width = Math.min(holdTime / holdTarget * 100, 100) + '%';
+      holdLabel.textContent = holdTime.toFixed(1) + 's / ' + holdTarget.toFixed(1) + 's';
+
+      // Check hold-based events
+      loc.events.forEach((ev, i) => {
+        if (!firedEvents.includes(i) && prevHold < ev.holdTrigger && holdTime >= ev.holdTrigger) {
+          firedEvents.push(i);
+          triggerEvent(ev);
+        }
+      });
+
+      if (holdTime >= holdTarget) {
+        finishLocal(true);
+        return;
+      }
+    } else {
+      if (holdTime > 0) {
+        holdTime = Math.max(0, holdTime - dt * 2); // Drain faster than fill
+        holdFill.style.width = Math.min(holdTime / holdTarget * 100, 100) + '%';
+        holdLabel.textContent = holdTime.toFixed(1) + 's / ' + holdTarget.toFixed(1) + 's';
+      }
+      if (holdTime <= 0) {
+        holdTimer.classList.remove('visible');
+      }
+    }
+  }
+
+  rafId = requestAnimationFrame(gameLoop);
+}
+
+/* ══════════════════════════════════════════
+   CALCULATIONS
+   ══════════════════════════════════════════ */
+
+function calcA() { return oVal > 0 ? vVal / oVal : 0; }
+function calcW() { return vVal * calcA(); }
+
+function updateAll() {
+  const a = calcA();
+  const w = calcW();
+
+  // Slider positions
+  const loc = LOCALS[currentLocal];
+  updateSliderUI('v', vVal, loc.vRange[0], loc.vRange[1]);
+  updateSliderUI('o', oVal, loc.oRange[0], loc.oRange[1]);
+
+  // Displays
+  dA.textContent = a.toFixed(1) + 'A';
+  dW.textContent = Math.round(w) + 'W';
+
+  // Circuit
+  cV.textContent = Math.round(vVal) + 'V';
+  cA.textContent = a.toFixed(1) + 'A';
+  cW.textContent = Math.round(w) + 'W';
+
+  // Gauge
+  const gPct = Math.min(Math.max(w / gaugeMax, 0), 1);
+  needle.style.left = (gPct * 100) + '%';
+
+  const gzLeft = (targetLow / gaugeMax) * 100;
+  const gzWidth = ((targetHigh - targetLow) / gaugeMax) * 100;
+  greenZone.style.left = gzLeft + '%';
+  greenZone.style.width = gzWidth + '%';
+  $('gz-min').textContent = Math.round(targetLow) + 'W';
+  $('gz-max').textContent = Math.round(targetHigh) + 'W';
+
+  const inZone = w >= targetLow && w <= targetHigh;
+  gaugeLabel.textContent = Math.round(w) + 'W';
+  gaugeLabel.className = 'gauge-label ' + (inZone ? 'in-zone' : 'out-zone');
+
+  // W display color
+  dW.style.color = inZone ? 'var(--lime)' : 'var(--orange)';
+}
+
+function updateSliderUI(which, val, min, max) {
+  const pct = (val - min) / (max - min);
+  const fill = which === 'v' ? vFill : oFill;
+  const knob = which === 'v' ? vKnob : oKnob;
+  const valEl = which === 'v' ? vValue : oValue;
+
+  fill.style.height = (pct * 100) + '%';
+
+  const track = which === 'v' ? vTrack : oTrack;
+  const trackH = track.offsetHeight;
+  const knobY = trackH - (pct * trackH);
+  knob.style.bottom = (pct * trackH) + 'px';
+
+  if (which === 'v') {
+    valEl.textContent = Math.round(val) + 'V';
+  } else {
+    valEl.textContent = Math.round(val) + 'Ω';
+  }
+}
+
+/* ══════════════════════════════════════════
+   SLIDER TOUCH HANDLING (multitouch)
+   ══════════════════════════════════════════ */
+
+function initSliderTouch(knobEl, which) {
+  knobEl.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const loc = LOCALS[currentLocal];
+    if (paused || localDone) return;
+    if (which === 'v' && loc.vLocked) return;
+    if (which === 'o' && loc.oLocked) return;
+
+    // Register each new touch independently
+    for (const touch of e.changedTouches) {
+      activeTouches.set(touch.identifier, {
+        which,
+        startY: touch.clientY,
+        startVal: which === 'v' ? vVal : oVal
+      });
+    }
+  }, { passive: false });
+
+  // Mouse fallback (single pointer, desktop)
+  knobEl.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const loc = LOCALS[currentLocal];
+    if (paused || localDone) return;
+    if (which === 'v' && loc.vLocked) return;
+    if (which === 'o' && loc.oLocked) return;
+
+    activeTouches.set('mouse', {
+      which,
+      startY: e.clientY,
+      startVal: which === 'v' ? vVal : oVal
+    });
+
+    const onMove = (e2) => {
+      const info = activeTouches.get('mouse');
+      if (!info) return;
+      applySliderMove(info, e2.clientY);
+    };
+    const onUp = () => {
+      activeTouches.delete('mouse');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+function applySliderMove(info, clientY) {
+  const { which, startY, startVal } = info;
+  const dy = startY - clientY;
+  const track = which === 'v' ? vTrack : oTrack;
+  const trackH = track.offsetHeight;
+  const loc = LOCALS[currentLocal];
+  const min = which === 'v' ? loc.vRange[0] : loc.oRange[0];
+  const max = which === 'v' ? loc.vRange[1] : loc.oRange[1];
+  const range = max - min;
+  const dVal = (dy / trackH) * range;
+
+  let newVal = startVal + dVal;
+  newVal = Math.max(min, Math.min(max, newVal));
+
+  if (which === 'v') vVal = newVal;
+  else oVal = newVal;
+
+  updateAll();
+}
+
+// Global touch listeners for multitouch move/end
+document.addEventListener('touchmove', (e) => {
+  for (const touch of e.changedTouches) {
+    const info = activeTouches.get(touch.identifier);
+    if (info) {
+      e.preventDefault();
+      applySliderMove(info, touch.clientY);
+    }
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', (e) => {
+  for (const touch of e.changedTouches) {
+    activeTouches.delete(touch.identifier);
+  }
+});
+
+document.addEventListener('touchcancel', (e) => {
+  for (const touch of e.changedTouches) {
+    activeTouches.delete(touch.identifier);
+  }
+});
+
+initSliderTouch(vKnob, 'v');
+initSliderTouch(oKnob, 'o');
+
+/* ══════════════════════════════════════════
+   EVENTS (banner fly-in / fly-out)
+   ══════════════════════════════════════════ */
+
+let pendingEvent = null;
+let eventBannerTimer = null;
+
+function triggerEvent(ev) {
+  if (localDone) return;
+  pendingEvent = ev;
+  paused = true;
+
+  // Release all sliders — knobs start decaying during event
+  activeTouches.clear();
+
+  // Character
+  const loc = LOCALS[currentLocal];
+  const evCharEl = $('ev-char');
+  evCharEl.innerHTML = '';
+  const evImg = new Image();
+  evImg.src = loc.charImg;
+  evImg.onload = function() { evCharEl.appendChild(evImg); };
+  evImg.onerror = function() { evCharEl.innerHTML = '<div style="font-size:40px;line-height:80px;text-align:center">' + loc.icon + '</div>'; };
+
+  // Content
+  $('ev-text').textContent = ev.text;
+  $('ev-hint').textContent = ev.hint;
+
+  // Fly in from left
+  eventBanner.classList.remove('exit');
+  void eventBanner.offsetWidth; // force reflow
+  eventBanner.classList.add('enter');
+
+  // After 4s, fly out to right and apply effect
+  if (eventBannerTimer) clearTimeout(eventBannerTimer);
+  eventBannerTimer = setTimeout(() => {
+    eventBanner.classList.remove('enter');
+    eventBanner.classList.add('exit');
+
+    // After exit animation (0.4s), apply effect and resume
+    setTimeout(() => {
+      eventBanner.classList.remove('exit');
+      if (pendingEvent) {
+        applyEffect(pendingEvent);
+        pendingEvent = null;
+      }
+      paused = false;
+    }, 400);
+  }, 4000);
+}
+
+function applyEffect(ev) {
+  const eff = ev.effect;
+  const amt = ev.amount;
+  const loc = LOCALS[currentLocal];
+
+  switch(eff) {
+    case 'vDown':
+      animateSlider('v', vVal, Math.max(loc.vRange[0], vVal * (1 - amt)));
+      blinkCol('v');
+      break;
+    case 'vUp':
+      animateSlider('v', vVal, Math.min(loc.vRange[1], vVal * (1 + amt)));
+      blinkCol('v');
+      break;
+    case 'oDown':
+      animateSlider('o', oVal, Math.max(loc.oRange[0], oVal * (1 - amt)));
+      blinkCol('o');
+      break;
+    case 'oUp':
+      animateSlider('o', oVal, Math.min(loc.oRange[1], oVal * (1 + amt)));
+      blinkCol('o');
+      break;
+    case 'zoneUp':
+      targetLow += amt;
+      targetHigh += amt;
+      updateAll();
+      break;
+    case 'zoneDown':
+      targetLow = Math.max(50, targetLow - amt);
+      targetHigh = Math.max(targetLow + 100, targetHigh - amt);
+      updateAll();
+      break;
+  }
+}
+
+function animateSlider(which, from, to) {
+  const duration = 500;
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = t * (2 - t); // ease-out
+    const val = from + (to - from) * eased;
+    if (which === 'v') vVal = val;
+    else oVal = val;
+    updateAll();
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function blinkCol(which) {
+  const col = which === 'v' ? vCol : oCol;
+  col.classList.add('blinking');
+  setTimeout(() => col.classList.remove('blinking'), 1000);
+}
+
+/* ══════════════════════════════════════════
+   LOCAL COMPLETE / TIMEOUT
+   ══════════════════════════════════════════ */
+
+function finishLocal(completed) {
+  localDone = true;
+  if (rafId) cancelAnimationFrame(rafId);
+
+  let pts = 0;
+  let bonusText = '';
+  let bonusClass = '';
+
+  if (completed) {
+    pts = 200;
+    const elapsed = localElapsed;
+    if (elapsed < 15) { pts += 100; bonusText = 'RAYO +100'; bonusClass = 'rayo'; }
+    else if (elapsed < 25) { pts += 50; bonusText = 'RÁPIDO +50'; bonusClass = 'rapido'; }
+    else if (elapsed < 35) { pts += 25; bonusText = 'BIEN +25'; bonusClass = 'bien'; }
+  }
+
+  totalPoints += pts;
+  hudPts.textContent = totalPoints;
+
+  localResults.push({ completed, points: pts, bonusText, bonusClass });
+
+  // Load character in complete overlay
+  const coCharEl = $('co-char');
+  coCharEl.innerHTML = '';
+  const coImg = new Image();
+  coImg.src = LOCALS[currentLocal].charImg;
+  coImg.onload = function() { coCharEl.appendChild(coImg); };
+  coImg.onerror = function() { coCharEl.innerHTML = '<div style="font-size:64px">' + LOCALS[currentLocal].icon + '</div>'; };
+
+  // Show overlay
+  const coIcon = $('co-icon');
+  const loc = LOCALS[currentLocal];
+  if (completed) {
+    coIcon.innerHTML = '<img src="https://res.cloudinary.com/kampe/image/upload/v1771531177/icono_check.png" alt="ok">';
+    $('co-title').textContent = loc.ok;
+    $('co-detail').textContent = loc.okDetail;
+    $('co-points').textContent = '+' + pts + 'pts';
+    $('co-bonus').textContent = bonusText;
+    $('co-bonus').className = 'co-bonus ' + bonusClass;
+    $('co-next-btn').textContent = currentLocal < 4 ? 'Siguiente →' : 'Ver resultados';
+  } else {
+    coIcon.innerHTML = '<img src="https://res.cloudinary.com/kampe/image/upload/v1771531178/icono_cruz.png" alt="ko">';
+    $('co-title').textContent = 'Se acabó el tiempo';
+    $('co-detail').textContent = '';
+    $('co-points').textContent = '0pts';
+    $('co-bonus').textContent = '';
+    $('co-next-btn').textContent = currentLocal < 4 ? 'Siguiente →' : 'Ver resultados';
+  }
+  completeOverlay.classList.add('active');
+}
+
+function nextLocal() {
+  completeOverlay.classList.remove('active');
+  currentLocal++;
+  if (currentLocal >= LOCALS.length) {
+    showResults();
+  } else {
+    startLocal();
+  }
+}
+
+/* ══════════════════════════════════════════
+   RESULTS
+   ══════════════════════════════════════════ */
+
+function showResults() {
+  const list = $('results-list');
+  list.innerHTML = '';
+
+  let allCompleted = true;
+  LOCALS.forEach((loc, i) => {
+    const r = localResults[i];
+    const row = document.createElement('div');
+    row.className = 'result-row' + (r.completed ? '' : ' failed');
+    row.innerHTML = `
+      <span class="r-icon">${loc.icon}</span>
+      <span class="r-name">${loc.title.replace(/^El |^La /,'')}</span>
+      <span class="r-status"><img src="https://res.cloudinary.com/kampe/image/upload/${r.completed ? 'v1771531177/icono_check.png' : 'v1771531178/icono_cruz.png'}" alt="${r.completed ? 'ok' : 'ko'}"></span>
+      <span class="r-pts">${r.points}pts</span>
+    `;
+    list.appendChild(row);
+    if (!r.completed) allCompleted = false;
+  });
+
+  $('results-total').innerHTML = 'TOTAL: <span style="color:var(--lemon)">' + totalPoints + 'pts</span>';
+
+  // Record
+  const key = 'mesa_mezclas_record';
+  const prev = parseInt(localStorage.getItem(key) || '0');
+  const isNew = totalPoints > prev;
+  if (isNew) localStorage.setItem(key, totalPoints);
+  $('results-record').textContent = isNew
+    ? '¡Nuevo récord! (anterior: ' + prev + 'pts)'
+    : 'Récord: ' + prev + 'pts';
+
+  // Message
+  const completed = localResults.filter(r => r.completed).length;
+  if (completed === 5) {
+    $('results-msg').textContent = '¡Electricista nivel PRO! Dominas las magnitudes.';
+  } else if (completed >= 3) {
+    $('results-msg').textContent = '¡Bien! Pero intenta completar todos los locales.';
+  } else {
+    $('results-msg').textContent = 'Necesitas repasar. V sube potencia, Ω la baja.';
+  }
+
+  showScreen('results');
+
+  // TASK_COMPLETED
+  if (allCompleted && window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+  }
+}
+
+function restartGame() {
+  startGame();
+}
+
+/* ══════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════ */
+
+// Initial slider position update
+updateAll();
+
+</script>
+</body>
+</html>
