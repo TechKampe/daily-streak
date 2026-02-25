@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Clasifica al Junior</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pri:#00E6BC;--acc:#04FFB4;--suc:#C5FFDF;--dan:#E74C3C;--war:#FFFFAB;--dk:#0B214A;--olive:#004957;--navy:#0B214A;--lime:#04FFB4;--lemon:#FFFFAB;--mint:#C5FFDF;--fire:#E74C3C;--turq:#00E6BC}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Baloo 2',cursive;background:#0B214A;touch-action:none}
+body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-bottom:constant(safe-area-inset-bottom)}
+#W{position:relative;width:100%;max-width:430px;margin:0 auto;height:100%;overflow:hidden;background:linear-gradient(180deg,#0B214A 0%,#0D2D5E 40%,#0F1B2D 100%)}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;transition:opacity .35s;z-index:100}
+.scr.off{opacity:0;pointer-events:none;z-index:-1}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:1;pointer-events:none}
+.btn{background:var(--turq);color:var(--navy);border:none;font-family:'Baloo 2',cursive;font-size:19px;font-weight:700;padding:14px 48px;border-radius:50px;cursor:pointer;box-shadow:0 4px 16px rgba(0,230,188,.3);transition:transform .1s;letter-spacing:.5px}
+.btn:active{transform:scale(.96)}
+
+/* INTRO */
+#intro{align-items:center;justify-content:flex-end;padding-bottom:40px}
+.intro-card{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;padding:0 20px;width:100%}
+.intro-av{width:200px;height:262px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(0,0,0,.6));margin-bottom:-30px;position:relative;z-index:1}
+.intro-bub{position:relative;z-index:2;background:#fff;color:var(--navy);padding:18px 22px;border-radius:22px;box-shadow:0 4px 24px rgba(0,0,0,.35);font-size:16px;font-weight:600;line-height:1.4;text-align:center;margin-bottom:18px;width:100%}
+.intro-title{font-size:26px;font-weight:800;color:#fff;text-shadow:0 3px 16px rgba(0,0,0,.5);margin-bottom:6px;z-index:10;position:relative}
+
+/* HUD */
+.hud{position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-right:66px;background:linear-gradient(180deg,rgba(11,33,74,.92)0%,rgba(11,33,74,.3)70%,transparent 100%);pointer-events:none}
+.hud-left{display:flex;align-items:center;gap:8px}
+.hud-round{background:rgba(0,0,0,.35);padding:4px 12px;border-radius:16px;color:rgba(255,255,255,.8);font-size:14px;font-weight:600}
+
+/* GAMEPLAY */
+#play{z-index:10}
+.play-inner{position:relative;z-index:10;flex:1;display:flex;flex-direction:column;padding:52px 16px 0;overflow:hidden}
+
+/* CARD ZONE */
+.card-zone{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:visible}
+
+/* Swipe hints — edge labels */
+.hint{position:absolute;top:50%;transform:translateY(-50%);font-size:18px;font-weight:800;opacity:0;pointer-events:none;padding:8px 14px;border-radius:14px;transition:none}
+.hint-no{left:4px;color:#fff;background:var(--dan)}
+.hint-si{right:4px;color:#fff;background:#27ae60}
+
+/* Card stack */
+.card{position:absolute;width:88%;max-width:360px;background:#fff;border-radius:22px;padding:28px 24px;box-shadow:0 8px 32px rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:center;gap:10px;touch-action:none;cursor:grab;will-change:transform}
+.card-emoji{font-size:36px;line-height:1}
+.card-cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:3px 12px;border-radius:10px;color:#fff}
+.card-cat.tarea{background:#466FEA}
+.card-cat.actitud{background:#FF792E}
+.card-cat.contexto{background:#A544B0}
+.card-text{color:var(--navy);font-size:17px;font-weight:700;text-align:center;line-height:1.4}
+
+/* Stamp overlays on card */
+.card-stamp{position:absolute;top:18px;font-size:22px;font-weight:800;padding:4px 16px;border-radius:10px;border:3px solid;opacity:0;pointer-events:none;transform:rotate(-12deg)}
+.card-stamp.stamp-si{right:16px;color:#27ae60;border-color:#27ae60;transform:rotate(12deg)}
+.card-stamp.stamp-no{left:16px;color:var(--dan);border-color:var(--dan);transform:rotate(-12deg)}
+
+/* FEEDBACK WRAP: avatar above + box below, no gap */
+.fb-wrap{position:absolute;display:flex;flex-direction:column;align-items:center;opacity:0;transform:scale(.9);transition:all .25s ease-out;pointer-events:none;width:88%;max-width:360px}
+.fb-wrap.show{opacity:1;transform:scale(1)}
+.fb-fer{width:120px;height:157px;object-fit:contain;filter:drop-shadow(0 3px 12px rgba(0,0,0,.4));margin-bottom:-20px;position:relative;z-index:1}
+.fb-card{width:100%;border-radius:22px;padding:22px 20px 18px;box-shadow:0 8px 32px rgba(0,0,0,.35);display:flex;align-items:center;gap:10px;position:relative;z-index:0}
+.fb-card.ok{background:var(--mint)}
+.fb-card.err{background:rgba(231,76,60,.95)}
+.fb-card-icon{width:28px;height:28px;object-fit:contain;flex-shrink:0}
+.fb-card-text{font-size:14px;font-weight:600;line-height:1.35;flex:1}
+.fb-card.ok .fb-card-text{color:var(--navy)}
+.fb-card.err .fb-card-text{color:#fff}
+
+/* BOTTOM BUTTONS */
+.bottom-bar{position:relative;z-index:20;display:flex;gap:12px;padding:10px 16px 14px;flex-shrink:0}
+.btn-no,.btn-si{flex:1;padding:14px 10px;border:none;font-family:'Baloo 2',cursive;font-size:17px;font-weight:700;border-radius:16px;cursor:pointer;transition:all .15s;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-no{background:#E74C3C;color:#fff;border:2px solid #c0392b}
+.btn-no:active{background:#c0392b;transform:scale(.96)}
+.btn-si{background:#27ae60;color:#fff;border:2px solid #1e8449}
+.btn-si:active{background:#1e8449;transform:scale(.96)}
+
+/* RESULTS */
+#results{align-items:center;justify-content:center;padding:16px 20px;z-index:200}
+.res-inner{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;width:100%;gap:2px}
+.res-label{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-align:center}
+.res-new{color:var(--lemon);font-size:14px;font-weight:800;display:none}
+.res-new.show{display:block}
+.res-badge{color:var(--lime);font-size:18px;font-weight:800;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase}
+.res-scores{display:flex;gap:28px;margin-bottom:4px}
+.res-val{font-size:34px;font-weight:800;text-align:center;color:var(--lime)}
+.res-av{width:160px;height:210px;object-fit:contain;filter:drop-shadow(0 4px 22px rgba(0,0,0,.5));margin-bottom:-18px;position:relative;z-index:1}
+.res-info-card{background:rgba(255,255,255,.1);border-radius:18px;padding:16px 20px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:0}
+.res-msg{color:#fff;font-size:14px;font-weight:600;text-align:center;line-height:1.3}
+.res-hits{color:rgba(255,255,255,.6);font-size:13px;font-weight:600}
+.res-bot{display:flex;flex-direction:column;align-items:center;margin-top:8px}
+.res-bot .btn{position:relative;z-index:2;padding:12px 40px;font-size:17px}
+
+/* Critical errors button */
+.res-errors-btn{background:rgba(231,76,60,.15);border:2px solid var(--dan);color:var(--dan);font-family:'Baloo 2',cursive;font-size:13px;font-weight:700;padding:6px 18px;border-radius:14px;cursor:pointer;margin-bottom:8px;transition:transform .1s;touch-action:manipulation}
+.res-errors-btn:active{transform:scale(.96)}
+
+/* Modal overlay */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-card{background:#fff;border-radius:22px;padding:20px;max-width:380px;width:100%;max-height:70vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-title{color:var(--navy);font-size:18px;font-weight:800;margin-bottom:12px;text-align:center}
+.modal-item{background:rgba(231,76,60,.08);border-left:4px solid var(--dan);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.modal-item-text{color:var(--navy);font-size:14px;font-weight:600;line-height:1.3;margin-bottom:4px}
+.modal-item-answer{color:var(--dan);font-size:13px;font-weight:700}
+.modal-item-explain{color:#555;font-size:12px;font-weight:500;line-height:1.3;margin-top:2px}
+.modal-close{display:block;margin:12px auto 0;background:var(--navy);color:#fff;border:none;font-family:'Baloo 2',cursive;font-size:15px;font-weight:700;padding:10px 32px;border-radius:50px;cursor:pointer;touch-action:manipulation}
+.modal-close:active{transform:scale(.96)}
+</style>
+</head>
+<body>
+<div id="W">
+
+<!-- INTRO -->
+<div class="scr" id="intro">
+    <img class="bg" id="intro-bg" alt="">
+    <div class="dim"></div>
+    <div class="intro-card">
+        <h1 class="intro-title">Clasifica al Junior</h1>
+        <img class="intro-av" id="intro-av" alt="Fer">
+        <div class="intro-bub" id="intro-msg"></div>
+        <button class="btn" id="intro-btn">¡Vamos!</button>
+    </div>
+</div>
+
+<!-- GAMEPLAY -->
+<div class="scr off" id="play">
+    <img class="bg" id="play-bg" alt="">
+    <div class="dim"></div>
+    <div class="hud">
+        <div class="hud-left">
+            <div class="hud-round" id="hud-round">1/8</div>
+        </div>
+    </div>
+    <div class="play-inner">
+        <div class="card-zone" id="card-zone">
+            <div class="hint hint-no" id="hint-no">✕ NO</div>
+            <div class="hint hint-si" id="hint-si">✓ SÍ</div>
+            <div class="card" id="card">
+                <div class="card-stamp stamp-si" id="stamp-si">SÍ ✓</div>
+                <div class="card-stamp stamp-no" id="stamp-no">NO ✕</div>
+                <div class="card-emoji" id="card-emoji"></div>
+                <div class="card-cat" id="card-cat"></div>
+                <div class="card-text" id="card-text"></div>
+            </div>
+            <div class="fb-wrap" id="fb-wrap">
+                <img class="fb-fer" id="fb-fer" alt="Fer">
+                <div class="fb-card" id="fb-card">
+                    <img class="fb-card-icon" id="fb-icon" alt="">
+                    <div class="fb-card-text" id="fb-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom-bar" id="bottom-bar">
+        <button class="btn-no" id="btn-no">✕ NO</button>
+        <button class="btn-si" id="btn-si">✓ SÍ</button>
+    </div>
+</div>
+
+<!-- RESULTS -->
+<div class="scr off" id="results" style="background:var(--navy)">
+    <div class="res-inner">
+        <div class="res-badge" id="res-badge" style="display:none"></div>
+        <div class="res-scores">
+            <div><div class="res-val" id="res-score">0</div><div class="res-label">Puntuación</div></div>
+            <div><div class="res-val" id="res-record" style="color:var(--lemon)">0</div><div class="res-label">Récord</div></div>
+        </div>
+        <div class="res-new" id="res-new">¡NUEVO RÉCORD!</div>
+        <img class="res-av" id="res-av" alt="Fer">
+        <div class="res-info-card">
+            <div class="res-msg" id="res-msg"></div>
+            <div class="res-hits" id="res-hits"></div>
+            <button class="res-errors-btn" id="res-errors-btn" style="display:none"></button>
+        </div>
+        <div class="res-bot">
+            <button class="btn" id="res-btn">¡Otra ronda!</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: critical errors -->
+<div class="modal-overlay" id="modal-errors">
+    <div class="modal-card">
+        <div class="modal-title">⚠️ Ojo con esto</div>
+        <div id="modal-errors-list"></div>
+        <button class="modal-close" id="modal-close">Cerrar</button>
+    </div>
+</div>
+
+</div>
+<script>
+/* ========== ASSET PATHS ========== */
+const A={
+  bg_obra:'https://res.cloudinary.com/kampe/image/upload/v1772020367/bg_obra_udf1cg.png',
+  fer_happy:'https://res.cloudinary.com/kampe/image/upload/v1772019465/fer_happy_aotwxw.png',
+  fer_celebrating:'https://res.cloudinary.com/kampe/image/upload/v1772019464/fer_celebrating_yrrvkj.png',
+  fer_worried:'https://res.cloudinary.com/kampe/image/upload/v1772019465/fer_worried_g1z3jz.png',
+  ico_check:'https://res.cloudinary.com/kampe/image/upload/v1771531177/icono_check.png',
+  ico_cruz:'https://res.cloudinary.com/kampe/image/upload/v1771531178/icono_cruz.png'
+};
+
+/* ========== CARDS DATA ========== */
+const POOL=[
+  {id:'T1',text:'Preparar cables y herramientas antes de que llegue el oficial',answer:true,critical:false,cat:'tarea',emoji:'🏗️',
+   fbOk:'Eso es. El junior que tiene todo listo vale oro.',fbErr:'Claro que sí. Es tu tarea número 1.'},
+  {id:'T2',text:'Etiquetar cables y organizar el material por zonas',answer:true,critical:false,cat:'tarea',emoji:'🏗️',
+   fbOk:'Orden = menos errores. Bien.',fbErr:'Eso lo hace el junior. Orden ante todo.'},
+  {id:'T3',text:'Montar mecanismos en seco (sin energía) para practicar',answer:true,critical:false,cat:'tarea',emoji:'🏗️',
+   fbOk:'Así se aprende: sin riesgo.',fbErr:'Montar en seco es tu entrenamiento básico.'},
+  {id:'T4',text:'Ayudar a tirar rutas de canaleta siguiendo instrucciones',answer:true,critical:false,cat:'tarea',emoji:'🏗️',
+   fbOk:'Con supervisión, esa es tu tarea.',fbErr:'Sí, el junior ayuda en esto con supervisión.'},
+  {id:'T5',text:'Comprobar continuidad con multímetro bajo supervisión',answer:true,critical:false,cat:'tarea',emoji:'🏗️',
+   fbOk:'Con tu encargado al lado, perfecto.',fbErr:'Sí, pero siempre con supervisión.'},
+  {id:'T6',text:'Decidir por tu cuenta dónde va cada circuito',answer:false,critical:true,cat:'tarea',emoji:'🏗️',
+   fbOk:'Bien visto. Eso lo decide el oficial.',fbErr:'Cuidado. Eso NO lo decides tú. Pregunta siempre.'},
+  {id:'T7',text:'Trabajar con tensión (cables energizados)',answer:false,critical:true,cat:'tarea',emoji:'🏗️',
+   fbOk:'Correcto. Cero tensión para un junior.',fbErr:'NUNCA. Un junior no trabaja con tensión.'},
+  {id:'T8',text:'Hacer conexiones críticas sin que nadie las revise',answer:false,critical:true,cat:'tarea',emoji:'🏗️',
+   fbOk:'Exacto. Todo se revisa.',fbErr:'Las conexiones críticas se supervisan siempre.'},
+  {id:'T9',text:'Inventar una solución cuando no sabes cómo hacerlo',answer:false,critical:true,cat:'tarea',emoji:'🏗️',
+   fbOk:'Bien. Si no sabes, preguntas. Sin improvisar.',fbErr:'Inventar = peligro. Pregunta al encargado.'},
+  {id:'T10',text:'Cambiar el recorrido de un cable porque "te parece mejor"',answer:false,critical:true,cat:'tarea',emoji:'🏗️',
+   fbOk:'Correcto. El recorrido lo marca el plano o el oficial.',fbErr:'No. El junior no cambia trazados por su cuenta.'},
+  {id:'A1',text:'Llegar puntual y con el material revisado',answer:true,critical:false,cat:'actitud',emoji:'🏗️',
+   fbOk:'Básico. Pero muchos fallan aquí.',fbErr:'Es lo primero que valora un encargado.'},
+  {id:'A2',text:'Preguntar al encargado cuando tienes una duda',answer:true,critical:false,cat:'actitud',emoji:'🏗️',
+   fbOk:'Siempre. Preguntar no es debilidad.',fbErr:'Preguntar bien es señal de profesional.'},
+  {id:'A3',text:'Decir "no sé" cuando no sabes algo',answer:true,critical:false,cat:'actitud',emoji:'🏗️',
+   fbOk:'Honestidad > aparentar. Bien.',fbErr:'Decir "no sé" evita errores graves.'},
+  {id:'A4',text:'Quedarte callado cuando ves algo que no te cuadra',answer:false,critical:true,cat:'actitud',emoji:'🏗️',
+   fbOk:'Bien. Si algo no cuadra, se dice.',fbErr:'Callarte puede ser peligroso. Avisa siempre.'},
+  {id:'A5',text:'Dejar la zona de trabajo desordenada al acabar',answer:false,critical:false,cat:'actitud',emoji:'🏗️',
+   fbOk:'Correcto. Se recoge siempre.',fbErr:'El orden es parte del trabajo.'},
+  {id:'C1',text:'En una reforma de vivienda: pasar cables por tubos siguiendo instrucciones',answer:true,critical:false,cat:'contexto',emoji:'🏠',
+   fbOk:'En vivienda, el junior ayuda con el tendido.',fbErr:'En reformas, ayudar con el cableado es tu tarea.'},
+  {id:'C2',text:'En un local comercial: decidir dónde poner los puntos de luz',answer:false,critical:false,cat:'contexto',emoji:'🏪',
+   fbOk:'Eso lo decide el proyecto o el oficial.',fbErr:'Los puntos de luz los marca el proyecto, no el junior.'},
+  {id:'C3',text:'En mantenimiento: seguir el checklist de revisión paso a paso',answer:true,critical:false,cat:'contexto',emoji:'🔧',
+   fbOk:'Método y checklist. Así se hace.',fbErr:'El checklist es tu mejor amigo en mantenimiento.'},
+  {id:'C4',text:'En mantenimiento: diagnosticar una avería tú solo sin consultar',answer:false,critical:true,cat:'contexto',emoji:'🔧',
+   fbOk:'Bien. Diagnóstico siempre con supervisión.',fbErr:'Un junior no diagnostica solo. Consulta.'},
+  {id:'C5',text:'En cualquier obra: quitar trabajo al encargado organizando bien',answer:true,critical:false,cat:'contexto',emoji:'🏗️',
+   fbOk:'"Quítame trabajo, no me crees problemas." Exacto.',fbErr:'Esa es LA frase del encargado. Organízate bien.'}
+];
+
+const CARDS_PER_GAME=8;
+const TASK_THRESHOLD=600; // ~6/8 correct
+const SWIPE_THRESHOLD=80;
+const MAX_ROTATION=15;
+const FEEDBACK_DURATION=2500; // ms before auto-advance
+const TAP_DELAY=400; // ms before tap-to-skip is allowed
+
+/* ========== GAME STATE ========== */
+let score=0,roundIdx=0,hits=0,gameCards=[];
+let cardStartTime=0;
+let record=parseInt(localStorage.getItem('clasifica_junior_record'))||0;
+let taskCompleted=false;
+let criticalErrors=[];
+let answered=false;
+let cardListeners=null; // to remove listeners between cards
+let feedbackTimer=null; // auto-advance timer
+let tapSkipReady=false; // tap-to-skip guard
+let tapSkipHandler=null; // to remove tap listener
+
+const $=id=>document.getElementById(id);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+/* ========== SCREENS ========== */
+function showScreen(id){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.add('off'));
+  $(id).classList.remove('off');
+}
+
+/* ========== INIT ========== */
+function init(){
+  $('intro-bg').src=A.bg_obra;
+  $('intro-av').src=A.fer_happy;
+  $('intro-msg').textContent='Soy Fer, el encargado. Vamos a ver si sabes lo que hace un junior... y lo que NO.';
+  $('intro-btn').onclick=startGame;
+  $('res-btn').onclick=startGame;
+  $('modal-close').onclick=()=>$('modal-errors').classList.remove('show');
+  $('modal-errors').addEventListener('click',e=>{if(e.target===$('modal-errors'))$('modal-errors').classList.remove('show')});
+  showScreen('intro');
+}
+
+/* ========== START GAME ========== */
+function startGame(){
+  score=0;roundIdx=0;hits=0;taskCompleted=false;criticalErrors=[];answered=false;
+  gameCards=shuffle([...POOL]).slice(0,CARDS_PER_GAME);
+  $('play-bg').src=A.bg_obra;
+  showScreen('play');
+  showButtons();
+  showCard();
+}
+
+/* ========== HUD ========== */
+function updateHUD(){
+  $('hud-round').textContent=(roundIdx+1)+'/'+CARDS_PER_GAME;
+}
+
+/* ========== SHOW BUTTONS ========== */
+function showButtons(){
+  const bar=$('bottom-bar');
+  bar.innerHTML='<button class="btn-no" id="btn-no">✕ NO</button><button class="btn-si" id="btn-si">✓ SÍ</button>';
+  $('btn-no').onclick=()=>answerCard(false);
+  $('btn-si').onclick=()=>answerCard(true);
+}
+
+/* ========== SHOW CARD ========== */
+function showCard(){
+  if(roundIdx>=CARDS_PER_GAME){showResults();return}
+  answered=false;
+  const c=gameCards[roundIdx];
+  cardStartTime=Date.now();
+
+  $('card-emoji').textContent=c.emoji;
+  const catEl=$('card-cat');
+  catEl.textContent=c.cat==='tarea'?'TAREA':c.cat==='actitud'?'ACTITUD':'CONTEXTO';
+  catEl.className='card-cat '+c.cat;
+  $('card-text').textContent=c.text;
+
+  // Reset stamps
+  $('stamp-si').style.opacity='0';
+  $('stamp-no').style.opacity='0';
+
+  // Reset card
+  const card=$('card');
+  card.style.transition='none';
+  card.style.transform='translate3d(0,20px,0) scale(.92)';
+  card.style.opacity='0';
+  card.style.display='flex';
+  card.style.pointerEvents='auto';
+
+  // Hide feedback
+  $('fb-wrap').classList.remove('show');
+  $('fb-card').classList.remove('ok','err');
+
+  // Re-enable buttons
+  $('btn-no').style.pointerEvents='auto';
+  $('btn-si').style.pointerEvents='auto';
+  $('btn-no').style.opacity='1';
+  $('btn-si').style.opacity='1';
+
+  // Animate card in
+  requestAnimationFrame(()=>{
+    card.style.transition='transform .3s ease-out, opacity .3s ease-out';
+    card.style.transform='translate3d(0,0,0) scale(1)';
+    card.style.opacity='1';
+    setTimeout(()=>{card.style.transition='none'},310);
+  });
+
+  $('hint-no').style.opacity='0';
+  $('hint-si').style.opacity='0';
+
+  updateHUD();
+  setupCardDrag();
+}
+
+/* ========== CARD DRAG (Tinder-style) ========== */
+function setupCardDrag(){
+  const card=$('card');
+
+  // Remove old listeners
+  if(cardListeners){
+    card.removeEventListener('touchstart',cardListeners.touch,{passive:false});
+    card.removeEventListener('mousedown',cardListeners.mouse);
+  }
+
+  const onDown=e=>{
+    if(answered)return;
+    const isTouch=!!e.touches;
+    const sx=isTouch?e.touches[0].clientX:e.clientX;
+    const sy=isTouch?e.touches[0].clientY:e.clientY;
+    let dragging=false,dx=0,dy=0;
+    e.preventDefault();
+
+    const onMove=ev=>{
+      const cx=isTouch?ev.touches[0].clientX:ev.clientX;
+      const cy=isTouch?ev.touches[0].clientY:ev.clientY;
+      dx=cx-sx;dy=cy-sy;
+      if(!dragging&&Math.abs(dx)<6)return;
+      dragging=true;
+      ev.preventDefault();
+
+      const rot=(dx/SWIPE_THRESHOLD)*MAX_ROTATION;
+      const clampRot=Math.max(-MAX_ROTATION,Math.min(MAX_ROTATION,rot));
+      card.style.transform='translate3d('+dx+'px,'+dy*.3+'px,0) rotate('+clampRot+'deg)';
+
+      // Hints + stamps
+      const pct=Math.min(1,Math.abs(dx)/SWIPE_THRESHOLD);
+      $('hint-no').style.opacity=dx<0?pct:'0';
+      $('hint-si').style.opacity=dx>0?pct:'0';
+      $('stamp-si').style.opacity=dx>0?pct:'0';
+      $('stamp-no').style.opacity=dx<0?pct:'0';
+    };
+
+    const onEnd=()=>{
+      document.removeEventListener(isTouch?'touchmove':'mousemove',onMove);
+      document.removeEventListener(isTouch?'touchend':'mouseup',onEnd);
+      $('hint-no').style.opacity='0';
+      $('hint-si').style.opacity='0';
+
+      if(dragging&&Math.abs(dx)>=SWIPE_THRESHOLD){
+        answerCard(dx>0);
+      }else{
+        // Snap back
+        $('stamp-si').style.opacity='0';
+        $('stamp-no').style.opacity='0';
+        card.style.transition='transform .35s cubic-bezier(.34,1.56,.64,1)';
+        card.style.transform='translate3d(0,0,0) rotate(0deg)';
+        setTimeout(()=>{card.style.transition='none'},360);
+      }
+    };
+
+    document.addEventListener(isTouch?'touchmove':'mousemove',onMove,{passive:false});
+    document.addEventListener(isTouch?'touchend':'mouseup',onEnd);
+  };
+
+  const touchHandler=e=>onDown(e);
+  const mouseHandler=e=>onDown(e);
+  card.addEventListener('touchstart',touchHandler,{passive:false});
+  card.addEventListener('mousedown',mouseHandler);
+  cardListeners={touch:touchHandler,mouse:mouseHandler};
+}
+
+/* ========== ANSWER ========== */
+function answerCard(userSaidYes){
+  if(answered)return;
+  answered=true;
+  const c=gameCards[roundIdx];
+  const correct=userSaidYes===c.answer;
+  const elapsed=(Date.now()-cardStartTime)/1000;
+
+  // Disable buttons immediately
+  $('btn-no').style.pointerEvents='none';
+  $('btn-si').style.pointerEvents='none';
+  $('btn-no').style.opacity='.4';
+  $('btn-si').style.opacity='.4';
+
+  // Fly card out
+  const card=$('card');
+  const dir=userSaidYes?1:-1;
+  card.style.pointerEvents='none';
+
+  // Show stamp before flying
+  if(userSaidYes){$('stamp-si').style.opacity='1';$('stamp-no').style.opacity='0'}
+  else{$('stamp-no').style.opacity='1';$('stamp-si').style.opacity='0'}
+
+  card.style.transition='transform .3s ease-in, opacity .3s ease-in';
+  card.style.transform='translate3d('+(dir*420)+'px,-40px,0) rotate('+(dir*25)+'deg)';
+  card.style.opacity='0';
+
+  // Score
+  let pts=0;
+  if(correct){
+    hits++;
+    pts=100;
+    if(elapsed<2)pts+=50;
+    else if(elapsed<4)pts+=25;
+    score+=pts;
+  }
+
+  if(!correct&&c.critical){criticalErrors.push(c)}
+
+  // Show feedback in-place after card flies out
+  setTimeout(()=>{
+    card.style.display='none';
+    $('fb-fer').src=correct?A.fer_happy:A.fer_worried;
+    $('fb-card').className='fb-card '+(correct?'ok':'err');
+    $('fb-icon').src=correct?A.ico_check:A.ico_cruz;
+    $('fb-text').textContent=correct?c.fbOk:c.fbErr;
+    $('fb-wrap').classList.add('show');
+
+    // Auto-advance after FEEDBACK_DURATION, or tap anywhere to skip
+    tapSkipReady=false;
+    feedbackTimer=setTimeout(advanceCard,FEEDBACK_DURATION);
+    setTimeout(()=>{tapSkipReady=true},TAP_DELAY);
+
+    // Tap anywhere to skip
+    if(tapSkipHandler)document.removeEventListener('click',tapSkipHandler);
+    tapSkipHandler=()=>{if(tapSkipReady)advanceCard()};
+    document.addEventListener('click',tapSkipHandler);
+  },280);
+}
+
+function advanceCard(){
+  if(feedbackTimer){clearTimeout(feedbackTimer);feedbackTimer=null}
+  if(tapSkipHandler){document.removeEventListener('click',tapSkipHandler);tapSkipHandler=null}
+  tapSkipReady=false;
+  $('fb-wrap').classList.remove('show');
+  roundIdx++;
+  showCard();
+  showButtons();
+}
+
+/* ========== RESULTS ========== */
+function showResults(){
+  showScreen('results');
+  $('res-score').textContent=score;
+  const isNew=score>record;
+  if(isNew){record=score;localStorage.setItem('clasifica_junior_record',record)}
+  $('res-record').textContent=record;
+  $('res-new').classList.toggle('show',isNew);
+  $('res-hits').textContent='✓ '+hits+'/'+CARDS_PER_GAME+' aciertos';
+
+  const badge=$('res-badge');
+  if(score>=1000){
+    badge.textContent='¡MISIÓN COMPLETADA!';
+    badge.style.display='block';
+    $('res-av').src=A.fer_celebrating;
+    $('res-msg').textContent='Sabes de qué va esto. Bienvenido al equipo.';
+  }else if(score>=TASK_THRESHOLD){
+    badge.textContent='¡MISIÓN COMPLETADA!';
+    badge.style.display='block';
+    $('res-av').src=A.fer_happy;
+    $('res-msg').textContent='Aprobado. Pero repasa los errores críticos.';
+  }else{
+    badge.style.display='none';
+    $('res-av').src=A.fer_worried;
+    $('res-msg').textContent='Necesitas repasar. Un junior tiene que tener esto claro.';
+  }
+
+  const errBtn=$('res-errors-btn');
+  if(criticalErrors.length>0){
+    errBtn.style.display='block';
+    errBtn.textContent='⚠️ Ver '+criticalErrors.length+' error'+(criticalErrors.length>1?'es':'')+' crítico'+(criticalErrors.length>1?'s':'');
+    errBtn.onclick=showErrorsModal;
+  }else{
+    errBtn.style.display='none';
+  }
+
+  if(score>=TASK_THRESHOLD&&!taskCompleted){
+    taskCompleted=true;
+    try{window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}))}catch(e){}
+  }
+}
+
+/* ========== ERRORS MODAL ========== */
+function showErrorsModal(){
+  const list=$('modal-errors-list');
+  list.innerHTML=criticalErrors.map(c=>{
+    const ans=c.answer?'SÍ lo hace el junior':'NO lo hace el junior';
+    return `<div class="modal-item">
+      <div class="modal-item-text">${c.text}</div>
+      <div class="modal-item-answer">→ ${ans}</div>
+      <div class="modal-item-explain">${c.fbErr}</div>
+    </div>`;
+  }).join('');
+  $('modal-errors').classList.add('show');
+}
+
+/* ========== BOOT ========== */
+init();
+</script>
+</body>
+</html>
