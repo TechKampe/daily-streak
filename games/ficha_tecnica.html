@@ -8,7 +8,7 @@
 <style>
 :root{--pri:#00E6BC;--acc:#04FFB4;--suc:#C5FFDF;--dan:#E74C3C;--war:#FFFFAB;--dk:#0B214A;--olive:#004957;--navy:#0B214A;--lime:#04FFB4;--lemon:#FFFFAB;--mint:#C5FFDF;--fire:#E74C3C;--turq:#00E6BC}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
-html,body{width:100%;height:100%;overflow:hidden;font-family:'Baloo 2',cursive;background:#0B214A;touch-action:none}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Baloo 2',cursive;background:#0B214A}
 body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-bottom:constant(safe-area-inset-bottom)}
 #W{position:relative;width:100%;max-width:430px;margin:0 auto;height:100%;overflow:hidden;background:linear-gradient(180deg,#0B214A 0%,#0D2D5E 40%,#0F1B2D 100%)}
 .scr{position:absolute;inset:0;display:flex;flex-direction:column;transition:opacity .35s;z-index:100}
@@ -72,10 +72,9 @@ body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-t
 /* TAGS POOL */
 .tags-label{color:#0B214A;font-size:11px;font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;flex-shrink:0}
 .tags-pool{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;padding:6px 0;flex-shrink:0}
-.tag{font-size:12px;font-weight:700;padding:8px 14px;border-radius:12px;cursor:grab;touch-action:none;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.2);line-height:1.2;max-width:180px;text-align:center;position:relative;z-index:10;border:2px solid transparent}
-.tag:active{transform:scale(.95)}
-.tag.dragging{opacity:.5;transform:scale(.9)}
-.tag.ghost{position:fixed;z-index:9999;pointer-events:none;transform:scale(1.08);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.tag{font-size:12px;font-weight:700;padding:8px 14px;border-radius:12px;cursor:grab;touch-action:none;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.2);line-height:1.2;max-width:180px;text-align:center;position:relative;z-index:10;border:2px solid transparent;-webkit-touch-callout:none}
+.tag.dragging{opacity:.4;transform:scale(.9)}
+.tag.ghost{position:fixed;z-index:9999;pointer-events:none;transform:scale(1.08);box-shadow:0 6px 20px rgba(0,0,0,.4);transition:none}
 .tag.used{display:none}
 
 /* Tag colors — 3 dynamic colors, solid backgrounds, white text */
@@ -252,7 +251,7 @@ const FICHAS=[
   },
   {
     id:'atornillador',
-    name:'Atornillador / Impacto',
+    name:'Atornillador Eléctrico',
     img:A.tool_atornillador,
     correct:{
       funcion:'Fijar y atornillar',
@@ -504,24 +503,27 @@ function playFicha(){
 }
 
 /* ========== DRAG SYSTEM ========== */
+const DRAG_THRESHOLD=8; // px movement before drag starts
+let selectedTag=null;
+let selectedTagEl=null;
+
 function setupDrag(){
   const pool=$('tags-pool');
   const tags=pool.querySelectorAll('.tag');
   const slots=document.querySelectorAll('.slot-box');
 
   tags.forEach(tag=>{
-    tag.addEventListener('touchstart',e=>startTagDrag(e,tag),{passive:false});
-    tag.addEventListener('mousedown',e=>startTagDrag(e,tag));
+    tag.addEventListener('touchstart',e=>onPointerDown(e,tag),{passive:false});
+    tag.addEventListener('mousedown',e=>onPointerDown(e,tag));
   });
 
-  // Tap filled slot to return tag to pool, or tap empty slot to place selected tag
+  // Tap slot: return tag or place selected tag
   slots.forEach(slot=>{
     slot.addEventListener('click',e=>{
       const field=slot.dataset.field;
       if(slotContents[field]){
         returnTagToPool(field);
       }else if(selectedTag){
-        // Place selected tag into this slot
         fillSlot(field,selectedTag);
         hideTagInPool(selectedTag);
         deselectTag();
@@ -529,19 +531,7 @@ function setupDrag(){
       }
     });
   });
-
-  // Tap-to-select mode: tap a tag to select it, then tap a slot
-  tags.forEach(tag=>{
-    tag.addEventListener('click',e=>{
-      // Only if no drag happened
-      if(tag.classList.contains('used'))return;
-      selectTag(tag);
-    });
-  });
 }
-
-let selectedTag=null;
-let selectedTagEl=null;
 
 function selectTag(tag){
   deselectTag();
@@ -560,13 +550,64 @@ function deselectTag(){
   selectedTagEl=null;
 }
 
-function startTagDrag(e,tag){
-  e.preventDefault();
+function onPointerDown(e,tag){
+  if(tag.classList.contains('used'))return;
+  const isTouch=!!e.touches;
+  const startX=isTouch?e.touches[0].clientX:e.clientX;
+  const startY=isTouch?e.touches[0].clientY:e.clientY;
+  let isDragging=false;
+  let moved=false;
   const text=tag.dataset.text;
+
+  // Prevent scroll while touching a tag
+  e.preventDefault();
+
+  const onMove=ev=>{
+    const cx=isTouch?ev.touches[0].clientX:ev.clientX;
+    const cy=isTouch?ev.touches[0].clientY:ev.clientY;
+    const dx=cx-startX,dy=cy-startY;
+
+    if(!isDragging){
+      if(Math.abs(dx)>DRAG_THRESHOLD||Math.abs(dy)>DRAG_THRESHOLD){
+        isDragging=true;
+        moved=true;
+        startDrag(tag,text,startX,startY);
+      }
+      return;
+    }
+
+    ev.preventDefault();
+    updateDrag(cx,cy);
+  };
+
+  const onEnd=ev=>{
+    document.removeEventListener(isTouch?'touchmove':'mousemove',onMove);
+    document.removeEventListener(isTouch?'touchend':'mouseup',onEnd);
+
+    if(isDragging){
+      const cx=isTouch?ev.changedTouches[0].clientX:ev.clientX;
+      const cy=isTouch?ev.changedTouches[0].clientY:ev.clientY;
+      endDrag(tag,text,cx,cy);
+    }else{
+      // It was a tap — select or toggle
+      if(selectedTag===text){
+        deselectTag();
+      }else{
+        selectTag(tag);
+      }
+    }
+  };
+
+  document.addEventListener(isTouch?'touchmove':'mousemove',onMove,{passive:false});
+  document.addEventListener(isTouch?'touchend':'mouseup',onEnd);
+}
+
+function startDrag(tag,text){
   dragTag=text;
   dragSourceSlot=null;
+  deselectTag();
 
-  // Check if this tag is already in a slot — if so, remove from slot
+  // If tag is in a slot, remove it
   for(const f of currentFields){
     if(slotContents[f]===text){
       dragSourceSlot=f;
@@ -577,79 +618,58 @@ function startTagDrag(e,tag){
 
   tag.classList.add('dragging');
 
-  // Create ghost with same color class
+  // Create ghost
   ghostEl=document.createElement('div');
   const colorClass=tag.dataset.color!==undefined?'tag-color-'+tag.dataset.color:'';
   ghostEl.className='tag ghost '+colorClass;
   ghostEl.textContent=text;
+  ghostEl.style.left='-9999px';
   document.body.appendChild(ghostEl);
-
-  const clientX=e.touches?e.touches[0].clientX:e.clientX;
-  const clientY=e.touches?e.touches[0].clientY:e.clientY;
-  moveGhost(clientX,clientY);
-
-  const onMove=ev=>{
-    ev.preventDefault();
-    const cx=ev.touches?ev.touches[0].clientX:ev.clientX;
-    const cy=ev.touches?ev.touches[0].clientY:ev.clientY;
-    moveGhost(cx,cy);
-    highlightSlotUnder(cx,cy);
-  };
-
-  const onEnd=ev=>{
-    const cx=ev.changedTouches?ev.changedTouches[0].clientX:ev.clientX;
-    const cy=ev.changedTouches?ev.changedTouches[0].clientY:ev.clientY;
-
-    document.removeEventListener('touchmove',onMove);
-    document.removeEventListener('mousemove',onMove);
-    document.removeEventListener('touchend',onEnd);
-    document.removeEventListener('mouseup',onEnd);
-
-    tag.classList.remove('dragging');
-    if(ghostEl){ghostEl.remove();ghostEl=null}
-    clearHighlights();
-
-    // Find slot under drop point
-    const slotField=getSlotUnder(cx,cy);
-    if(slotField){
-      // If slot is occupied, swap
-      const existing=slotContents[slotField];
-      if(existing&&existing!==text){
-        // Return existing to pool
-        clearSlot(slotField);
-        showTagInPool(existing);
-      }
-      // Place tag in slot
-      fillSlot(slotField,text);
-      hideTagInPool(text);
-    }else{
-      // Dropped outside slots — return to pool
-      showTagInPool(text);
-      if(dragSourceSlot){
-        // Was from a slot, already cleared
-      }
-    }
-
-    checkAllFilled();
-    dragTag=null;
-    dragSourceSlot=null;
-  };
-
-  document.addEventListener('touchmove',onMove,{passive:false});
-  document.addEventListener('mousemove',onMove);
-  document.addEventListener('touchend',onEnd);
-  document.addEventListener('mouseup',onEnd);
 }
 
-function moveGhost(x,y){
+function updateDrag(x,y){
   if(!ghostEl)return;
-  ghostEl.style.left=(x-ghostEl.offsetWidth/2)+'px';
-  ghostEl.style.top=(y-ghostEl.offsetHeight-10)+'px';
+  // Use transform for GPU-accelerated smooth movement
+  const gw=ghostEl.offsetWidth||100;
+  const gh=ghostEl.offsetHeight||36;
+  ghostEl.style.left='0px';
+  ghostEl.style.top='0px';
+  ghostEl.style.transform='translate3d('+(x-gw/2)+'px,'+(y-gh-12)+'px,0) scale(1.08)';
+
+  clearHighlights();
+  const field=getSlotUnder(x,y);
+  if(field){
+    const slot=document.querySelector(`.slot-box[data-field="${field}"]`);
+    if(slot)slot.classList.add('highlight');
+  }
+}
+
+function endDrag(tag,text,cx,cy){
+  tag.classList.remove('dragging');
+  if(ghostEl){ghostEl.remove();ghostEl=null}
+  clearHighlights();
+
+  const slotField=getSlotUnder(cx,cy);
+  if(slotField){
+    const existing=slotContents[slotField];
+    if(existing&&existing!==text){
+      clearSlot(slotField);
+      showTagInPool(existing);
+    }
+    fillSlot(slotField,text);
+    hideTagInPool(text);
+  }else{
+    showTagInPool(text);
+  }
+
+  checkAllFilled();
+  dragTag=null;
+  dragSourceSlot=null;
 }
 
 function getSlotUnder(x,y){
   const slots=document.querySelectorAll('.slot-box');
-  const PAD=18; // expand hit area by 18px in each direction
+  const PAD=20;
   for(const slot of slots){
     const r=slot.getBoundingClientRect();
     if(x>=r.left-PAD&&x<=r.right+PAD&&y>=r.top-PAD&&y<=r.bottom+PAD){
@@ -657,14 +677,6 @@ function getSlotUnder(x,y){
     }
   }
   return null;
-}
-
-function highlightSlotUnder(x,y){
-  clearHighlights();
-  const field=getSlotUnder(x,y);
-  if(field){
-    document.querySelector(`.slot-box[data-field="${field}"]`).classList.add('highlight');
-  }
 }
 
 function clearHighlights(){
