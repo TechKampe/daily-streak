@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Alerta en Obra</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pri:#00E6BC;--acc:#04FFB4;--suc:#C5FFDF;--dan:#E74C3C;--war:#FFFFAB;--dk:#0B214A;--navy:#0B214A;--lime:#04FFB4;--lemon:#FFFFAB;--mint:#C5FFDF;--fire:#E74C3C;--turq:#00E6BC}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Baloo 2',cursive;background:#0B214A;touch-action:manipulation}
+body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-bottom:constant(safe-area-inset-bottom)}
+#W{position:relative;width:100%;max-width:430px;margin:0 auto;height:100%;overflow:hidden;background:linear-gradient(180deg,#0B214A 0%,#0D2D5E 40%,#0F1B2D 100%)}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;transition:opacity .35s;z-index:100}
+.scr.off{opacity:0;pointer-events:none;z-index:-1}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:1;pointer-events:none}
+.btn{background:var(--turq);color:var(--navy);border:none;font-family:'Baloo 2',cursive;font-size:19px;font-weight:700;padding:14px 48px;border-radius:50px;cursor:pointer;box-shadow:0 4px 16px rgba(0,230,188,.3);transition:transform .1s;letter-spacing:.5px}
+.btn:active{transform:scale(.96)}
+
+/* INTRO */
+#intro{align-items:center;justify-content:flex-end;padding-bottom:40px}
+.intro-card{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;padding:0 20px;width:100%}
+.intro-av{width:260px;height:340px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(0,0,0,.6));margin-bottom:-36px;position:relative;z-index:1}
+.intro-bub{position:relative;z-index:2;background:#fff;color:var(--navy);padding:18px 22px;border-radius:22px;box-shadow:0 4px 24px rgba(0,0,0,.35);font-size:16px;font-weight:600;line-height:1.4;text-align:center;margin-bottom:18px;width:100%}
+.intro-title{font-size:24px;font-weight:800;color:#fff;text-shadow:0 3px 16px rgba(0,0,0,.5);margin-bottom:6px;z-index:10;position:relative}
+
+/* HUD */
+.hud{position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-right:66px;background:linear-gradient(180deg,rgba(11,33,74,.95)0%,rgba(11,33,74,.4)70%,transparent 100%);padding-bottom:28px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.hud-left{display:flex;align-items:center;gap:8px}
+.hud-round{background:rgba(0,0,0,.35);padding:4px 12px;border-radius:16px;color:rgba(255,255,255,.8);font-size:14px;font-weight:600}
+.hud-lives{display:flex;gap:3px}
+.hud-heart{font-size:20px;transition:all .3s ease}
+.hud-heart.lost{opacity:.2;transform:scale(.7)}
+
+/* GAMEPLAY */
+#play{z-index:10}
+.play-inner{position:relative;z-index:10;flex:1;display:flex;flex-direction:column;padding:48px 0 0;overflow:hidden}
+
+/* CONTEXT BAR */
+.context-bar{padding:0 16px 6px;flex-shrink:0}
+.context-text{color:rgba(255,255,255,.85);font-size:13px;font-weight:600;line-height:1.35;text-align:center;font-style:italic;background:rgba(0,0,0,.25);padding:10px 14px;border-radius:14px}
+
+/* SCENE ZONE */
+.scene-zone{flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:0 10px;min-height:0;overflow:hidden}
+.scene-wrap{position:relative;display:inline-block;max-width:100%;max-height:100%;line-height:0;overflow:hidden;border-radius:14px}
+.scene-img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;border-radius:14px;box-shadow:0 4px 24px rgba(0,0,0,.4)}
+
+/* Falling objects — no background, just the image/emoji floating over the scene */
+.fall-obj{position:absolute;width:68px;height:68px;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;z-index:16;opacity:0;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5));will-change:transform}
+.fall-obj img{width:62px;height:62px;object-fit:contain;pointer-events:none}
+.fall-obj .fall-emoji{font-size:52px;line-height:1;pointer-events:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
+.fall-obj.visible{opacity:1}
+
+.fall-obj.correct-pick{filter:drop-shadow(0 0 16px rgba(39,174,96,.8)) drop-shadow(0 3px 8px rgba(0,0,0,.5));pointer-events:none;animation:correctPulse .5s ease-out forwards}
+@keyframes correctPulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.25)}
+  100%{transform:scale(1.15)}
+}
+.fall-obj.wrong-pick{pointer-events:none}
+.fall-obj.faded{opacity:.08!important;pointer-events:none!important;transition:opacity .3s}
+
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-10px)}
+  40%{transform:translateX(10px)}
+  60%{transform:translateX(-8px)}
+  80%{transform:translateX(5px)}
+}
+.fall-obj.shaking{animation:shake .35s ease-out!important}
+
+/* Hint toast — sits below context text */
+.hint-toast{background:rgba(255,255,171,.15);color:var(--lemon);font-size:12px;font-weight:700;padding:6px 14px;border-radius:12px;text-align:center;opacity:0;transition:opacity .3s;pointer-events:none;line-height:1.3;margin-top:4px;max-height:0;overflow:hidden}
+.hint-toast.show{opacity:1;max-height:40px}
+
+/* PROMPT — inside context-bar */
+.prompt-text{color:var(--turq);font-size:14px;font-weight:700;text-align:center;line-height:1.3;margin-top:4px}
+
+/* Screen flash red */
+@keyframes flashRed{
+  0%{opacity:.35}
+  100%{opacity:0}
+}
+.flash-overlay{position:absolute;inset:0;background:var(--fire);z-index:15;pointer-events:none;opacity:0;border-radius:14px}
+.flash-overlay.flash{animation:flashRed .4s ease-out forwards}
+
+/* PHASE 3: Feedback phrase */
+.phase3{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px 20px;background:rgba(11,33,74,.95);z-index:40;opacity:0;pointer-events:none;transition:opacity .3s ease-out}
+.phase3.show{opacity:1;pointer-events:auto}
+.fb-card{background:var(--mint);border-radius:20px;padding:22px 20px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:8px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.fb-row{display:flex;align-items:center;gap:10px}
+.fb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#fff;padding:2px 8px;border-radius:8px;flex-shrink:0}
+.fb-label.err{background:var(--fire)}
+.fb-label.hab{background:#27ae60}
+.fb-text{color:var(--navy);font-size:14px;font-weight:700;line-height:1.3}
+.fb-divider{height:1px;background:rgba(11,33,74,.1);margin:4px 0}
+.fb-frase{color:#8B6914;font-size:16px;font-weight:700;font-style:italic;text-align:center;line-height:1.3;padding:8px;background:rgba(255,255,171,.3);border-radius:10px;opacity:0;transform:translateY(6px);transition:opacity .35s ease-out .15s,transform .35s ease-out .15s}
+.fb-frase.show{opacity:1;transform:translateY(0)}
+.fb-fer{width:180px;height:236px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.5));margin-bottom:-50px;position:relative;z-index:1}
+.fb-tap{color:rgba(11,33,74,.35);font-size:12px;font-weight:600;text-align:center;margin-top:8px}
+
+/* RESULTS */
+#results{align-items:center;justify-content:center;padding:16px 20px;z-index:200}
+.res-inner{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;width:100%;gap:2px}
+.res-label{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-align:center}
+.res-new{color:var(--lemon);font-size:14px;font-weight:800;display:none}
+.res-new.show{display:block}
+.res-badge{color:var(--lime);font-size:18px;font-weight:800;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase}
+.res-scores{display:flex;gap:28px;margin-bottom:4px}
+.res-val{font-size:34px;font-weight:800;text-align:center;color:var(--lime)}
+.res-av{width:220px;height:288px;object-fit:contain;filter:drop-shadow(0 4px 22px rgba(0,0,0,.5));margin-bottom:-50px;position:relative;z-index:1}
+.res-info-card{background:rgba(255,255,255,.1);border-radius:18px;padding:16px 20px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:0}
+.res-msg{color:#fff;font-size:14px;font-weight:600;text-align:center;line-height:1.3}
+.res-hits{color:rgba(255,255,255,.6);font-size:13px;font-weight:600}
+.res-frases-btn{background:rgba(0,230,188,.15);border:2px solid var(--turq);color:var(--turq);font-family:'Baloo 2',cursive;font-size:13px;font-weight:700;padding:6px 18px;border-radius:14px;cursor:pointer;margin-top:4px;transition:transform .1s;touch-action:manipulation}
+.res-frases-btn:active{transform:scale(.96)}
+.res-bot{display:flex;flex-direction:column;align-items:center;margin-top:8px}
+.res-bot .btn{position:relative;z-index:2;padding:12px 40px;font-size:17px}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-card{background:#fff;border-radius:22px;padding:20px;max-width:380px;width:100%;max-height:70vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-title{color:var(--navy);font-size:18px;font-weight:800;margin-bottom:12px;text-align:center}
+.modal-pair{background:rgba(0,230,188,.06);border-left:4px solid var(--turq);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.modal-pair-err{color:var(--fire);font-size:13px;font-weight:700;margin-bottom:2px}
+.modal-pair-hab{color:#27ae60;font-size:13px;font-weight:700;margin-bottom:4px}
+.modal-pair-frase{color:#8B6914;font-size:13px;font-weight:700;font-style:italic;line-height:1.3}
+.modal-close{display:block;margin:12px auto 0;background:var(--navy);color:#fff;border:none;font-family:'Baloo 2',cursive;font-size:15px;font-weight:700;padding:10px 32px;border-radius:50px;cursor:pointer;touch-action:manipulation}
+.modal-close:active{transform:scale(.96)}
+
+/* Lives shake */
+@keyframes livesShake{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-4px)}
+  75%{transform:translateX(4px)}
+}
+.hud-lives.shaking{animation:livesShake .3s ease-out}
+</style>
+</head>
+<body>
+<div id="W">
+
+<!-- INTRO -->
+<div class="scr" id="intro">
+    <img class="bg" id="intro-bg" alt="">
+    <div class="dim"></div>
+    <div class="intro-card">
+        <h1 class="intro-title">Alerta en Obra</h1>
+        <img class="intro-av" id="intro-av" alt="Fer">
+        <div class="intro-bub">Voy a enseñarte 2 situaciones de obra. Encuentra el error y dime el hábito pro.</div>
+        <button class="btn" id="intro-btn">¡Vamos!</button>
+    </div>
+</div>
+
+<!-- GAMEPLAY -->
+<div class="scr off" id="play">
+    <div class="hud">
+        <div class="hud-left">
+            <div class="hud-round" id="hud-round">1/2</div>
+        </div>
+        <div class="hud-lives" id="hud-lives"></div>
+    </div>
+    <div class="play-inner">
+        <div class="context-bar">
+            <div class="context-text" id="context-text"></div>
+            <div class="prompt-text" id="prompt-text"></div>
+            <div class="hint-toast" id="hint-toast"></div>
+        </div>
+        <div class="scene-zone" id="scene-zone">
+            <div class="scene-wrap" id="scene-wrap">
+                <img class="scene-img" id="scene-img" alt="Escena">
+                <div class="flash-overlay" id="flash-overlay"></div>
+                <!-- falling objects go here, inside scene-wrap, over the image -->
+            </div>
+        </div>
+    </div>
+    <!-- PHASE 3 overlay -->
+    <div class="phase3" id="phase3">
+        <img class="fb-fer" id="fb-fer" alt="Fer">
+        <div class="fb-card">
+            <div class="fb-row">
+                <span class="fb-label err">ERROR</span>
+                <div class="fb-text" id="fb-err-text"></div>
+            </div>
+            <div class="fb-divider"></div>
+            <div class="fb-row">
+                <span class="fb-label hab">HÁBITO</span>
+                <div class="fb-text" id="fb-hab-text"></div>
+            </div>
+            <div class="fb-divider"></div>
+            <div class="fb-frase" id="fb-frase"></div>
+        </div>
+        <div class="fb-tap">toca para continuar</div>
+    </div>
+</div>
+
+<!-- RESULTS -->
+<div class="scr off" id="results" style="background:var(--navy)">
+    <div class="res-inner">
+        <div class="res-badge" id="res-badge" style="display:none"></div>
+        <div class="res-scores">
+            <div><div class="res-val" id="res-score">0</div><div class="res-label">Puntuación</div></div>
+            <div><div class="res-val" id="res-record" style="color:var(--lemon)">0</div><div class="res-label">Récord</div></div>
+        </div>
+        <div class="res-new" id="res-new">¡NUEVO RÉCORD!</div>
+        <img class="res-av" id="res-av" alt="Fer">
+        <div class="res-info-card">
+            <div class="res-msg" id="res-msg"></div>
+            <div class="res-hits" id="res-hits"></div>
+            <button class="res-frases-btn" id="res-frases-btn">📋 Ver las frases</button>
+        </div>
+        <div class="res-bot">
+            <button class="btn" id="res-btn">¡Otra ronda!</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-frases">
+    <div class="modal-card">
+        <div class="modal-title">📋 Las Reglas Pro</div>
+        <div id="modal-frases-list"></div>
+        <button class="modal-close" id="modal-close">Cerrar</button>
+    </div>
+</div>
+
+</div>
+<script>
+/* ========== ASSETS ========== */
+const A={
+  bg_errores:'https://res.cloudinary.com/kampe/image/upload/v1772036885/bg_errores_fx5v0o.png',
+  fer_happy:'https://res.cloudinary.com/kampe/image/upload/v1772019465/fer_happy_aotwxw.png',
+  fer_celebrating:'https://res.cloudinary.com/kampe/image/upload/v1772019464/fer_celebrating_yrrvkj.png',
+  fer_worried:'https://res.cloudinary.com/kampe/image/upload/v1772019465/fer_worried_g1z3jz.png',
+  escena_tension:'https://res.cloudinary.com/kampe/image/upload/v1772035836/escena_tension_ghl6sw.png',
+  escena_ayuda:'https://res.cloudinary.com/kampe/image/upload/v1772035823/escena_ayuda_e74dov.png',
+  tool_multimetro:'https://res.cloudinary.com/kampe/image/upload/v1772096588/tool_multimetro_icau2f.png',
+  tool_destornillador_ph:'https://res.cloudinary.com/kampe/image/upload/v1771938603/tool_destornillador_ph_yea1nm.png',
+  tool_alicates:'https://res.cloudinary.com/kampe/image/upload/v1771938711/kampe/game_assets/s1d1/tool_alicates.png',
+  tool_cutter:'https://res.cloudinary.com/kampe/image/upload/v1771938603/tool_cuter_cfwncu.png',
+  tool_crimpadora:'https://res.cloudinary.com/kampe/image/upload/v1771938599/tool_crimpadora_nzrwsh.png',
+  tool_pelacables:'https://res.cloudinary.com/kampe/image/upload/v1771952270/pelacables_ns59sk.png',
+  tool_metro:'https://res.cloudinary.com/kampe/image/upload/v1771938608/tool_metro_laxn2g.png',
+  tool_cortatubos:'https://res.cloudinary.com/kampe/image/upload/v1771938598/tool_cortatubos_wxfcco.png'
+};
+
+/* ========== SCENES DATA ========== */
+const SCENES=[
+  {
+    id:'tension',
+    img:A.escena_tension,
+    context:'Martes por la mañana. El oficial te dice que ayer dejaron desconectado el circuito de la cocina. Tú vas directo a tocar los cables para seguir con la instalación.',
+    emoji:'⚡',
+    error:'Tocar sin verificar tensión',
+    habito:'Usar el multímetro para verificar',
+    frase:'"Si no lo has verificado, no lo sabes."',
+    hint:'Pista: que te dijo ayer no significa que hoy sea igual...',
+    prompt:'¿Qué necesitas antes de tocar?',
+    correct:{type:'img',src:A.tool_multimetro,label:'Multímetro'},
+    distractors:[
+      {type:'img',src:A.tool_destornillador_ph,label:'Destornillador'},
+      {type:'img',src:A.tool_alicates,label:'Alicates'},
+      {type:'img',src:A.tool_cutter,label:'Cutter'},
+      {type:'img',src:A.tool_crimpadora,label:'Crimpadora'},
+      {type:'img',src:A.tool_pelacables,label:'Pelacables'},
+      {type:'img',src:A.tool_metro,label:'Metro'},
+      {type:'img',src:A.tool_cortatubos,label:'Cortatubos'}
+    ]
+  },
+  {
+    id:'ayuda',
+    img:A.escena_ayuda,
+    context:'Llevas 15 minutos mirando un cuadro eléctrico que no entiendes.',
+    emoji:'🗣️',
+    error:'Perder tiempo intentando resolver algo solo',
+    habito:'Pedir ayuda rápido y con contexto',
+    frase:'"Pregunta pronto, pregunta claro."',
+    hint:'Pista: recuerda que si eres aprendiz, nunca estás solo...',
+    prompt:'¿Qué deberías hacer?',
+    correct:{type:'emoji',content:'🙋‍♂️',label:'Pedir ayuda'},
+    distractors:[
+      {type:'img',src:A.tool_destornillador_ph,label:'Destornillador'},
+      {type:'img',src:A.tool_alicates,label:'Alicates'},
+      {type:'img',src:A.tool_multimetro,label:'Multímetro'},
+      {type:'img',src:A.tool_cutter,label:'Cutter'},
+      {type:'img',src:A.tool_pelacables,label:'Pelacables'},
+      {type:'img',src:A.tool_metro,label:'Metro'},
+      {type:'img',src:A.tool_crimpadora,label:'Crimpadora'}
+    ]
+  }
+];
+
+const TOTAL_SCENES=SCENES.length;
+const TASK_THRESHOLD=150;
+const MAX_LIVES=3;
+
+/* ========== GAME STATE ========== */
+let score=0,roundIdx=0,scenesCompleted=0;
+let lives=MAX_LIVES;
+let gameOrder=[];
+let roundStartTime=0;
+let habitClean=true;
+let phase=0; // 0=idle, 1=playing, 3=feedback
+let hintTimer=null;
+let tapHandler=null;
+let record=parseInt(localStorage.getItem('alerta_obra_record'))||0;
+let taskCompleted=false;
+
+const $=id=>document.getElementById(id);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+/* ========== SCREENS ========== */
+function showScreen(id){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.add('off'));
+  $(id).classList.remove('off');
+}
+
+/* ========== LIVES ========== */
+function renderLives(){
+  const c=$('hud-lives');
+  c.innerHTML='';
+  for(let i=0;i<MAX_LIVES;i++){
+    const h=document.createElement('div');
+    h.className='hud-heart'+(i>=lives?' lost':'');
+    h.textContent='❤️';
+    c.appendChild(h);
+  }
+}
+
+function loseLife(){
+  if(lives<=0)return;
+  lives--;
+  renderLives();
+  const lc=$('hud-lives');
+  lc.classList.remove('shaking');
+  void lc.offsetWidth;
+  lc.classList.add('shaking');
+  const fl=$('flash-overlay');
+  fl.classList.remove('flash');
+  void fl.offsetWidth;
+  fl.classList.add('flash');
+}
+
+/* ========== INIT ========== */
+function init(){
+  $('intro-bg').src=A.bg_errores;
+  $('intro-av').src=A.fer_happy;
+  $('intro-btn').onclick=startGame;
+  $('res-btn').onclick=startGame;
+  $('res-frases-btn').onclick=showFrasesModal;
+  $('modal-close').onclick=()=>$('modal-frases').classList.remove('show');
+  $('modal-frases').addEventListener('click',e=>{if(e.target===$('modal-frases'))$('modal-frases').classList.remove('show')});
+  showScreen('intro');
+}
+
+/* ========== START GAME ========== */
+function startGame(){
+  score=0;roundIdx=0;scenesCompleted=0;
+  lives=MAX_LIVES;taskCompleted=false;
+  gameOrder=shuffle([...Array(TOTAL_SCENES).keys()]);
+  renderLives();
+  showScreen('play');
+  startScene();
+}
+
+/* ========== START SCENE ========== */
+function startScene(){
+  if(roundIdx>=TOTAL_SCENES||lives<=0){showResults();return}
+
+  phase=1;
+  habitClean=true;
+  roundStartTime=Date.now();
+
+  const scene=SCENES[gameOrder[roundIdx]];
+
+  // HUD
+  $('hud-round').textContent=(roundIdx+1)+'/'+TOTAL_SCENES;
+
+  // Context
+  $('context-text').textContent=scene.context;
+
+  // Prompt
+  $('prompt-text').textContent=scene.prompt;
+
+  // Hide phase 3
+  $('phase3').classList.remove('show');
+
+  // Hide hint
+  $('hint-toast').classList.remove('show');
+  $('hint-toast').textContent='';
+  if(hintTimer)clearTimeout(hintTimer);
+  stopSpawning();
+
+  // Clear old falling objects from scene-wrap
+  const wrap=$('scene-wrap');
+  wrap.querySelectorAll('.fall-obj').forEach(el=>el.remove());
+
+  // Load image
+  const img=$('scene-img');
+  img.src=scene.img;
+
+  const onLoad=()=>{
+    img.removeEventListener('load',onLoad);
+    spawnObjects(scene);
+  };
+  if(img.complete&&img.naturalWidth>0){onLoad()}
+  else{img.addEventListener('load',onLoad)}
+
+  // Text hint after 6s
+  hintTimer=setTimeout(()=>{
+    if(phase===1){
+      $('hint-toast').textContent=scene.hint;
+      $('hint-toast').classList.add('show');
+    }
+  },6000);
+}
+
+/* ========== SPAWN FALLING OBJECTS (infinite loop) ========== */
+let spawnInterval=null;
+
+function spawnObjects(scene){
+  const wrap=$('scene-wrap');
+  const imgEl=$('scene-img');
+  const imgW=imgEl.offsetWidth;
+  const imgH=imgEl.offsetHeight;
+
+  if(!imgW||!imgH)return;
+
+  // Build pool: 1 correct + 7 distractors
+  const pool=[
+    {...scene.correct,correct:true},
+    ...scene.distractors.map(d=>({...d,correct:false}))
+  ];
+
+  const objSize=68;
+  const margin=8;
+  let queue=shuffle([...pool]);
+  let qIdx=0;
+
+  function dropNext(){
+    if(phase!==1)return;
+
+    // Pick next item from shuffled queue, reshuffle when exhausted
+    if(qIdx>=queue.length){queue=shuffle([...pool]);qIdx=0}
+    const item=queue[qIdx++];
+
+    const el=document.createElement('div');
+    el.className='fall-obj';
+
+    if(item.type==='img'){
+      el.innerHTML='<img src="'+item.src+'" alt="'+item.label+'">';
+    }else{
+      el.innerHTML='<div class="fall-emoji">'+item.content+'</div>';
+    }
+
+    // Random X
+    const x=margin+Math.random()*(imgW-objSize-margin*2);
+    el.style.left=Math.round(x)+'px';
+    el.style.top=(-objSize)+'px';
+
+    el.onclick=function(e){
+      e.stopPropagation();
+      selectObject(el,item,scene);
+    };
+
+    wrap.appendChild(el);
+
+    // Fall duration: 3.5-5.5s
+    const fallDuration=3500+Math.random()*2000;
+    const endY=imgH+objSize;
+
+    // Start falling
+    requestAnimationFrame(()=>{
+      el.classList.add('visible');
+      el.style.transition='top '+fallDuration+'ms linear';
+      el.style.top=endY+'px';
+    });
+
+    // Remove when it reaches bottom
+    setTimeout(()=>{
+      if(el.parentNode&&!el.classList.contains('correct-pick')&&!el.classList.contains('faded')){
+        el.remove();
+      }
+    },fallDuration+100);
+  }
+
+  // Drop first batch quickly (staggered)
+  for(let i=0;i<8;i++){
+    setTimeout(()=>dropNext(),i*500);
+  }
+
+  // Then keep dropping every ~800ms
+  spawnInterval=setInterval(()=>{
+    if(phase!==1){clearInterval(spawnInterval);spawnInterval=null;return}
+    dropNext();
+  },800);
+}
+
+function stopSpawning(){
+  if(spawnInterval){clearInterval(spawnInterval);spawnInterval=null}
+}
+
+/* ========== SELECT OBJECT ========== */
+function selectObject(el,item,scene){
+  if(phase!==1)return;
+  if(el.classList.contains('wrong-pick')||el.classList.contains('correct-pick')||el.classList.contains('faded'))return;
+
+  if(item.correct){
+    // CORRECT — stop spawning, freeze in place, highlight
+    phase=3;
+    stopSpawning();
+    // Freeze position
+    const currentTop=el.getBoundingClientRect().top-$('scene-wrap').getBoundingClientRect().top;
+    el.style.transition='none';
+    el.style.top=Math.round(currentTop)+'px';
+    el.classList.add('correct-pick');
+
+    // Fade all others
+    const wrap=$('scene-wrap');
+    wrap.querySelectorAll('.fall-obj').forEach(o=>{
+      if(o!==el){o.style.transition='opacity .3s';o.classList.add('faded')}
+    });
+
+    // Hide hint
+    $('hint-toast').classList.remove('show');
+    if(hintTimer)clearTimeout(hintTimer);
+
+    setTimeout(()=>showPhase3(scene),700);
+  }else{
+    // WRONG — freeze, shake, fade out
+    habitClean=false;
+    const curTop=el.getBoundingClientRect().top-$('scene-wrap').getBoundingClientRect().top;
+    el.style.transition='none';
+    el.style.top=Math.round(curTop)+'px';
+    el.classList.add('shaking','wrong-pick');
+    loseLife();
+
+    // Show hint
+    $('hint-toast').textContent=scene.hint;
+    $('hint-toast').classList.add('show');
+
+    setTimeout(()=>{
+      el.classList.remove('shaking');
+      el.style.transition='opacity .3s';
+      el.classList.add('faded');
+      // Clean up faded element after transition
+      setTimeout(()=>{if(el.parentNode)el.remove()},400);
+    },350);
+
+    if(lives<=0){
+      stopSpawning();
+      setTimeout(()=>showPhase3(scene),800);
+    }
+  }
+}
+
+/* ========== PHASE 3: FEEDBACK ========== */
+function showPhase3(scene){
+  phase=3;
+
+  const elapsed=(Date.now()-roundStartTime)/1000;
+
+  // Score
+  let pts=100;
+  if(habitClean)pts+=25;
+  if(elapsed<10)pts+=25;
+  score+=pts;
+  scenesCompleted++;
+
+  // Populate feedback
+  $('fb-fer').src=A.fer_celebrating;
+  $('fb-err-text').textContent=scene.error;
+  $('fb-hab-text').textContent=scene.habito;
+  $('fb-frase').textContent=scene.frase;
+  $('fb-frase').classList.remove('show');
+
+  $('phase3').classList.add('show');
+
+  setTimeout(()=>$('fb-frase').classList.add('show'),100);
+
+  // Tap to continue
+  if(tapHandler){document.removeEventListener('click',tapHandler);tapHandler=null}
+  setTimeout(()=>{
+    tapHandler=()=>{
+      document.removeEventListener('click',tapHandler);
+      tapHandler=null;
+      advanceScene();
+    };
+    document.addEventListener('click',tapHandler);
+  },600);
+
+  // Auto-advance after 4s
+  setTimeout(()=>{
+    if(phase===3&&tapHandler){
+      document.removeEventListener('click',tapHandler);
+      tapHandler=null;
+      advanceScene();
+    }
+  },4000);
+}
+
+/* ========== ADVANCE ========== */
+function advanceScene(){
+  phase=0;
+  stopSpawning();
+  $('phase3').classList.remove('show');
+  // Clear objects
+  $('scene-wrap').querySelectorAll('.fall-obj').forEach(el=>el.remove());
+  roundIdx++;
+  startScene();
+}
+
+/* ========== RESULTS ========== */
+function showResults(){
+  phase=0;
+  stopSpawning();
+  if(tapHandler){document.removeEventListener('click',tapHandler);tapHandler=null}
+  if(hintTimer)clearTimeout(hintTimer);
+
+  showScreen('results');
+  $('res-score').textContent=score;
+  const isNew=score>record;
+  if(isNew){record=score;localStorage.setItem('alerta_obra_record',record)}
+  $('res-record').textContent=record;
+  $('res-new').classList.toggle('show',isNew);
+  $('res-hits').textContent='🎯 '+scenesCompleted+'/'+TOTAL_SCENES+' escenas completadas';
+
+  const badge=$('res-badge');
+  if(scenesCompleted===TOTAL_SCENES&&lives>0){
+    badge.textContent='¡MISIÓN COMPLETADA!';
+    badge.style.display='block';
+    if(score>=250){
+      $('res-av').src=A.fer_celebrating;
+      $('res-msg').textContent='¡Perfecto! Detectas los errores y sabes los hábitos pro.';
+    }else{
+      $('res-av').src=A.fer_happy;
+      $('res-msg').textContent='Bien. Has completado las 2 escenas. Repasa las frases.';
+    }
+  }else{
+    badge.style.display='none';
+    $('res-av').src=A.fer_worried;
+    $('res-msg').textContent='Te has quedado sin vidas. Repasa los errores e inténtalo de nuevo.';
+  }
+
+  if(score>=TASK_THRESHOLD&&!taskCompleted){
+    taskCompleted=true;
+    try{window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}))}catch(e){}
+  }
+}
+
+/* ========== FRASES MODAL ========== */
+function showFrasesModal(){
+  const list=$('modal-frases-list');
+  list.innerHTML=SCENES.map(s=>
+    '<div class="modal-pair">'+
+      '<div class="modal-pair-err">'+s.emoji+' '+s.error+'</div>'+
+      '<div class="modal-pair-hab">✅ '+s.habito+'</div>'+
+      '<div class="modal-pair-frase">💬 '+s.frase+'</div>'+
+    '</div>'
+  ).join('');
+  $('modal-frases').classList.add('show');
+}
+
+/* ========== BOOT ========== */
+init();
+</script>
+</body>
+</html>
