@@ -78,6 +78,13 @@ body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-t
 /* PROMPT — inside context-bar */
 .prompt-text{color:var(--turq);font-size:14px;font-weight:700;text-align:center;line-height:1.3;margin-top:4px}
 
+/* BRIEFING overlay — read context before objects fall */
+.briefing{position:absolute;inset:0;z-index:35;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px;background:rgba(11,33,74,.82);opacity:0;pointer-events:none;transition:opacity .35s}
+.briefing.show{opacity:1;pointer-events:auto}
+.briefing-context{color:#fff;font-size:15px;font-weight:600;line-height:1.45;text-align:center;font-style:italic;max-width:340px;margin-bottom:14px}
+.briefing-prompt{color:var(--turq);font-size:18px;font-weight:800;text-align:center;line-height:1.3;max-width:340px;margin-bottom:20px}
+.briefing-tap{color:rgba(255,255,255,.4);font-size:13px;font-weight:600;text-align:center}
+
 /* Screen flash red */
 @keyframes flashRed{
   0%{opacity:.35}
@@ -176,6 +183,12 @@ body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-t
                 <!-- falling objects go here, inside scene-wrap, over the image -->
             </div>
         </div>
+    </div>
+    <!-- BRIEFING overlay — read before objects fall -->
+    <div class="briefing" id="briefing">
+        <div class="briefing-context" id="briefing-context"></div>
+        <div class="briefing-prompt" id="briefing-prompt"></div>
+        <div class="briefing-tap">Toca para empezar</div>
     </div>
     <!-- PHASE 3 overlay -->
     <div class="phase3" id="phase3">
@@ -367,22 +380,21 @@ function startGame(){
 }
 
 /* ========== START SCENE ========== */
+let briefingHandler=null;
+
 function startScene(){
   if(roundIdx>=TOTAL_SCENES||lives<=0){showResults();return}
 
-  phase=1;
+  phase=0; // not playing yet — briefing first
   habitClean=true;
-  roundStartTime=Date.now();
 
   const scene=SCENES[gameOrder[roundIdx]];
 
   // HUD
   $('hud-round').textContent=(roundIdx+1)+'/'+TOTAL_SCENES;
 
-  // Context
+  // Context bar (shown during gameplay, hidden behind briefing initially)
   $('context-text').textContent=scene.context;
-
-  // Prompt
   $('prompt-text').textContent=scene.prompt;
 
   // Hide phase 3
@@ -394,7 +406,7 @@ function startScene(){
   if(hintTimer)clearTimeout(hintTimer);
   stopSpawning();
 
-  // Clear old falling objects from scene-wrap
+  // Clear old falling objects
   const wrap=$('scene-wrap');
   wrap.querySelectorAll('.fall-obj').forEach(el=>el.remove());
 
@@ -402,6 +414,30 @@ function startScene(){
   const img=$('scene-img');
   img.src=scene.img;
 
+  // Show briefing overlay
+  $('briefing-context').textContent=scene.context;
+  $('briefing-prompt').textContent=scene.prompt;
+  $('briefing').classList.add('show');
+
+  // On tap → dismiss briefing, start falling
+  if(briefingHandler){$('briefing').removeEventListener('click',briefingHandler);briefingHandler=null}
+  briefingHandler=()=>{
+    $('briefing').removeEventListener('click',briefingHandler);
+    briefingHandler=null;
+    dismissBriefing(scene);
+  };
+  setTimeout(()=>{
+    $('briefing').addEventListener('click',briefingHandler);
+  },300);
+}
+
+function dismissBriefing(scene){
+  $('briefing').classList.remove('show');
+  phase=1;
+  roundStartTime=Date.now();
+
+  // Start spawning objects once image is loaded
+  const img=$('scene-img');
   const onLoad=()=>{
     img.removeEventListener('load',onLoad);
     spawnObjects(scene);
@@ -409,10 +445,10 @@ function startScene(){
   if(img.complete&&img.naturalWidth>0){onLoad()}
   else{img.addEventListener('load',onLoad)}
 
-  // Text hint after 6s
+  // Text hint after 6s of gameplay
   hintTimer=setTimeout(()=>{
     if(phase===1){
-      $('hint-toast').textContent=scene.hint;
+      $('hint-toast').textContent=SCENES[gameOrder[roundIdx]].hint;
       $('hint-toast').classList.add('show');
     }
   },6000);
