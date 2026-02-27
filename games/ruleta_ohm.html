@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>La Ruleta de Ohm</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--turq:#00E6BC;--navy:#0B214A;--lime:#04FFB4;--mint:#C5FFDF;--lemon:#FFFFAB;--fire:#E74C3C;--dk:#0B214A}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Baloo 2',cursive;background:#0B214A;touch-action:manipulation}
+body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-bottom:constant(safe-area-inset-bottom)}
+#W{position:relative;width:100%;max-width:430px;margin:0 auto;height:100%;overflow:hidden;background:linear-gradient(180deg,#0B214A 0%,#0D2D5E 40%,#0F1B2D 100%)}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;transition:opacity .35s;z-index:100}
+.scr.off{opacity:0;pointer-events:none;z-index:-1}
+.btn{background:var(--turq);color:var(--navy);border:none;font-family:'Baloo 2',cursive;font-size:19px;font-weight:700;padding:14px 48px;border-radius:50px;cursor:pointer;box-shadow:0 4px 16px rgba(0,230,188,.3);transition:transform .1s;letter-spacing:.5px}
+.btn:active{transform:scale(.96)}
+
+/* INTRO */
+#intro{align-items:center;justify-content:center;padding-bottom:80px;background:linear-gradient(180deg,#0B214A 0%,#0D2D5E 40%,#0F1B2D 100%)}
+.intro-card{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;padding:0 20px;width:100%}
+.intro-av{width:240px;height:310px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(0,0,0,.6));margin-bottom:-36px;position:relative;z-index:1}
+.intro-bub{position:relative;z-index:2;background:#fff;color:var(--navy);padding:18px 22px;border-radius:22px;box-shadow:0 4px 24px rgba(0,0,0,.35);font-size:15px;font-weight:600;line-height:1.4;text-align:center;margin-bottom:18px;width:100%}
+.intro-title{font-size:22px;font-weight:800;color:#fff;text-shadow:0 3px 16px rgba(0,0,0,.5);margin-bottom:6px;z-index:10;position:relative}
+
+/* HUD */
+.hud{position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-right:66px;background:linear-gradient(180deg,rgba(11,33,74,.95)0%,rgba(11,33,74,.4)70%,transparent 100%);padding-bottom:28px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.hud-left{display:flex;align-items:center;gap:8px}
+.hud-round{background:rgba(0,0,0,.35);padding:4px 12px;border-radius:16px;color:rgba(255,255,255,.8);font-size:14px;font-weight:600}
+.hud-lives{display:flex;gap:3px}
+.hud-heart{font-size:20px;transition:all .3s ease}
+.hud-heart.lost{opacity:.2;transform:scale(.7)}
+@keyframes livesShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.hud-lives.shaking{animation:livesShake .3s ease-out}
+
+/* FLASH */
+@keyframes flashRed{0%{opacity:.35}100%{opacity:0}}
+.flash-overlay{position:fixed;inset:0;background:var(--fire);z-index:999;pointer-events:none;opacity:0}
+.flash-overlay.flash{animation:flashRed .4s ease-out forwards}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+
+/* ============ GAMEPLAY ============ */
+#play{z-index:10}
+.play-inner{position:relative;z-index:10;flex:1;display:flex;flex-direction:column;padding:44px 0 80px;overflow:hidden;align-items:center}
+
+/* WHEEL — 4 sectors */
+.wheel-zone{display:flex;flex-direction:column;align-items:center;padding:4px 0;flex-shrink:0}
+.wheel-wrap{position:relative;width:200px;height:200px}
+.wheel{width:100%;height:100%;border-radius:50%;background:conic-gradient(#E74C3C 0deg 90deg,#3498DB 90deg 180deg,#F39C12 180deg 270deg,#9B59B6 270deg 360deg);border:5px solid rgba(255,255,255,.25);box-shadow:0 4px 28px rgba(0,0,0,.45),inset 0 0 20px rgba(0,0,0,.2);position:relative;overflow:hidden}
+.wheel-lbl{position:absolute;font-size:26px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.wheel-pointer{position:absolute;top:-16px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:26px solid var(--turq);filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));z-index:5}
+.wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:var(--navy);border:3px solid rgba(255,255,255,.4);z-index:3}
+.wheel-result{color:var(--turq);font-size:18px;font-weight:800;margin-top:6px;min-height:24px;text-align:center}
+@keyframes wheelGlow{0%{box-shadow:0 4px 28px rgba(0,0,0,.45)}50%{box-shadow:0 4px 30px rgba(0,230,188,.5),0 0 40px rgba(0,230,188,.3)}100%{box-shadow:0 4px 28px rgba(0,0,0,.45)}}
+.wheel.landed{animation:wheelGlow .6s ease-out}
+
+/* SCENARIO */
+.scenario-card{background:rgba(255,255,255,.08);border-radius:16px;padding:14px 18px;margin:6px 16px;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;width:calc(100% - 32px);max-width:398px}
+.scenario-card.show{opacity:1;transform:translateY(0)}
+.scenario-context{color:#fff;font-size:15px;font-weight:700;line-height:1.3;text-align:center;margin-bottom:8px}
+.scenario-vals{display:flex;justify-content:center;gap:16px;margin-bottom:6px}
+.scenario-val{background:rgba(255,255,255,.1);padding:6px 16px;border-radius:12px;color:var(--turq);font-size:18px;font-weight:800;text-align:center}
+.scenario-ask{color:var(--lemon);font-size:16px;font-weight:800;text-align:center;margin-top:4px}
+
+/* STEP CONTAINERS */
+.step-box{opacity:0;pointer-events:none;transition:opacity .3s;padding:0 16px;width:100%;max-width:398px}
+.step-box.show{opacity:1;pointer-events:auto}
+.step-label{color:rgba(255,255,255,.55);font-size:12px;font-weight:700;text-align:center;margin-bottom:6px}
+
+/* FORMULA BUTTONS */
+.formula-btns{display:flex;gap:7px;justify-content:center}
+.formula-btn{background:rgba(255,255,255,.1);color:#fff;border:2px solid rgba(255,255,255,.2);font-family:'Baloo 2',cursive;font-size:14px;font-weight:700;padding:10px 12px;border-radius:14px;cursor:pointer;transition:all .15s;touch-action:manipulation;flex:1;max-width:120px;text-align:center}
+.formula-btn:active{transform:scale(.96)}
+.formula-btn.correct{background:rgba(4,255,180,.2);border-color:var(--lime);color:var(--lime)}
+.formula-btn.wrong{background:rgba(231,76,60,.2);border-color:var(--fire);color:var(--fire);animation:shake .35s ease-out}
+
+/* FORMULA HINT */
+.formula-hint{color:var(--mint);font-size:14px;font-weight:700;text-align:center;padding:6px 16px;opacity:0;transition:opacity .3s}
+.formula-hint.show{opacity:1}
+
+/* NUMPAD */
+.calc-display{background:rgba(0,0,0,.3);border-radius:14px;padding:8px 16px;margin:0 0 6px;text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.calc-eq{color:rgba(255,255,255,.4);font-size:14px;font-weight:600}
+.calc-value{color:#fff;font-size:28px;font-weight:800;letter-spacing:2px;min-width:30px}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;max-width:260px;margin:0 auto}
+.np-key{background:rgba(255,255,255,.12);color:#fff;border:none;font-family:'Baloo 2',cursive;font-size:20px;font-weight:700;padding:11px 0;border-radius:12px;cursor:pointer;transition:all .1s;touch-action:manipulation}
+.np-key:active{background:rgba(255,255,255,.25);transform:scale(.95)}
+.np-back{font-size:18px;color:rgba(255,255,255,.5)}
+.btn-sm{display:block;margin:8px auto 0;padding:10px 36px;font-size:16px}
+
+/* UNIT overlay — centrado como sentido */
+.unit-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(11,33,74,.95);z-index:55;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px 20px 80px}
+.unit-overlay.show{opacity:1;pointer-events:auto}
+.unit-title{color:var(--turq);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.unit-reminder{background:rgba(255,255,255,.08);padding:8px 20px;border-radius:12px;color:var(--lemon);font-size:20px;font-weight:800;text-align:center;margin-bottom:12px}
+.unit-question{color:#fff;font-size:18px;font-weight:700;text-align:center;margin-bottom:16px}
+.unit-btns{display:flex;gap:14px;justify-content:center}
+.unit-btn{background:rgba(255,255,255,.1);color:#fff;border:2px solid rgba(255,255,255,.2);font-family:'Baloo 2',cursive;font-size:22px;font-weight:800;width:72px;height:72px;border-radius:50%;cursor:pointer;transition:all .15s;touch-action:manipulation;display:flex;align-items:center;justify-content:center}
+.unit-btn:active{transform:scale(.96)}
+.unit-btn.correct{background:rgba(4,255,180,.2);border-color:var(--lime);color:var(--lime)}
+.unit-btn.wrong{background:rgba(231,76,60,.2);border-color:var(--fire);color:var(--fire);animation:shake .35s ease-out}
+
+/* SENTIDO overlay */
+.sentido-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(11,33,74,.95);z-index:55;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px 20px 80px}
+.sentido-overlay.show{opacity:1;pointer-events:auto}
+.sentido-title{color:var(--turq);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.sentido-text{color:#fff;font-size:17px;font-weight:700;line-height:1.5;margin-bottom:16px;text-align:center;padding:0 10px}
+.sentido-btns{display:flex;gap:14px;justify-content:center;margin-bottom:14px}
+.sentido-btn{font-family:'Baloo 2',cursive;font-size:17px;font-weight:700;padding:14px 32px;border-radius:16px;border:none;cursor:pointer;transition:all .15s;touch-action:manipulation;color:#fff}
+.sentido-si{background:#00E6BC;color:var(--navy)}
+.sentido-no{background:#ED687E}
+.sentido-btn:active{transform:scale(.96)}
+.sentido-btn.correct{box-shadow:0 0 20px rgba(4,255,180,.5)}
+.sentido-btn.wrong{opacity:.4}
+/* Boton pista ? */
+.sentido-hint-btn{background:rgba(255,255,255,.15);color:var(--lemon);border:2px solid rgba(255,255,171,.3);font-family:'Baloo 2',cursive;font-size:14px;font-weight:700;padding:8px 20px;border-radius:14px;cursor:pointer;transition:all .15s;touch-action:manipulation}
+.sentido-hint-btn:active{transform:scale(.96)}
+.sentido-hint-box{color:var(--mint);font-size:13px;font-weight:600;line-height:1.4;text-align:center;padding:8px 14px;background:rgba(197,255,223,.1);border-radius:12px;margin-top:8px;opacity:0;max-height:0;overflow:hidden;transition:opacity .3s,max-height .3s}
+.sentido-hint-box.show{opacity:1;max-height:120px}
+
+/* DETECT FORMULA overlay */
+.detect-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(11,33,74,.95);z-index:55;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px 20px 80px}
+.detect-overlay.show{opacity:1;pointer-events:auto}
+.detect-title{color:#9B59B6;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.detect-desc{color:#fff;font-size:16px;font-weight:700;text-align:center;line-height:1.4;margin-bottom:16px}
+.detect-btns{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
+.detect-btn{background:rgba(255,255,255,.1);color:#fff;border:2px solid rgba(255,255,255,.2);font-family:'Baloo 2',cursive;font-size:15px;font-weight:700;padding:14px 18px;border-radius:14px;cursor:pointer;transition:all .15s;touch-action:manipulation;text-align:center}
+.detect-btn:active{transform:scale(.97)}
+.detect-btn.correct{background:rgba(4,255,180,.2);border-color:var(--lime);color:var(--lime)}
+.detect-btn.wrong{background:rgba(231,76,60,.2);border-color:var(--fire);color:var(--fire);animation:shake .35s ease-out}
+
+/* HINT TOAST */
+.hint-toast{text-align:center;padding:4px 16px;flex-shrink:0;min-height:28px}
+.hint-text{display:inline-block;background:rgba(255,255,171,.15);color:var(--lemon);font-size:12px;font-weight:700;padding:5px 14px;border-radius:12px;opacity:0;transition:opacity .3s;line-height:1.3}
+.hint-text.show{opacity:1}
+
+/* ROUND FEEDBACK */
+.round-fb{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(11,33,74,.93);z-index:60;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px 20px 80px}
+.round-fb.show{opacity:1;pointer-events:auto}
+.round-fb-av{width:150px;height:196px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.5));margin-bottom:10px}
+.round-fb-text{color:#fff;font-size:17px;font-weight:700;text-align:center;line-height:1.4}
+.round-fb-sub{color:var(--lemon);font-size:13px;font-weight:600;margin-top:6px;text-align:center}
+
+/* ============ RESULTS ============ */
+#results{align-items:center;justify-content:center;padding:16px 20px 80px;z-index:200;background:var(--navy)}
+.res-inner{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;width:100%;gap:2px}
+.res-label{font-size:14px;color:rgba(255,255,255,.5);font-weight:600;text-align:center}
+.res-new{color:var(--lemon);font-size:18px;font-weight:800;display:none}
+.res-new.show{display:block}
+.res-badge{color:var(--lime);font-size:23px;font-weight:800;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase}
+.res-scores{display:flex;gap:28px;margin-bottom:4px}
+.res-val{font-size:44px;font-weight:800;text-align:center;color:var(--lime)}
+.res-av{width:208px;height:273px;object-fit:contain;filter:drop-shadow(0 4px 22px rgba(0,0,0,.5));margin-bottom:-40px;position:relative;z-index:0}
+.res-info-card{background:#fff;border-radius:18px;padding:16px 20px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1}
+.res-msg{color:var(--navy);font-size:14px;font-weight:600;text-align:center;line-height:1.3}
+.res-hits{color:var(--navy);font-size:13px;font-weight:600;opacity:.7}
+.res-bot{display:flex;flex-direction:column;align-items:center;margin-top:10px}
+.res-bot .btn{position:relative;z-index:2;padding:12px 40px;font-size:17px}
+</style>
+</head>
+<body>
+<div id="W">
+
+<!-- INTRO -->
+<div class="scr" id="intro">
+  <div class="intro-card">
+    <h1 class="intro-title">La Ruleta de Ohm</h1>
+    <img class="intro-av" id="intro-av" alt="Manuel">
+    <div class="intro-bub">V, I, R. Tres letras, una ley.<br>Si no cuadran los números, algo va mal.<br><br><b>¡Vamos a calcular!</b></div>
+    <button class="btn" id="intro-btn">¡Vamos!</button>
+  </div>
+</div>
+
+<!-- GAMEPLAY -->
+<div class="scr off" id="play">
+  <div class="hud">
+    <div class="hud-left">
+      <div class="hud-round" id="hud-round">1/5</div>
+    </div>
+    <div class="hud-lives" id="hud-lives"></div>
+  </div>
+  <div class="play-inner" id="play-inner">
+
+    <!-- Wheel -->
+    <div class="wheel-zone" id="wheel-zone">
+      <div class="wheel-wrap">
+        <div class="wheel" id="wheel"></div>
+        <div class="wheel-pointer"></div>
+        <div class="wheel-center"></div>
+      </div>
+      <div class="wheel-result" id="wheel-result"></div>
+    </div>
+
+    <!-- Scenario -->
+    <div class="scenario-card" id="scenario-card">
+      <div class="scenario-context" id="scenario-context"></div>
+      <div class="scenario-vals" id="scenario-vals"></div>
+      <div class="scenario-ask" id="scenario-ask"></div>
+    </div>
+
+    <!-- Step A: Formula -->
+    <div class="step-box" id="step-formula">
+      <div class="step-label">¿Qué fórmula usas?</div>
+      <div class="formula-btns" id="formula-btns">
+        <button class="formula-btn" data-formula="I=V/R">I = V / R</button>
+        <button class="formula-btn" data-formula="R=V/I">R = V / I</button>
+        <button class="formula-btn" data-formula="V=I*R">V = I · R</button>
+      </div>
+    </div>
+
+    <!-- Formula hint (auto rounds) -->
+    <div class="formula-hint" id="formula-hint"></div>
+
+    <!-- Step B: Numpad -->
+    <div class="step-box" id="step-calc">
+      <div class="calc-display">
+        <span class="calc-eq" id="calc-eq"></span>
+        <span class="calc-value" id="calc-value">_</span>
+      </div>
+      <div class="numpad" id="numpad">
+        <button class="np-key" data-key="1">1</button>
+        <button class="np-key" data-key="2">2</button>
+        <button class="np-key" data-key="3">3</button>
+        <button class="np-key" data-key="4">4</button>
+        <button class="np-key" data-key="5">5</button>
+        <button class="np-key" data-key="6">6</button>
+        <button class="np-key" data-key="7">7</button>
+        <button class="np-key" data-key="8">8</button>
+        <button class="np-key" data-key="9">9</button>
+        <button class="np-key" data-key=".">.</button>
+        <button class="np-key" data-key="0">0</button>
+        <button class="np-key np-back" data-key="back">&#9003;</button>
+      </div>
+      <button class="btn btn-sm" id="btn-confirm">Confirmar</button>
+    </div>
+
+    <!-- Unit overlay -->
+    <div class="unit-overlay" id="unit-overlay">
+      <div class="unit-title">Unidad</div>
+      <div class="unit-reminder" id="unit-reminder"></div>
+      <div class="unit-question">¿Qué unidad tiene el resultado?</div>
+      <div class="unit-btns" id="unit-btns">
+        <button class="unit-btn" data-unit="V">V</button>
+        <button class="unit-btn" data-unit="A">A</button>
+        <button class="unit-btn" data-unit="Ω">Ω</button>
+      </div>
+    </div>
+
+    <!-- Hint -->
+    <div class="hint-toast"><div class="hint-text" id="hint-text"></div></div>
+
+    <!-- Sentido overlay -->
+    <div class="sentido-overlay" id="sentido-overlay">
+      <div class="sentido-title">¿Tiene sentido?</div>
+      <div class="sentido-text" id="sentido-text"></div>
+      <div class="sentido-btns">
+        <button class="sentido-btn sentido-si" id="sentido-si">👍 Lógico</button>
+        <button class="sentido-btn sentido-no" id="sentido-no">👎 Absurdo</button>
+      </div>
+      <button class="sentido-hint-btn" id="sentido-hint-btn">❓ Pista</button>
+      <div class="sentido-hint-box" id="sentido-hint-box"></div>
+    </div>
+
+    <!-- Detect formula overlay (sector ?) -->
+    <div class="detect-overlay" id="detect-overlay">
+      <div class="detect-title">❓ Detecta la fórmula</div>
+      <div class="detect-desc" id="detect-desc"></div>
+      <div class="detect-btns" id="detect-btns"></div>
+    </div>
+
+    <!-- Round feedback -->
+    <div class="round-fb" id="round-fb">
+      <img class="round-fb-av" id="round-fb-av" alt="Manuel">
+      <div class="round-fb-text" id="round-fb-text"></div>
+      <div class="round-fb-sub" id="round-fb-sub"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="scr off" id="results">
+  <div class="res-inner">
+    <div class="res-badge" id="res-badge" style="display:none"></div>
+    <div class="res-scores">
+      <div><div class="res-val" id="res-score">0</div><div class="res-label">Puntuación</div></div>
+      <div><div class="res-val" id="res-record" style="color:var(--lemon)">0</div><div class="res-label">Récord</div></div>
+    </div>
+    <div class="res-new" id="res-new">¡NUEVO RÉCORD!</div>
+    <img class="res-av" id="res-av" alt="Manuel">
+    <div class="res-info-card">
+      <div class="res-msg" id="res-msg"></div>
+      <div class="res-hits" id="res-hits"></div>
+    </div>
+    <div class="res-bot">
+      <button class="btn" id="res-btn">¡Otra ronda!</button>
+    </div>
+  </div>
+</div>
+
+<!-- Flash overlay -->
+<div class="flash-overlay" id="flash-overlay"></div>
+
+</div>
+<script>
+/* ========== ASSETS ========== */
+const A={
+  manuel_happy:'https://res.cloudinary.com/kampe/image/upload/v1772192253/manuel_happy_kffwk8.png',
+  manuel_celebrating:'https://res.cloudinary.com/kampe/image/upload/v1772192261/manuel_celebrating_synfdg.png',
+  manuel_worried:'https://res.cloudinary.com/kampe/image/upload/v1772192255/manuel_worried_trm6sp.png'
+};
+
+/* ========== CONSTANTS ========== */
+const TOTAL_ROUNDS=5, MAX_LIVES=5, TASK_THRESHOLD=180;
+const PTS_FORMULA=15, PTS_CALC=30, PTS_UNIT=10, PTS_FIRST=15, PTS_SENTIDO=20, PTS_DETECT=25;
+
+/* ========== SCENARIOS ========== */
+const SCENARIOS_EASY=[
+  {id:1, context:'Pila de 9V con una resistencia de 3Ω', val1:'V = 9V', val2:'R = 3Ω', find:'I', correctFormula:'I=V/R', answer:3, unit:'A', sentido:null},
+  {id:2, context:'Fuente de 12V con corriente de 4A', val1:'V = 12V', val2:'I = 4A', find:'R', correctFormula:'R=V/I', answer:3, unit:'Ω', sentido:null},
+  {id:3, context:'Motor de 24V con resistencia de 8Ω', val1:'V = 24V', val2:'R = 8Ω', find:'I', correctFormula:'I=V/R', answer:3, unit:'A', sentido:null},
+  {id:4, context:'Corriente de 5A por una resistencia de 4Ω', val1:'I = 5A', val2:'R = 4Ω', find:'V', correctFormula:'V=I*R', answer:20, unit:'V', sentido:null},
+  {id:5, context:'Fuente de 12V con corriente de 6A', val1:'V = 12V', val2:'I = 6A', find:'R', correctFormula:'R=V/I', answer:2, unit:'Ω', sentido:null},
+  {id:6, context:'Corriente de 3A por una resistencia de 10Ω', val1:'I = 3A', val2:'R = 10Ω', find:'V', correctFormula:'V=I*R', answer:30, unit:'V', sentido:null},
+  {id:7, context:'Batería de 6V con resistencia de 2Ω', val1:'V = 6V', val2:'R = 2Ω', find:'I', correctFormula:'I=V/R', answer:3, unit:'A', sentido:null},
+  {id:8, context:'Fuente de 20V con corriente de 5A', val1:'V = 20V', val2:'I = 5A', find:'R', correctFormula:'R=V/I', answer:4, unit:'Ω', sentido:null}
+];
+
+const SCENARIOS_SENTIDO=[
+  {id:9, context:'Pila de 1.5V con resistencia de 0.5Ω', val1:'V = 1.5V', val2:'R = 0.5Ω', find:'I', correctFormula:'I=V/R', answer:3, unit:'A',
+    sentido:{text:'El resultado es 3A de una pila AA de 1.5V.\n¿Tiene sentido?', logical:false,
+      hint:'Una pila AA puede dar como máximo unos 0.5A en cortocircuito.'}},
+  {id:10, context:'Enchufe de 230V con carga mínima', val1:'V = 230V', val2:'I = 100A', find:'R', correctFormula:'R=V/I', answer:2.3, unit:'Ω',
+    sentido:{text:'El resultado da 100A por un enchufe doméstico.\n¿Tiene sentido?', logical:false,
+      hint:'Un enchufe doméstico tiene protección a 16A. Piensa en lo que pasa si se supera.'}},
+  {id:11, context:'Cargador USB de 5V con resistencia de 10Ω', val1:'V = 5V', val2:'R = 10Ω', find:'I', correctFormula:'I=V/R', answer:0.5, unit:'A',
+    sentido:{text:'El resultado es 0.5A (500 mA) para un cargador USB.\n¿Tiene sentido?', logical:true,
+      hint:'Un cargador USB estándar suele dar entre 0.5A y 2A.'}},
+  {id:12, context:'Fuente de 48V con corriente de 6A', val1:'V = 48V', val2:'I = 6A', find:'R', correctFormula:'R=V/I', answer:8, unit:'Ω',
+    sentido:{text:'El resultado es 8Ω para un circuito industrial de 48V.\n¿Tiene sentido?', logical:true,
+      hint:'En circuitos industriales de 48V, las resistencias suelen estar entre 5Ω y 50Ω.'}}
+];
+
+/* Scenarios para el sector ? (detectar formula correcta) */
+const DETECT_SCENARIOS=[
+  {question:'Tienes V y R, quieres saber I', correct:'I = V / R', wrong:['I = V · R','I = R / V']},
+  {question:'Tienes V e I, quieres saber R', correct:'R = V / I', wrong:['R = V · I','R = I / V']},
+  {question:'Tienes I y R, quieres saber V', correct:'V = I · R', wrong:['V = I / R','V = R / I']},
+  {question:'Sabes la corriente y la resistencia', correct:'V = I · R', wrong:['I = V / R','R = V / I']},
+  {question:'Sabes el voltaje y la resistencia', correct:'I = V / R', wrong:['V = I · R','R = V / I']},
+  {question:'Sabes el voltaje y la corriente', correct:'R = V / I', wrong:['V = I · R','I = V / R']}
+];
+
+/* ========== STATE ========== */
+let score=0, roundIdx=0, lives=MAX_LIVES, gameScenarios=[], roundClean=true;
+let currentStep=0, calcInput='', wheelAngle=0, lastSector='';
+let record=parseInt(localStorage.getItem('ruleta_ohm_record'))||0;
+let taskCompleted=false, busy=false;
+// Plan de rondas: 'calc'=formula+calculo, 'detect'=despejar formula, 'sentido'=tiene sentido
+let roundPlan=[];
+
+const $=id=>document.getElementById(id);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+/* ========== SCREENS ========== */
+function showScreen(id){document.querySelectorAll('.scr').forEach(s=>s.classList.add('off'));$(id).classList.remove('off')}
+
+/* ========== LIVES ========== */
+function renderLives(){
+  const c=$('hud-lives');c.innerHTML='';
+  for(let i=0;i<MAX_LIVES;i++){const h=document.createElement('div');h.className='hud-heart'+(i>=lives?' lost':'');h.textContent='❤️';c.appendChild(h)}
+}
+function loseLife(){
+  if(lives<=0)return;
+  lives--;renderLives();
+  const lc=$('hud-lives');lc.classList.remove('shaking');void lc.offsetWidth;lc.classList.add('shaking');
+  const fl=$('flash-overlay');fl.classList.remove('flash');void fl.offsetWidth;fl.classList.add('flash');
+}
+
+/* ========== HINT ========== */
+let hintTimer=null;
+function showHint(txt){
+  clearTimeout(hintTimer);
+  const el=$('hint-text');el.textContent=txt;el.classList.add('show');
+  hintTimer=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+/* ========== INIT ========== */
+function init(){
+  $('intro-av').src=A.manuel_happy;
+  $('intro-btn').onclick=startGame;
+  $('res-btn').onclick=startGame;
+  initWheel();
+  showScreen('intro');
+}
+
+/* ========== WHEEL — 4 sectors ========== */
+// Sectors: V(0-90), I(90-180), Ω(180-270), ?(270-360)
+const SECTORS=['V','I','R','?'];
+const SECTOR_CENTERS={V:45, I:135, R:225, '?':315};
+
+function initWheel(){
+  const w=$('wheel');
+  const labels=[
+    {text:'V', angle:45},
+    {text:'I', angle:135},
+    {text:'Ω', angle:225},
+    {text:'?', angle:315}
+  ];
+  labels.forEach(l=>{
+    const el=document.createElement('div');
+    el.className='wheel-lbl';
+    el.textContent=l.text;
+    const rad=(l.angle-90)*Math.PI/180;
+    const r=35;
+    el.style.left=(50+r*Math.cos(rad))+'%';
+    el.style.top=(50+r*Math.sin(rad))+'%';
+    el.style.transform='translate(-50%,-50%)';
+    w.appendChild(el);
+  });
+}
+
+function pickSector(){
+  // No repetir el mismo sector que la ronda anterior
+  let options=SECTORS.filter(s=>s!==lastSector);
+  return options[Math.floor(Math.random()*options.length)];
+}
+
+function spinWheel(sector, cb){
+  const w=$('wheel');
+  $('wheel-result').textContent='';
+  w.classList.remove('landed');
+  lastSector=sector;
+
+  const tc=SECTOR_CENTERS[sector];
+  const baseTarget=(360-tc+360)%360;
+  const extra=(4+Math.floor(Math.random()*3))*360;
+  const jitter=(Math.random()-.5)*60; // dentro del sector de 90deg
+  const final=wheelAngle+extra+baseTarget-(wheelAngle%360)+jitter;
+  wheelAngle=final;
+
+  w.style.transition='transform 3s cubic-bezier(.17,.67,.12,.99)';
+  w.style.transform='rotate('+final+'deg)';
+
+  setTimeout(()=>{
+    w.classList.add('landed');
+    const names={V:'Voltaje (V)',I:'Intensidad (I)',R:'Resistencia (R)','?':'¡Detecta la fórmula!'};
+    $('wheel-result').textContent=sector==='?'?'❓ '+names[sector]:'Calcula: '+names[sector];
+    setTimeout(()=>{w.classList.remove('landed');cb()},600);
+  },3100);
+}
+
+/* ========== START GAME ========== */
+function buildRoundPlan(){
+  // Garantizar al menos 1 calc, 1 detect, 1 sentido. Los 2 restantes se reparten random entre calc y detect.
+  const base=['calc','detect','sentido'];
+  const extras=['calc','detect'];
+  shuffle(extras);
+  const plan=[...base,...extras]; // 3 fijos + 2 random = 5
+  shuffle(plan);
+  // Sentido siempre al final (es el cierre natural)
+  const si=plan.indexOf('sentido');
+  plan.splice(si,1);
+  plan.push('sentido');
+  return plan;
+}
+
+function startGame(){
+  score=0;roundIdx=0;lives=MAX_LIVES;taskCompleted=false;busy=false;lastSector='';
+  roundPlan=buildRoundPlan();
+  // Contar cuantos calc hay para saber cuantos easy necesitamos
+  const numCalc=roundPlan.filter(t=>t==='calc').length;
+  const easy=shuffle([...SCENARIOS_EASY]).slice(0,numCalc);
+  const hard=shuffle([...SCENARIOS_SENTIDO]).slice(0,1);
+  gameScenarios=[...easy,...hard];
+  renderLives();
+  showScreen('play');
+  startRound();
+}
+
+/* ========== ROUND ========== */
+function startRound(){
+  if(roundIdx>=TOTAL_ROUNDS||lives<=0){showResults();return}
+  roundClean=true;currentStep=0;busy=false;
+  $('hud-round').textContent=(roundIdx+1)+'/'+TOTAL_ROUNDS;
+  hideAllSteps();
+  $('scenario-card').classList.remove('show');
+  $('hint-text').classList.remove('show');
+
+  const type=roundPlan[roundIdx];
+
+  if(type==='detect'){
+    // Despejar fórmula — sector ?
+    spinWheel('?',()=>showDetectRound());
+  }else if(type==='sentido'){
+    // Sentido — usa el scenario sentido (ultimo en gameScenarios)
+    const sc=gameScenarios[gameScenarios.length-1];
+    spinWheel(sc.find,()=>showScenario(sc));
+  }else{
+    // Calc normal — usa escenarios easy en orden
+    const calcIdx=roundPlan.slice(0,roundIdx).filter(t=>t==='calc').length;
+    const sc=gameScenarios[calcIdx];
+    spinWheel(sc.find,()=>showScenario(sc));
+  }
+}
+
+/* ========== DETECT FORMULA ROUND (sector ?) ========== */
+function showDetectRound(){
+  const det=DETECT_SCENARIOS[Math.floor(Math.random()*DETECT_SCENARIOS.length)];
+  $('detect-desc').textContent=det.question;
+
+  // 3 options: 1 correct + 2 wrong, shuffled
+  const options=shuffle([{text:det.correct,ok:true},{text:det.wrong[0],ok:false},{text:det.wrong[1],ok:false}]);
+  const btnsEl=$('detect-btns');
+  btnsEl.innerHTML='';
+  options.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='detect-btn';
+    btn.textContent=opt.text;
+    btn.onclick=()=>{
+      if(busy)return;
+      if(opt.ok){
+        btn.classList.add('correct');
+        score+=PTS_DETECT;
+        busy=true;
+        setTimeout(()=>{
+          $('detect-overlay').classList.remove('show');
+          busy=false;
+          showRoundFeedback(true,{find:'?',answer:'',unit:''});
+        },500);
+      }else{
+        btn.classList.add('wrong');
+        roundClean=false;
+        loseLife();
+        btn.style.pointerEvents='none';
+        if(lives<=0)setTimeout(()=>showResults(),600);
+      }
+    };
+    btnsEl.appendChild(btn);
+  });
+
+  $('detect-overlay').classList.add('show');
+}
+
+/* ========== SHOW SCENARIO (normal calc) ========== */
+function showScenario(sc){
+  $('scenario-context').textContent=sc.context;
+  const valsEl=$('scenario-vals');
+  valsEl.innerHTML='<div class="scenario-val">'+sc.val1+'</div><div class="scenario-val">'+sc.val2+'</div>';
+  $('scenario-ask').textContent='Calcula '+sc.find+' = ?';
+  $('scenario-card').classList.add('show');
+  setTimeout(()=>{
+    // Rondas 'calc' piden elegir formula, ronda 'sentido' muestra auto
+    if(roundPlan[roundIdx]==='calc') showStepFormula(sc);
+    else autoShowFormula(sc);
+  },400);
+}
+
+/* ========== STEP A: FORMULA ========== */
+function showStepFormula(sc){
+  currentStep=1;
+  $('step-formula').classList.add('show');
+  const btns=document.querySelectorAll('.formula-btn');
+  btns.forEach(btn=>{
+    btn.classList.remove('correct','wrong');
+    btn.onclick=()=>{
+      if(currentStep!==1||busy)return;
+      if(btn.dataset.formula===sc.correctFormula){
+        btn.classList.add('correct');
+        score+=PTS_FORMULA;
+        busy=true;
+        setTimeout(()=>{
+          $('step-formula').classList.remove('show');
+          busy=false;
+          showStepCalc(sc);
+        },400);
+      }else{
+        btn.classList.add('wrong');
+        roundClean=false;
+        loseLife();
+        showHint(getFormulaHint(sc));
+        setTimeout(()=>btn.classList.remove('wrong'),400);
+        if(lives<=0)setTimeout(()=>showResults(),600);
+      }
+    };
+  });
+}
+
+function autoShowFormula(sc){
+  const h=$('formula-hint');
+  const display=sc.correctFormula.replace('*','·');
+  h.textContent='Fórmula: '+display;
+  h.classList.add('show');
+  setTimeout(()=>showStepCalc(sc),300);
+}
+
+function getFormulaHint(sc){
+  const hints={
+    'I=V/R':'Buscas la corriente. Divide voltaje entre resistencia.',
+    'R=V/I':'Buscas la resistencia. Divide voltaje entre corriente.',
+    'V=I*R':'Buscas el voltaje. Multiplica corriente por resistencia.'
+  };
+  return hints[sc.correctFormula]||'Piensa en V = I · R';
+}
+
+/* ========== STEP B: CALC ========== */
+function showStepCalc(sc){
+  currentStep=2;
+  calcInput='';
+  updateCalcDisplay(sc);
+  $('step-calc').classList.add('show');
+
+  document.querySelectorAll('.np-key').forEach(key=>{
+    key.onclick=()=>{
+      if(currentStep!==2)return;
+      const k=key.dataset.key;
+      if(k==='back'){calcInput=calcInput.slice(0,-1)}
+      else if(k==='.'&&calcInput.includes('.')){return}
+      else{if(calcInput.length>=8)return;calcInput+=k}
+      updateCalcDisplay(sc);
+    };
+  });
+
+  $('btn-confirm').onclick=()=>{
+    if(currentStep!==2||calcInput===''||busy)return;
+    checkCalcResult(sc);
+  };
+}
+
+function updateCalcDisplay(sc){
+  const f=sc.correctFormula.replace('*','·');
+  $('calc-eq').textContent=f+' =';
+  $('calc-value').textContent=calcInput||'_';
+}
+
+function checkCalcResult(sc){
+  const userVal=parseFloat(calcInput);
+  if(isNaN(userVal)){calcInput='';updateCalcDisplay(sc);return}
+  const tol=Math.max(Math.abs(sc.answer)*0.01,0.009);
+  const correct=Math.abs(userVal-sc.answer)<=tol;
+
+  if(correct){
+    score+=PTS_CALC;
+    busy=true;
+    $('step-calc').classList.remove('show');
+    setTimeout(()=>{busy=false;showStepUnit(sc)},300);
+  }else{
+    roundClean=false;
+    loseLife();
+    showHint('Resultado incorrecto. Revisa el cálculo.');
+    const d=document.querySelector('.calc-display');
+    d.style.animation='shake .35s ease-out';
+    setTimeout(()=>d.style.animation='',400);
+    calcInput='';updateCalcDisplay(sc);
+    if(lives<=0)setTimeout(()=>showResults(),600);
+  }
+}
+
+/* ========== STEP C: UNIT ========== */
+function showStepUnit(sc){
+  currentStep=3;
+  $('unit-reminder').textContent=sc.find+' = '+sc.answer+' ?';
+  $('unit-overlay').classList.add('show');
+  document.querySelectorAll('.unit-btn').forEach(btn=>{
+    btn.classList.remove('correct','wrong');
+    btn.onclick=()=>{
+      if(currentStep!==3||busy)return;
+      if(btn.dataset.unit===sc.unit){
+        btn.classList.add('correct');
+        score+=PTS_UNIT;
+        if(roundClean){score+=PTS_FIRST}
+        busy=true;
+        setTimeout(()=>{
+          $('unit-overlay').classList.remove('show');
+          $('formula-hint').classList.remove('show');
+          busy=false;
+          if(sc.sentido){showStepSentido(sc)}
+          else{showRoundFeedback(true,sc)}
+        },400);
+      }else{
+        btn.classList.add('wrong');
+        roundClean=false;
+        loseLife();
+        const unitHints={'V':'voltios','A':'amperios','Ω':'ohmios'};
+        showHint('La unidad de '+sc.find+' es '+unitHints[sc.unit]+' ('+sc.unit+')');
+        setTimeout(()=>btn.classList.remove('wrong'),400);
+        if(lives<=0)setTimeout(()=>showResults(),600);
+      }
+    };
+  });
+}
+
+/* ========== STEP D: SENTIDO ========== */
+function showStepSentido(sc){
+  currentStep=4;
+  $('sentido-text').textContent=sc.sentido.text;
+  $('sentido-overlay').classList.add('show');
+
+  // Reset hint
+  $('sentido-hint-box').classList.remove('show');
+  $('sentido-hint-box').textContent=sc.sentido.hint;
+  $('sentido-hint-btn').onclick=()=>{
+    $('sentido-hint-box').classList.toggle('show');
+  };
+
+  $('sentido-si').className='sentido-btn sentido-si';
+  $('sentido-no').className='sentido-btn sentido-no';
+
+  $('sentido-si').onclick=()=>answerSentido(true,sc);
+  $('sentido-no').onclick=()=>answerSentido(false,sc);
+}
+
+function answerSentido(userSaidLogical,sc){
+  if(currentStep!==4||busy)return;
+  busy=true;currentStep=5;
+  const correct=userSaidLogical===sc.sentido.logical;
+
+  if(correct){
+    score+=PTS_SENTIDO;
+    (userSaidLogical?$('sentido-si'):$('sentido-no')).classList.add('correct');
+  }else{
+    loseLife();
+    (userSaidLogical?$('sentido-si'):$('sentido-no')).classList.add('wrong');
+  }
+
+  setTimeout(()=>{
+    $('sentido-overlay').classList.remove('show');
+    busy=false;
+    if(lives<=0){showResults();return}
+    showRoundFeedback(correct,sc);
+  },500);
+}
+
+/* ========== ROUND FEEDBACK ========== */
+const MSG_OK=['¡Eso es!','¡Correcto!','Bien calculado.','Así se hace.','V=I·R no tiene secretos para ti.'];
+const MSG_ERR=['Revisa el cálculo.','No del todo… pero sigue.','Ánimo, a por la siguiente.'];
+
+function showRoundFeedback(ok,sc){
+  const fb=$('round-fb');
+  $('round-fb-av').src=ok?A.manuel_happy:A.manuel_worried;
+  $('round-fb-text').textContent=ok?MSG_OK[Math.floor(Math.random()*MSG_OK.length)]:MSG_ERR[Math.floor(Math.random()*MSG_ERR.length)];
+  $('round-fb-sub').textContent=sc.find==='?'?'':sc.find+' = '+sc.answer+' '+sc.unit;
+  fb.classList.add('show');
+  setTimeout(()=>{fb.classList.remove('show');advanceRound()},1400);
+}
+
+function advanceRound(){
+  hideAllSteps();
+  $('scenario-card').classList.remove('show');
+  roundIdx++;
+  startRound();
+}
+
+function hideAllSteps(){
+  ['step-formula','step-calc'].forEach(id=>$(id).classList.remove('show'));
+  $('formula-hint').classList.remove('show');
+  $('round-fb').classList.remove('show');
+  $('unit-overlay').classList.remove('show');
+  $('sentido-overlay').classList.remove('show');
+  $('detect-overlay').classList.remove('show');
+}
+
+/* ========== RESULTS ========== */
+function showResults(){
+  hideAllSteps();
+  showScreen('results');
+  $('res-score').textContent=score;
+  const isNew=score>record;
+  if(isNew){record=score;localStorage.setItem('ruleta_ohm_record',record)}
+  $('res-record').textContent=record;
+  $('res-new').classList.toggle('show',isNew);
+
+  const completed=Math.min(roundIdx,TOTAL_ROUNDS);
+  $('res-hits').textContent='⚡ '+completed+'/'+TOTAL_ROUNDS+' rondas · ❤️ '+lives+'/'+MAX_LIVES+' vidas';
+
+  const badge=$('res-badge');
+  if(score>=240){
+    badge.textContent='¡MAESTRO DE OHM!';badge.style.display='block';
+    $('res-av').src=A.manuel_celebrating;
+    $('res-msg').textContent='Dominas la ley de Ohm. V, I, R no tienen secretos para ti.';
+  }else if(score>=TASK_THRESHOLD){
+    badge.textContent='¡APROBADO!';badge.style.display='block';
+    $('res-av').src=A.manuel_happy;
+    $('res-msg').textContent='Bien, pero repasa las fórmulas que fallaste. Recuerda: datos → fórmula → cuenta con unidades → ¿tiene sentido?';
+  }else{
+    badge.style.display='none';
+    $('res-av').src=A.manuel_worried;
+    $('res-msg').textContent='Necesitas practicar más. Recuerda: V = I × R. Si no tiene unidades y no tiene sentido, no vale.';
+  }
+
+  if(score>=TASK_THRESHOLD&&!taskCompleted){
+    taskCompleted=true;
+    try{window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}))}catch(e){}
+  }
+}
+
+/* ========== BOOT ========== */
+init();
+</script>
+</body>
+</html>
