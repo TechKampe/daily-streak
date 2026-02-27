@@ -543,7 +543,7 @@ function completeAparato(apIdx) {
   $('avatar-img').src = A.celebrating;
   setTimeout(() => { if ($('avatar-img')) $('avatar-img').src = A.happy; }, 3000);
 
-  if (completedCount >= 5 && !taskSent) {
+  if (completedCount >= 6 && !taskSent) {
     taskSent = true;
     try { window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' })); } catch (e) {}
   }
