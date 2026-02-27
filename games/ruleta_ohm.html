@@ -79,15 +79,15 @@ body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-t
 .formula-hint{color:var(--mint);font-size:14px;font-weight:700;text-align:center;padding:6px 16px;opacity:0;transition:opacity .3s}
 .formula-hint.show{opacity:1}
 
-/* NUMPAD */
-.calc-display{background:rgba(0,0,0,.3);border-radius:14px;padding:8px 16px;margin:0 0 6px;text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:8px}
-.calc-eq{color:rgba(255,255,255,.4);font-size:14px;font-weight:600}
-.calc-value{color:#fff;font-size:28px;font-weight:800;letter-spacing:2px;min-width:30px}
-.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;max-width:260px;margin:0 auto}
-.np-key{background:rgba(255,255,255,.12);color:#fff;border:none;font-family:'Baloo 2',cursive;font-size:20px;font-weight:700;padding:11px 0;border-radius:12px;cursor:pointer;transition:all .1s;touch-action:manipulation}
-.np-key:active{background:rgba(255,255,255,.25);transform:scale(.95)}
-.np-back{font-size:18px;color:rgba(255,255,255,.5)}
-.btn-sm{display:block;margin:8px auto 0;padding:10px 36px;font-size:16px}
+/* CALC INPUT */
+.calc-row{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:10px}
+.calc-eq{color:rgba(255,255,255,.5);font-size:16px;font-weight:700}
+.calc-input{background:rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.2);border-radius:14px;padding:10px 14px;color:#fff;font-family:'Baloo 2',cursive;font-size:26px;font-weight:800;text-align:center;width:120px;outline:none;-webkit-appearance:none;appearance:none}
+.calc-input:focus{border-color:var(--turq);box-shadow:0 0 12px rgba(0,230,188,.3)}
+.calc-input::placeholder{color:rgba(255,255,255,.25)}
+.calc-input{-webkit-user-select:text;user-select:text}
+.calc-input::-webkit-inner-spin-button,.calc-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.btn-sm{display:block;margin:0 auto;padding:10px 36px;font-size:16px}
 
 /* UNIT overlay — centrado como sentido */
 .unit-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(11,33,74,.95);z-index:55;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px 20px 80px}
@@ -212,25 +212,11 @@ body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-t
     <!-- Formula hint (auto rounds) -->
     <div class="formula-hint" id="formula-hint"></div>
 
-    <!-- Step B: Numpad -->
+    <!-- Step B: Calc input -->
     <div class="step-box" id="step-calc">
-      <div class="calc-display">
+      <div class="calc-row">
         <span class="calc-eq" id="calc-eq"></span>
-        <span class="calc-value" id="calc-value">_</span>
-      </div>
-      <div class="numpad" id="numpad">
-        <button class="np-key" data-key="1">1</button>
-        <button class="np-key" data-key="2">2</button>
-        <button class="np-key" data-key="3">3</button>
-        <button class="np-key" data-key="4">4</button>
-        <button class="np-key" data-key="5">5</button>
-        <button class="np-key" data-key="6">6</button>
-        <button class="np-key" data-key="7">7</button>
-        <button class="np-key" data-key="8">8</button>
-        <button class="np-key" data-key="9">9</button>
-        <button class="np-key" data-key=".">.</button>
-        <button class="np-key" data-key="0">0</button>
-        <button class="np-key np-back" data-key="back">&#9003;</button>
+        <input class="calc-input" id="calc-input" type="number" inputmode="decimal" placeholder="?" autocomplete="off">
       </div>
       <button class="btn btn-sm" id="btn-confirm">Confirmar</button>
     </div>
@@ -353,7 +339,7 @@ const DETECT_SCENARIOS=[
 
 /* ========== STATE ========== */
 let score=0, roundIdx=0, lives=MAX_LIVES, gameScenarios=[], roundClean=true;
-let currentStep=0, calcInput='', wheelAngle=0, lastSector='';
+let currentStep=0, wheelAngle=0, lastSector='';
 let record=parseInt(localStorage.getItem('ruleta_ohm_record'))||0;
 let taskCompleted=false, busy=false;
 // Plan de rondas: 'calc'=formula+calculo, 'detect'=despejar formula, 'sentido'=tiene sentido
@@ -606,52 +592,48 @@ function getFormulaHint(sc){
 /* ========== STEP B: CALC ========== */
 function showStepCalc(sc){
   currentStep=2;
-  calcInput='';
-  updateCalcDisplay(sc);
+  const inp=$('calc-input');
+  inp.value='';
+  const f=sc.correctFormula.replace('*','·');
+  $('calc-eq').textContent=f+' =';
   $('step-calc').classList.add('show');
-
-  document.querySelectorAll('.np-key').forEach(key=>{
-    key.onclick=()=>{
-      if(currentStep!==2)return;
-      const k=key.dataset.key;
-      if(k==='back'){calcInput=calcInput.slice(0,-1)}
-      else if(k==='.'&&calcInput.includes('.')){return}
-      else{if(calcInput.length>=8)return;calcInput+=k}
-      updateCalcDisplay(sc);
-    };
-  });
+  setTimeout(()=>inp.focus(),100);
 
   $('btn-confirm').onclick=()=>{
-    if(currentStep!==2||calcInput===''||busy)return;
+    if(currentStep!==2||inp.value===''||busy)return;
     checkCalcResult(sc);
+  };
+  // Enter key also confirms
+  inp.onkeydown=(e)=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      if(currentStep!==2||inp.value===''||busy)return;
+      checkCalcResult(sc);
+    }
   };
 }
 
-function updateCalcDisplay(sc){
-  const f=sc.correctFormula.replace('*','·');
-  $('calc-eq').textContent=f+' =';
-  $('calc-value').textContent=calcInput||'_';
-}
-
 function checkCalcResult(sc){
-  const userVal=parseFloat(calcInput);
-  if(isNaN(userVal)){calcInput='';updateCalcDisplay(sc);return}
+  const inp=$('calc-input');
+  const userVal=parseFloat(inp.value);
+  if(isNaN(userVal)){inp.value='';return}
   const tol=Math.max(Math.abs(sc.answer)*0.01,0.009);
   const correct=Math.abs(userVal-sc.answer)<=tol;
 
   if(correct){
     score+=PTS_CALC;
     busy=true;
+    inp.blur();
     $('step-calc').classList.remove('show');
     setTimeout(()=>{busy=false;showStepUnit(sc)},300);
   }else{
     roundClean=false;
     loseLife();
     showHint('Resultado incorrecto. Revisa el cálculo.');
-    const d=document.querySelector('.calc-display');
-    d.style.animation='shake .35s ease-out';
-    setTimeout(()=>d.style.animation='',400);
-    calcInput='';updateCalcDisplay(sc);
+    const row=document.querySelector('.calc-row');
+    row.style.animation='shake .35s ease-out';
+    setTimeout(()=>row.style.animation='',400);
+    inp.value='';inp.focus();
     if(lives<=0)setTimeout(()=>showResults(),600);
   }
 }
