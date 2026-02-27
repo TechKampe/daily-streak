@@ -7,7 +7,7 @@ const A = {
   happy: 'assets/alexia_happy.png',
   celebrating: 'assets/alexia_celebrating.png',
   worried: 'assets/alexia_worried.png',
-  bg: 'https://res.cloudinary.com/kampe/image/upload/v1771938582/bg_taller_pr4v4o.png',
+  bg: 'assets/background.jpg',
   reject_icon: 'https://res.cloudinary.com/kampe/image/upload/v1771531179/icono_residuos.png'
 };
 
