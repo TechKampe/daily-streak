@@ -662,6 +662,23 @@ function gameOver() {
   showResults();
 }
 
+/* ===== BUBBLE POSITIONING ===== */
+function positionBubble() {
+  const avatarEl = $('avatar-img');
+  const msgEl = $('char-msg');
+  if (!avatarEl || !msgEl) return;
+  const rect = avatarEl.getBoundingClientRect();
+  const wRect = $('W').getBoundingClientRect();
+  const wW = wRect.width;
+  const avatarMidY = (rect.top + rect.bottom) / 2;
+  const bubbleH = msgEl.offsetHeight || 60;
+  msgEl.style.bottom = (wRect.bottom - avatarMidY - bubbleH / 2) + 'px';
+  // Position to the right of avatar, but clamp so it stays within wrapper
+  const leftPos = Math.min(rect.right - wRect.left - 60, wW * 0.55);
+  msgEl.style.left = Math.max(10, leftPos) + 'px';
+  msgEl.style.right = '6px';
+}
+
 /* ===== EDUCATIONAL MODAL (uses in-game bubble) ===== */
 function showEduModal(_, text) {
   blocked = true;
@@ -670,17 +687,7 @@ function showEduModal(_, text) {
   $('char-msg-text').innerHTML = text.replace(/\n/g, '<br>');
   $('char-msg').classList.add('show');
   $('edu-btn').style.display = 'block';
-  // Position bubble
-  const avatarEl = $('avatar-img');
-  if (avatarEl) {
-    const rect = avatarEl.getBoundingClientRect();
-    const wRect = $('W').getBoundingClientRect();
-    const avatarMidY = (rect.top + rect.bottom) / 2;
-    const msgEl = $('char-msg');
-    const bubbleH = msgEl.offsetHeight || 60;
-    msgEl.style.bottom = (wRect.bottom - avatarMidY - bubbleH / 2) + 'px';
-    msgEl.style.left = (rect.right - wRect.left - 60) + 'px';
-  }
+  positionBubble();
   $('edu-btn').onclick = () => {
     $('edu-overlay').classList.remove('show');
     $('char-msg').classList.remove('show');
@@ -695,17 +702,7 @@ function showCharMsg(avatar, text, duration) {
   $('char-msg-av').src = avatar;
   $('char-msg-text').textContent = text;
   $('char-msg').classList.add('show');
-  // Position bubble to the right of avatar, vertically centered
-  const avatarEl = $('avatar-img');
-  if (avatarEl) {
-    const rect = avatarEl.getBoundingClientRect();
-    const wRect = $('W').getBoundingClientRect();
-    const avatarMidY = (rect.top + rect.bottom) / 2;
-    const msgEl = $('char-msg');
-    const bubbleH = msgEl.offsetHeight || 60;
-    msgEl.style.bottom = (wRect.bottom - avatarMidY - bubbleH / 2) + 'px';
-    msgEl.style.left = (rect.right - wRect.left - 60) + 'px';
-  }
+  positionBubble();
   msgTimer = setTimeout(() => $('char-msg').classList.remove('show'), duration || 4000);
 }
 
