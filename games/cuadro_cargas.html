@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>El Cuadro de Cargas</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--turq:#00E6BC;--navy:#0B214A;--lime:#04FFB4;--mint:#C5FFDF;--lemon:#FFFFAB;--fire:#E74C3C}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Baloo 2',cursive;background:#0B214A;touch-action:manipulation}
+body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-bottom:constant(safe-area-inset-bottom)}
+#W{position:relative;width:100%;max-width:430px;margin:0 auto;height:100%;overflow:hidden;background:linear-gradient(180deg,#0B214A 0%,#0D2D5E 40%,#0F1B2D 100%)}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;transition:opacity .35s;z-index:100}
+.scr.off{opacity:0;pointer-events:none;z-index:-1}
+.btn{background:var(--turq);color:var(--navy);border:none;font-family:'Baloo 2',cursive;font-size:19px;font-weight:700;padding:14px 48px;border-radius:50px;cursor:pointer;box-shadow:0 4px 16px rgba(0,230,188,.3);transition:transform .1s;letter-spacing:.5px}
+.btn:active{transform:scale(.96)}
+
+/* INTRO */
+#intro{align-items:center;justify-content:center;padding-bottom:80px;background:linear-gradient(180deg,#0B214A 0%,#0D2D5E 40%,#0F1B2D 100%)}
+.intro-card{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;padding:0 20px;width:100%}
+.intro-av{width:240px;height:310px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(0,0,0,.6));margin-bottom:-36px;position:relative;z-index:1}
+.intro-bub{position:relative;z-index:2;background:#fff;color:var(--navy);padding:18px 22px;border-radius:22px;box-shadow:0 4px 24px rgba(0,0,0,.35);font-size:15px;font-weight:600;line-height:1.4;text-align:center;margin-bottom:18px;width:100%}
+.intro-title{font-size:22px;font-weight:800;color:#fff;text-shadow:0 3px 16px rgba(0,0,0,.5);margin-bottom:6px;z-index:10;position:relative}
+
+/* HUD */
+.hud{position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-right:66px;background:linear-gradient(180deg,rgba(11,33,74,.95)0%,rgba(11,33,74,.4)70%,transparent 100%);padding-bottom:28px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.hud-left{display:flex;align-items:center;gap:8px}
+.hud-phase{background:rgba(0,0,0,.35);padding:4px 12px;border-radius:16px;color:rgba(255,255,255,.8);font-size:13px;font-weight:600}
+.hud-progress{background:rgba(0,0,0,.35);padding:4px 12px;border-radius:16px;color:var(--turq);font-size:13px;font-weight:700}
+.hud-lives{display:flex;gap:3px}
+.hud-heart{font-size:20px;transition:all .3s ease}
+.hud-heart.lost{opacity:.2;transform:scale(.7)}
+@keyframes livesShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.hud-lives.shaking{animation:livesShake .3s ease-out}
+
+/* FLASH */
+@keyframes flashRed{0%{opacity:.35}100%{opacity:0}}
+.flash-overlay{position:fixed;inset:0;background:var(--fire);z-index:999;pointer-events:none;opacity:0}
+.flash-overlay.flash{animation:flashRed .4s ease-out forwards}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+
+/* GAMEPLAY */
+#play{z-index:10}
+.play-inner{position:relative;z-index:10;flex:1;display:flex;flex-direction:column;padding:50px 16px 12px;overflow:hidden;align-items:center;justify-content:flex-start;gap:8px}
+
+/* MANUEL BUBBLE (in-game) */
+.game-bubble{display:flex;align-items:center;gap:10px;width:100%;max-width:398px;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s;position:relative;z-index:2}
+.game-bubble.show{opacity:1;transform:translateY(0)}
+.game-bubble-av{width:56px;height:73px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));flex-shrink:0}
+.game-bubble-text{background:rgba(255,255,255,.1);color:#fff;font-size:14px;font-weight:600;padding:10px 14px;border-radius:14px;line-height:1.3;flex:1}
+
+/* PLACA (Fase 1) */
+.placa-wrap{opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;width:100%;max-width:398px;position:relative;z-index:2}
+.placa-wrap.show{opacity:1;transform:translateY(0)}
+.placa{position:relative;background:linear-gradient(170deg,#c8c8c8 0%,#d8d8d8 30%,#b8b8b8 70%,#a8a8a8 100%);border:2px solid #888;border-radius:6px;padding:20px 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.15)}
+.placa::before,.placa::after{content:'';position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle,#999 30%,#777 70%);border:1px solid #666;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+.placa::before{top:6px;left:6px}
+.placa::after{top:6px;right:6px}
+.placa-brand{color:#666;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;text-align:right;margin-bottom:2px;opacity:.6}
+.placa-title{color:#222;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(0,0,0,.2)}
+.placa-rows{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.placa-chip{background:rgba(255,255,255,.5);border:2px solid #bbb;color:#222;font-size:15px;font-weight:700;padding:10px 16px;border-radius:6px;cursor:pointer;transition:all .15s;touch-action:manipulation;text-align:center;min-width:80px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.placa-chip:active{transform:scale(.96)}
+.placa-chip.correct{background:rgba(4,255,180,.35);border-color:var(--lime);color:#0a6847;box-shadow:0 0 12px rgba(4,255,180,.4)}
+.placa-chip.wrong{background:rgba(231,76,60,.25);border-color:var(--fire);color:var(--fire);animation:shake .35s ease-out}
+.placa-chip.disabled{opacity:.35;pointer-events:none}
+.placa-serial{color:#999;font-size:9px;font-weight:600;text-align:center;margin-top:8px;letter-spacing:1px}
+
+/* CALC CARD (Fase 2) */
+.calc-card{background:rgba(255,255,255,.08);border-radius:16px;padding:16px 18px;width:100%;max-width:398px;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;position:relative;z-index:2}
+.calc-card.show{opacity:1;transform:translateY(0)}
+.calc-card-title{display:flex;align-items:center;gap:8px;color:#fff;font-size:17px;font-weight:700;margin-bottom:10px}
+.calc-card-data{display:flex;gap:12px;justify-content:center;margin-bottom:8px}
+.calc-card-val{background:rgba(255,255,255,.1);padding:6px 16px;border-radius:12px;color:var(--turq);font-size:17px;font-weight:800;text-align:center}
+.calc-card-formula{color:var(--lemon);font-size:15px;font-weight:700;text-align:center;margin-bottom:10px}
+.calc-row{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:8px}
+.calc-eq{color:rgba(255,255,255,.5);font-size:16px;font-weight:700}
+.calc-input{background:rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.2);border-radius:14px;padding:10px 14px;color:#fff;font-family:'Baloo 2',cursive;font-size:26px;font-weight:800;text-align:center;width:120px;outline:none;-webkit-appearance:none;appearance:none;-webkit-user-select:text;user-select:text}
+.calc-input:focus{border-color:var(--turq);box-shadow:0 0 12px rgba(0,230,188,.3)}
+.calc-input::placeholder{color:rgba(255,255,255,.25)}
+.calc-input::-webkit-inner-spin-button,.calc-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.btn-sm{display:block;margin:0 auto;padding:10px 36px;font-size:16px}
+
+/* UNIT BUTTONS */
+.unit-row{display:flex;gap:12px;justify-content:center;margin-top:8px}
+.unit-btn{background:rgba(255,255,255,.1);color:#fff;border:2px solid rgba(255,255,255,.2);font-family:'Baloo 2',cursive;font-size:20px;font-weight:800;width:64px;height:64px;border-radius:50%;cursor:pointer;transition:all .15s;touch-action:manipulation;display:flex;align-items:center;justify-content:center}
+.unit-btn:active{transform:scale(.96)}
+.unit-btn.correct{background:rgba(4,255,180,.2);border-color:var(--lime);color:var(--lime)}
+.unit-btn.wrong{background:rgba(231,76,60,.2);border-color:var(--fire);color:var(--fire);animation:shake .35s ease-out}
+
+/* ZONE FULL-SCREEN BG (Fase 3) */
+.zone-bg-full{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:.35;pointer-events:none}
+
+/* ZONE CARD (Fase 3) */
+.zone-card{position:relative;z-index:2;background:rgba(11,33,74,.75);border-radius:16px;padding:14px 16px;width:100%;max-width:398px;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.zone-card.show{opacity:1;transform:translateY(0)}
+.zone-title{color:#fff;font-size:17px;font-weight:800;margin-bottom:8px;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.zone-items{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.zone-item{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.1);padding:7px 12px;border-radius:10px}
+.zone-item-name{color:#fff;font-size:14px;font-weight:600}
+.zone-item-w{color:var(--turq);font-size:15px;font-weight:800}
+.zone-magneto{display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,255,171,.12);padding:7px 12px;border-radius:10px;margin-bottom:8px}
+.zone-magneto-label{color:var(--lemon);font-size:13px;font-weight:700}
+.zone-magneto-val{color:var(--lemon);font-size:17px;font-weight:800}
+
+/* DECISION BUTTONS */
+.decision-row{display:flex;gap:12px;justify-content:center;margin-top:10px}
+.decision-btn{font-family:'Baloo 2',cursive;font-size:16px;font-weight:700;padding:12px 24px;border-radius:16px;border:none;cursor:pointer;transition:all .15s;touch-action:manipulation;color:#fff;flex:1;max-width:160px;text-align:center}
+.decision-si{background:var(--turq);color:var(--navy)}
+.decision-no{background:#ED687E}
+.decision-btn:active{transform:scale(.96)}
+.decision-btn.correct{box-shadow:0 0 20px rgba(4,255,180,.5)}
+.decision-btn.wrong{opacity:.4}
+
+/* HELP BUTTON */
+.help-btn{position:absolute;bottom:12px;right:12px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.25);color:var(--lemon);font-family:'Baloo 2',cursive;font-size:22px;font-weight:800;cursor:pointer;transition:all .15s;touch-action:manipulation;display:flex;align-items:center;justify-content:center;z-index:55}
+.help-btn:active{transform:scale(.92)}
+.help-toast{position:absolute;bottom:64px;right:12px;background:rgba(0,0,0,.85);color:var(--lemon);font-size:13px;font-weight:600;padding:10px 14px;border-radius:12px;max-width:260px;line-height:1.35;opacity:0;pointer-events:none;transition:opacity .3s;z-index:55}
+.help-toast.show{opacity:1}
+
+/* (zone-bg moved to zone-bg-full above) */
+
+/* MAGNETO ROW with image */
+.zone-magneto-img{height:36px;object-fit:contain}
+
+/* STEP RESULT INLINE */
+.step-ok{display:flex;align-items:center;gap:6px;color:var(--lime);font-size:15px;font-weight:700;margin-bottom:4px;justify-content:center}
+
+/* FEEDBACK OVERLAY */
+.feedback-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(11,33,74,.93);z-index:60;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px 20px 80px}
+.feedback-overlay.show{opacity:1;pointer-events:auto}
+.fb-av{width:150px;height:196px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.5));margin-bottom:10px}
+.fb-text{color:#fff;font-size:17px;font-weight:700;text-align:center;line-height:1.4;margin-bottom:4px}
+.fb-sub{color:var(--lemon);font-size:13px;font-weight:600;text-align:center;max-width:320px;line-height:1.3}
+.fb-btn{margin-top:14px}
+
+/* HINT TOAST */
+.hint-toast{text-align:center;min-height:24px;flex-shrink:0;position:relative;z-index:3}
+.hint-text{display:inline-block;background:rgba(255,255,171,.15);color:var(--lemon);font-size:12px;font-weight:700;padding:4px 14px;border-radius:12px;opacity:0;transition:opacity .3s;line-height:1.3}
+.hint-text.show{opacity:1}
+
+/* RESULTS */
+#results{align-items:center;justify-content:center;padding:16px 20px 80px;z-index:200;background:var(--navy)}
+.res-inner{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;width:100%;gap:2px}
+.res-label{font-size:14px;color:rgba(255,255,255,.5);font-weight:600;text-align:center}
+.res-new{color:var(--lemon);font-size:18px;font-weight:800;display:none}
+.res-new.show{display:block}
+.res-badge{color:var(--lime);font-size:23px;font-weight:800;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase}
+.res-scores{display:flex;gap:28px;margin-bottom:4px}
+.res-val{font-size:44px;font-weight:800;text-align:center;color:var(--lime)}
+.res-av{width:208px;height:273px;object-fit:contain;filter:drop-shadow(0 4px 22px rgba(0,0,0,.5));margin-bottom:-40px;position:relative;z-index:0}
+.res-info-card{background:#fff;border-radius:18px;padding:16px 20px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1}
+.res-msg{color:var(--navy);font-size:14px;font-weight:600;text-align:center;line-height:1.3}
+.res-hits{color:var(--navy);font-size:13px;font-weight:600;opacity:.7}
+.res-bot{display:flex;flex-direction:column;align-items:center;margin-top:10px}
+.res-bot .btn{position:relative;z-index:2;padding:12px 40px;font-size:17px}
+</style>
+</head>
+<body>
+<div id="W">
+
+<!-- INTRO -->
+<div class="scr" id="intro">
+  <div class="intro-card">
+    <h1 class="intro-title">El Cuadro de Cargas</h1>
+    <img class="intro-av" id="intro-av" alt="Manuel">
+    <div class="intro-bub">Hoy vas a aprender a leer potencias y calcular si un circuito aguanta.<br><br><b>Recuerda: P = V × I</b></div>
+    <button class="btn" id="intro-btn">¡Vamos!</button>
+  </div>
+</div>
+
+<!-- GAMEPLAY -->
+<div class="scr off" id="play">
+  <div class="hud">
+    <div class="hud-left">
+      <div class="hud-phase" id="hud-phase">Fase 1/3</div>
+      <div class="hud-progress" id="hud-progress">1/4</div>
+    </div>
+    <div class="hud-lives" id="hud-lives"></div>
+  </div>
+  <div class="play-inner" id="play-inner">
+
+    <!-- Manuel bubble -->
+    <div class="game-bubble" id="game-bubble">
+      <img class="game-bubble-av" id="game-bubble-av" alt="Manuel">
+      <div class="game-bubble-text" id="game-bubble-text"></div>
+    </div>
+
+    <!-- FASE 1: Placa -->
+    <div class="placa-wrap" id="placa-wrap">
+      <div class="placa">
+        <div class="placa-brand" id="placa-brand"></div>
+        <div class="placa-title" id="placa-title"></div>
+        <div class="placa-rows" id="placa-rows"></div>
+        <div class="placa-serial" id="placa-serial"></div>
+      </div>
+    </div>
+
+    <!-- FASE 2: Calc -->
+    <div class="calc-card" id="calc-card">
+      <div class="calc-card-title" id="calc-card-title"></div>
+      <div class="calc-card-data" id="calc-card-data"></div>
+      <div class="calc-card-formula" id="calc-card-formula">I = P / V</div>
+      <div id="calc-step-area"></div>
+    </div>
+
+    <!-- FASE 3: Zone -->
+    <div class="zone-card" id="zone-card">
+      <div class="zone-title" id="zone-title"></div>
+      <div class="zone-items" id="zone-items"></div>
+      <div class="zone-magneto" id="zone-magneto">
+        <span class="zone-magneto-label">Magnetotérmico:</span>
+        <span class="zone-magneto-val" id="zone-magneto-val"></span>
+      </div>
+      <div id="zone-step-area"></div>
+    </div>
+
+    <!-- Hint -->
+    <div class="hint-toast"><div class="hint-text" id="hint-text"></div></div>
+
+    <!-- Help button -->
+    <button class="help-btn" id="help-btn">?</button>
+    <div class="help-toast" id="help-toast"></div>
+
+    <!-- Phase transition feedback -->
+    <div class="feedback-overlay" id="feedback-overlay">
+      <img class="fb-av" id="fb-av" alt="Manuel">
+      <div class="fb-text" id="fb-text"></div>
+      <div class="fb-sub" id="fb-sub"></div>
+      <button class="btn btn-sm fb-btn" id="fb-btn" style="display:none">Siguiente</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="scr off" id="results">
+  <div class="res-inner">
+    <div class="res-badge" id="res-badge" style="display:none"></div>
+    <div class="res-scores">
+      <div><div class="res-val" id="res-score">0</div><div class="res-label">Puntuación</div></div>
+      <div><div class="res-val" id="res-record" style="color:var(--lemon)">0</div><div class="res-label">Récord</div></div>
+    </div>
+    <div class="res-new" id="res-new">¡NUEVO RÉCORD!</div>
+    <img class="res-av" id="res-av" alt="Manuel">
+    <div class="res-info-card">
+      <div class="res-msg" id="res-msg"></div>
+      <div class="res-hits" id="res-hits"></div>
+    </div>
+    <div class="res-bot">
+      <button class="btn" id="res-btn">¡Otra ronda!</button>
+    </div>
+  </div>
+</div>
+
+<!-- Flash overlay -->
+<div class="flash-overlay" id="flash-overlay"></div>
+
+</div>
+<script>
+/* ========== ASSETS ========== */
+const A={
+  manuel_happy:'https://res.cloudinary.com/kampe/image/upload/v1772192253/manuel_happy_kffwk8.png',
+  manuel_celebrating:'https://res.cloudinary.com/kampe/image/upload/v1772192261/manuel_celebrating_synfdg.png',
+  manuel_worried:'https://res.cloudinary.com/kampe/image/upload/v1772192255/manuel_worried_trm6sp.png',
+  bg_cocina:'https://res.cloudinary.com/kampe/image/upload/v1772201356/bg_cocina_q3qkeb.png',
+  bg_salon:'https://res.cloudinary.com/kampe/image/upload/v1772201973/bg_salon_es1alo.png',
+  magneto:'https://res.cloudinary.com/kampe/image/upload/v1772201364/magneto_poeaew.png'
+};
+
+/* ========== CONSTANTS ========== */
+const MAX_LIVES=5, TASK_THRESHOLD=350;
+const PTS_PLACA=20, PTS_PLACA_FIRST=10;
+const PTS_CALC=30, PTS_UNIT=10, PTS_CALC_FIRST=15;
+const PTS_SUMA=20, PTS_ZONA_CALC=30, PTS_DECISION=25, PTS_ZONA_FIRST=20;
+
+/* ========== DATA ========== */
+const PLACAS=[
+  {name:'HORNO ELÉCTRICO',brand:'BALAY',serial:'SN 7829-HRN-450',chips:['Modelo: HRN-450','230V~','50Hz','2300 W','Clase A','IP20'],correct:'2300 W',hint:'Busca el número que acaba en W. Eso son vatios.'},
+  {name:'MICROONDAS',brand:'SAMSUNG',serial:'SN 4401-MW-200',chips:['Mod: MW-200','230V~','50Hz','800 W','2450 MHz','Clase B'],correct:'800 W',hint:'Los vatios (W) indican cuánto consume. No confundas con MHz.'},
+  {name:'SECADOR DE PELO',brand:'ROWENTA',serial:'SN 1122-SD-100',chips:['REF: SD-100','220-240V~','50/60Hz','1800 W','Clase II'],correct:'1800 W',hint:'W = vatios = potencia. Es lo que buscas.'},
+  {name:'AIRE ACONDICIONADO',brand:'DAIKIN',serial:'SN 9035-AC-3500',chips:['AC-3500','230V~','50Hz','3450 W','R-32','EER 3.2','SEER A++'],correct:'3450 W',hint:'Cuidado con las siglas de eficiencia. Busca W.'}
+];
+
+const CALCS=[
+  {name:'Tostadora',power:920,voltage:230,answer:4,tol:0.2},
+  {name:'Vitrocerámica',power:2300,voltage:230,answer:10,tol:0.5},
+  {name:'Termo eléctrico',power:1150,voltage:230,answer:5,tol:0.2}
+];
+
+const ZONES=[
+  {name:'COCINA',bg:'bg_cocina',items:[{name:'Horno',w:2300},{name:'Microondas',w:800},{name:'Tostadora',w:920}],magneto:16,totalW:4020,totalA:17.5,aguanta:false,
+    msgOk:'17.5 amperios en un magneto de 16 → salta. Hay que repartir la carga o subir la protección.',
+    msgErr:'17.5 amperios es más que 16. El magnetotérmico saltaría. Más corriente = más problema.'},
+  {name:'SALÓN',bg:'bg_salon',items:[{name:'TV',w:150},{name:'Lámpara',w:60},{name:'Cargador',w:20}],magneto:10,totalW:230,totalA:1,aguanta:true,
+    msgOk:'1 amperio en un magneto de 10 → sobra de largo. Esta zona va tranquila.',
+    msgErr:'Solo 1 amperio y el magneto aguanta 10. Va muy holgado, no hay problema.'}
+];
+
+/* ========== HELP SYSTEM ========== */
+const HELP_HINTS={
+  // Fase 1
+  placa:['Busca el dato que indica potencia. Se mide en vatios (W).','El número de vatios suele ser el más grande y acaba en W.'],
+  // Fase 2
+  calc:['Usa la fórmula: I = P / V. Divide la potencia entre el voltaje.','Ejemplo: 920 W / 230 V = 4 amperios.'],
+  unit:['El resultado de dividir vatios entre voltios da amperios.','Amperios (A) es la unidad de corriente eléctrica.'],
+  // Fase 3
+  suma:['Suma todas las potencias de los aparatos que ves.','Ejemplo: 2300 + 800 + 920 = 4020 W.'],
+  zona_calc:['Divide la potencia total entre 230 voltios para obtener amperios.','I = potencia total / 230.'],
+  decision:['Compara los amperios totales con los del magnetotérmico.','Si los amperios totales superan al magneto → no aguanta.']
+};
+let helpTapCount=0, lastHelpKey='';
+
+/* ========== STATE ========== */
+let score=0,lives=MAX_LIVES,phase=1,stepIdx=0,busy=false;
+let phaseClean=true; // track first-try per item
+let record=parseInt(localStorage.getItem('cuadro_cargas_record'))||0;
+let taskCompleted=false;
+// Fase 2/3 sub-step: 'calc','unit','suma','zona_calc','decision'
+let subStep='';
+
+const $=id=>document.getElementById(id);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+/* ========== SCREENS ========== */
+function showScreen(id){document.querySelectorAll('.scr').forEach(s=>s.classList.add('off'));$(id).classList.remove('off')}
+
+/* ========== LIVES ========== */
+function renderLives(){
+  const c=$('hud-lives');c.innerHTML='';
+  for(let i=0;i<MAX_LIVES;i++){const h=document.createElement('div');h.className='hud-heart'+(i>=lives?' lost':'');h.textContent='❤️';c.appendChild(h)}
+}
+function loseLife(){
+  if(lives<=0)return;
+  lives--;renderLives();
+  const lc=$('hud-lives');lc.classList.remove('shaking');void lc.offsetWidth;lc.classList.add('shaking');
+  const fl=$('flash-overlay');fl.classList.remove('flash');void fl.offsetWidth;fl.classList.add('flash');
+}
+
+/* ========== HINT ========== */
+let hintTimer=null;
+function showHint(txt){
+  clearTimeout(hintTimer);
+  const el=$('hint-text');el.textContent=txt;el.classList.add('show');
+  hintTimer=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+/* ========== MANUEL BUBBLE ========== */
+function showBubble(text,avatar){
+  $('game-bubble-av').src=avatar||A.manuel_happy;
+  $('game-bubble-text').textContent=text;
+  $('game-bubble').classList.add('show');
+}
+function hideBubble(){$('game-bubble').classList.remove('show')}
+
+/* ========== HELP BUTTON ========== */
+let helpToastTimer=null;
+function getHelpKey(){
+  if(phase===1)return 'placa';
+  if(phase===2)return subStep==='unit'?'unit':'calc';
+  if(phase===3)return subStep||'suma';
+  return 'placa';
+}
+function onHelpTap(){
+  const key=getHelpKey();
+  if(key!==lastHelpKey){helpTapCount=0;lastHelpKey=key}
+  const hints=HELP_HINTS[key]||['Piensa en los datos que ves.'];
+  const idx=Math.min(helpTapCount,hints.length-1);
+  const toast=$('help-toast');
+  toast.textContent=hints[idx];
+  toast.classList.add('show');
+  clearTimeout(helpToastTimer);
+  helpToastTimer=setTimeout(()=>toast.classList.remove('show'),3500);
+  helpTapCount++;
+}
+
+/* ========== HUD ========== */
+function updateHUD(){
+  $('hud-phase').textContent='Fase '+phase+'/3';
+  let total,idx;
+  if(phase===1){total=PLACAS.length;idx=stepIdx+1}
+  else if(phase===2){total=CALCS.length;idx=stepIdx+1}
+  else{total=ZONES.length;idx=stepIdx+1}
+  $('hud-progress').textContent=Math.min(idx,total)+'/'+total;
+}
+
+/* ========== INIT ========== */
+function init(){
+  $('intro-av').src=A.manuel_happy;
+  $('intro-btn').onclick=startGame;
+  $('res-btn').onclick=startGame;
+  $('help-btn').onclick=onHelpTap;
+  showScreen('intro');
+}
+
+/* ========== START ========== */
+function startGame(){
+  score=0;lives=MAX_LIVES;phase=1;stepIdx=0;busy=false;taskCompleted=false;
+  renderLives();
+  showScreen('play');
+  hideAllCards();
+  startPhase1();
+}
+
+function hideAllCards(){
+  $('placa-wrap').classList.remove('show');
+  $('calc-card').classList.remove('show');
+  $('zone-card').classList.remove('show');
+  $('feedback-overlay').classList.remove('show');
+  $('help-toast').classList.remove('show');
+  hideBubble();
+  $('hint-text').classList.remove('show');
+  // Remove full-screen zone bg
+  const bg=document.querySelector('.zone-bg-full');
+  if(bg)bg.remove();
+}
+
+/* ================================================================
+   FASE 1 — LEE LA PLACA
+   ================================================================ */
+function startPhase1(){
+  phase=1;stepIdx=0;
+  updateHUD();
+  showBubble('¿Dónde están los vatios?');
+  showPlaca(stepIdx);
+}
+
+function showPlaca(idx){
+  if(idx>=PLACAS.length){endPhase1();return}
+  if(lives<=0){showResults();return}
+  phaseClean=true;
+  helpTapCount=0;lastHelpKey='';
+  updateHUD();
+  const p=PLACAS[idx];
+  $('placa-brand').textContent=p.brand;
+  $('placa-title').textContent=p.name;
+  $('placa-serial').textContent=p.serial;
+  const rows=$('placa-rows');
+  rows.innerHTML='';
+  const chips=shuffle([...p.chips]);
+  chips.forEach(txt=>{
+    const chip=document.createElement('button');
+    chip.className='placa-chip';
+    chip.textContent=txt;
+    chip.onclick=()=>{
+      if(busy)return;
+      if(txt===p.correct){
+        chip.classList.add('correct');
+        score+=PTS_PLACA;
+        if(phaseClean)score+=PTS_PLACA_FIRST;
+        busy=true;
+        setTimeout(()=>{
+          busy=false;
+          stepIdx++;
+          updateHUD();
+          showPlaca(stepIdx);
+        },600);
+      }else{
+        chip.classList.add('wrong');
+        chip.classList.add('disabled');
+        phaseClean=false;
+        loseLife();
+        showHint(p.hint);
+        if(lives<=0)setTimeout(()=>showResults(),600);
+      }
+    };
+    rows.appendChild(chip);
+  });
+  $('placa-wrap').classList.add('show');
+}
+
+function endPhase1(){
+  $('placa-wrap').classList.remove('show');
+  hideBubble();
+  showPhaseFeedback('¡Ya sabes leer vatios! Ahora a calcular.',A.manuel_happy,startPhase2);
+}
+
+/* ================================================================
+   FASE 2 — CALCULA LA CARGA
+   ================================================================ */
+function startPhase2(){
+  phase=2;stepIdx=0;
+  updateHUD();
+  showBubble('Calcula los amperios');
+  showCalc(stepIdx);
+}
+
+function showCalc(idx){
+  if(idx>=CALCS.length){endPhase2();return}
+  if(lives<=0){showResults();return}
+  phaseClean=true;
+  subStep='calc';
+  helpTapCount=0;lastHelpKey='';
+  updateHUD();
+  const c=CALCS[idx];
+  $('calc-card-title').innerHTML=c.name;
+  $('calc-card-data').innerHTML='<div class="calc-card-val">'+c.power+' W</div><div class="calc-card-val">'+c.voltage+' V</div>';
+  $('calc-card-formula').textContent='I = P / V';
+
+  const area=$('calc-step-area');
+  area.innerHTML='';
+  // Calc input
+  const row=document.createElement('div');row.className='calc-row';
+  const eq=document.createElement('span');eq.className='calc-eq';eq.textContent='I =';
+  const inp=document.createElement('input');inp.className='calc-input';inp.type='number';inp.inputMode='decimal';inp.placeholder='?';inp.autocomplete='off';
+  row.appendChild(eq);row.appendChild(inp);
+  area.appendChild(row);
+
+  const btn=document.createElement('button');btn.className='btn btn-sm';btn.textContent='Comprobar';
+  area.appendChild(btn);
+
+  $('calc-card').classList.add('show');
+  setTimeout(()=>inp.focus(),150);
+
+  const doCheck=()=>{
+    if(subStep!=='calc'||inp.value===''||busy)return;
+    const val=parseFloat(inp.value);
+    if(isNaN(val)){inp.value='';return}
+    if(Math.abs(val-c.answer)<=c.tol){
+      score+=PTS_CALC;
+      busy=true;
+      inp.blur();
+      // Show success + unit selection
+      area.innerHTML='<div class="step-ok">✅ '+c.answer+' ...</div><div style="color:#fff;font-size:15px;font-weight:700;text-align:center;margin-bottom:10px">¿En qué unidad se mide la corriente?</div><div class="unit-row" id="unit-row"></div>';
+      showUnitButtons(c,idx);
+      busy=false;
+    }else{
+      phaseClean=false;
+      loseLife();
+      showHint('Recuerda: I = P / V → '+c.power+' / '+c.voltage);
+      row.style.animation='shake .35s ease-out';
+      setTimeout(()=>row.style.animation='',400);
+      inp.value='';inp.focus();
+      if(lives<=0)setTimeout(()=>showResults(),600);
+    }
+  };
+  btn.onclick=doCheck;
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doCheck()}};
+}
+
+function showUnitButtons(c,idx){
+  subStep='unit';
+  helpTapCount=0;lastHelpKey='';
+  const row=$('unit-row');
+  if(!row)return;
+  ['W','A','V'].forEach(u=>{
+    const btn=document.createElement('button');
+    btn.className='unit-btn';
+    btn.textContent=u;
+    btn.onclick=()=>{
+      if(subStep!=='unit'||busy)return;
+      if(u==='A'){
+        btn.classList.add('correct');
+        score+=PTS_UNIT;
+        if(phaseClean)score+=PTS_CALC_FIRST;
+        busy=true;
+        setTimeout(()=>{
+          busy=false;
+          stepIdx++;
+          showCalc(stepIdx);
+        },500);
+      }else{
+        btn.classList.add('wrong');
+        phaseClean=false;
+        loseLife();
+        showHint('El resultado de I se mide en amperios (A)');
+        setTimeout(()=>btn.classList.remove('wrong'),400);
+        if(lives<=0)setTimeout(()=>showResults(),600);
+      }
+    };
+    row.appendChild(btn);
+  });
+}
+
+function endPhase2(){
+  $('calc-card').classList.remove('show');
+  hideBubble();
+  showPhaseFeedback('¡Dominas I = P / V! Vamos a lo importante.',A.manuel_happy,startPhase3);
+}
+
+/* ================================================================
+   FASE 3 — ¿AGUANTA EL CIRCUITO?
+   ================================================================ */
+function startPhase3(){
+  phase=3;stepIdx=0;
+  updateHUD();
+  showBubble('¿Aguanta este circuito?');
+  showZone(stepIdx);
+}
+
+function showZone(idx){
+  if(idx>=ZONES.length){showResults();return}
+  if(lives<=0){showResults();return}
+  phaseClean=true;
+  subStep='suma';
+  helpTapCount=0;lastHelpKey='';
+  updateHUD();
+  const z=ZONES[idx];
+  $('zone-title').textContent=z.name;
+
+  // Background image → full screen behind play area
+  const existingBg=document.querySelector('.zone-bg-full');
+  if(existingBg)existingBg.remove();
+  if(A[z.bg]){
+    const img=document.createElement('img');img.className='zone-bg-full';img.src=A[z.bg];img.alt=z.name;
+    $('play-inner').insertBefore(img,$('play-inner').firstChild);
+  }
+
+  const items=$('zone-items');
+  items.innerHTML='';
+  z.items.forEach(it=>{
+    const row=document.createElement('div');row.className='zone-item';
+    row.innerHTML='<span class="zone-item-name">'+it.name+'</span><span class="zone-item-w">'+it.w+' W</span>';
+    items.appendChild(row);
+  });
+
+  // Magneto: full text + optional image
+  const magnetoHTML=A.magneto
+    ?'<img class="zone-magneto-img" src="'+A.magneto+'" alt="Magnetotérmico"> '
+    :'';
+  $('zone-magneto').innerHTML=magnetoHTML+'<span class="zone-magneto-label">Magnetotérmico:</span> <span class="zone-magneto-val">'+z.magneto+' amperios</span>';
+
+  const area=$('zone-step-area');
+  area.innerHTML='';
+  // Step 1: Suma W
+  buildSumaInput(z,area,idx);
+  $('zone-card').classList.add('show');
+}
+
+function buildSumaInput(z,area,zoneIdx){
+  subStep='suma';
+  helpTapCount=0;lastHelpKey='';
+  area.innerHTML='';
+  const label=document.createElement('div');label.style.cssText='color:#fff;font-size:13px;font-weight:700;text-align:center;margin-bottom:4px';
+  label.textContent='Potencia total:';
+  area.appendChild(label);
+  const row=document.createElement('div');row.className='calc-row';
+  const inp=document.createElement('input');inp.className='calc-input';inp.type='number';inp.inputMode='decimal';inp.placeholder='?';inp.autocomplete='off';
+  const suffix=document.createElement('span');suffix.className='calc-eq';suffix.textContent='W';
+  row.appendChild(inp);row.appendChild(suffix);
+  area.appendChild(row);
+  const btn=document.createElement('button');btn.className='btn btn-sm';btn.textContent='Comprobar';
+  area.appendChild(btn);
+  setTimeout(()=>inp.focus(),150);
+
+  const doCheck=()=>{
+    if(subStep!=='suma'||inp.value===''||busy)return;
+    const val=parseFloat(inp.value);
+    if(isNaN(val)){inp.value='';return}
+    if(Math.abs(val-z.totalW)<=1){
+      score+=PTS_SUMA;
+      inp.blur();
+      buildZoneCalcInput(z,area,zoneIdx,val);
+    }else{
+      phaseClean=false;
+      loseLife();
+      const nums=z.items.map(it=>it.w).join(' + ');
+      showHint('Suma todas las potencias: '+nums);
+      row.style.animation='shake .35s ease-out';
+      setTimeout(()=>row.style.animation='',400);
+      inp.value='';inp.focus();
+      if(lives<=0)setTimeout(()=>showResults(),600);
+    }
+  };
+  btn.onclick=doCheck;
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doCheck()}};
+}
+
+function buildZoneCalcInput(z,area,zoneIdx,sumaW){
+  subStep='zona_calc';
+  helpTapCount=0;lastHelpKey='';
+  area.innerHTML='<div class="step-ok">✅ '+z.totalW+' W</div>';
+  const label=document.createElement('div');label.style.cssText='color:#fff;font-size:13px;font-weight:700;text-align:center;margin-bottom:4px';
+  label.textContent='A 230V → ¿cuántos amperios?';
+  area.appendChild(label);
+  const row=document.createElement('div');row.className='calc-row';
+  const inp=document.createElement('input');inp.className='calc-input';inp.type='number';inp.inputMode='decimal';inp.placeholder='?';inp.autocomplete='off';
+  const suffix=document.createElement('span');suffix.className='calc-eq';suffix.textContent='A';
+  row.appendChild(inp);row.appendChild(suffix);
+  area.appendChild(row);
+  const btn=document.createElement('button');btn.className='btn btn-sm';btn.textContent='Comprobar';
+  area.appendChild(btn);
+  setTimeout(()=>inp.focus(),150);
+
+  const doCheck=()=>{
+    if(subStep!=='zona_calc'||inp.value===''||busy)return;
+    const val=parseFloat(inp.value);
+    if(isNaN(val)){inp.value='';return}
+    if(Math.abs(val-z.totalA)<=1){
+      score+=PTS_ZONA_CALC;
+      inp.blur();
+      buildDecision(z,area,zoneIdx);
+    }else{
+      phaseClean=false;
+      loseLife();
+      showHint('I = '+z.totalW+' / 230');
+      row.style.animation='shake .35s ease-out';
+      setTimeout(()=>row.style.animation='',400);
+      inp.value='';inp.focus();
+      if(lives<=0)setTimeout(()=>showResults(),600);
+    }
+  };
+  btn.onclick=doCheck;
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doCheck()}};
+}
+
+function buildDecision(z,area,zoneIdx){
+  subStep='decision';
+  helpTapCount=0;lastHelpKey='';
+  area.innerHTML='<div class="step-ok">✅ '+z.totalW+' W → ✅ '+z.totalA+' amperios</div>';
+  const label=document.createElement('div');label.style.cssText='color:#fff;font-size:14px;font-weight:700;text-align:center;margin-bottom:2px';
+  label.textContent='Magnetotérmico: '+z.magneto+' amperios';
+  area.appendChild(label);
+  const q=document.createElement('div');q.style.cssText='color:var(--lemon);font-size:15px;font-weight:700;text-align:center;margin-bottom:8px';
+  q.textContent='¿Aguanta el circuito?';
+  area.appendChild(q);
+  const row=document.createElement('div');row.className='decision-row';
+  const btnSi=document.createElement('button');btnSi.className='decision-btn decision-si';btnSi.textContent='Sí aguanta';
+  const btnNo=document.createElement('button');btnNo.className='decision-btn decision-no';btnNo.textContent='No aguanta';
+  row.appendChild(btnSi);row.appendChild(btnNo);
+  area.appendChild(row);
+
+  const handle=(userSaidAguanta)=>{
+    if(subStep!=='decision'||busy)return;
+    busy=true;
+    const correct=userSaidAguanta===z.aguanta;
+    if(correct){
+      score+=PTS_DECISION;
+      if(phaseClean)score+=PTS_ZONA_FIRST;
+      (userSaidAguanta?btnSi:btnNo).classList.add('correct');
+    }else{
+      phaseClean=false;
+      loseLife();
+      (userSaidAguanta?btnSi:btnNo).classList.add('wrong');
+    }
+    const msg=correct?z.msgOk:z.msgErr;
+    setTimeout(()=>{
+      $('zone-card').classList.remove('show');
+      busy=false;
+      if(lives<=0){showResults();return}
+      showPhaseFeedback(msg,correct?A.manuel_happy:A.manuel_worried,()=>{
+        stepIdx++;
+        showZone(stepIdx);
+      });
+    },500);
+  };
+
+  btnSi.onclick=()=>handle(true);
+  btnNo.onclick=()=>handle(false);
+}
+
+/* ================================================================
+   PHASE TRANSITION FEEDBACK
+   ================================================================ */
+function showPhaseFeedback(text,avatar,nextFn){
+  $('fb-av').src=avatar;
+  $('fb-text').textContent=text;
+  $('fb-sub').textContent='';
+  $('fb-btn').style.display='none';
+  $('feedback-overlay').classList.add('show');
+  setTimeout(()=>{
+    $('feedback-overlay').classList.remove('show');
+    hideAllCards();
+    nextFn();
+  },1800);
+}
+
+/* ========== RESULTS ========== */
+function showResults(){
+  hideAllCards();
+  showScreen('results');
+  $('res-score').textContent=score;
+  const isNew=score>record;
+  if(isNew){record=score;localStorage.setItem('cuadro_cargas_record',record)}
+  $('res-record').textContent=record;
+  $('res-new').classList.toggle('show',isNew);
+
+  $('res-hits').textContent='⚡ Fase '+phase+'/3 · ❤️ '+lives+'/'+MAX_LIVES+' vidas';
+
+  const badge=$('res-badge');
+  if(score>=400){
+    badge.textContent='¡MAESTRO DE CARGAS!';badge.style.display='block';
+    $('res-av').src=A.manuel_celebrating;
+    $('res-msg').textContent='Dominas la potencia. Ya hablas con números, no con "me parece".';
+  }else if(score>=TASK_THRESHOLD){
+    badge.textContent='¡APROBADO!';badge.style.display='block';
+    $('res-av').src=A.manuel_happy;
+    $('res-msg').textContent='Bien, pero repasa los cálculos que fallaste.';
+  }else{
+    badge.style.display='none';
+    $('res-av').src=A.manuel_worried;
+    $('res-msg').textContent='Necesitas practicar más. Recuerda: P = V × I, y despeja lo que necesites.';
+  }
+
+  if(score>=TASK_THRESHOLD&&!taskCompleted){
+    taskCompleted=true;
+    try{window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}))}catch(e){}
+  }
+}
+
+/* ========== BOOT ========== */
+init();
+</script>
+</body>
+</html>
