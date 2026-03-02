@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>El Detective de Averías</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--turq:#00E6BC;--navy:#0B214A;--lime:#04FFB4;--mint:#C5FFDF;--lemon:#FFFFAB;--fire:#E74C3C}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Baloo 2',cursive;background:#0B214A;touch-action:manipulation}
+body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-bottom:constant(safe-area-inset-bottom)}
+#W{position:relative;width:100%;max-width:430px;margin:0 auto;height:100%;overflow:hidden;background:linear-gradient(180deg,#0B214A 0%,#0D2D5E 40%,#0F1B2D 100%)}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;transition:opacity .35s;z-index:100}
+.scr.off{opacity:0;pointer-events:none;z-index:-1}
+.btn{background:var(--turq);color:var(--navy);border:none;font-family:'Baloo 2',cursive;font-size:19px;font-weight:700;padding:14px 48px;border-radius:50px;cursor:pointer;box-shadow:0 4px 16px rgba(0,230,188,.3);transition:transform .1s;letter-spacing:.5px}
+.btn:active{transform:scale(.96)}
+
+/* INTRO */
+#intro{align-items:center;justify-content:center;padding-bottom:80px;background:linear-gradient(180deg,#0B214A 0%,#0D2D5E 40%,#0F1B2D 100%)}
+.intro-card{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;padding:0 20px;width:100%}
+.intro-av{width:200px;height:262px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(0,0,0,.6));margin-bottom:-36px;position:relative;z-index:1}
+.intro-bub{position:relative;z-index:2;background:#fff;color:var(--navy);padding:18px 22px;border-radius:22px;box-shadow:0 4px 24px rgba(0,0,0,.35);font-size:15px;font-weight:600;line-height:1.4;text-align:center;margin-bottom:18px;width:100%}
+.intro-title{font-size:22px;font-weight:800;color:#fff;text-shadow:0 3px 16px rgba(0,0,0,.5);margin-bottom:6px;z-index:10;position:relative}
+.intro-badge{font-size:50px;margin-bottom:4px}
+
+/* HUD */
+.hud{position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-right:66px;background:linear-gradient(180deg,rgba(11,33,74,.95)0%,rgba(11,33,74,.4)70%,transparent 100%);padding-bottom:28px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.hud-left{display:flex;align-items:center;gap:8px}
+.hud-phase{background:rgba(0,0,0,.35);padding:4px 12px;border-radius:16px;color:rgba(255,255,255,.8);font-size:13px;font-weight:600}
+.hud-progress{background:rgba(0,0,0,.35);padding:4px 12px;border-radius:16px;color:var(--turq);font-size:13px;font-weight:700}
+.hud-lives{display:flex;gap:3px}
+.hud-heart{font-size:20px;transition:all .3s ease}
+.hud-heart.lost{opacity:.2;transform:scale(.7)}
+@keyframes livesShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.hud-lives.shaking{animation:livesShake .3s ease-out}
+
+/* FLASH */
+@keyframes flashRed{0%{opacity:.35}100%{opacity:0}}
+.flash-overlay{position:fixed;inset:0;background:var(--fire);z-index:999;pointer-events:none;opacity:0}
+.flash-overlay.flash{animation:flashRed .4s ease-out forwards}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+
+/* GAMEPLAY */
+#play{z-index:10}
+.play-inner{position:relative;z-index:10;flex:1;display:flex;flex-direction:column;padding:70px 16px 12px;overflow-y:auto;overflow-x:hidden;align-items:center;justify-content:flex-start;gap:12px;-webkit-overflow-scrolling:touch}
+
+/* DOMBYTO BUBBLE */
+.game-bubble{display:none;align-items:center;gap:10px;width:100%;max-width:398px;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s;position:relative;z-index:2;flex-shrink:0}
+.game-bubble.show{display:flex;opacity:1;transform:translateY(0)}
+.game-bubble-av{width:120px;height:158px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));flex-shrink:0}
+.game-bubble-text{background:rgba(255,255,255,.1);color:#fff;font-size:14px;font-weight:600;padding:10px 14px;border-radius:12px;line-height:1.3;flex:1}
+
+/* QUIZ CARD (Fase 1) */
+.quiz-card{display:none;width:100%;max-width:398px;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;position:relative;z-index:2;flex-direction:column;gap:10px}
+.quiz-card.show{display:flex;opacity:1;transform:translateY(0)}
+.quiz-q{background:none;padding:10px 6px;color:var(--turq);font-size:16px;font-weight:800;line-height:1.35;text-align:center;text-shadow:0 2px 6px rgba(0,0,0,.4)}
+.quiz-opts{display:flex;flex-direction:column;gap:8px}
+.quiz-opt{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 18px;cursor:pointer;transition:all .2s;touch-action:manipulation;color:#fff;font-size:15px;font-weight:700;text-align:center}
+.quiz-opt:active{transform:scale(.97)}
+.quiz-opt.correct{border-color:var(--lime);background:rgba(4,255,180,.15);color:var(--lime)}
+.quiz-opt.wrong{border-color:var(--fire);background:rgba(231,76,60,.15);color:var(--fire);animation:shake .35s ease-out}
+.quiz-opt.disabled{opacity:.3;pointer-events:none}
+
+/* CASE SCREEN (Fase 2) — image bg, question block on top */
+.case-screen{display:none;position:absolute;inset:0;z-index:20;flex-direction:column}
+.case-screen.show{display:flex}
+.case-bg{position:absolute;top:250px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 250px);object-fit:cover;object-position:center top;z-index:0}
+.case-gradient{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(11,33,74,1) 0%,rgba(11,33,74,.95) 28%,rgba(11,33,74,.4) 42%,rgba(11,33,74,.05) 55%,rgba(11,33,74,.05) 70%,rgba(11,33,74,.4) 85%,rgba(11,33,74,.9) 100%);pointer-events:none}
+.case-top{position:relative;z-index:10;padding:50px 16px 0;display:flex;flex-direction:column;gap:6px}
+.case-badge{display:inline-block;background:rgba(0,0,0,.5);color:var(--lemon);font-size:11px;font-weight:700;padding:3px 10px;border-radius:8px;align-self:flex-start}
+.case-relato{color:#fff;font-size:14px;font-weight:600;line-height:1.35;text-shadow:0 2px 6px rgba(0,0,0,.7)}
+.case-q{color:var(--turq);font-size:16px;font-weight:800;text-shadow:0 2px 6px rgba(0,0,0,.5);margin-top:6px}
+.case-opts{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.case-opt{background:rgba(11,33,74,.75);border:2px solid rgba(255,255,255,.2);border-radius:14px;padding:13px 16px;cursor:pointer;transition:all .2s;touch-action:manipulation;color:#fff;font-size:15px;font-weight:700;text-align:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.case-opt:active{transform:scale(.97)}
+.case-opt.correct{border-color:var(--lime);background:rgba(4,255,180,.2);color:var(--lime)}
+.case-opt.wrong{border-color:var(--fire);background:rgba(231,76,60,.2);color:var(--fire);animation:shake .35s ease-out}
+.case-opt.disabled{opacity:.3;pointer-events:none}
+
+/* Case hint — near bottom */
+.case-hint{position:absolute;bottom:12px;left:16px;right:16px;z-index:5;text-align:center;pointer-events:none}
+.case-hint .hint-text{background:rgba(0,0,0,.75);max-width:100%}
+
+/* HINT TOAST */
+.hint-toast{text-align:center;min-height:0;flex-shrink:0;position:relative;z-index:3}
+.hint-text{display:inline-block;background:rgba(255,255,171,.15);color:var(--lemon);font-size:12px;font-weight:700;padding:4px 14px;border-radius:12px;opacity:0;transition:opacity .3s;line-height:1.3}
+.hint-text.show{opacity:1}
+
+/* FEEDBACK OVERLAY */
+.feedback-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(11,33,74,.93);z-index:60;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px 20px 80px}
+.feedback-overlay.show{opacity:1;pointer-events:auto}
+.fb-av{width:260px;height:340px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.5));margin-bottom:10px}
+.fb-text{color:#fff;font-size:17px;font-weight:700;text-align:center;line-height:1.4;margin-bottom:4px}
+.fb-sub{color:var(--lemon);font-size:13px;font-weight:600;text-align:center;max-width:320px;line-height:1.3}
+
+/* RESULTS */
+#results{align-items:center;justify-content:center;padding:16px 20px 80px;z-index:200;background:var(--navy)}
+.res-inner{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;width:100%;gap:2px}
+.res-label{font-size:14px;color:rgba(255,255,255,.5);font-weight:600;text-align:center}
+.res-new{color:var(--lemon);font-size:18px;font-weight:800;display:none}
+.res-new.show{display:block}
+.res-badge{color:var(--lime);font-size:23px;font-weight:800;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase}
+.res-scores{display:flex;gap:28px;margin-bottom:4px}
+.res-val{font-size:44px;font-weight:800;text-align:center;color:var(--lime)}
+.res-av{width:208px;height:273px;object-fit:contain;filter:drop-shadow(0 4px 22px rgba(0,0,0,.5));margin-bottom:-40px;position:relative;z-index:0}
+.res-info-card{background:#fff;border-radius:18px;padding:16px 20px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1}
+.res-msg{color:var(--navy);font-size:14px;font-weight:600;text-align:center;line-height:1.3}
+.res-hits{color:var(--navy);font-size:13px;font-weight:600;opacity:.7}
+.res-bot{display:flex;flex-direction:column;align-items:center;margin-top:10px}
+.res-bot .btn{position:relative;z-index:2;padding:12px 40px;font-size:17px}
+</style>
+</head>
+<body>
+<div id="W">
+
+<!-- INTRO -->
+<div class="scr" id="intro">
+  <div class="intro-card">
+    <div class="intro-badge">🔍</div>
+    <h1 class="intro-title">El Detective de Averías</h1>
+    <img class="intro-av" id="intro-av" alt="Dombyto">
+    <div class="intro-bub">¡Soy Dombyto, detective de averías! Hoy tengo 3 casos. ¿Me ayudas?<br><br><b>Primero repasamos a los sospechosos.</b></div>
+    <button class="btn" id="intro-btn">¡Caso abierto!</button>
+  </div>
+</div>
+
+<!-- GAMEPLAY -->
+<div class="scr off" id="play">
+  <div class="hud">
+    <div class="hud-left">
+      <div class="hud-phase" id="hud-phase">Fase 1</div>
+      <div class="hud-progress" id="hud-progress">1/6</div>
+    </div>
+    <div class="hud-lives" id="hud-lives"></div>
+  </div>
+  <div class="play-inner" id="play-inner">
+    <div class="game-bubble" id="game-bubble">
+      <img class="game-bubble-av" id="game-bubble-av" alt="Dombyto">
+      <div class="game-bubble-text" id="game-bubble-text"></div>
+    </div>
+    <div class="quiz-card" id="quiz-card">
+      <div class="quiz-q" id="quiz-q"></div>
+      <div class="quiz-opts" id="quiz-opts"></div>
+    </div>
+    <div class="hint-toast"><div class="hint-text" id="hint-text"></div></div>
+    <div class="feedback-overlay" id="feedback-overlay">
+      <img class="fb-av" id="fb-av" alt="Dombyto">
+      <div class="fb-text" id="fb-text"></div>
+      <div class="fb-sub" id="fb-sub"></div>
+    </div>
+  </div>
+
+  <!-- FASE 2: Case screen -->
+  <div class="case-screen" id="case-screen">
+    <img class="case-bg" id="case-bg" alt="Escena">
+    <div class="case-gradient"></div>
+    <div class="case-top">
+      <div class="case-badge" id="case-badge"></div>
+      <div class="case-relato" id="case-relato"></div>
+      <div class="case-q" id="case-q"></div>
+      <div class="case-opts" id="case-opts"></div>
+    </div>
+    <div class="case-hint"><div class="hint-text" id="case-hint-text"></div></div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="scr off" id="results">
+  <div class="res-inner">
+    <div class="res-badge" id="res-badge" style="display:none"></div>
+    <div class="res-scores">
+      <div><div class="res-val" id="res-score">0</div><div class="res-label">Puntuación</div></div>
+      <div><div class="res-val" id="res-record" style="color:var(--lemon)">0</div><div class="res-label">Récord</div></div>
+    </div>
+    <div class="res-new" id="res-new">¡NUEVO RÉCORD!</div>
+    <img class="res-av" id="res-av" alt="Dombyto">
+    <div class="res-info-card">
+      <div class="res-msg" id="res-msg"></div>
+      <div class="res-hits" id="res-hits"></div>
+    </div>
+    <div class="res-bot">
+      <button class="btn" id="res-btn">¡Otra ronda!</button>
+    </div>
+  </div>
+</div>
+
+<div class="flash-overlay" id="flash-overlay"></div>
+</div>
+<script>
+/* ========== ASSETS ========== */
+var A={
+  dombyto:'https://res.cloudinary.com/kampe/image/upload/v1771521609/kampe/game_assets/s1d1/dombyto.png',
+  dombyto_happy:'https://res.cloudinary.com/kampe/image/upload/v1771521613/kampe/game_assets/s1d1/dombyto_happy.png',
+  dombyto_celebrating:'https://res.cloudinary.com/kampe/image/upload/v1771521611/kampe/game_assets/s1d1/dombyto_celebrating.png',
+  dombyto_worried:'https://res.cloudinary.com/kampe/image/upload/v1771521614/kampe/game_assets/s1d1/dombyto_worried.png',
+  escena_cocina:'https://res.cloudinary.com/kampe/image/upload/v1772466476/escena_cocina_ncoqcw.png',
+  escena_bano:'https://res.cloudinary.com/kampe/image/upload/v1772466477/escena_bano_vi3vey.png',
+  escena_salon:'https://res.cloudinary.com/kampe/image/upload/v1772466476/escena_salon_hhgkle.png'
+};
+
+var MAX_LIVES=5, TASK_THRESHOLD=200;
+var PTS_QUIZ=20, PTS_QUIZ_FIRST=10;
+var PTS_FALLO=30, PTS_FALLO_FIRST=10;
+var PTS_ACTUA=30, PTS_ACTUA_FIRST=10;
+
+/* ========== DATA — FASE 1: QUIZ ========== */
+var QUIZ_A=[
+  {q:'Un cortocircuito puede provocar...',opts:['Incendio por sobrecalentamiento','Factura alta de luz','Que la casa se quede sin tierra'],ans:0,hint:'Fase y neutro se tocan → corriente enorme → calor extremo → riesgo de incendio.'},
+  {q:'Una derivación a tierra es peligrosa porque...',opts:['Sube la factura de la luz','Puede electrocutar a una persona','Se funden los fusibles'],ans:1,hint:'La corriente se escapa por donde no debe (carcasa, tuberías) → riesgo de electrocución.'},
+  {q:'Una sobrecarga ocurre cuando...',opts:['Hay un cable cortado','La corriente se fuga a tierra','Se consume más potencia de la que soporta el circuito'],ans:2,hint:'Demasiados aparatos enchufados → la corriente supera el límite del cable → sobrecalentamiento.'}
+];
+var QUIZ_B=[
+  {q:'¿Qué protección salta ante un cortocircuito?',opts:['Magnetotérmico','Diferencial','Ninguna'],ans:0,hint:'Un corto genera corriente enorme → el magnetotérmico salta.'},
+  {q:'¿Qué protección salta ante una derivación a tierra?',opts:['Magnetotérmico','Diferencial','Ninguna'],ans:1,hint:'El diferencial detecta fugas a tierra → salta.'},
+  {q:'¿Qué protección salta ante una sobrecarga?',opts:['Magnetotérmico','Diferencial','Ninguna'],ans:0,hint:'Demasiada corriente → el magnetotérmico salta al superar su límite.'}
+];
+
+/* ========== DATA — FASE 2: CASES (2 steps each) ========== */
+var CASES=[
+  {name:'La cocina de Marta',num:1,img:'escena_cocina',
+    relato:'🔍 Marta dice que le huele a quemado en la cocina. El magneto ha saltado. El enchufe tiene marcas negras.',
+    // Step 1: identify fault
+    falloOpts:['Cortocircuito','Derivación','Sobrecarga'],falloAns:0,
+    falloHint:'Marcas negras + olor a quemado = corto.',
+    // Step 2: how to act
+    actuaOpts:['Desconecto aparato y mido continuidad fase-neutro','Desconecto el termo y mido aislamiento','Calculo la suma de potencias enchufadas'],actuaAns:0,
+    actuaHint:'En un corto: desconectas el aparato y mides continuidad entre fase y neutro.',
+    ok:'Cortocircuito → desconectar y medir continuidad fase-neutro.'},
+  {name:'El baño de Luis',num:2,img:'escena_bano',
+    relato:'🔍 Luis dice que le da calambre al tocar el grifo. El diferencial salta de vez en cuando.',
+    falloOpts:['Cortocircuito','Derivación','Sobrecarga'],falloAns:1,
+    falloHint:'Cosquilleo + diferencial salta = corriente escapándose a tierra.',
+    actuaOpts:['Desconecto aparato y mido continuidad fase-neutro','Desconecto el termo y mido aislamiento fase-tierra','Calculo la suma de potencias enchufadas'],actuaAns:1,
+    actuaHint:'En una derivación: desconectas el termo (sospechoso) y mides aislamiento fase-tierra.',
+    ok:'Derivación → desconectar termo y medir aislamiento fase-tierra.'},
+  {name:'El salón de Ana',num:3,img:'escena_salon',
+    relato:'🔍 Ana dice que al encender la estufa, salta el magneto. Solo pasa con todo enchufado a la vez.',
+    falloOpts:['Cortocircuito','Derivación','Sobrecarga'],falloAns:2,
+    falloHint:'Solo salta con mucha carga = demasiados aparatos. Sobrecarga.',
+    actuaOpts:['Desconecto aparato y mido continuidad fase-neutro','Desconecto el termo y mido aislamiento fase-tierra','Calculo potencias y mido amperios con pinza'],actuaAns:2,
+    actuaHint:'En una sobrecarga: calculas las potencias totales y mides amperios reales con pinza.',
+    ok:'Sobrecarga → calcular potencias y medir amperios con pinza.'}
+];
+
+var MSGS_OK=['¡Elemental!','¡Eso es!','¡Bien visto!','¡Detective!'];
+var MSGS_ERR=['Piensa otra vez.','Lee la pista.','No es ese.'];
+
+/* ========== STATE ========== */
+var score=0,lives=MAX_LIVES,phase=1,qIdx=0,cIdx=0,cStep=0,busy=false,taskDone=false;
+var qClean=true,cClean=true;
+var record=parseInt(localStorage.getItem('detective_averias_record'))||0;
+var allQuiz=[];
+var caseHintTimer=null;
+
+var $=function(id){return document.getElementById(id)};
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t}return b}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+
+function showScreen(id){var all=document.querySelectorAll('.scr');for(var i=0;i<all.length;i++)all[i].classList.add('off');$(id).classList.remove('off')}
+
+/* ========== LIVES ========== */
+function renderLives(){
+  var c=$('hud-lives');c.innerHTML='';
+  for(var i=0;i<MAX_LIVES;i++){var h=document.createElement('div');h.className='hud-heart'+(i>=lives?' lost':'');h.textContent='❤️';c.appendChild(h)}
+}
+function loseLife(){
+  if(lives<=0)return;
+  lives--;renderLives();
+  var lc=$('hud-lives');lc.classList.remove('shaking');void lc.offsetWidth;lc.classList.add('shaking');
+  var fl=$('flash-overlay');fl.classList.remove('flash');void fl.offsetWidth;fl.classList.add('flash');
+}
+
+/* ========== HINT ========== */
+var hintTimer=null;
+function showHint(txt){
+  clearTimeout(hintTimer);
+  var el=$('hint-text');el.textContent=txt;el.classList.add('show');
+  hintTimer=setTimeout(function(){el.classList.remove('show')},3500);
+}
+function showCaseHint(txt){
+  clearTimeout(caseHintTimer);
+  var el=$('case-hint-text');el.textContent=txt;el.classList.add('show');
+  caseHintTimer=setTimeout(function(){el.classList.remove('show')},3500);
+}
+
+/* ========== BUBBLE ========== */
+function showBubble(text,avatar){
+  $('game-bubble-av').src=avatar||A.dombyto_happy;
+  $('game-bubble-text').textContent=text;
+  $('game-bubble').classList.add('show');
+}
+function hideBubble(){$('game-bubble').classList.remove('show')}
+
+/* ========== HUD ========== */
+function updateHUD(){
+  if(phase===1){
+    $('hud-phase').textContent='Caso '+(cIdx+1)+'/3';
+    $('hud-progress').textContent=cStep===0?'Fallo':'Acción';
+  }else{
+    $('hud-phase').textContent='Fase 2';
+    $('hud-progress').textContent=(qIdx+1)+'/6';
+  }
+}
+
+/* ========== HIDE ALL ========== */
+function hideAllCards(){
+  $('quiz-card').classList.remove('show');
+  $('case-screen').classList.remove('show');
+  $('feedback-overlay').classList.remove('show');
+  hideBubble();
+  $('hint-text').classList.remove('show');
+  $('case-hint-text').classList.remove('show');
+  clearTimeout(caseHintTimer);
+}
+
+/* ========== INIT ========== */
+function init(){
+  $('intro-av').src=A.dombyto_happy;
+  $('intro-btn').onclick=startGame;
+  $('res-btn').onclick=startGame;
+  showScreen('intro');
+}
+
+function startGame(){
+  score=0;lives=MAX_LIVES;phase=1;qIdx=0;cIdx=0;cStep=0;busy=false;taskDone=false;
+  allQuiz=shuffle(QUIZ_A.slice()).concat(shuffle(QUIZ_B.slice()));
+  renderLives();
+  showScreen('play');
+  hideAllCards();
+  startCases();
+}
+
+/* ================================================================
+   FASE 1 — CASES (fotos)
+   ================================================================ */
+function startCases(){
+  phase=1;cIdx=0;
+  showCase(0);
+}
+
+/* ================================================================
+   FASE 2 — QUIZ (preguntas teóricas)
+   ================================================================ */
+function startQuizPhase(){
+  phase=2;qIdx=0;
+  updateHUD();
+  showBubble('🔍 Ahora unas preguntas rápidas. ¿Sabes qué provocan estos fallos?',A.dombyto);
+  showQuiz(0);
+}
+
+function showQuiz(idx){
+  if(idx>=allQuiz.length){endQuizPhase();return}
+  if(lives<=0){showResults();return}
+  qIdx=idx;qClean=true;
+  updateHUD();
+  if(idx===3) showBubble('Bien. Ahora: ¿qué protección te protege de qué?',A.dombyto_happy);
+
+  var q=allQuiz[idx];
+  $('quiz-q').textContent=q.q;
+  var optsEl=$('quiz-opts');optsEl.innerHTML='';
+  for(var i=0;i<q.opts.length;i++){
+    (function(oi){
+      var btn=document.createElement('div');btn.className='quiz-opt';btn.textContent=q.opts[oi];
+      btn.onclick=function(){onQuizAnswer(idx,oi,btn)};
+      optsEl.appendChild(btn);
+    })(i);
+  }
+  $('quiz-card').classList.add('show');
+}
+
+function onQuizAnswer(qI,oi,btn){
+  if(busy)return;
+  var q=allQuiz[qI];
+  if(oi===q.ans){
+    btn.classList.add('correct');
+    score+=PTS_QUIZ+(qClean?PTS_QUIZ_FIRST:0);
+    busy=true;
+    var all=$('quiz-opts').querySelectorAll('.quiz-opt');
+    for(var i=0;i<all.length;i++){if(all[i]!==btn)all[i].classList.add('disabled')}
+    showBubble(pick(MSGS_OK),A.dombyto_happy);
+    setTimeout(function(){busy=false;$('quiz-card').classList.remove('show');setTimeout(function(){showQuiz(qI+1)},150)},600);
+  }else{
+    btn.classList.add('wrong');qClean=false;loseLife();showHint(q.hint);
+    showBubble(pick(MSGS_ERR),A.dombyto_worried);
+    setTimeout(function(){btn.classList.remove('wrong');btn.classList.add('disabled');if(lives<=0)setTimeout(showResults,400)},400);
+  }
+}
+
+function endQuizPhase(){
+  hideAllCards();
+  showPhaseFeedback('¡Buen repaso!','Veamos los resultados.',A.dombyto_celebrating,showResults);
+}
+
+/* ================================================================
+   PHASE FEEDBACK (timed)
+   ================================================================ */
+function showPhaseFeedback(text,sub,avatar,nextFn){
+  $('fb-av').src=avatar;
+  $('fb-text').textContent=text;
+  $('fb-sub').textContent=sub||'';
+  $('feedback-overlay').classList.add('show');
+  setTimeout(function(){$('feedback-overlay').classList.remove('show');hideAllCards();nextFn()},2200);
+}
+
+function showCase(idx){
+  if(idx>=CASES.length||lives<=0){
+    if(lives>0){
+      hideAllCards();
+      showPhaseFeedback('¡3 casos resueltos!','Ahora unas preguntas rápidas.',A.dombyto_celebrating,startQuizPhase);
+    }else{showResults()}
+    return;
+  }
+  cIdx=idx;cStep=0;cClean=true;
+  hideAllCards();
+  updateHUD();
+
+  var c=CASES[idx];
+  $('case-bg').src=A[c.img];
+  $('case-badge').textContent='Expediente #'+c.num+' — '+c.name;
+  $('case-relato').textContent=c.relato;
+  showCaseStep();
+  $('case-screen').classList.add('show');
+}
+
+function showCaseStep(){
+  var c=CASES[cIdx];
+  var optsEl=$('case-opts');optsEl.innerHTML='';
+  $('case-hint-text').classList.remove('show');
+  updateHUD();
+
+  if(cStep===0){
+    // Step 1: identify fault
+    $('case-q').textContent='¿Qué tipo de fallo es?';
+    for(var i=0;i<c.falloOpts.length;i++){
+      (function(oi){
+        var btn=document.createElement('div');btn.className='case-opt';btn.textContent=c.falloOpts[oi];
+        btn.onclick=function(){onFalloAnswer(oi,btn)};
+        optsEl.appendChild(btn);
+      })(i);
+    }
+  }else{
+    // Step 2: how to act
+    $('case-q').textContent='¿Cómo actúas?';
+    for(var i=0;i<c.actuaOpts.length;i++){
+      (function(oi){
+        var btn=document.createElement('div');btn.className='case-opt';btn.textContent=c.actuaOpts[oi];
+        btn.onclick=function(){onActuaAnswer(oi,btn)};
+        optsEl.appendChild(btn);
+      })(i);
+    }
+  }
+}
+
+function onFalloAnswer(oi,btn){
+  if(busy)return;
+  var c=CASES[cIdx];
+  if(oi===c.falloAns){
+    btn.classList.add('correct');
+    score+=PTS_FALLO+(cClean?PTS_FALLO_FIRST:0);
+    busy=true;
+    var all=$('case-opts').querySelectorAll('.case-opt');
+    for(var i=0;i<all.length;i++){if(all[i]!==btn)all[i].classList.add('disabled')}
+    setTimeout(function(){busy=false;cStep=1;showCaseStep()},700);
+  }else{
+    btn.classList.add('wrong');cClean=false;loseLife();showCaseHint(c.falloHint);
+    setTimeout(function(){btn.classList.remove('wrong');btn.classList.add('disabled');if(lives<=0)setTimeout(showResults,400)},400);
+  }
+}
+
+function onActuaAnswer(oi,btn){
+  if(busy)return;
+  var c=CASES[cIdx];
+  if(oi===c.actuaAns){
+    btn.classList.add('correct');
+    score+=PTS_ACTUA+(cClean?PTS_ACTUA_FIRST:0);
+    busy=true;
+    var all=$('case-opts').querySelectorAll('.case-opt');
+    for(var i=0;i<all.length;i++){if(all[i]!==btn)all[i].classList.add('disabled')}
+    setTimeout(function(){
+      busy=false;
+      $('case-screen').classList.remove('show');
+      showPhaseFeedback('¡Caso resuelto!',c.ok,A.dombyto_celebrating,function(){showCase(cIdx+1)});
+    },700);
+  }else{
+    btn.classList.add('wrong');cClean=false;loseLife();showCaseHint(c.actuaHint);
+    setTimeout(function(){btn.classList.remove('wrong');btn.classList.add('disabled');if(lives<=0)setTimeout(showResults,400)},400);
+  }
+}
+
+/* ========== RESULTS ========== */
+function showResults(){
+  hideAllCards();showScreen('results');
+  $('res-score').textContent=score;
+  var isNew=score>record;
+  if(isNew){record=score;localStorage.setItem('detective_averias_record',record)}
+  $('res-record').textContent=record;
+  $('res-new').classList.toggle('show',isNew);
+
+  var caseDone=0;
+  for(var i=0;i<CASES.length;i++){if(cIdx>i)caseDone++}
+  $('res-hits').textContent='🔍 '+caseDone+'/3 casos · ❤️ '+lives+'/'+MAX_LIVES+' vidas';
+
+  var badge=$('res-badge');
+  if(score>=350){
+    badge.textContent='¡DETECTIVE DE ÉLITE!';badge.style.display='block';
+    $('res-av').src=A.dombyto_celebrating;
+    $('res-msg').textContent='¡Diagnosticas con método y seguridad!';
+  }else if(score>=TASK_THRESHOLD){
+    badge.textContent='¡CASO CERRADO!';badge.style.display='block';
+    $('res-av').src=A.dombyto_happy;
+    $('res-msg').textContent='Buen trabajo. Repasa los fallos que te costaron.';
+  }else{
+    badge.style.display='none';
+    $('res-av').src=A.dombyto_worried;
+    $('res-msg').textContent='Necesitas más práctica. Síntoma → fallo → protección.';
+  }
+
+  if(score>=TASK_THRESHOLD&&!taskDone){
+    taskDone=true;
+    try{window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}))}catch(e){}
+  }
+}
+
+init();
+</script>
+</body>
+</html>
