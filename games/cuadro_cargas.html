@@ -131,7 +131,10 @@ body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-t
 /* FEEDBACK OVERLAY */
 .feedback-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(11,33,74,.93);z-index:60;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px 20px 80px}
 .feedback-overlay.show{opacity:1;pointer-events:auto}
-.fb-av{width:150px;height:196px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.5));margin-bottom:10px}
+.fb-avatars{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin-bottom:10px}
+.fb-av{width:150px;height:196px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.5))}
+.fb-magneto{width:80px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,.4));display:none}
+.fb-magneto.show{display:block}
 .fb-text{color:#fff;font-size:17px;font-weight:700;text-align:center;line-height:1.4;margin-bottom:4px}
 .fb-sub{color:var(--lemon);font-size:13px;font-weight:600;text-align:center;max-width:320px;line-height:1.3}
 .fb-btn{margin-top:14px}
@@ -226,7 +229,10 @@ body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-t
 
     <!-- Phase transition feedback -->
     <div class="feedback-overlay" id="feedback-overlay">
-      <img class="fb-av" id="fb-av" alt="Manuel">
+      <div class="fb-avatars">
+        <img class="fb-av" id="fb-av" alt="Manuel">
+        <img class="fb-magneto" id="fb-magneto" alt="Magnetotérmico">
+      </div>
       <div class="fb-text" id="fb-text"></div>
       <div class="fb-sub" id="fb-sub"></div>
       <button class="btn btn-sm fb-btn" id="fb-btn" style="display:none">Siguiente</button>
@@ -678,10 +684,7 @@ function buildSumaInput(z,area,zoneIdx){
 function buildZoneCalcInput(z,area,zoneIdx,sumaW){
   subStep='zona_calc';
   helpTapCount=0;lastHelpKey='';
-  area.innerHTML='<div class="step-ok">✅ '+z.totalW+' W</div>';
-  const label=document.createElement('div');label.style.cssText='color:#fff;font-size:14px;font-weight:700;text-align:center;margin-bottom:4px';
-  label.textContent='Calcula los amperios';
-  area.appendChild(label);
+  area.innerHTML='<div class="step-ok">Potencia total: '+z.totalW+' W</div><div style="color:#fff;font-size:14px;font-weight:700;text-align:center;margin-bottom:4px">El voltaje de la vivienda es 230 V.<br>¿Cuántos amperios consume este circuito?</div>';
   const row=document.createElement('div');row.className='calc-row';
   const inp=document.createElement('input');inp.className='calc-input';inp.type='number';inp.inputMode='decimal';inp.placeholder='?';inp.autocomplete='off';
   const suffix=document.createElement('span');suffix.className='calc-eq';suffix.textContent='A';
@@ -747,7 +750,7 @@ function buildDecision(z,area,zoneIdx){
       showPhaseFeedback(msg,correct?A.manuel_happy:A.manuel_worried,()=>{
         stepIdx++;
         showZone(stepIdx);
-      });
+      },true);
     },500);
   };
 
@@ -758,17 +761,20 @@ function buildDecision(z,area,zoneIdx){
 /* ================================================================
    PHASE TRANSITION FEEDBACK
    ================================================================ */
-function showPhaseFeedback(text,avatar,nextFn){
+function showPhaseFeedback(text,avatar,nextFn,showMagneto){
   $('fb-av').src=avatar;
   $('fb-text').textContent=text;
   $('fb-sub').textContent='';
   $('fb-btn').style.display='none';
+  const mag=$('fb-magneto');
+  if(showMagneto&&A.magneto){mag.src=A.magneto;mag.classList.add('show')}else{mag.classList.remove('show')}
   $('feedback-overlay').classList.add('show');
   setTimeout(()=>{
     $('feedback-overlay').classList.remove('show');
+    mag.classList.remove('show');
     hideAllCards();
     nextFn();
-  },1800);
+  },2200);
 }
 
 /* ========== RESULTS ========== */
