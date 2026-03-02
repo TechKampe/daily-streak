@@ -306,9 +306,9 @@ const HELP_HINTS={
   calc:['Usa la fórmula: I = P / V. Divide la potencia entre el voltaje.','Ejemplo: 920 W / 230 V = 4 amperios.'],
   unit:['El resultado de dividir vatios entre voltios da amperios.','Amperios (A) es la unidad de corriente eléctrica.'],
   // Fase 3
-  suma:['Suma todas las potencias de los aparatos que ves.','Ejemplo: 2300 + 800 + 920 = 4020 W.'],
-  zona_calc:['Divide la potencia total entre 230 voltios para obtener amperios.','I = potencia total / 230.'],
-  decision:['Compara los amperios totales con los del magnetotérmico.','Si los amperios totales superan al magneto → no aguanta.']
+  suma:['Suma los vatios (W) de todos los aparatos de la zona.','Ejemplo: 2300 + 800 + 920 = 4020 W.'],
+  zona_calc:['Divide la potencia total entre 230 voltios.','I = potencia total / 230. El resultado son amperios.'],
+  decision:null // dynamic, see getDecisionHints()
 };
 let helpTapCount=0, lastHelpKey='';
 
@@ -362,10 +362,18 @@ function getHelpKey(){
   if(phase===3)return subStep||'suma';
   return 'placa';
 }
+function getDecisionHints(){
+  const z=ZONES[stepIdx];
+  if(!z)return['Compara amperios con el magnetotérmico.'];
+  return[
+    'El circuito consume '+z.totalA+' amperios y el magnetotérmico aguanta '+z.magneto+'.',
+    'Si los amperios del circuito superan al magnetotérmico, no aguanta.'
+  ];
+}
 function onHelpTap(){
   const key=getHelpKey();
   if(key!==lastHelpKey){helpTapCount=0;lastHelpKey=key}
-  const hints=HELP_HINTS[key]||['Piensa en los datos que ves.'];
+  const hints=key==='decision'?getDecisionHints():(HELP_HINTS[key]||['Piensa en los datos que ves.']);
   const idx=Math.min(helpTapCount,hints.length-1);
   const toast=$('help-toast');
   toast.textContent=hints[idx];
@@ -632,8 +640,8 @@ function buildSumaInput(z,area,zoneIdx){
   subStep='suma';
   helpTapCount=0;lastHelpKey='';
   area.innerHTML='';
-  const label=document.createElement('div');label.style.cssText='color:#fff;font-size:13px;font-weight:700;text-align:center;margin-bottom:4px';
-  label.textContent='Suma todos los vatios de los aparatos:';
+  const label=document.createElement('div');label.style.cssText='color:#fff;font-size:14px;font-weight:700;text-align:center;margin-bottom:4px';
+  label.textContent='¿Cuál es la potencia total?';
   area.appendChild(label);
   const row=document.createElement('div');row.className='calc-row';
   const inp=document.createElement('input');inp.className='calc-input';inp.type='number';inp.inputMode='decimal';inp.placeholder='?';inp.autocomplete='off';
@@ -671,8 +679,8 @@ function buildZoneCalcInput(z,area,zoneIdx,sumaW){
   subStep='zona_calc';
   helpTapCount=0;lastHelpKey='';
   area.innerHTML='<div class="step-ok">✅ '+z.totalW+' W</div>';
-  const label=document.createElement('div');label.style.cssText='color:#fff;font-size:13px;font-weight:700;text-align:center;margin-bottom:4px';
-  label.textContent='Divide la potencia total entre 230 voltios:';
+  const label=document.createElement('div');label.style.cssText='color:#fff;font-size:14px;font-weight:700;text-align:center;margin-bottom:4px';
+  label.textContent='Calcula los amperios';
   area.appendChild(label);
   const row=document.createElement('div');row.className='calc-row';
   const inp=document.createElement('input');inp.className='calc-input';inp.type='number';inp.inputMode='decimal';inp.placeholder='?';inp.autocomplete='off';
@@ -708,9 +716,9 @@ function buildZoneCalcInput(z,area,zoneIdx,sumaW){
 function buildDecision(z,area,zoneIdx){
   subStep='decision';
   helpTapCount=0;lastHelpKey='';
-  area.innerHTML='<div class="step-ok">✅ '+z.totalW+' W → ✅ '+z.totalA+' amperios</div>';
-  const q=document.createElement('div');q.style.cssText='color:var(--lemon);font-size:14px;font-weight:700;text-align:center;margin-bottom:8px;line-height:1.3';
-  q.textContent='El circuito consume '+z.totalA+' amperios y el magnetotérmico aguanta '+z.magneto+'. ¿Aguanta?';
+  area.innerHTML='<div class="step-ok">✅ '+z.totalA+' amperios</div>';
+  const q=document.createElement('div');q.style.cssText='color:var(--lemon);font-size:15px;font-weight:700;text-align:center;margin-bottom:8px';
+  q.textContent='¿Aguanta el circuito?';
   area.appendChild(q);
   const row=document.createElement('div');row.className='decision-row';
   const btnSi=document.createElement('button');btnSi.className='decision-btn decision-si';btnSi.textContent='Sí aguanta';
