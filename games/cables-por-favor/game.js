@@ -247,74 +247,27 @@ function showFicha() {
   blocked = false;
 }
 
+/* ===== TERMINACION ASSET MAP ===== */
+// Maps ficha properties to flat image filenames
+function getTerminacionAsset(ficha) {
+  const c = ficha.conector.toLowerCase(); // wago, clema, borna
+  const defects = [];
+  if (ficha.cobre) defects.push('cobre');
+  if (ficha.longitud === 'largo') defects.push('largo');
+  if (ficha.longitud === 'corto') defects.push('corto');
+  if (ficha.hilos === 'danados') defects.push('danados');
+  if (defects.length === 0) return 'assets/' + c + '_ok.jpg';
+  return 'assets/' + c + '_' + defects.join('_') + '.jpg';
+}
+
 function renderTerminacion(ficha) {
   const layers = $('terminacion-layers');
   layers.innerHTML = '';
 
-  // Try to load real assets, fall back to CSS placeholder
-  const assetFiles = ['assets/cable_base.png'];
-  const connectorMap = { Wago: 'assets/conector_wago.png', Clema: 'assets/conector_clema.png', Borna: 'assets/conector_borna.png' };
-  assetFiles.push(connectorMap[ficha.conector]);
-  if (ficha.cobre) assetFiles.push('assets/defecto_cobre.png');
-  if (ficha.longitud === 'largo') assetFiles.push('assets/defecto_largo.png');
-  if (ficha.longitud === 'corto') assetFiles.push('assets/defecto_corto.png');
-  if (ficha.hilos === 'danados') assetFiles.push('assets/defecto_hilos.png');
-
-  // Build CSS placeholder (always shown — real assets overlay if they exist)
-  const placeholder = document.createElement('div');
-  placeholder.className = 'terminacion-placeholder';
-
-  // Cable row
-  const row = document.createElement('div');
-  row.className = 'tp-row';
-  const cable = document.createElement('div');
-  cable.className = 'tp-cable';
-  cable.style.background = '#2E86C1';
-  row.appendChild(cable);
-
-  // Copper end
-  const copper = document.createElement('div');
-  copper.className = 'tp-copper';
-  if (ficha.longitud === 'largo') { copper.style.width = '35%'; copper.style.background = '#D4880F'; }
-  else if (ficha.longitud === 'corto') { copper.style.width = '8%'; copper.style.background = '#D4880F'; }
-  row.appendChild(copper);
-  placeholder.appendChild(row);
-
-  // Connector
-  const conn = document.createElement('div');
-  conn.className = 'tp-connector';
-  const connColors = { Wago: '#E67E22', Clema: '#BDC3C7', Borna: '#7F8C8D' };
-  conn.style.background = connColors[ficha.conector] || '#E67E22';
-  conn.textContent = '';
-  placeholder.appendChild(conn);
-
-  // Defects
-  const defects = [];
-  if (ficha.cobre) defects.push('🔴 Cobre visible');
-  if (ficha.hilos === 'danados') defects.push('⚡ Hilos irregulares');
-  // Note: don't show defect labels — player must spot them visually!
-
-  // Connector type label
-  const connLabel = document.createElement('div');
-  connLabel.style.cssText = 'font-size:12px;font-weight:700;color:#0B214A;opacity:.6;margin-top:4px';
-  connLabel.textContent = ficha.conector;
-  placeholder.appendChild(connLabel);
-
-  layers.appendChild(placeholder);
-
-  // Try loading real asset images on top
-  assetFiles.forEach(src => {
-    const img = document.createElement('img');
-    img.src = src;
-    img.style.opacity = '0';
-    img.onload = function() {
-      this.style.opacity = '1';
-      // Hide placeholder if base image loads
-      if (src.includes('cable_base')) placeholder.style.display = 'none';
-    };
-    img.onerror = function() { this.remove(); };
-    layers.appendChild(img);
-  });
+  const img = document.createElement('img');
+  img.src = getTerminacionAsset(ficha);
+  img.alt = ficha.conector;
+  layers.appendChild(img);
 
   $('terminacion-label').textContent = 'Conector: ' + ficha.conector;
 }
