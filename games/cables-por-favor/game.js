@@ -10,46 +10,68 @@ function showScreen(id) { document.querySelectorAll('.scr').forEach(s => s.class
 /* ===== APPRENTICE DATA ===== */
 const APRENDICES = {
   jesus: {
-    name: 'Jesús', img: '../cabledom/assets/alexia_happy.png',
-    arrive: ['Aquí tienes, jefe. Sin prisa.', 'Esta la he hecho con calma.'],
-    approved: ['Como debe ser.'],
-    rejected: ['Hmm, vale. La reviso. Gracias por el ojo.']
-  },
-  pedro: {
-    name: 'Pedro', img: '../cabledom/assets/alexia_happy.png',
-    arrive: ['¡Jefe, mira! He hecho un montón hoy.', 'Venga, ¿qué tal está?'],
-    approved: ['¡Vamos! ¡A por la siguiente!'],
-    rejected: ['Uff, me he vuelto a precipitar... lo repito, gracias.']
+    name: 'Jesús', img: 'assets/jesus.png',
+    arrive: [
+      'Aquí tienes, jefe. Me he tomado mi tiempo, como siempre.',
+      'Esta la he hecho con calma, sin prisas. Dime qué te parece.',
+      'Venga, échale un ojo. Creo que ha quedado limpia.'
+    ],
+    approved: [
+      'Como debe ser. La paciencia siempre da sus frutos.',
+      'Perfecto. Ya te digo yo que cuando no hay prisa, sale bien.'
+    ],
+    rejected: [
+      'Hmm, vale. La reviso con calma y la repito. Gracias por el ojo.',
+      'Vaya, pues estaba convencido de que iba bien. La rehago, sin problema.'
+    ]
   },
   sthefanny: {
-    name: 'Sthefanny', img: '../cabledom/assets/alexia_happy.png',
-    arrive: ['He seguido todos los pasos del manual.', 'Mira, creo que esta queda bien.'],
-    approved: ['Genial. Justo como tiene que ser.'],
-    rejected: ['Vaya, ¿qué se me ha pasado? Dímelo y lo corrijo.']
+    name: 'Sthefanny', img: 'assets/sthefanny.png',
+    arrive: [
+      'He seguido todos los pasos del manual, uno por uno. Mírala.',
+      'Mira, creo que esta ha quedado bastante bien. He revisado el manual dos veces.',
+      'Aquí la tienes. He comprobado cada detalle antes de traerla.'
+    ],
+    approved: [
+      'Genial. Justo como tiene que ser. El manual no falla.',
+      'Perfecto. Cuando sigues los pasos bien, siempre sale.'
+    ],
+    rejected: [
+      'Vaya... ¿qué se me ha pasado? Dímelo y lo corrijo ahora mismo.',
+      '¿En serio? Habría jurado que estaba bien. Enséñame el fallo, porfa.'
+    ]
   },
   arturo: {
-    name: 'Arturo', img: '../cabledom/assets/alexia_happy.png',
-    arrive: ['Creo que esta me ha quedado bien. ¿Qué opinas?', 'A ver qué te parece, jefe.'],
-    approved: ['¡Bien! Sabía que iba por buen camino.'],
-    rejected: ['¿Ah sí? Vale, enséñame — así aprendo para la siguiente.']
-  },
-  joan: {
-    name: 'Joan', img: '../cabledom/assets/alexia_happy.png',
-    arrive: ['No sé si está bien... ¿tú qué ves?', 'Es mi primera semana, espero que valga.'],
-    approved: ['¿Sí? ¡Bien! Gracias, jefe, voy mejorando.'],
-    rejected: ['Vale, vale, lo repito. Mejor saberlo ahora que luego.']
+    name: 'Arturo', img: 'assets/arturo.png',
+    arrive: [
+      'Creo que esta me ha quedado bastante bien. ¿Qué opinas, jefe?',
+      'A ver qué te parece. Yo la veo bien, pero tú mandas.',
+      'Mira, esta la he hecho a mi manera. Seguro que pasa.'
+    ],
+    approved: [
+      '¡Bien! Sabía que iba por buen camino. Voy a por la siguiente.',
+      '¿Ves? Cuando me pongo, me pongo. Siguiente.'
+    ],
+    rejected: [
+      '¿Ah sí? Vale, enséñame qué he hecho mal. Así aprendo para la siguiente.',
+      'Bueno, me lo tomaré como una lección. Dime el fallo y lo repito.'
+    ]
   },
   lydia: {
-    name: 'Lydia', img: '../cabledom/assets/alexia_happy.png',
-    arrive: ['Listo. ¿Siguiente?', 'Otra más. Revísala cuando quieras.'],
-    approved: ['Perfecto. A por la siguiente.'],
-    rejected: ['Uy, ¿eso se me ha escapado? Vale, lo arreglo rápido. Gracias.']
-  },
-  yolanda: {
-    name: 'Yolanda', img: '../cabledom/assets/alexia_happy.png',
-    arrive: ['Esto estaba... sí, creo que bien.', '¡Hola! Toma, dímelo con confianza.'],
-    approved: ['¿Ves? Cuando me concentro, sale bien.'],
-    rejected: ['Jo, tenía que haber prestado más atención. Lo repito, gracias.']
+    name: 'Lydia', img: 'assets/lydia.png',
+    arrive: [
+      'Listo, jefe. Otra terminación más. Revísala cuando quieras.',
+      'Venga, aquí tienes. He ido rápido pero creo que está bien.',
+      'Otra más lista. Llevo buen ritmo hoy.'
+    ],
+    approved: [
+      'Perfecto. Venga, a por la siguiente. Que hoy quiero batir mi récord.',
+      'Bien. Sin perder tiempo. Siguiente.'
+    ],
+    rejected: [
+      'Uy, ¿eso se me ha escapado? Vale, lo arreglo rápido. ¡Gracias!',
+      'Vaya, por ir tan rápido... Lo repito en un momento, tranquilo.'
+    ]
   }
 };
 
@@ -64,25 +86,25 @@ const RULES = [
 const FICHAS = {
   1: [
     { aprendiz: 'sthefanny', conector: 'Wago', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'pedro', conector: 'Clema', cobre: true, longitud: 'ok', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Cobre visible'] },
+    { aprendiz: 'arturo', conector: 'Clema', cobre: true, longitud: 'ok', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Cobre visible'] },
     { aprendiz: 'jesus', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'arturo', conector: 'Wago', cobre: true, longitud: 'ok', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Cobre visible'] },
-    { aprendiz: 'lydia', conector: 'Clema', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] }
+    { aprendiz: 'lydia', conector: 'Wago', cobre: true, longitud: 'ok', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Cobre visible'] },
+    { aprendiz: 'sthefanny', conector: 'Clema', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] }
   ],
   2: [
-    { aprendiz: 'yolanda', conector: 'Borna', cobre: false, longitud: 'corto', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Longitud incorrecta'] },
+    { aprendiz: 'lydia', conector: 'Borna', cobre: false, longitud: 'corto', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Longitud incorrecta'] },
     { aprendiz: 'sthefanny', conector: 'Wago', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'pedro', conector: 'Clema', cobre: true, longitud: 'largo', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Cobre visible', 'Longitud incorrecta'] },
-    { aprendiz: 'joan', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'arturo', conector: 'Wago', cobre: false, longitud: 'largo', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Longitud incorrecta'] }
+    { aprendiz: 'arturo', conector: 'Clema', cobre: true, longitud: 'largo', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Cobre visible', 'Longitud incorrecta'] },
+    { aprendiz: 'jesus', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
+    { aprendiz: 'lydia', conector: 'Wago', cobre: false, longitud: 'largo', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Longitud incorrecta'] }
   ],
   3: [
     { aprendiz: 'arturo', conector: 'Clema', cobre: false, longitud: 'ok', hilos: 'danados', veredicto: 'RECHAZADO', infracciones: ['Hilos dañados'] },
     { aprendiz: 'lydia', conector: 'Wago', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'pedro', conector: 'Borna', cobre: true, longitud: 'corto', hilos: 'danados', veredicto: 'RECHAZADO', infracciones: ['Cobre visible', 'Longitud incorrecta', 'Hilos dañados'] },
-    { aprendiz: 'joan', conector: 'Clema', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'yolanda', conector: 'Wago', cobre: true, longitud: 'ok', hilos: 'danados', veredicto: 'RECHAZADO', infracciones: ['Cobre visible', 'Hilos dañados'] },
-    { aprendiz: 'jesus', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] }
+    { aprendiz: 'jesus', conector: 'Borna', cobre: true, longitud: 'corto', hilos: 'danados', veredicto: 'RECHAZADO', infracciones: ['Cobre visible', 'Longitud incorrecta', 'Hilos dañados'] },
+    { aprendiz: 'sthefanny', conector: 'Clema', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
+    { aprendiz: 'arturo', conector: 'Wago', cobre: true, longitud: 'ok', hilos: 'danados', veredicto: 'RECHAZADO', infracciones: ['Cobre visible', 'Hilos dañados'] },
+    { aprendiz: 'lydia', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] }
   ]
 };
 
@@ -145,6 +167,19 @@ let taskSent = false;
 let record = parseInt(localStorage.getItem('cables_por_favor_record')) || 0;
 let incidentLog = [];
 let blocked = false;
+let shownHints = new Set();
+
+/* ===== IN-GAME HINTS ===== */
+function checkHintForFicha() {
+  if (turno === 1 && fichaIdx === 0 && !shownHints.has('first_ficha')) {
+    shownHints.add('first_ficha');
+    $('hint-text').innerHTML = 'Mira la terminación del cable.<br><br>Si está bien hecha → <strong>✅ APROBADO</strong><br>Si ves cobre fuera del conector → <strong>❌ RECHAZADO</strong>';
+    $('hint-overlay').classList.add('show');
+    blocked = true;
+    return true;
+  }
+  return false;
+}
 
 /* ===== INTRO ===== */
 let introPage = 0;
@@ -233,10 +268,11 @@ function showFicha() {
   $('aprendiz-img').src = ap.img;
   $('aprendiz-img').onerror = function() { this.style.display = 'none'; };
   $('aprendiz-img').onload = function() { this.style.display = ''; };
-  const msg = ap.arrive[Math.floor(Math.random() * ap.arrive.length)];
+
   const bubble = $('aprendiz-bubble');
-  bubble.textContent = msg;
   bubble.classList.remove('show');
+  const msg = ap.arrive[Math.floor(Math.random() * ap.arrive.length)];
+  bubble.innerHTML = '<strong>' + ap.name + '</strong>: ' + msg;
   setTimeout(() => bubble.classList.add('show'), 100);
 
   // Render terminacion
@@ -245,6 +281,9 @@ function showFicha() {
   // Show action buttons
   $('action-zone').style.display = 'flex';
   blocked = false;
+
+  // Check for hint modal (blocks interaction until dismissed)
+  checkHintForFicha();
 }
 
 /* ===== TERMINACION ASSET MAP ===== */
@@ -286,7 +325,7 @@ function onApprove() {
     score += 15;
     const ap = APRENDICES[ficha.aprendiz];
     setTimeout(() => {
-      $('aprendiz-bubble').textContent = ap.approved[Math.floor(Math.random() * ap.approved.length)];
+      $('aprendiz-bubble').innerHTML = '<strong>' + ap.name + '</strong>: ' + ap.approved[Math.floor(Math.random() * ap.approved.length)];
       setTimeout(() => nextFicha(), 1000);
     }, 600);
   } else {
@@ -328,6 +367,17 @@ function showInfraccionesPanel() {
   const list = $('infracciones-list');
   list.innerHTML = '';
 
+  // Show hint on first use
+  const hintEl = $('infracciones-hint');
+  if (hintEl) {
+    if (!shownHints.has('first_infractions')) {
+      shownHints.add('first_infractions');
+      hintEl.style.display = '';
+    } else {
+      hintEl.style.display = 'none';
+    }
+  }
+
   const activeRules = getActiveRules();
   activeRules.forEach(rule => {
     const opt = document.createElement('div');
@@ -364,14 +414,14 @@ function onConfirmInfracciones() {
     // Perfect rejection
     score += 25;
     const ap = APRENDICES[ficha.aprendiz];
-    $('aprendiz-bubble').textContent = ap.rejected[Math.floor(Math.random() * ap.rejected.length)];
+    $('aprendiz-bubble').innerHTML = '<strong>' + ap.name + '</strong>: ' + ap.rejected[Math.floor(Math.random() * ap.rejected.length)];
     setTimeout(() => nextFicha(), 1200);
   } else if (partialCorrect && selected.every(s => correctSet.has(s))) {
     // Partial: got some right, missed some — still OK but lower score
     score += 10;
     const missed = correct.filter(c => !selectedSet.has(c));
     const ap = APRENDICES[ficha.aprendiz];
-    $('aprendiz-bubble').textContent = ap.rejected[0];
+    $('aprendiz-bubble').innerHTML = '<strong>' + ap.name + '</strong>: ' + ap.rejected[0];
 
     $('wrong-infractions-text').innerHTML =
       'Has identificado parte de los fallos, pero te has dejado:<br><br><strong>' +
@@ -571,6 +621,10 @@ function setupEvents() {
     $('wrong-infractions-overlay').classList.remove('show');
     if (incidents >= 3) { showGameOver(); return; }
     nextFicha();
+  };
+  $('hint-continue').onclick = () => {
+    $('hint-overlay').classList.remove('show');
+    blocked = false;
   };
   $('briefing-continue').onclick = onBriefingContinue;
   $('gameover-continue').onclick = () => {
