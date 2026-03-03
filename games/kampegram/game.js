@@ -1073,7 +1073,7 @@ function resetGame() {
    SHARE
    ============================================================ */
 
-function shareResults() {
+async function shareResults() {
   let badgeName;
   if (state.score >= 120) badgeName = '🏆 Inspector Veterano';
   else if (state.score >= 80) badgeName = '👷 Aprendiz Pro';
@@ -1081,10 +1081,45 @@ function shareResults() {
 
   const text = `🔧 He sacado ${state.score}/${MAX_SCORE} en Kämpegram\n${badgeName}\n¿Tú sabes distinguir una caja PRO de una TERRORÍFICA? 💀✨\n#Kämpegram #Bootkamp`;
 
+  // Try screenshot sharing first
+  if (typeof html2canvas === 'function' && navigator.canShare) {
+    try {
+      // Hide buttons during capture
+      const buttons = $('results-screen').querySelector('.results-buttons');
+      buttons.style.display = 'none';
+
+      const canvas = await html2canvas($('results-screen'), {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true
+      });
+
+      buttons.style.display = '';
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) { fallbackShare(text); return; }
+        const file = new File([blob], 'kampegram-resultado.png', { type: 'image/png' });
+        const shareData = { text, files: [file] };
+
+        if (navigator.canShare(shareData)) {
+          try { await navigator.share(shareData); }
+          catch (e) { if (e.name !== 'AbortError') fallbackShare(text); }
+        } else {
+          fallbackShare(text);
+        }
+      }, 'image/png');
+    } catch (e) {
+      fallbackShare(text);
+    }
+  } else {
+    fallbackShare(text);
+  }
+}
+
+function fallbackShare(text) {
   if (navigator.share) {
     navigator.share({ text }).catch(() => {});
   } else {
-    // Show toast on results screen (global toast)
     showGlobalToast('¡Haz captura y compártelo!');
   }
 }
