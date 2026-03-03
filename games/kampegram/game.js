@@ -31,7 +31,8 @@ const ACCOUNTS_TEMPLATE = [
         placeholderEmoji: '🔌',
         question: '¿Pro o Terror?',
         correct: 0.08,
-        points: 15
+        points: 15,
+        explanation: 'Cables sueltos sin agrupar, sin reservas y sin orden. Imposible mantener.'
       },
       {
         type: 'poll',
@@ -42,7 +43,8 @@ const ACCOUNTS_TEMPLATE = [
         options: ['Cables sin agrupar por función', 'Falta un empalme'],
         correct: 0,
         points: 15,
-        feedback: '💡 Lo primero que salta a la vista es el desorden — sin agrupar por función no se puede ni trabajar.'
+        feedback: '💡 Lo primero que salta a la vista es el desorden — sin agrupar por función no se puede ni trabajar.',
+        explanation: 'Sin agrupar por función no puedes ni identificar circuitos. Paso 1 siempre: ordenar.'
       },
       {
         type: 'slider',
@@ -51,7 +53,8 @@ const ACCOUNTS_TEMPLATE = [
         placeholderEmoji: '✅',
         question: '¿Pro o Terror?',
         correct: 0.92,
-        points: 15
+        points: 15,
+        explanation: 'Cables agrupados, reservas visibles, empalmes accesibles. Cierre suave garantizado.'
       },
       {
         type: 'slider',
@@ -60,7 +63,8 @@ const ACCOUNTS_TEMPLATE = [
         placeholderEmoji: '🤔',
         question: '¿Pro o Terror?',
         correct: 0.25,
-        points: 15
+        points: 15,
+        explanation: 'Parece OK pero fíjate: cables tirantes, sin reservas, y la tapa no cerraría suave.'
       }
     ]
   },
@@ -86,7 +90,8 @@ const ACCOUNTS_TEMPLATE = [
         beforeEmoji: '💀',
         afterEmoji: '✨',
         beforeLabel: 'ANTES',
-        afterLabel: 'DESPUÉS ✨'
+        afterLabel: 'DESPUÉS ✨',
+        explanation: 'Vaciar, separar por función, dejar reservas y verificar cierre suave.'
       },
       {
         type: 'reveal',
@@ -97,37 +102,60 @@ const ACCOUNTS_TEMPLATE = [
         beforeEmoji: '🐍',
         afterEmoji: '👌',
         beforeLabel: 'DE NIDO...',
-        afterLabel: '...A PRO ✨'
+        afterLabel: '...A PRO ✨',
+        explanation: 'De nido de serpientes a caja pro: agrupar, reservas y empalmes accesibles.'
       }
     ]
   },
   {
-    id: 'cablemaster_official',
-    username: 'cablemaster_official',
-    avatar: 'assets/cablemaster_avatar.png',
-    avatarFallback: '⚡',
+    id: 'bootkamp_oficial',
+    username: 'bootkamp_oficial',
+    avatar: 'assets/bootkamp_avatar.png',
+    avatarFallback: '🔥',
     time: '6h',
     isAd: true,
     stories: [
       {
         type: 'ad',
-        image: 'assets/ad_cablemaster.jpg',
-        placeholderBg: 'linear-gradient(135deg, #0a0a2e, #1a1a4e)',
-        placeholderEmoji: '🔫',
-        title: 'CableMaster Pro 9000',
-        subtitle: '¡Ordena tus cajas SOLO!\nTecnología de punta para el profesional exigente.',
-        cta: 'Visitar sitio web',
-        joke: 'Es broma 😂 Sigue con el challenge'
+        image: 'assets/ad_bootkamp_1.jpg',
+        logo: 'assets/kampe_logo_blanco.png',
+        placeholderBg: 'linear-gradient(135deg, #FF6B00, #FD1D1D)',
+        placeholderEmoji: '⚡',
+        title: 'Bootkämp by Kämpe',
+        subtitle: 'De 0 a electricista en 12 semanas.\nSin rodeos. Sin excusas.\nEl curso intensivo que te pone a trabajar.',
+        banner: 'DE 0 A ELECTRICISTA',
+        bannerSub: 'En solo 12 semanas',
+        promo: 'Empieza tu Bootkämp',
+        cta: 'Apúntate ya',
+        joke: 'Tranqui, ya estás dentro 😂 Vuelve al challenge'
       },
       {
         type: 'ad',
-        image: 'assets/ad_kampe_poster.jpg',
-        placeholderBg: 'linear-gradient(135deg, #FD1D1D, #FCAF45)',
+        image: 'assets/ad_bootkamp_arnold.jpg',
+        logo: 'assets/kampe_logo_blanco.png',
+        placeholderBg: 'linear-gradient(135deg, #1a1a1a, #333)',
         placeholderEmoji: '💪',
-        title: 'Kämpe',
-        subtitle: 'Where Legends Are Wired™',
+        title: 'Bootkämp by Kämpe',
+        subtitle: '"I used to terminate cables like amateur...\nthen I found Bootkämp.\nNow every box I touch is PRO."\n— Arnold',
+        banner: 'I\'LL BE BACK...',
+        bannerSub: 'Con Bootkämp, siempre vuelves mejor',
+        promo: 'Train like Arnold',
         cta: 'Inscríbete ahora',
-        joke: 'Vuelve al challenge 😜'
+        joke: 'Arnold no existe 😂 Pero Bootkämp sí'
+      },
+      {
+        type: 'ad',
+        image: 'assets/ad_bootkamp_2.jpg',
+        logo: 'assets/kampe_logo_blanco.png',
+        placeholderBg: 'linear-gradient(135deg, #0a0a2e, #1a3a6e)',
+        placeholderEmoji: '👷',
+        title: 'Bootkämp by Kämpe',
+        subtitle: 'Tu madre decía que estudiaras.\nElla tenía razón.\nPero no dijo QUÉ estudiar. 😏',
+        banner: 'TU MADRE TENÍA RAZÓN',
+        bannerSub: 'Pero no dijo QUÉ estudiar 😏',
+        promo: 'Infórmate gratis',
+        cta: 'Más info',
+        joke: 'Ya lo estás viviendo 💪 Sigue con el challenge'
       }
     ]
   },
@@ -156,7 +184,8 @@ const ACCOUNTS_TEMPLATE = [
         ],
         correct: 1,
         points: 15,
-        feedback: '💡 Las reservas son margen de cable extra que dejamos para poder rehacer conexiones en el futuro. Sin reservas, si algo falla no puedes arreglarlo sin tirar cable nuevo.'
+        feedback: '💡 Las reservas son margen de cable extra que dejamos para poder rehacer conexiones en el futuro. Sin reservas, si algo falla no puedes arreglarlo sin tirar cable nuevo.',
+        explanation: 'Reservas = margen de cable para poder rehacer conexiones en el futuro.'
       },
       {
         type: 'quiz',
@@ -170,7 +199,8 @@ const ACCOUNTS_TEMPLATE = [
         ],
         correct: 1,
         points: 15,
-        feedback: '💡 Un cable demasiado corto no te deja retrabajar la conexión. Si falla un empalme, necesitas margen para rehacerlo.'
+        feedback: '💡 Un cable demasiado corto no te deja retrabajar la conexión. Si falla un empalme, necesitas margen para rehacerlo.',
+        explanation: 'Cable tirante = sin margen para retrabajar. Si falla un empalme, no puedes rehacerlo.'
       },
       {
         type: 'poll',
@@ -179,7 +209,8 @@ const ACCOUNTS_TEMPLATE = [
         options: ['La tapa cierra sin empujar fuerte', 'Usamos una tapa de goma'],
         correct: 0,
         points: 15,
-        feedback: '💡 Cierre suave = la tapa cierra sin empujar fuerte. Si tienes que forzar, hay cables mal enroutados que se están pillando. Regla: "Si no cierra suave, está mal."'
+        feedback: '💡 Cierre suave = la tapa cierra sin empujar fuerte. Si tienes que forzar, hay cables mal enroutados que se están pillando. Regla: "Si no cierra suave, está mal."',
+        explanation: 'Si la tapa no cierra suave, hay cables pillados. Regla: "si no cierra suave, está mal."'
       },
       {
         type: 'quiz',
@@ -193,7 +224,8 @@ const ACCOUNTS_TEMPLATE = [
         ],
         correct: 1,
         points: 15,
-        feedback: '💡 Siempre se empieza vaciando y ordenando por funciones. Sin orden no puedes ni evaluar longitudes ni reservas.'
+        feedback: '💡 Siempre se empieza vaciando y ordenando por funciones. Sin orden no puedes ni evaluar longitudes ni reservas.',
+        explanation: 'Siempre se empieza vaciando y separando por funciones. Sin orden no hay nada.'
       }
     ]
   }
@@ -204,11 +236,13 @@ const MAX_SCORE = 135; // 3 sliders×15 + 2 polls×15 + 4 quizzes×15
 const FEED_POSTS = [
   {
     username: 'maestro_diego',
+    avatar: 'assets/diego_avatar.png',
     avatarFallback: '👨‍🔧',
+    video: 'https://res.cloudinary.com/kampe/video/upload/c_fill,ar_4:5,g_auto,w_1080/v1772562003/feed_diego_challenge_t5trvy.mp4',
     imageBg: 'linear-gradient(135deg, #0B214A, #00E6BC)',
-    imageEmoji: '📦',
+    imageEmoji: '🔧',
     likes: 247,
-    caption: 'Hoy toca inspección de cajas. ¿Quién se atreve con el challenge? 👀🔧 Tocad mi story para empezar.',
+    caption: 'Hoy toca inspección de cajas. ¿Sabes distinguir una caja PRO de una TERRORÍFICA? 💀✨ Desliza mis stories para el challenge 👆🔧',
     time: 'Hace 2 horas'
   }
 ];
@@ -237,6 +271,7 @@ let state = {
   taskSent: false,
   resultsShown: false,
   sliderActive: false,   // true while dragging slider
+  adBlocked: false,       // true during ad countdown
   transitionTimer: null   // tracks pending story transition
 };
 
@@ -302,11 +337,13 @@ function renderFeed() {
     div.className = 'feed-post';
     div.innerHTML = `
       <div class="feed-header">
-        <div class="feed-avatar-placeholder" style="background:#0B214A;color:#fff">${post.avatarFallback}</div>
+        <div class="feed-avatar-placeholder" id="feed-avatar-${post.username}" style="background:#0B214A;color:#fff">${post.avatarFallback}</div>
         <span class="feed-username">${post.username}</span>
         <span class="feed-more">•••</span>
       </div>
-      <div class="feed-image-placeholder" style="background:${post.imageBg}">${post.imageEmoji}</div>
+      <div class="feed-media-wrap" style="background:${post.imageBg}">
+        <div class="feed-image-placeholder">${post.imageEmoji}</div>
+      </div>
       <div class="feed-actions">
         <svg viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
         <svg viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
@@ -317,6 +354,55 @@ function renderFeed() {
       <div class="feed-caption"><strong>${post.username}</strong> ${post.caption}<br><span style="color:#8e8e8e;font-size:12px">${post.time}</span></div>
     `;
     feed.appendChild(div);
+
+    // Try loading video
+    if (post.video) {
+      const mediaWrap = div.querySelector('.feed-media-wrap');
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.autoplay = true;
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.className = 'feed-video';
+      video.oncanplay = () => {
+        const placeholder = mediaWrap.querySelector('.feed-image-placeholder');
+        if (placeholder) placeholder.style.display = 'none';
+        mediaWrap.style.background = '#000';
+      };
+      video.onerror = () => console.warn('Video failed to load:', post.video);
+      mediaWrap.appendChild(video);
+      video.src = post.video;
+
+      // Mute toggle button (IG style)
+      const muteBtn = document.createElement('div');
+      muteBtn.className = 'feed-mute-btn';
+      muteBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#fff" width="16" height="16"><path d="M16.5 12A4.5 4.5 0 0014 8.14V4l-5 4H5v8h4l5 4v-4.14A4.5 4.5 0 0016.5 12z"/><path class="feed-mute-slash" d="M19 12l3-3M19 12l3 3" stroke="#fff" stroke-width="2" fill="none"/></svg>';
+      muteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        video.muted = !video.muted;
+        muteBtn.classList.toggle('unmuted', !video.muted);
+      });
+      mediaWrap.appendChild(muteBtn);
+    }
+
+    // Try loading real avatar
+    if (post.avatar) {
+      const img = new Image();
+      img.onload = () => {
+        const placeholder = div.querySelector(`#feed-avatar-${post.username}`);
+        if (placeholder) {
+          placeholder.innerHTML = '';
+          placeholder.style.background = 'none';
+          const imgEl = document.createElement('img');
+          imgEl.src = post.avatar;
+          imgEl.className = 'feed-avatar';
+          imgEl.alt = post.username;
+          placeholder.appendChild(imgEl);
+        }
+      };
+      img.src = post.avatar;
+    }
   });
 }
 
@@ -409,6 +495,7 @@ function renderStory() {
   }
 
   state.answered = false;
+  state.adBlocked = false;
   renderProgressBars();
   renderStoryHeader();
 
@@ -554,6 +641,7 @@ function renderSlider(story, container) {
       resultEl.style.color = '#E74C3C';
     }
     resultEl.classList.add('show');
+    showExplanationBanner(container, story.explanation);
   }
 
   track.addEventListener('mousedown', onStart);
@@ -620,6 +708,8 @@ function renderPoll(story, container) {
         pct.classList.add('show');
       });
 
+      showExplanationBanner(container, story.explanation);
+
       if (!isCorrect && story.feedback) {
         insertFeedbackStory(story.feedback);
       }
@@ -664,6 +754,8 @@ function renderQuiz(story, container) {
           opt.classList.add('dimmed');
         }
       });
+
+      showExplanationBanner(container, story.explanation);
 
       if (!isCorrect && story.feedback) {
         insertFeedbackStory(story.feedback);
@@ -718,11 +810,18 @@ function renderReveal(story, container) {
   let revealed = false;
   const sticker = container.querySelector('#reveal-sticker');
   sticker.addEventListener('click', (e) => {
-    if (revealed) return;
+    if (revealed) {
+      // After reveal, let taps pass through to advance story
+      sticker.style.pointerEvents = 'none';
+      return;
+    }
     e.stopPropagation();
     revealed = true;
     container.querySelector('#reveal-overlay').classList.add('revealed');
     container.querySelector('#reveal-after').classList.add('show');
+    showExplanationBanner(container, story.explanation);
+    // After a moment, allow tapping through to next story
+    setTimeout(() => { sticker.style.pointerEvents = 'none'; }, 1500);
   });
 }
 
@@ -736,19 +835,49 @@ function renderAd(story, container) {
           <div class="ad-placeholder-title">${story.title}</div>
           <div class="ad-placeholder-sub">${story.subtitle.replace(/\n/g, '<br>')}</div>
         </div>
+        ${story.banner ? `
+        <div class="ad-text-overlay">
+          <div class="ad-text-headline">${story.banner}</div>
+          <div class="ad-text-tagline">${story.bannerSub || ''}</div>
+        </div>` : ''}
+      </div>
+      <div class="ad-promo-banner" id="ad-promo-banner">
+        <span class="ad-promo-text">${story.promo || story.title}</span>
+        <span class="ad-promo-arrow">›</span>
       </div>
       <div class="ad-cta-bar">
         <div class="ad-cta-text">${story.title}</div>
         <button class="ad-cta-btn" id="ad-cta-btn">${story.cta}</button>
       </div>
+      <div class="ad-countdown" id="ad-countdown">3</div>
     </div>
   `;
+
+  // Block skipping for 3 seconds
+  state.adBlocked = true;
+  let remaining = 3;
+  const countdownEl = container.querySelector('#ad-countdown');
+  const countdownInterval = setInterval(() => {
+    remaining--;
+    if (remaining > 0) {
+      countdownEl.textContent = remaining;
+    } else {
+      clearInterval(countdownInterval);
+      countdownEl.classList.add('done');
+      state.adBlocked = false;
+    }
+  }, 1000);
 
   if (story.image) {
     const img = new Image();
     img.onload = () => {
       const wrap = container.querySelector('.ad-image-wrap');
-      wrap.innerHTML = `<img class="ad-image" src="${story.image}" alt="">`;
+      const overlay = wrap.querySelector('.ad-text-overlay');
+      const logoHtml = story.logo
+        ? `<img class="ad-logo" src="${story.logo}" alt="Kämpe">`
+        : '';
+      wrap.innerHTML = `<img class="ad-image" src="${story.image}" alt="">${logoHtml}`;
+      if (overlay) wrap.appendChild(overlay);
     };
     img.src = story.image;
   }
@@ -758,6 +887,11 @@ function renderAd(story, container) {
     const btn = e.target;
     btn.classList.add('shaking');
     setTimeout(() => btn.classList.remove('shaking'), 500);
+    showToast(story.joke);
+  });
+
+  container.querySelector('#ad-promo-banner').addEventListener('click', (e) => {
+    e.stopPropagation();
     showToast(story.joke);
   });
 }
@@ -777,8 +911,9 @@ function renderFeedback(story, container) {
    ============================================================ */
 
 function advanceStory() {
-  // Block if slider is being dragged
+  // Block if slider is being dragged or ad countdown active
   if (state.sliderActive) return;
+  if (state.adBlocked) return;
 
   const acc = ACCOUNTS[state.currentAccount];
   const story = acc.stories[state.currentStory];
@@ -795,6 +930,7 @@ function advanceStory() {
 
 function goBackStory() {
   if (state.sliderActive) return;
+  if (state.adBlocked) return;
   if (state.currentStory > 0) {
     cleanupSlider();
     state.currentStory--;
@@ -956,6 +1092,15 @@ function shareResults() {
 /* ============================================================
    UTILS
    ============================================================ */
+
+function showExplanationBanner(container, text) {
+  if (!text) return;
+  const banner = document.createElement('div');
+  banner.className = 'explanation-banner';
+  banner.textContent = text;
+  container.appendChild(banner);
+  requestAnimationFrame(() => banner.classList.add('show'));
+}
 
 function showToast(msg) {
   const toast = $('sv-toast');
