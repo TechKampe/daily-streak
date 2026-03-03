@@ -1093,6 +1093,26 @@ function shareResults() {
    UTILS
    ============================================================ */
 
+function preloadAssets() {
+  const urls = new Set();
+  ACCOUNTS_TEMPLATE.forEach(acc => {
+    if (acc.avatar) urls.add(acc.avatar);
+    acc.stories.forEach(s => {
+      if (s.image) urls.add(s.image);
+      if (s.beforeImage) urls.add(s.beforeImage);
+      if (s.afterImage) urls.add(s.afterImage);
+      if (s.logo) urls.add(s.logo);
+    });
+  });
+  FEED_POSTS.forEach(p => {
+    if (p.avatar) urls.add(p.avatar);
+  });
+  urls.forEach(url => {
+    const img = new Image();
+    img.src = url;
+  });
+}
+
 function showExplanationBanner(container, text) {
   if (!text) return;
   const banner = document.createElement('div');
@@ -1155,6 +1175,7 @@ function spawnConfetti() {
    ============================================================ */
 
 function init() {
+  preloadAssets();
   renderHome();
 
   // Story tap zones — use touchend to avoid click delay, but guard against slider
@@ -1169,8 +1190,6 @@ function init() {
     goBackStory();
   });
 
-  // Close stories
-  $('sv-close').addEventListener('click', closeStories);
 
   // Swipe between accounts
   const viewer = $('stories-viewer');
