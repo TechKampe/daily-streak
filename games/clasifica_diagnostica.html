@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Clasifica y Diagnostica</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--turq:#00E6BC;--navy:#0B214A;--lime:#04FFB4;--mint:#C5FFDF;--lemon:#FFFFAB;--fire:#E74C3C}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Baloo 2',cursive;background:#0B214A;touch-action:none}
+body{padding-top:env(safe-area-inset-top);padding-top:constant(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-bottom:constant(safe-area-inset-bottom)}
+#W{position:relative;width:100%;max-width:430px;margin:0 auto;height:100%;overflow:hidden;background:linear-gradient(180deg,#0B214A 0%,#0D2D5E 40%,#0F1B2D 100%)}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;transition:opacity .35s;z-index:100}
+.scr.off{opacity:0;pointer-events:none;z-index:-1}
+.btn{background:var(--turq);color:var(--navy);border:none;font-family:'Baloo 2',cursive;font-size:19px;font-weight:700;padding:14px 48px;border-radius:50px;cursor:pointer;box-shadow:0 4px 16px rgba(0,230,188,.3);transition:transform .1s;letter-spacing:.5px}
+.btn:active{transform:scale(.96)}
+
+/* INTRO */
+#intro{align-items:center;justify-content:center;padding-bottom:80px}
+.intro-card{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;padding:0 20px;width:100%}
+.intro-av{width:200px;height:262px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(0,0,0,.6));margin-bottom:-36px;position:relative;z-index:1}
+.intro-bub{position:relative;z-index:2;background:#fff;color:var(--navy);padding:18px 22px;border-radius:22px;box-shadow:0 4px 24px rgba(0,0,0,.35);font-size:15px;font-weight:600;line-height:1.4;text-align:center;margin-bottom:18px;width:100%}
+.intro-title{font-size:21px;font-weight:800;color:#fff;text-shadow:0 3px 16px rgba(0,0,0,.5);margin-bottom:14px}
+
+/* HUD */
+.hud{position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-right:66px;background:linear-gradient(180deg,rgba(11,33,74,.95)0%,rgba(11,33,74,.4)70%,transparent 100%);padding-bottom:28px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.hud-left{display:flex;align-items:center;gap:8px}
+.hud-phase{background:rgba(0,0,0,.35);padding:4px 12px;border-radius:16px;color:rgba(255,255,255,.8);font-size:13px;font-weight:600}
+.hud-lives{display:flex;gap:3px}
+.hud-heart{font-size:20px;transition:all .3s ease}
+.hud-heart.lost{opacity:.2;transform:scale(.7)}
+@keyframes livesShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.hud-lives.shaking{animation:livesShake .3s ease-out}
+
+/* FLASH */
+@keyframes flashAnim{0%{opacity:.3}100%{opacity:0}}
+.flash-overlay{position:fixed;inset:0;z-index:999;pointer-events:none;opacity:0}
+.flash-overlay.red{background:var(--fire);animation:flashAnim .35s ease-out forwards}
+.flash-overlay.green{background:var(--lime);animation:flashAnim .3s ease-out forwards}
+
+/* PLAY */
+#play{z-index:10}
+.play-area{position:relative;flex:1;display:flex;flex-direction:column;padding:52px 0 0;overflow:hidden}
+
+/* INSTRUCTION at top */
+.instruction{color:var(--turq);font-size:14px;font-weight:700;text-align:center;padding:6px 14px 2px;flex-shrink:0}
+
+/* CHIP GRID */
+.chip-grid{padding:6px 10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-content:flex-start;min-height:60px;flex-shrink:0}
+.chip{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 12px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);border-radius:10px;color:#fff;font-size:11px;font-weight:700;line-height:1.2;text-align:center;cursor:grab;touch-action:none;transition:border-color .15s,background .15s;max-width:200px}
+.chip.trap-chip{border-style:dashed;border-color:rgba(231,76,60,.4)}
+.chip.dragging{position:fixed;z-index:500;cursor:grabbing;transform:scale(1.1);filter:drop-shadow(0 6px 18px rgba(0,0,0,.6));border-color:var(--turq);background:rgba(0,230,188,.18);pointer-events:none}
+@keyframes chipIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+.chip.entering{animation:chipIn .3s ease-out}
+@keyframes chipOk{0%{background:rgba(4,255,180,.3);border-color:var(--lime);transform:scale(1.05)}100%{opacity:0;transform:scale(.5)}}
+.chip.ok-out{animation:chipOk .35s ease-out forwards;pointer-events:none}
+@keyframes chipErr{0%{background:rgba(231,76,60,.3);border-color:var(--fire)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-4px)}100%{opacity:0;transform:scale(.5)}}
+.chip.err-out{animation:chipErr .4s ease-out forwards;pointer-events:none}
+
+/* ZONES */
+.zones-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;padding:4px 14px;gap:8px}
+.zones-row{display:flex;gap:8px;justify-content:center}
+.zone{flex:1;max-width:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 6px;cursor:pointer;transition:border-color .2s,background .2s;touch-action:manipulation;min-height:68px}
+.zone:active{transform:scale(.96)}
+.zone-emoji{font-size:22px}
+.zone-label{color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:1.15}
+.zone.hl{border-color:var(--turq);background:rgba(0,230,188,.1);box-shadow:0 0 12px rgba(0,230,188,.15)}
+.zone.flash-ok{border-color:var(--lime);background:rgba(4,255,180,.15)}
+.zone.flash-err{border-color:var(--fire);background:rgba(231,76,60,.15)}
+.zone.drop-hover{border-color:var(--lemon);background:rgba(255,255,171,.1);transform:scale(1.04)}
+
+/* REJECT */
+.reject-wrap{text-align:center;padding:2px 14px 8px;flex-shrink:0}
+.reject-btn{display:none;background:rgba(231,76,60,.12);border:2px dashed var(--fire);border-radius:14px;padding:10px 24px;cursor:pointer;color:var(--fire);font-size:13px;font-weight:700;font-family:'Baloo 2',cursive;touch-action:manipulation}
+.reject-btn.show{display:inline-block}
+.reject-btn:active{transform:scale(.96)}
+
+/* OVERFLOW WARNING */
+@keyframes gridPulse{0%,100%{box-shadow:inset 0 0 0 0 transparent}50%{box-shadow:inset 0 0 20px rgba(231,76,60,.3)}}
+.chip-grid.overflow{animation:gridPulse .6s ease-out}
+
+/* DOMBYTO ROW — pinned at bottom, no gap */
+.dom-row{display:flex;align-items:flex-end;gap:0;padding:0 6px;flex-shrink:0;margin-top:auto}
+.dom-av{width:120px;height:157px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));flex-shrink:0;margin-bottom:-4px}
+.dom-text{background:rgba(255,255,255,.08);color:#fff;font-size:12px;font-weight:600;padding:8px 12px;border-radius:14px;line-height:1.3;flex:1;align-self:flex-start;margin-top:10px}
+
+/* FEEDBACK OVERLAY */
+.fb-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(11,33,74,.93);z-index:60;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px 20px 80px}
+.fb-overlay.show{opacity:1;pointer-events:auto}
+.fb-av{width:220px;height:288px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.5));margin-bottom:10px}
+.fb-text{color:#fff;font-size:17px;font-weight:700;text-align:center;line-height:1.4;margin-bottom:4px}
+.fb-sub{color:var(--lemon);font-size:13px;font-weight:600;text-align:center;max-width:320px;line-height:1.3}
+
+/* RESULTS */
+#results{align-items:center;justify-content:center;padding:16px 20px 80px;z-index:200;background:var(--navy)}
+.res-inner{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;width:100%;gap:2px}
+.res-label{font-size:14px;color:rgba(255,255,255,.5);font-weight:600;text-align:center}
+.res-new{color:var(--lemon);font-size:18px;font-weight:800;display:none}
+.res-new.show{display:block}
+.res-badge{color:var(--lime);font-size:23px;font-weight:800;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase}
+.res-scores{display:flex;gap:28px;margin-bottom:4px}
+.res-val{font-size:44px;font-weight:800;text-align:center;color:var(--lime)}
+.res-av{width:208px;height:273px;object-fit:contain;filter:drop-shadow(0 4px 22px rgba(0,0,0,.5));margin-bottom:-40px;position:relative;z-index:0}
+.res-info-card{background:#fff;border-radius:18px;padding:16px 20px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1}
+.res-msg{color:var(--navy);font-size:14px;font-weight:600;text-align:center;line-height:1.3}
+.res-hits{color:var(--navy);font-size:13px;font-weight:600;opacity:.7}
+.res-bot{display:flex;flex-direction:column;align-items:center;margin-top:10px}
+.res-bot .btn{position:relative;z-index:2;padding:12px 40px;font-size:17px}
+</style>
+</head>
+<body>
+<div id="W">
+
+<div class="scr" id="intro">
+  <div class="intro-card">
+    <h1 class="intro-title">Clasifica y Diagnostica</h1>
+    <img class="intro-av" id="intro-av" alt="Dombyto">
+    <div class="intro-bub">¡Arrastra cada paso de diagnóstico a su zona correcta!</div>
+    <button class="btn" id="intro-btn">¡Arrancamos!</button>
+  </div>
+</div>
+
+<div class="scr off" id="play">
+  <div class="hud">
+    <div class="hud-left">
+      <div class="hud-phase" id="hud-phase">Nivel 1</div>
+    </div>
+    <div class="hud-lives" id="hud-lives"></div>
+  </div>
+  <div class="play-area">
+    <div class="instruction" id="instruction"></div>
+    <div class="chip-grid" id="chip-grid"></div>
+    <div class="zones-wrap" id="zones-wrap"></div>
+    <div class="reject-wrap"><button class="reject-btn" id="reject-btn">❌ Rechazar (trampa)</button></div>
+    <div class="dom-row">
+      <img class="dom-av" id="dom-av" alt="Dombyto">
+      <div class="dom-text" id="dom-text"></div>
+    </div>
+    <div class="fb-overlay" id="fb-overlay">
+      <img class="fb-av" id="fb-av" alt="Dombyto">
+      <div class="fb-text" id="fb-text"></div>
+      <div class="fb-sub" id="fb-sub"></div>
+    </div>
+  </div>
+</div>
+
+<div class="scr off" id="results">
+  <div class="res-inner">
+    <div class="res-badge" id="res-badge" style="display:none"></div>
+    <div class="res-scores">
+      <div><div class="res-val" id="res-score">0</div><div class="res-label">Puntuación</div></div>
+      <div><div class="res-val" id="res-record" style="color:var(--lemon)">0</div><div class="res-label">Récord</div></div>
+    </div>
+    <div class="res-new" id="res-new">¡NUEVO RÉCORD!</div>
+    <img class="res-av" id="res-av" alt="Dombyto">
+    <div class="res-info-card">
+      <div class="res-msg" id="res-msg"></div>
+      <div class="res-hits" id="res-hits"></div>
+    </div>
+    <div class="res-bot"><button class="btn" id="res-btn">¡Otra ronda!</button></div>
+  </div>
+</div>
+
+<div class="flash-overlay" id="flash-ov"></div>
+</div>
+<script>
+var A={
+  dombyto:'https://res.cloudinary.com/kampe/image/upload/v1771521609/kampe/game_assets/s1d1/dombyto.png',
+  happy:'https://res.cloudinary.com/kampe/image/upload/v1771521613/kampe/game_assets/s1d1/dombyto_happy.png',
+  celeb:'https://res.cloudinary.com/kampe/image/upload/v1771521611/kampe/game_assets/s1d1/dombyto_celebrating.png',
+  worried:'https://res.cloudinary.com/kampe/image/upload/v1771521614/kampe/game_assets/s1d1/dombyto_worried.png'
+};
+var MAX_LIVES=5;
+var TASK_TH=250;
+var MAX_CHIPS=6;
+
+var C_VIS=['Inspecciono cables a simple vista','Busco cobre al descubierto','Reviso conectores abiertos','Miro si hay marcas negras','Compruebo rutas de cables','Busco cables mal insertados'];
+var C_MED=['Mido continuidad con multímetro','Mido aislamiento fase-tierra','Sumo potencias del circuito','Mido amperios con pinza'];
+var C_COR=['Mido continuidad fase-neutro','Reviso punto de contacto','Busco dónde se tocan conductores','Compruebo si salta al momento'];
+var C_SOB=['Sumo potencias (W) del circuito','Calculo corriente con P=V×I','Replanteo qué cargas van juntas','Compruebo si salta con muchas cargas'];
+var C_DER=['Mido aislamiento fase-tierra','Inspecciono aislamiento de cables','Busco síntoma raro/intermitente','Compruebo si el diferencial salta'];
+var C_TRAP=['Pruebo cosas al azar','Me salto el visual','Cambio hipótesis cada 10s','Mido sin saber qué busco','Toco cables sin comprobar tensión'];
+
+var Z={visual:{e:'👁️',l:'VISUAL'},medicion:{e:'📏',l:'MEDICIÓN'},corto:{e:'⚡',l:'CORTO'},sobrecarga:{e:'🔌',l:'SOBRECARGA'},derivacion:{e:'💧',l:'DERIVACIÓN'}};
+
+/* Explanations for Phase 2+: why each chip belongs to its zone */
+var EXPLAIN={
+  'Mido continuidad fase-neutro':'Medir continuidad fase-neutro detecta si hay contacto directo → CORTO',
+  'Reviso punto de contacto':'Buscar el punto de contacto es clave para localizar un cortocircuito',
+  'Busco dónde se tocan conductores':'Si dos conductores se tocan, hay cortocircuito',
+  'Compruebo si salta al momento':'Si el magneto salta al instante de conectar → probable CORTO',
+  'Sumo potencias (W) del circuito':'Sumar potencias sirve para ver si superas la capacidad → SOBRECARGA',
+  'Calculo corriente con P=V×I':'Calcular la corriente total te dice si hay sobrecarga en el circuito',
+  'Replanteo qué cargas van juntas':'Redistribuir cargas es la solución para una sobrecarga',
+  'Compruebo si salta con muchas cargas':'Si salta solo con muchas cargas enchufadas → SOBRECARGA',
+  'Mido aislamiento fase-tierra':'Medir aislamiento fase-tierra detecta fuga de corriente → DERIVACIÓN',
+  'Inspecciono aislamiento de cables':'Un cable con aislamiento dañado puede derivar corriente a tierra',
+  'Busco síntoma raro/intermitente':'Síntomas intermitentes suelen indicar derivación a tierra',
+  'Compruebo si el diferencial salta':'Si salta el diferencial (no el magneto) → DERIVACIÓN',
+  'Inspecciono cables a simple vista':'Inspección visual es siempre el primer paso del diagnóstico',
+  'Busco cobre al descubierto':'Buscar cobre expuesto es parte de la inspección VISUAL',
+  'Reviso conectores abiertos':'Revisar conectores es parte de la inspección VISUAL',
+  'Miro si hay marcas negras':'Marcas negras pueden indicar un arco eléctrico → se ve en VISUAL',
+  'Compruebo rutas de cables':'Comprobar rutas es parte de la inspección VISUAL',
+  'Busco cables mal insertados':'Cables mal insertados se detectan con inspección VISUAL',
+  'Pruebo cosas al azar':'¡Nunca pruebes al azar! Sigue siempre el método',
+  'Me salto el visual':'¡Nunca te saltes la inspección visual! Es el primer paso',
+  'Cambio hipótesis cada 10s':'No cambies de hipótesis sin datos. Sé metódico',
+  'Mido sin saber qué busco':'Medir sin saber qué buscas es perder el tiempo',
+  'Toco cables sin comprobar tensión':'¡PELIGRO! Siempre comprueba tensión antes de tocar'
+};
+
+/* Chips also carry explanation for N1 */
+var EXPLAIN_N1={
+  'Inspecciono cables a simple vista':'Eso es inspección VISUAL: mirar antes de medir',
+  'Busco cobre al descubierto':'Buscar cobre expuesto → VISUAL',
+  'Reviso conectores abiertos':'Revisar conectores → VISUAL',
+  'Miro si hay marcas negras':'Marcas negras → se detecta con VISUAL',
+  'Compruebo rutas de cables':'Comprobar rutas → VISUAL',
+  'Busco cables mal insertados':'Cables mal insertados → VISUAL',
+  'Mido continuidad con multímetro':'Medir con multímetro → MEDICIÓN',
+  'Mido aislamiento fase-tierra':'Medir aislamiento → MEDICIÓN',
+  'Sumo potencias del circuito':'Sumar potencias → MEDICIÓN / cálculo',
+  'Mido amperios con pinza':'Medir amperios con pinza → MEDICIÓN'
+};
+
+var LVLS=[
+  {name:'Calentamiento',startChips:4,refill:4,zones:['visual','medicion'],traps:false,pts:15,bonus:30,
+   inst:'¿Es inspección visual o medición?',
+   mk:function(){var c=[];var v=shuf(C_VIS).slice(0,4);var m=shuf(C_MED).slice(0,4);
+     for(var i=0;i<v.length;i++)c.push({t:v[i],z:'visual'});
+     for(var i=0;i<m.length;i++)c.push({t:m[i],z:'medicion'});
+     return shuf(c)}},
+  {name:'Diagnóstico',startChips:3,refill:3,zones:['visual','corto','sobrecarga','derivacion'],traps:false,pts:20,bonus:30,
+   inst:'¿A qué tipo de fallo pertenece cada paso?',
+   mk:function(){var c=[];var v=shuf(C_VIS).slice(0,3);var co=shuf(C_COR).slice(0,3);var s=shuf(C_SOB).slice(0,2);var d=shuf(C_DER).slice(0,2);
+     for(var i=0;i<v.length;i++)c.push({t:v[i],z:'visual'});
+     for(var i=0;i<co.length;i++)c.push({t:co[i],z:'corto'});
+     for(var i=0;i<s.length;i++)c.push({t:s[i],z:'sobrecarga'});
+     for(var i=0;i<d.length;i++)c.push({t:d[i],z:'derivacion'});
+     return shuf(c)}},
+  {name:'Turno de noche',startChips:3,refill:4,zones:['visual','corto','sobrecarga','derivacion'],traps:true,pts:25,tpts:30,bonus:30,
+   inst:'Clasifica cada paso. ¡Rechaza los pasos trampa!',
+   mk:function(){var c=[];var v=shuf(C_VIS).slice(0,2);var co=shuf(C_COR).slice(0,2);var s=shuf(C_SOB).slice(0,2);var d=shuf(C_DER).slice(0,2);var tr=shuf(C_TRAP).slice(0,3);
+     for(var i=0;i<v.length;i++)c.push({t:v[i],z:'visual'});
+     for(var i=0;i<co.length;i++)c.push({t:co[i],z:'corto'});
+     for(var i=0;i<s.length;i++)c.push({t:s[i],z:'sobrecarga'});
+     for(var i=0;i<d.length;i++)c.push({t:d[i],z:'derivacion'});
+     for(var i=0;i<tr.length;i++)c.push({t:tr[i],z:'trap',trap:1});
+     return shuf(c)}}
+];
+
+/* STATE */
+var score=0,lives=MAX_LIVES,lvl=0,busy=false,taskDone=false,perfect=true,dead=false;
+var chipQueue=[];
+var onScreen=[];
+var record=parseInt(localStorage.getItem('clasifica_diagnostica_record'))||0;
+
+function $(id){return document.getElementById(id)}
+function shuf(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t}return b}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function showScr(id){var all=document.querySelectorAll('.scr');for(var i=0;i<all.length;i++)all[i].classList.toggle('off',all[i].id!==id)}
+
+function renderLives(){var c=$('hud-lives');c.innerHTML='';for(var i=0;i<MAX_LIVES;i++){var h=document.createElement('div');h.className='hud-heart'+(i>=lives?' lost':'');h.textContent='❤️';c.appendChild(h)}}
+function loseLife(){
+  if(lives<=0||dead)return;
+  lives--;perfect=false;renderLives();
+  var lc=$('hud-lives');lc.classList.remove('shaking');void lc.offsetWidth;lc.classList.add('shaking');
+  flash('red');
+  if(lives<=0){dead=true;setTimeout(showResults,600)}
+}
+function flash(c){var f=$('flash-ov');f.className='flash-overlay';void f.offsetWidth;f.classList.add(c)}
+function updHUD(){$('hud-phase').textContent='Nivel '+(lvl+1)}
+function domMsg(t,av){$('dom-av').src=av||A.happy;$('dom-text').textContent=t}
+
+function clearGrid(){
+  $('chip-grid').innerHTML='';
+  onScreen=[];chipQueue=[];
+}
+
+/* BUILD ZONES */
+var zoneEls=[];
+function buildZones(ids,traps){
+  var w=$('zones-wrap');w.innerHTML='';zoneEls=[];
+  var r1=document.createElement('div');r1.className='zones-row';
+  var r2=ids.length>2?document.createElement('div'):null;if(r2)r2.className='zones-row';
+  for(var i=0;i<ids.length;i++){
+    var zd=Z[ids[i]];var el=document.createElement('div');el.className='zone';el.dataset.z=ids[i];
+    el.innerHTML='<div class="zone-emoji">'+zd.e+'</div><div class="zone-label">'+zd.l+'</div>';
+    zoneEls.push({el:el,id:ids[i]});
+    (function(zid,zel){zel.onclick=function(){onZoneTap(zid,zel)}})(ids[i],el);
+    if(i<2)r1.appendChild(el);else if(r2)r2.appendChild(el);
+  }
+  w.appendChild(r1);if(r2)w.appendChild(r2);
+  var rb=$('reject-btn');if(traps){rb.classList.add('show');rb.onclick=onRejectTap}else{rb.classList.remove('show')}
+}
+
+/* ADD CHIP TO GRID */
+function addChipToGrid(data){
+  var grid=$('chip-grid');
+  var el=document.createElement('div');
+  el.className='chip entering'+(data.trap?' trap-chip':'');
+  el.textContent=data.t;
+  var chip={el:el,z:data.z,trap:data.trap||0,t:data.t};
+  mkDrag(chip);
+  grid.appendChild(el);
+  onScreen.push(chip);
+  return chip;
+}
+
+/* Try to refill chips from queue when screen gets low */
+function tryRefill(){
+  if(dead||chipQueue.length===0)return;
+  if(onScreen.length>0)return;
+  var cfg=LVLS[lvl];
+  var toAdd=Math.min(cfg.refill,chipQueue.length);
+  for(var i=0;i<toAdd;i++){
+    addChipToGrid(chipQueue.shift());
+  }
+}
+
+/* DRAG & DROP */
+function mkDrag(chip){
+  var ox=0,oy=0;
+  var placeholder=null;
+  var selected=false;
+
+  function dn(e){
+    if(dead||busy)return;
+    e.preventDefault();e.stopPropagation();
+    var t=e.touches?e.touches[0]:e;
+    var r=chip.el.getBoundingClientRect();
+    ox=t.clientX-r.left;
+    oy=t.clientY-r.top;
+
+    placeholder=document.createElement('div');
+    placeholder.style.width=r.width+'px';
+    placeholder.style.height=r.height+'px';
+    placeholder.style.visibility='hidden';
+    chip.el.parentNode.insertBefore(placeholder,chip.el);
+
+    chip.el.classList.add('dragging');
+    chip.el.style.left=(r.left)+'px';
+    chip.el.style.top=(r.top)+'px';
+    chip.el.style.width=r.width+'px';
+    document.body.appendChild(chip.el);
+
+    for(var i=0;i<zoneEls.length;i++)zoneEls[i].el.classList.add('hl');
+
+    document.addEventListener('touchmove',mv,{passive:false});
+    document.addEventListener('mousemove',mv);
+    document.addEventListener('touchend',up);
+    document.addEventListener('mouseup',up);
+    selected=true;
+  }
+
+  function mv(e){
+    if(!selected)return;
+    e.preventDefault();
+    var t=e.touches?e.touches[0]:e;
+    chip.el.style.left=(t.clientX-ox)+'px';
+    chip.el.style.top=(t.clientY-oy)+'px';
+
+    for(var i=0;i<zoneEls.length;i++){
+      var zr=zoneEls[i].el.getBoundingClientRect();
+      var inZone=t.clientX>=zr.left&&t.clientX<=zr.right&&t.clientY>=zr.top&&t.clientY<=zr.bottom;
+      zoneEls[i].el.classList.toggle('drop-hover',inZone);
+    }
+    var rb=$('reject-btn');
+    if(rb.classList.contains('show')){
+      var rbr=rb.getBoundingClientRect();
+      var inRb=t.clientX>=rbr.left&&t.clientX<=rbr.right&&t.clientY>=rbr.top&&t.clientY<=rbr.bottom;
+      rb.style.transform=inRb?'scale(1.08)':'';
+    }
+  }
+
+  function up(e){
+    if(!selected)return;
+    selected=false;
+    document.removeEventListener('touchmove',mv);
+    document.removeEventListener('mousemove',mv);
+    document.removeEventListener('touchend',up);
+    document.removeEventListener('mouseup',up);
+
+    for(var i=0;i<zoneEls.length;i++){zoneEls[i].el.classList.remove('hl');zoneEls[i].el.classList.remove('drop-hover')}
+    $('reject-btn').style.transform='';
+
+    var t=e.changedTouches?e.changedTouches[0]:e;
+    var cx=t.clientX,cy=t.clientY;
+    var droppedZone=null;
+    var droppedZoneEl=null;
+
+    for(var i=0;i<zoneEls.length;i++){
+      var zr=zoneEls[i].el.getBoundingClientRect();
+      if(cx>=zr.left&&cx<=zr.right&&cy>=zr.top&&cy<=zr.bottom){
+        droppedZone=zoneEls[i].id;droppedZoneEl=zoneEls[i].el;break;
+      }
+    }
+
+    var rb=$('reject-btn');
+    var droppedReject=false;
+    if(rb.classList.contains('show')){
+      var rbr=rb.getBoundingClientRect();
+      if(cx>=rbr.left&&cx<=rbr.right&&cy>=rbr.top&&cy<=rbr.bottom)droppedReject=true;
+    }
+
+    chip.el.classList.remove('dragging');
+    chip.el.style.left='';chip.el.style.top='';chip.el.style.width='';
+
+    if(droppedZone){
+      if(placeholder&&placeholder.parentNode){placeholder.parentNode.insertBefore(chip.el,placeholder);placeholder.parentNode.removeChild(placeholder)}
+      placeholder=null;
+      handleDrop(chip,droppedZone,droppedZoneEl);
+    }else if(droppedReject){
+      if(placeholder&&placeholder.parentNode){placeholder.parentNode.insertBefore(chip.el,placeholder);placeholder.parentNode.removeChild(placeholder)}
+      placeholder=null;
+      handleReject(chip);
+    }else{
+      if(placeholder&&placeholder.parentNode){placeholder.parentNode.insertBefore(chip.el,placeholder);placeholder.parentNode.removeChild(placeholder)}
+      placeholder=null;
+    }
+  }
+
+  chip.el.addEventListener('touchstart',dn,{passive:false});
+  chip.el.addEventListener('mousedown',dn);
+}
+
+/* Get explanation text for a chip */
+function getExplain(chip){
+  if(lvl===0)return EXPLAIN_N1[chip.t]||'';
+  return EXPLAIN[chip.t]||'';
+}
+
+/* HANDLE DROP ON ZONE */
+function handleDrop(chip,zid,zel){
+  if(dead||busy)return;
+  busy=true;
+
+  if(chip.trap){
+    chip.el.className='chip trap-chip err-out';
+    zel.classList.add('flash-err');
+    loseLife();
+    var expl=getExplain(chip);
+    domMsg(expl||'¡Era trampa! Recházalo',A.worried);
+    setTimeout(function(){zel.classList.remove('flash-err');rmChip(chip);busy=false;afterChip()},700);
+  }else if(zid===chip.z){
+    var pts=LVLS[lvl].pts;score+=pts;
+    chip.el.className='chip ok-out';
+    zel.classList.add('flash-ok');
+    flash('green');
+    var expl=getExplain(chip);
+    domMsg(expl||pick(['¡Bien!','¡Correcto!','¡Eso es!']),A.happy);
+    setTimeout(function(){zel.classList.remove('flash-ok');rmChip(chip);busy=false;afterChip()},500);
+  }else{
+    chip.el.className='chip err-out';
+    zel.classList.add('flash-err');
+    loseLife();
+    var expl=getExplain(chip);
+    domMsg(expl||'Zona incorrecta',A.worried);
+    setTimeout(function(){zel.classList.remove('flash-err');rmChip(chip);busy=false;afterChip()},700);
+  }
+}
+
+/* HANDLE DROP ON REJECT */
+function handleReject(chip){
+  if(dead||busy)return;
+  busy=true;
+
+  if(chip.trap){
+    var pts=LVLS[lvl].tpts||30;score+=pts;
+    chip.el.className='chip ok-out';
+    flash('green');
+    var expl=getExplain(chip);
+    domMsg(expl||'¡Bien rechazado!',A.happy);
+    setTimeout(function(){rmChip(chip);busy=false;afterChip()},500);
+  }else{
+    chip.el.className='chip err-out';
+    loseLife();
+    domMsg('¡No era trampa! Ese paso sí es válido',A.worried);
+    setTimeout(function(){rmChip(chip);busy=false;afterChip()},700);
+  }
+}
+
+/* TAP FALLBACK */
+var tappedChip=null;
+function onZoneTap(zid,zel){
+  if(!tappedChip||busy||dead)return;
+  var chip=tappedChip;tappedChip=null;
+  chip.el.style.borderColor='';chip.el.style.background='';
+  for(var i=0;i<zoneEls.length;i++)zoneEls[i].el.classList.remove('hl');
+  handleDrop(chip,zid,zel);
+}
+function onRejectTap(){
+  if(!tappedChip||busy||dead)return;
+  var chip=tappedChip;tappedChip=null;
+  chip.el.style.borderColor='';chip.el.style.background='';
+  for(var i=0;i<zoneEls.length;i++)zoneEls[i].el.classList.remove('hl');
+  handleReject(chip);
+}
+
+function rmChip(chip){
+  if(chip.el.parentNode)chip.el.parentNode.removeChild(chip.el);
+  var idx=onScreen.indexOf(chip);
+  if(idx>-1)onScreen.splice(idx,1);
+}
+
+/* After each chip is resolved: refill or check level done */
+function afterChip(){
+  if(dead)return;
+  tryRefill();
+  if(chipQueue.length===0&&onScreen.length===0){
+    setTimeout(endLvl,500);
+  }
+}
+
+/* INIT */
+function init(){$('intro-av').src=A.happy;$('intro-btn').onclick=startGame;$('res-btn').onclick=startGame;showScr('intro')}
+
+function startGame(){
+  score=0;lives=MAX_LIVES;lvl=0;busy=false;taskDone=false;dead=false;
+  renderLives();updHUD();showScr('play');
+  startLvl(0);
+}
+
+function startLvl(n){
+  lvl=n;perfect=true;busy=false;dead=false;tappedChip=null;
+  clearGrid();
+  var allChips=LVLS[n].mk();
+  var cfg=LVLS[n];
+  buildZones(cfg.zones,cfg.traps);
+  updHUD();
+
+  /* Set instruction text */
+  $('instruction').textContent=cfg.inst;
+
+  /* Put first batch on screen */
+  var startCount=Math.min(cfg.startChips,allChips.length);
+  for(var i=0;i<startCount;i++){
+    addChipToGrid(allChips[i]);
+  }
+  chipQueue=allChips.slice(startCount);
+
+  domMsg('¡Arrastra cada chip a su zona!',A.dombyto);
+}
+
+/* LEVEL END */
+function endLvl(){
+  if(dead)return;
+  clearGrid();
+  if(perfect){score+=LVLS[lvl].bonus}
+  if(lvl<LVLS.length-1){
+    showFB('¡Nivel '+(lvl+1)+' completado!'+(perfect?' ¡Perfecto!':''),'Siguiente: '+LVLS[lvl+1].name,A.celeb,function(){startLvl(lvl+1)});
+  }else{
+    showFB('¡Todos los niveles completados!','',A.celeb,showResults);
+  }
+}
+
+function showFB(t,s,av,fn){
+  $('fb-av').src=av;$('fb-text').textContent=t;$('fb-sub').textContent=s||'';
+  $('fb-overlay').classList.add('show');
+  setTimeout(function(){$('fb-overlay').classList.remove('show');fn()},2200);
+}
+
+/* RESULTS */
+function showResults(){
+  dead=true;clearGrid();showScr('results');
+  $('res-score').textContent=score;
+  var isNew=score>record;if(isNew){record=score;localStorage.setItem('clasifica_diagnostica_record',record)}
+  $('res-record').textContent=record;$('res-new').classList.toggle('show',isNew);
+  $('res-hits').textContent='Nivel '+(lvl+1)+'/3 · '+lives+'/'+MAX_LIVES+' vidas';
+  var b=$('res-badge');
+  if(score>=500){b.textContent='¡MAESTRO!';b.style.display='block';$('res-av').src=A.celeb;$('res-msg').textContent='¡Clasificas como un profesional!'}
+  else if(score>=TASK_TH){b.textContent='¡SUPERADO!';b.style.display='block';$('res-av').src=A.happy;$('res-msg').textContent='Buen trabajo. La secuencia es clave.'}
+  else{b.style.display='none';$('res-av').src=A.worried;$('res-msg').textContent='Repasa: Visual → Hipótesis → Medición.'}
+  if(score>=TASK_TH&&!taskDone){taskDone=true;try{window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}))}catch(e){}}
+}
+
+/* Preload */
+var imgs=[A.dombyto,A.happy,A.celeb,A.worried];
+for(var i=0;i<imgs.length;i++){new Image().src=imgs[i]}
+
+init();
+</script>
+</body>
+</html>
