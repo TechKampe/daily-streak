@@ -83,30 +83,49 @@ const RULES = [
 ];
 
 /* ===== FICHAS POOL ===== */
+// Fichas describe TRUE image defects. Infracciones are computed from active turno rules.
 const FICHAS = {
   1: [
-    { aprendiz: 'sthefanny', conector: 'Wago', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'arturo', conector: 'Clema', cobre: true, longitud: 'ok', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Cobre visible'] },
-    { aprendiz: 'jesus', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'lydia', conector: 'Wago', cobre: true, longitud: 'ok', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Cobre visible'] },
-    { aprendiz: 'sthefanny', conector: 'Clema', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] }
+    { aprendiz: 'sthefanny', conector: 'Wago', cobre: false, longitud: 'ok', hilos: 'ok' },
+    { aprendiz: 'arturo', conector: 'Clema', cobre: true, longitud: 'largo', hilos: 'ok' },
+    { aprendiz: 'jesus', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok' },
+    { aprendiz: 'lydia', conector: 'Wago', cobre: true, longitud: 'largo', hilos: 'ok' },
+    { aprendiz: 'sthefanny', conector: 'Borna', cobre: true, longitud: 'corto', hilos: 'danados' },
+    { aprendiz: 'arturo', conector: 'Clema', cobre: false, longitud: 'ok', hilos: 'ok' }
   ],
   2: [
-    { aprendiz: 'lydia', conector: 'Borna', cobre: false, longitud: 'corto', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Longitud incorrecta'] },
-    { aprendiz: 'sthefanny', conector: 'Wago', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'arturo', conector: 'Clema', cobre: true, longitud: 'largo', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Cobre visible', 'Longitud incorrecta'] },
-    { aprendiz: 'jesus', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'lydia', conector: 'Wago', cobre: false, longitud: 'largo', hilos: 'ok', veredicto: 'RECHAZADO', infracciones: ['Longitud incorrecta'] }
+    { aprendiz: 'lydia', conector: 'Borna', cobre: false, longitud: 'corto', hilos: 'ok' },
+    { aprendiz: 'jesus', conector: 'Wago', cobre: false, longitud: 'ok', hilos: 'ok' },
+    { aprendiz: 'arturo', conector: 'Clema', cobre: true, longitud: 'corto', hilos: 'danados' },
+    { aprendiz: 'sthefanny', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok' },
+    { aprendiz: 'lydia', conector: 'Wago', cobre: true, longitud: 'largo', hilos: 'ok' },
+    { aprendiz: 'jesus', conector: 'Clema', cobre: true, longitud: 'largo', hilos: 'ok' }
   ],
   3: [
-    { aprendiz: 'arturo', conector: 'Clema', cobre: false, longitud: 'ok', hilos: 'danados', veredicto: 'RECHAZADO', infracciones: ['Hilos dañados'] },
-    { aprendiz: 'lydia', conector: 'Wago', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'jesus', conector: 'Borna', cobre: true, longitud: 'corto', hilos: 'danados', veredicto: 'RECHAZADO', infracciones: ['Cobre visible', 'Longitud incorrecta', 'Hilos dañados'] },
-    { aprendiz: 'sthefanny', conector: 'Clema', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] },
-    { aprendiz: 'arturo', conector: 'Wago', cobre: true, longitud: 'ok', hilos: 'danados', veredicto: 'RECHAZADO', infracciones: ['Cobre visible', 'Hilos dañados'] },
-    { aprendiz: 'lydia', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok', veredicto: 'APROBADO', infracciones: [] }
+    { aprendiz: 'arturo', conector: 'Wago', cobre: true, longitud: 'largo', hilos: 'danados' },
+    { aprendiz: 'lydia', conector: 'Clema', cobre: false, longitud: 'ok', hilos: 'ok' },
+    { aprendiz: 'jesus', conector: 'Borna', cobre: true, longitud: 'corto', hilos: 'danados' },
+    { aprendiz: 'sthefanny', conector: 'Wago', cobre: false, longitud: 'ok', hilos: 'ok' },
+    { aprendiz: 'arturo', conector: 'Clema', cobre: true, longitud: 'corto', hilos: 'danados' },
+    { aprendiz: 'lydia', conector: 'Borna', cobre: false, longitud: 'ok', hilos: 'ok' }
   ]
 };
+
+/* ===== DYNAMIC INFRACCIONES ===== */
+function getFichaInfracciones(ficha) {
+  const active = getActiveRules();
+  const infracciones = [];
+  for (const rule of active) {
+    if (rule.infraccion === 'Cobre visible' && ficha.cobre) infracciones.push('Cobre visible');
+    if (rule.infraccion === 'Longitud incorrecta' && ficha.longitud !== 'ok') infracciones.push('Longitud incorrecta');
+    if (rule.infraccion === 'Hilos dañados' && ficha.hilos === 'danados') infracciones.push('Hilos dañados');
+  }
+  return infracciones;
+}
+
+function getFichaVeredicto(ficha) {
+  return getFichaInfracciones(ficha).length > 0 ? 'RECHAZADO' : 'APROBADO';
+}
 
 /* ===== INCIDENTES ===== */
 const INCIDENTES = {
@@ -173,7 +192,7 @@ let shownHints = new Set();
 function checkHintForFicha() {
   if (turno === 1 && fichaIdx === 0 && !shownHints.has('first_ficha')) {
     shownHints.add('first_ficha');
-    $('hint-text').innerHTML = 'Mira la terminación del cable.<br><br>Si está bien hecha → <strong>✅ APROBADO</strong><br>Si ves cobre fuera del conector → <strong>❌ RECHAZADO</strong>';
+    $('hint-text').innerHTML = 'Mira la terminación del cable.<br><br>Si está bien hecha → <strong>✅ APROBADO</strong><br>Si ves cobre fuera del conector → <strong>❌ RECHAZADO</strong><br><br>Pulsa <strong>📖</strong> en la esquina para consultar el reglamento en cualquier momento.';
     $('hint-overlay').classList.add('show');
     blocked = true;
     return true;
@@ -190,7 +209,7 @@ function setupIntro() {
 
   // Tap to advance (except last page with button)
   inner.addEventListener('click', (e) => {
-    if (e.target.closest('.skip-btn') || e.target.closest('#intro-start-btn')) return;
+    if (e.target.closest('#intro-start-btn')) return;
     if (introPage < pages.length - 1) {
       pages[introPage].classList.remove('active');
       introPage++;
@@ -198,7 +217,6 @@ function setupIntro() {
     }
   });
 
-  $('skip-intro-btn').onclick = () => startGame();
   $('intro-start-btn').onclick = () => startGame();
 }
 
@@ -278,8 +296,9 @@ function showFicha() {
   // Render terminacion
   renderTerminacion(ficha);
 
-  // Show action buttons
-  $('action-zone').style.display = 'flex';
+  // Enable action buttons
+  $('btn-approve').disabled = false;
+  $('btn-reject').disabled = false;
   blocked = false;
 
   // Check for hint modal (blocks interaction until dismissed)
@@ -315,18 +334,19 @@ function renderTerminacion(ficha) {
 function onApprove() {
   if (blocked) return;
   blocked = true;
-  $('action-zone').style.display = 'none';
+  $('btn-approve').disabled = true;
+  $('btn-reject').disabled = true;
 
   const ficha = fichas[fichaIdx];
 
-  if (ficha.veredicto === 'APROBADO') {
+  if (getFichaVeredicto(ficha) === 'APROBADO') {
     // Correct! Good termination approved
     showStamp('approve');
     score += 15;
     const ap = APRENDICES[ficha.aprendiz];
     setTimeout(() => {
       $('aprendiz-bubble').innerHTML = '<strong>' + ap.name + '</strong>: ' + ap.approved[Math.floor(Math.random() * ap.approved.length)];
-      setTimeout(() => nextFicha(), 1000);
+      setTimeout(() => nextFicha(), 2500);
     }, 600);
   } else {
     // ERROR: approved a bad termination → INCIDENTE
@@ -338,11 +358,12 @@ function onApprove() {
 function onReject() {
   if (blocked) return;
   blocked = true;
-  $('action-zone').style.display = 'none';
+  $('btn-approve').disabled = true;
+  $('btn-reject').disabled = true;
 
   const ficha = fichas[fichaIdx];
 
-  if (ficha.veredicto === 'APROBADO') {
+  if (getFichaVeredicto(ficha) === 'APROBADO') {
     // ERROR: rejected a good termination → QUEJA
     showStamp('reject');
     setTimeout(() => showQueja(ficha), 700);
@@ -402,7 +423,7 @@ function onConfirmInfracciones() {
   $('infracciones-overlay').classList.remove('show');
 
   const ficha = fichas[fichaIdx];
-  const correct = ficha.infracciones;
+  const correct = getFichaInfracciones(ficha);
 
   // Check if selected matches exactly
   const selectedSet = new Set(selected);
@@ -413,9 +434,16 @@ function onConfirmInfracciones() {
   if (allCorrect) {
     // Perfect rejection
     score += 25;
+
+    // TASK_COMPLETED: first time player correctly IDs all 3 defect types on one cable
+    if (!taskSent && correct.length === 3) {
+      taskSent = true;
+      try { window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' })); } catch (e) {}
+    }
+
     const ap = APRENDICES[ficha.aprendiz];
     $('aprendiz-bubble').innerHTML = '<strong>' + ap.name + '</strong>: ' + ap.rejected[Math.floor(Math.random() * ap.rejected.length)];
-    setTimeout(() => nextFicha(), 1200);
+    setTimeout(() => nextFicha(), 2500);
   } else if (partialCorrect && selected.every(s => correctSet.has(s))) {
     // Partial: got some right, missed some — still OK but lower score
     score += 10;
@@ -511,10 +539,6 @@ function endTurno() {
 
   if (turno >= 3) {
     // Game completed!
-    if (!taskSent) {
-      taskSent = true;
-      try { window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' })); } catch (e) {}
-    }
     showResults();
     return;
   }
@@ -624,6 +648,12 @@ function setupEvents() {
   };
   $('hint-continue').onclick = () => {
     $('hint-overlay').classList.remove('show');
+    blocked = false;
+  };
+  $('infracciones-cancel').onclick = () => {
+    $('infracciones-overlay').classList.remove('show');
+    $('btn-approve').disabled = false;
+    $('btn-reject').disabled = false;
     blocked = false;
   };
   $('briefing-continue').onclick = onBriefingContinue;
