@@ -626,8 +626,8 @@ function setupLevel3() {
 
   updateHUD();
 
-  // Show enchufe image
-  $('circuit-area').innerHTML = '<img class="n3-enchufe-img" src="' + ERR_IMG['enchufe-normal'] + '" alt="Enchufe">';
+  // No image in N3 — more space for check steps
+  $('circuit-area').innerHTML = '';
 
   // Build sortable check steps
   var tray = $('check-tray');
@@ -805,12 +805,18 @@ var verdictPool = [];
 var verdictRound = 0;
 var verdictTimer = null;
 
+var VERDICT_ROUNDS = 8;
+
 function buildVerdictPool() {
-  // 5 error images + 1 normal = 6 total
+  // 5 error images + fill rest with normal = 8 total
   var pool = N2_ERROR_POOL.map(function(e) {
     return { id: e.id, correct: false, img: ERR_IMG[e.id], flaw: e.label };
   });
-  pool.push({ id: 'enchufe-normal', correct: true, img: ERR_IMG['enchufe-normal'], flaw: null });
+  var normalItem = { id: 'enchufe-normal', correct: true, img: ERR_IMG['enchufe-normal'], flaw: null };
+  var normalCount = VERDICT_ROUNDS - pool.length;
+  for (var i = 0; i < normalCount; i++) {
+    pool.push({ id: normalItem.id, correct: normalItem.correct, img: normalItem.img, flaw: normalItem.flaw });
+  }
   return shuffle(pool);
 }
 
