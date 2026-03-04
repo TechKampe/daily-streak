@@ -6,6 +6,9 @@
 /* --- Helpers --- */
 const $ = id => document.getElementById(id);
 
+/* --- Cloudinary CDN base --- */
+const CDN = 'https://res.cloudinary.com/kampe/image/upload/f_auto,q_auto';
+
 /* ============================================================
    DATA: Accounts & Stories
    ============================================================ */
@@ -14,7 +17,7 @@ const ACCOUNTS_TEMPLATE = [
   {
     id: 'maestro_diego',
     username: 'maestro_diego',
-    avatar: 'assets/diego_avatar.png',
+    avatar: `${CDN}/v1772606014/diego_avatar_wrhlxx.png`,
     avatarFallback: '👨‍🔧',
     time: '2h',
     stories: [
@@ -26,7 +29,7 @@ const ACCOUNTS_TEMPLATE = [
       },
       {
         type: 'slider',
-        image: 'assets/caja_terror_1.jpg',
+        image: `${CDN}/v1772606017/caja_terror_1_ybazgi.jpg`,
         placeholderBg: 'linear-gradient(135deg, #8B0000, #4a0000)',
         placeholderEmoji: '🔌',
         question: '¿Pro o Terror?',
@@ -36,7 +39,7 @@ const ACCOUNTS_TEMPLATE = [
       },
       {
         type: 'poll',
-        image: 'assets/caja_terror_1.jpg',
+        image: `${CDN}/v1772606017/caja_terror_1_ybazgi.jpg`,
         placeholderBg: 'linear-gradient(135deg, #8B0000, #4a0000)',
         placeholderEmoji: '🔌',
         question: '¿Cuál es el PRIMER fallo que ves?',
@@ -48,7 +51,7 @@ const ACCOUNTS_TEMPLATE = [
       },
       {
         type: 'slider',
-        image: 'assets/caja_pro_1.jpg',
+        image: `${CDN}/v1772606016/caja_pro_1_fikoir.jpg`,
         placeholderBg: 'linear-gradient(135deg, #006644, #003322)',
         placeholderEmoji: '✅',
         question: '¿Pro o Terror?',
@@ -58,7 +61,7 @@ const ACCOUNTS_TEMPLATE = [
       },
       {
         type: 'slider',
-        image: 'assets/caja_terror_sutil.jpg',
+        image: `${CDN}/v1772606017/caja_terror_sutil_wr4spl.jpg`,
         placeholderBg: 'linear-gradient(135deg, #8B4500, #4a2500)',
         placeholderEmoji: '🤔',
         question: '¿Pro o Terror?',
@@ -71,7 +74,7 @@ const ACCOUNTS_TEMPLATE = [
   {
     id: 'obra_en_vivo',
     username: 'obra_en_vivo',
-    avatar: 'assets/obra_avatar.png',
+    avatar: `${CDN}/v1772606014/obra_avatar_wsf1vf.png`,
     avatarFallback: '🏗️',
     time: '4h',
     stories: [
@@ -83,8 +86,8 @@ const ACCOUNTS_TEMPLATE = [
       },
       {
         type: 'reveal',
-        beforeImage: 'assets/caja_terror_1.jpg',
-        afterImage: 'assets/caja_terror_1_fixed.jpg',
+        beforeImage: `${CDN}/v1772606017/caja_terror_1_ybazgi.jpg`,
+        afterImage: `${CDN}/v1772606016/caja_terror_1_fixed_xs5jqb.jpg`,
         beforeBg: 'linear-gradient(135deg, #8B0000, #4a0000)',
         afterBg: 'linear-gradient(135deg, #006644, #003322)',
         beforeEmoji: '💀',
@@ -95,8 +98,8 @@ const ACCOUNTS_TEMPLATE = [
       },
       {
         type: 'reveal',
-        beforeImage: 'assets/caja_serpientes_antes.jpg',
-        afterImage: 'assets/caja_serpientes_despues.jpg',
+        beforeImage: `${CDN}/v1772606017/caja_serpientes_antes_x8yfde.jpg`,
+        afterImage: `${CDN}/v1772606018/caja_serpientes_despues_javc5y.jpg`,
         beforeBg: 'linear-gradient(135deg, #8B4500, #4a2500)',
         afterBg: 'linear-gradient(135deg, #006644, #003322)',
         beforeEmoji: '🐍',
@@ -110,15 +113,15 @@ const ACCOUNTS_TEMPLATE = [
   {
     id: 'bootkamp_oficial',
     username: 'bootkamp_oficial',
-    avatar: 'assets/bootkamp_avatar.png',
+    avatar: `${CDN}/v1772606013/bootkamp_avatar_zcs6cv.png`,
     avatarFallback: '🔥',
     time: '6h',
     isAd: true,
     stories: [
       {
         type: 'ad',
-        image: 'assets/ad_bootkamp_1.jpg',
-        logo: 'assets/kampe_logo_blanco.png',
+        image: `${CDN}/v1772606015/ad_bootkamp_1_mxivmr.jpg`,
+        logo: `${CDN}/v1772606014/kampe_logo_blanco_tkuozy.png`,
         placeholderBg: 'linear-gradient(135deg, #FF6B00, #FD1D1D)',
         placeholderEmoji: '⚡',
         title: 'Bootkämp by Kämpe',
@@ -131,8 +134,8 @@ const ACCOUNTS_TEMPLATE = [
       },
       {
         type: 'ad',
-        image: 'assets/ad_bootkamp_arnold.jpg',
-        logo: 'assets/kampe_logo_blanco.png',
+        image: `${CDN}/v1772606015/ad_bootkamp_arnold_danbqy.jpg`,
+        logo: `${CDN}/v1772606014/kampe_logo_blanco_tkuozy.png`,
         placeholderBg: 'linear-gradient(135deg, #1a1a1a, #333)',
         placeholderEmoji: '💪',
         title: 'Bootkämp by Kämpe',
@@ -145,8 +148,8 @@ const ACCOUNTS_TEMPLATE = [
       },
       {
         type: 'ad',
-        image: 'assets/ad_bootkamp_2.jpg',
-        logo: 'assets/kampe_logo_blanco.png',
+        image: `${CDN}/v1772606015/ad_bootkamp_2_mtj7ev.jpg`,
+        logo: `${CDN}/v1772606014/kampe_logo_blanco_tkuozy.png`,
         placeholderBg: 'linear-gradient(135deg, #0a0a2e, #1a3a6e)',
         placeholderEmoji: '👷',
         title: 'Bootkämp by Kämpe',
@@ -162,7 +165,7 @@ const ACCOUNTS_TEMPLATE = [
   {
     id: 'quiz_electrico',
     username: 'quiz_electrico',
-    avatar: 'assets/quiz_avatar.png',
+    avatar: `${CDN}/v1772606014/quiz_avatar_kk0dkz.png`,
     avatarFallback: '⚡',
     time: '3h',
     stories: [
@@ -236,7 +239,7 @@ const MAX_SCORE = 135; // 3 sliders×15 + 2 polls×15 + 4 quizzes×15
 const FEED_POSTS = [
   {
     username: 'maestro_diego',
-    avatar: 'assets/diego_avatar.png',
+    avatar: `${CDN}/v1772606014/diego_avatar_wrhlxx.png`,
     avatarFallback: '👨‍🔧',
     video: 'https://res.cloudinary.com/kampe/video/upload/c_fill,ar_4:5,g_auto,w_1080/v1772562003/feed_diego_challenge_t5trvy.mp4',
     imageBg: 'linear-gradient(135deg, #0B214A, #00E6BC)',
