@@ -80,7 +80,7 @@ function startGame() {
 /* ===== HUD ===== */
 function updateHUD() {
   $('hud-level').textContent = 'Nivel ' + level;
-  $('hud-score').textContent = score + ' pts';
+  $('hud-score').textContent = '';
   var h = '';
   for (var i = 0; i < MAX_LIVES; i++) {
     h += '<span class="hud-heart' + (i >= lives ? ' lost' : '') + '">❤️</span>';
