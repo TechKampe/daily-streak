@@ -72,8 +72,8 @@ const BJ_MSGS = [
 const TUTORIAL = [
   {msg:()=>'Mira el cable que llega. El icono y el texto te dicen que es. Este cable es de la familia <b>'+FAMILIA_LABELS[currentCable.familia]+'</b>.', when:'before'},
   {msg:()=>'Arrastra el cable a la zona <b>'+FAMILIA_LABELS[currentCable.familia]+'</b> de la caja. Los cables de la misma familia van juntos.', when:'before'},
-  {msg:'Mira la barra: cada cable llena un 25% de su zona. Cuando todas las zonas lleguen al 50%, puedes cerrar la caja, pero con la puntuación mínima.', when:'after'},
-  {msg:'Si llegas al 75% en cada zona... x10 puntos! Eso si, al 100% la caja no cierra. Recuerda la lección: hay que dejar reserva. ¿Te arriesgas?', when:'after'},
+  {msg:'Mira la barra: cada cable llena un 25% de su zona. Cuando todas las zonas lleguen al 50%, puedes cerrar la caja, pero solo te llevarás la puntuación mínima.', when:'after'},
+  {msg:'Vas bien. Si llegas al 75% en cada zona... 10000 puntos! Eso sí, al 100% la caja no cierra. Recuerda la lección: hay que dejar reserva. ¿Entendido?', when:'after'},
   {msg:'Ya lo tienes! A partir de ahora, tu solo.', when:'before'}
 ];
 
@@ -164,11 +164,18 @@ function showScreen(name){
 /* ---------- SHUFFLE BAG ---------- */
 function buildCableQueue(){
   cableQueue = [];
-  // Phase 1: 2 groups of 3 (one per family each), shuffled
-  const g1 = shuffle(FAMILIAS.map(f=>pickRandom(cablesByFamilia(f))));
-  const g2 = shuffle(FAMILIAS.map(f=>pickRandom(cablesByFamilia(f))));
-  cableQueue.push(...g1,...g2);
-  // Phase 2: pre-generate a few
+  if(boxesCompleted===0){
+    // First box: balanced 2 per family so 50% is guaranteed
+    const g1 = shuffle(FAMILIAS.map(f=>pickRandom(cablesByFamilia(f))));
+    const g2 = shuffle(FAMILIAS.map(f=>pickRandom(cablesByFamilia(f))));
+    cableQueue.push(...g1,...g2);
+  } else {
+    // Later boxes: random distribution — player must manage risk
+    for(let i=0;i<6;i++){
+      cableQueue.push(pickRandom(cablesByFamilia(FAMILIAS[Math.random()*3|0])));
+    }
+  }
+  // Phase 2: more random cables
   for(let i=0;i<6;i++){
     cableQueue.push(pickRandom(cablesByFamilia(FAMILIAS[Math.random()*3|0])));
   }
@@ -189,15 +196,14 @@ function nextCable(){
 }
 
 /* ---------- SCORING ---------- */
-function calcMultiplier(){
+function calcBoxPoints(){
   let n75 = 0;
   for(const f of FAMILIAS) if(zones[f]>=75) n75++;
-  if(n75===3) return 10;
-  if(n75===2) return 3;
-  if(n75===1) return 1.5;
-  return 1;
+  if(n75===3) return 10000;
+  if(n75===2) return 500;
+  if(n75===1) return 99;
+  return 75;
 }
-function calcBoxPoints(){return Math.round(100*calcMultiplier())}
 function allZonesMin50(){return FAMILIAS.every(f=>zones[f]>=50)}
 function anyZone100(){return FAMILIAS.some(f=>zones[f]>=100)}
 
@@ -230,10 +236,10 @@ function updateBars(){
 
 function updateMultiplierInfo(){
   if(!allZonesMin50()){el.multInfo.textContent='';return}
-  const m=calcMultiplier(),p=calcBoxPoints();
-  el.multInfo.innerHTML = m>=10
-    ? 'x10! <b>'+p+' pts</b> si cierras ahora'
-    : 'x'+m+' = '+p+' pts | 75% en cada zona: x10!';
+  const p=calcBoxPoints();
+  el.multInfo.innerHTML = p>=10000
+    ? '<b>'+p+' pts</b> si cierras ahora!'
+    : '<b>'+p+' pts</b> si cierras ahora';
 }
 
 /* ---------- PIECE RENDERING ---------- */
@@ -421,14 +427,14 @@ function showBlackjackDecision(){
   } else {
     el.bjMsg.textContent = pickRandom(BJ_MSGS);
   }
-  const m=calcMultiplier(), p=calcBoxPoints();
+  const p=calcBoxPoints();
   // Show current score + what closing now gives
-  el.bjScore.textContent = 'Cerrar ahora: +'+p+' pts (x'+m+')';
-  // Show what next multiplier tier would give
-  if(m<1.5) el.bjIncentive.textContent = '... pero si llegas al 75% en una zona: 150 pts';
-  else if(m<3) el.bjIncentive.textContent = '... pero si llegas al75% en dos zonas: 300 pts';
-  else if(m<10) el.bjIncentive.textContent = '... pero si llegas al75% en las tres zonas: 1000 pts!';
-  else el.bjIncentive.textContent = 'Maximo multiplicador! Cierra para asegurar.';
+  el.bjScore.textContent = 'Cerrar ahora: +'+p+' pts';
+  // Show what next tier would give
+  if(p<99) el.bjIncentive.textContent = '... o sigue llenando: hasta 99, 500 o 10000 pts!';
+  else if(p<500) el.bjIncentive.textContent = '... o sigue llenando: hasta 500 o 10000 pts!';
+  else if(p<10000) el.bjIncentive.textContent = '... o sigue llenando: hasta 10000 pts!';
+  else el.bjIncentive.textContent = 'Maximo! Cierra para asegurar.';
 }
 
 function closeBox(){
@@ -446,9 +452,11 @@ function continueBox(){
   nextCable();
 }
 
+let justCompletedTask = false;
 function checkTaskCompleted(){
   if(!taskCompleted && totalScore>=OBJ_POINTS){
     taskCompleted = true;
+    justCompletedTask = true;
     try{window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}))}catch(e){}
   }
 }
@@ -457,6 +465,7 @@ function checkTaskCompleted(){
 function bust(){
   boxesBusted++;
   el.cajaImg.src = A.caja_bust;
+  el.multInfo.textContent = '';
   showSoniaMsg('Demasiado llena. Hay que dejar margen de manipulacion.','worried', true, ()=>{
     showBoxResult(0, true);
   });
@@ -466,25 +475,38 @@ function bust(){
 function showBoxResult(pts, isBust){
   el.boxOverlay.classList.remove('hidden');
   if(isBust){
-    el.boxIcon.textContent = '\uD83D\uDCA5';
-    el.boxMsg.textContent = 'La caja no se puede cerrar. 0 puntos.';
+    el.boxIcon.textContent = '';
+    el.boxMsg.textContent = 'La caja no se puede cerrar. 0 puntos. Fin de partida.';
     el.boxPts.textContent = '0 pts';
     el.boxPts.classList.add('bust');
+    el.boxBtn.textContent = 'Ver resultados';
+    el.boxBtn.onclick = ()=>{ el.boxOverlay.classList.add('hidden'); showResults(); };
   } else {
-    const m = calcMultiplier();
-    el.boxIcon.textContent = m>=10 ? '\uD83C\uDF1F' : '\u2705';
-    el.boxMsg.textContent = m>=10
-      ? 'INCREIBLE! 75% en cada zona! x10 puntos!'
+    el.boxIcon.textContent = '';
+    el.boxMsg.textContent = pts>=10000
+      ? 'INCREIBLE! 75% en cada zona! Puntuacion maxima!'
       : 'Caja cerrada! Eso es una caja contratable.';
     el.boxPts.textContent = '+'+pts+' pts';
     el.boxPts.classList.remove('bust');
     el.cajaImg.src = A.caja_cerrada;
     setAvatar('celebrating');
+    el.avatarImg.style.zIndex = '120';
+    el.avatarImg.style.left = '50%';
+    el.avatarImg.style.transform = 'translateX(-50%)';
+    el.avatarImg.style.height = '28%';
+    el.avatarImg.style.top = '36px';
+    el.boxBtn.textContent = 'Siguiente caja';
+    el.boxBtn.onclick = nextBox;
   }
 }
 
 function nextBox(){
   el.boxOverlay.classList.add('hidden');
+  el.avatarImg.style.zIndex = '';
+  el.avatarImg.style.left = '';
+  el.avatarImg.style.transform = '';
+  el.avatarImg.style.height = '';
+  el.avatarImg.style.top = '';
   zones = {entrada:0, derivacion:0, salida:0};
   piecesPlacedThisBox = 0;
   el.cajaImg.src = A.caja_abierta;
@@ -492,7 +514,12 @@ function nextBox(){
   updateMultiplierInfo();
   setAvatar('happy');
   buildCableQueue();
-  nextCable();
+  if(justCompletedTask){
+    justCompletedTask = false;
+    showSoniaMsg('Tarea conseguida! Pero a ver hasta donde llegas...','celebrating', true, ()=>{ nextCable(); });
+  } else {
+    nextCable();
+  }
 }
 
 /* ---------- RESULTS SCREEN ---------- */
