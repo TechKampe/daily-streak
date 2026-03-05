@@ -6,9 +6,9 @@
 var CLD = 'https://res.cloudinary.com/kampe/image/upload/';
 
 var ALEX = {
-  base:    CLD + 'v1772642292/Alex_base_zathyx.png',
-  happy:   CLD + 'v1772642293/Alex_happy_lu9vx2.png',
-  worried: CLD + 'v1772642291/Alex_worried_bcm52p.png'
+  base:    CLD + 'v1772704991/Alex_base_zathyx.png',
+  happy:   CLD + 'v1772704976/Alex_happy_lu9vx2.png',
+  worried: CLD + 'v1772705008/Alex_worried_bcm52p.png'
 };
 
 /* ===== HELPERS ===== */
@@ -31,7 +31,7 @@ function pickN(arr, n) {
   return copy.slice(0, n);
 }
 
-/* ===== SYMBOL POOL (15 symbols with SVG) ===== */
+/* ===== SYMBOL POOL (20 symbols with SVG) ===== */
 function symSVG(paths, vb) {
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + (vb || '0 0 60 60') + '" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
 }
@@ -128,6 +128,42 @@ var SYMBOLS = [
     name: 'Cruce sin conexion',
     desc: 'Los conductores se cruzan pero NO estan conectados',
     svg: symSVG('<line x1="4" y1="30" x2="24" y2="30"/><line x1="36" y1="30" x2="56" y2="30"/><path d="M24 30 Q30 18 36 30" fill="none"/><line x1="30" y1="8" x2="30" y2="52"/>')
+  },
+  {
+    id: 'interruptor_cerrado',
+    name: 'Interruptor cerrado',
+    desc: 'Interruptor en posicion cerrada (circuito conectado)',
+    svg: symSVG('<circle cx="12" cy="30" r="4" fill="#fff"/><circle cx="48" cy="30" r="4" fill="#fff"/><line x1="16" y1="30" x2="44" y2="30"/>')
+  },
+  {
+    id: 'amperimetro',
+    name: 'Amperimetro',
+    desc: 'Mide la intensidad de corriente en amperios (se conecta en serie)',
+    svg: symSVG('<line x1="4" y1="30" x2="14" y2="30"/><circle cx="30" cy="30" r="16"/><text x="30" y="36" text-anchor="middle" fill="#fff" stroke="none" font-size="18" font-weight="700" font-family="Baloo 2,sans-serif">A</text><line x1="46" y1="30" x2="56" y2="30"/>')
+  },
+  {
+    id: 'voltimetro',
+    name: 'Voltimetro',
+    desc: 'Mide la tension o voltaje en voltios (se conecta en paralelo)',
+    svg: symSVG('<line x1="4" y1="30" x2="14" y2="30"/><circle cx="30" cy="30" r="16"/><text x="30" y="36" text-anchor="middle" fill="#fff" stroke="none" font-size="18" font-weight="700" font-family="Baloo 2,sans-serif">V</text><line x1="46" y1="30" x2="56" y2="30"/>')
+  },
+  {
+    id: 'bobina',
+    name: 'Bobina / inductor',
+    desc: 'Almacena energia en un campo magnetico',
+    svg: symSVG('<line x1="4" y1="30" x2="10" y2="30"/><path d="M10 30 Q14 14 18 30 Q22 14 26 30 Q30 14 34 30 Q38 14 42 30 Q46 14 50 30" fill="none"/><line x1="50" y1="30" x2="56" y2="30"/>')
+  },
+  {
+    id: 'pulsador',
+    name: 'Pulsador',
+    desc: 'Contacto momentaneo: solo cierra mientras se pulsa',
+    svg: symSVG('<circle cx="12" cy="36" r="4" fill="#fff"/><circle cx="48" cy="36" r="4"/><line x1="16" y1="36" x2="44" y2="36"/><line x1="30" y1="36" x2="30" y2="16"/><line x1="22" y1="16" x2="38" y2="16"/>')
+  },
+  {
+    id: 'resistencia_rect',
+    name: 'Resistencia (rectangular)',
+    desc: 'Representacion rectangular de la resistencia (norma IEC)',
+    svg: symSVG('<line x1="4" y1="30" x2="14" y2="30"/><rect x="14" y="20" width="32" height="20" rx="2"/><line x1="46" y1="30" x2="56" y2="30"/>')
   }
 ];
 
@@ -137,7 +173,7 @@ function schemaSVG(w, h, content) {
 }
 
 function svgLabel(x, y, text, size) {
-  return '<text x="' + x + '" y="' + y + '" text-anchor="middle" fill="rgba(255,255,255,.7)" stroke="none" font-size="' + (size || 10) + '" font-weight="600" font-family="Baloo 2,sans-serif">' + text + '</text>';
+  return '<text x="' + x + '" y="' + y + '" text-anchor="middle" fill="rgba(255,255,255,.85)" stroke="none" font-size="' + (size || 12) + '" font-weight="700" font-family="Baloo 2,sans-serif">' + text + '</text>';
 }
 
 function tapRect(x, y, w, h, zone) {
@@ -182,18 +218,18 @@ var SCHEMAS = [
       return schemaSVG(340, 200,
         /* Fase (marrón) — recta arriba */
         '<line x1="20" y1="40" x2="320" y2="40" stroke="' + COL_FASE + '" stroke-width="2"/>' +
-        svgLabel(10, 34, 'F', 9) +
+        svgLabel(10, 34, 'F', 12) +
         /* Neutro (azul) — con interruptor en el neutro (ERROR) */
         '<line x1="20" y1="160" x2="100" y2="160" stroke="' + COL_NEUT + '" stroke-width="2"/>' +
         '<line x1="170" y1="160" x2="320" y2="160" stroke="' + COL_NEUT + '" stroke-width="2"/>' +
-        svgLabel(10, 154, 'N', 9) +
+        svgLabel(10, 154, 'N', 12) +
         inlineInterr(105, 160, 165) +
-        svgLabel(135, 185, 'Interruptor', 9) +
+        svgLabel(135, 185, 'Interruptor', 12) +
         /* Lámpara */
         inlineLamp(320, 100, 18) +
         '<line x1="320" y1="40" x2="320" y2="82" stroke="' + COL_FASE + '"/>' +
         '<line x1="320" y1="118" x2="320" y2="160" stroke="' + COL_NEUT + '"/>' +
-        svgLabel(320, 136, 'Lampara', 9) +
+        svgLabel(320, 136, 'Lampara', 12) +
         /* Magnetotérmico */
         inlineMagn(54, 100) +
         '<line x1="54" y1="40" x2="54" y2="86" stroke="' + COL_FASE + '"/>' +
@@ -218,21 +254,21 @@ var SCHEMAS = [
         '<line x1="20" y1="40" x2="100" y2="40" stroke="' + COL_FASE + '"/>' +
         '<line x1="170" y1="40" x2="230" y2="40" stroke="' + COL_FASE + '"/>' +
         '<line x1="270" y1="40" x2="320" y2="40" stroke="' + COL_FASE + '"/>' +
-        svgLabel(10, 34, 'F', 9) +
+        svgLabel(10, 34, 'F', 12) +
         /* Gap visual */
         '<line x1="232" y1="36" x2="232" y2="44" stroke="#E74C3C" stroke-width="2"/>' +
         '<line x1="268" y1="36" x2="268" y2="44" stroke="#E74C3C" stroke-width="2"/>' +
         /* Neutro (azul) */
         '<line x1="20" y1="160" x2="320" y2="160" stroke="' + COL_NEUT + '"/>' +
-        svgLabel(10, 154, 'N', 9) +
+        svgLabel(10, 154, 'N', 12) +
         /* Interruptor en fase */
         inlineInterr(105, 40, 165) +
-        svgLabel(135, 60, 'Interruptor', 9) +
+        svgLabel(135, 60, 'Interruptor', 12) +
         /* Lámpara */
         inlineLamp(320, 100, 18) +
         '<line x1="320" y1="40" x2="320" y2="82" stroke="' + COL_FASE + '"/>' +
         '<line x1="320" y1="118" x2="320" y2="160" stroke="' + COL_NEUT + '"/>' +
-        svgLabel(320, 136, 'Lampara', 9) +
+        svgLabel(320, 136, 'Lampara', 12) +
         /* Magnetotérmico */
         inlineMagn(54, 100) +
         '<line x1="54" y1="40" x2="54" y2="86" stroke="' + COL_FASE + '"/>' +
@@ -256,21 +292,21 @@ var SCHEMAS = [
         /* Fase (marrón) */
         '<line x1="20" y1="40" x2="100" y2="40" stroke="' + COL_FASE + '"/>' +
         '<line x1="170" y1="40" x2="320" y2="40" stroke="' + COL_FASE + '"/>' +
-        svgLabel(10, 34, 'F', 9) +
+        svgLabel(10, 34, 'F', 12) +
         /* Neutro (azul) */
         '<line x1="20" y1="160" x2="320" y2="160" stroke="' + COL_NEUT + '"/>' +
-        svgLabel(10, 154, 'N', 9) +
+        svgLabel(10, 154, 'N', 12) +
         /* Interruptor en fase */
         inlineInterr(105, 40, 165) +
-        svgLabel(135, 60, 'Interruptor', 9) +
+        svgLabel(135, 60, 'Interruptor', 12) +
         /* Lámpara */
         inlineLamp(320, 100, 18) +
         '<line x1="320" y1="40" x2="320" y2="82" stroke="' + COL_FASE + '"/>' +
         '<line x1="320" y1="118" x2="320" y2="160" stroke="' + COL_NEUT + '"/>' +
-        svgLabel(320, 136, 'Lampara', 9) +
+        svgLabel(320, 136, 'Lampara', 12) +
         /* Hueco donde debería ir protección */
         '<rect x="30" y="75" width="48" height="50" rx="6" stroke="rgba(255,255,255,.2)" stroke-dasharray="4 4" fill="none"/>' +
-        svgLabel(54, 105, '???', 11) +
+        svgLabel(54, 105, '???', 14) +
         '<line x1="54" y1="40" x2="54" y2="75" stroke="rgba(255,255,255,.3)"/>' +
         '<line x1="54" y1="125" x2="54" y2="160" stroke="rgba(255,255,255,.3)"/>' +
         /* Tap zones */
@@ -291,36 +327,36 @@ var SCHEMAS = [
       return schemaSVG(340, 220,
         /* Fase (marrón) */
         '<line x1="20" y1="40" x2="80" y2="40" stroke="' + COL_FASE + '"/>' +
-        svgLabel(10, 34, 'F', 9) +
+        svgLabel(10, 34, 'F', 12) +
         /* Conmutador 1 (correcto) */
         '<circle cx="85" cy="40" r="4" fill="#fff" stroke="#fff"/>' +
         '<circle cx="145" cy="28" r="4" fill="none" stroke="#fff"/>' +
         '<circle cx="145" cy="52" r="4" fill="none" stroke="#fff"/>' +
         '<line x1="89" y1="40" x2="141" y2="28" stroke="#fff" stroke-width="2.5"/>' +
-        svgLabel(115, 68, 'Conmut.', 9) +
+        svgLabel(115, 68, 'Conmut.', 12) +
         /* Viajeros (naranja) */
         '<line x1="149" y1="28" x2="189" y2="28" stroke="#e67e22"/>' +
         '<line x1="149" y1="52" x2="189" y2="52" stroke="#e67e22"/>' +
-        svgLabel(170, 18, 'viajeros', 8) +
+        svgLabel(170, 18, 'viajeros', 11) +
         /* Interruptor simple INCORRECTO (debería ser conmutador) */
         inlineInterr(193, 40, 253) +
-        svgLabel(223, 58, 'Interr.??', 9) +
+        svgLabel(223, 58, 'Interr.??', 12) +
         '<line x1="189" y1="28" x2="193" y2="40" stroke="#e67e22" stroke-dasharray="3 3"/>' +
         '<line x1="189" y1="52" x2="193" y2="40" stroke="#e67e22" stroke-dasharray="3 3"/>' +
         '<line x1="257" y1="40" x2="320" y2="40" stroke="' + COL_FASE + '"/>' +
         /* Neutro (azul) */
         '<line x1="20" y1="180" x2="320" y2="180" stroke="' + COL_NEUT + '"/>' +
-        svgLabel(10, 174, 'N', 9) +
+        svgLabel(10, 174, 'N', 12) +
         /* Lámpara */
         inlineLamp(320, 110, 18) +
         '<line x1="320" y1="40" x2="320" y2="92" stroke="' + COL_FASE + '"/>' +
         '<line x1="320" y1="128" x2="320" y2="180" stroke="' + COL_NEUT + '"/>' +
-        svgLabel(320, 148, 'Lampara', 9) +
+        svgLabel(320, 148, 'Lampara', 12) +
         /* Protección (Dif+Mag) */
         inlineMagn(44, 100) +
         '<line x1="44" y1="40" x2="44" y2="86" stroke="rgba(255,255,255,.4)"/>' +
         '<line x1="44" y1="114" x2="44" y2="180" stroke="rgba(255,255,255,.4)"/>' +
-        svgLabel(44, 76, 'Dif+Mag', 8) +
+        svgLabel(44, 76, 'Dif+Mag', 11) +
         /* Tap zones */
         tapRect(180, 20, 85, 50, 'simbolo_mal') +
         tapRect(70, 20, 85, 55, 'conmutador1') +
@@ -552,14 +588,9 @@ function nextN1Round() {
   var heroBub = document.createElement('div');
   heroBub.className = 'hero-bubble';
   heroBub.id = 'hero-bubble';
-  heroBub.textContent = n1Round === 0 ? 'A ver... ¿que son estos simbolos?' : '¿Cual es el correcto?';
+  heroBub.textContent = '¿Cual es: ' + correct.name + '?';
   hero.appendChild(heroBub);
   area.appendChild(hero);
-
-  var q = document.createElement('div');
-  q.className = 'quiz-question';
-  q.textContent = '¿Cual es: ' + correct.name + '?';
-  area.appendChild(q);
 
   var grid = document.createElement('div');
   grid.className = 'quiz-grid';
@@ -908,8 +939,7 @@ function nextN3Round() {
 function initN4() {
   $('mission-text').textContent = 'Planifica el montaje en orden';
   say('Ultimo reto: planificar el montaje. Primero entiendo, luego marco, luego ejecuto.', 'base');
-  $('timer-wrap').classList.remove('hidden');
-  n4TimeLeft = 40;
+  $('timer-wrap').classList.add('hidden');
   var roundStart = Date.now();
   var n4Confirmed = false;
 
@@ -961,8 +991,6 @@ function initN4() {
       var elapsed = (Date.now() - roundStart) / 1000;
       if (elapsed < 20) addScore(15);
       say(pick(['¡Perfecto! Ese es el orden correcto.', '¡Bien planificado!']), 'happy');
-      if (n4Timer) { clearInterval(n4Timer); n4Timer = null; }
-      $('timer-wrap').classList.add('hidden');
       n4BonusIdx = 0;
       setTimeout(function() { showBonusQuestion(); }, 1000);
     } else {
@@ -991,19 +1019,6 @@ function initN4() {
   /* Drag-to-reorder */
   setupN4Drag(list);
 
-  updateTimerBar(40, 40);
-  n4Timer = setInterval(function() {
-    n4TimeLeft--;
-    updateTimerBar(n4TimeLeft, 40);
-    if (n4TimeLeft <= 0) {
-      clearInterval(n4Timer);
-      n4Timer = null;
-      $('timer-wrap').classList.add('hidden');
-      say('¡Se me acabo el tiempo!', 'worried');
-      loseLife();
-      if (lives > 0) setTimeout(showResults, 800);
-    }
-  }, 1000);
 }
 
 function renumberSteps(tray) {
