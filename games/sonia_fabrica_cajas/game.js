@@ -73,7 +73,7 @@ const TUTORIAL = [
   {msg:()=>'Mira el cable que llega. El icono y el texto te dicen qué es. Este cable es de la familia <b>'+FAMILIA_LABELS[currentCable.familia]+'</b>.', when:'before'},
   {msg:()=>'Arrastra el cable a la zona <b>'+FAMILIA_LABELS[currentCable.familia]+'</b> de la caja. Los cables de la misma familia van juntos.', when:'before'},
   {msg:'Mira la barra: cada cable llena un 25% de su zona. Cuando todas las zonas lleguen al 50%, puedes cerrar la caja, pero solo te llevarás la puntuación mínima.', when:'after'},
-  {msg:'Vas bien. Si llegas al 75% en cada zona... ¡299 puntos! Eso sí, al 100% la caja no cierra. Recuerda la lección: hay que dejar reserva. ¿Entendido?', when:'after'},
+  {msg:'Vas bien. Si llegas al 75% en cada zona... ¡299 puntos! Eso sí, al 100% la caja no cierra. Recuerda la lección: hay que dejar espacio de trabajo. ¿Entendido?', when:'after'},
   {msg:'¡Ya lo tienes! A partir de ahora, tú solo.', when:'before'}
 ];
 
@@ -164,18 +164,40 @@ function showScreen(name){
 /* ---------- SHUFFLE BAG ---------- */
 function buildCableQueue(){
   cableQueue = [];
-  if(boxesCompleted===0){
-    // First box: balanced 2 per family so 50% is guaranteed
+  const safeMode = totalScore < OBJ_POINTS;
+
+  if(safeMode){
+    // Safe mode: guarantee every zone reaches at least 50% (2 cables each)
+    // Batch 1: one per family (shuffled) — guarantees 25/25/25
     const g1 = shuffle(FAMILIAS.map(f=>pickRandom(cablesByFamilia(f))));
-    const g2 = shuffle(FAMILIAS.map(f=>pickRandom(cablesByFamilia(f))));
-    cableQueue.push(...g1,...g2);
+    cableQueue.push(...g1);
+    // Batch 2: 3 random cables, but patch any family that only has 1
+    const counts = {entrada:1, derivacion:1, salida:1};
+    const batch2 = [];
+    for(let i=0;i<3;i++){
+      const f = FAMILIAS[Math.random()*3|0];
+      batch2.push(f);
+      counts[f]++;
+    }
+    // Patch: ensure every family has at least 2
+    for(const f of FAMILIAS){
+      while(counts[f]<2){
+        const donor = batch2.findIndex(b=>counts[b]>2);
+        if(donor<0) break;
+        counts[batch2[donor]]--;
+        batch2[donor] = f;
+        counts[f]++;
+      }
+    }
+    shuffle(batch2);
+    cableQueue.push(...batch2.map(f=>pickRandom(cablesByFamilia(f))));
   } else {
-    // Later boxes: random distribution — player must manage risk
+    // Post-objective: fully random from the start
     for(let i=0;i<6;i++){
       cableQueue.push(pickRandom(cablesByFamilia(FAMILIAS[Math.random()*3|0])));
     }
   }
-  // Phase 2: more random cables
+  // Phase 2: more random cables (risk zone)
   for(let i=0;i<6;i++){
     cableQueue.push(pickRandom(cablesByFamilia(FAMILIAS[Math.random()*3|0])));
   }
