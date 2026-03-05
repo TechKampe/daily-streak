@@ -74,7 +74,7 @@ const TUTORIAL = [
   {msg:()=>'Mira el cable que llega. El icono y el texto te dicen qué es. Este cable es de la familia <b>'+FAMILIA_LABELS[currentCable.familia]+'</b>.', when:'before'},
   {msg:()=>'Arrastra el cable a la zona <b>'+FAMILIA_LABELS[currentCable.familia]+'</b> de la caja. Los cables de la misma familia van juntos.', when:'before'},
   {msg:'Mira la barra: cada cable llena un 25% de su zona. Cuando todas las zonas lleguen al 50%, puedes cerrar la caja, pero solo te llevarás la puntuación mínima.', when:'after'},
-  {msg:'Vas bien. Si llegas al 75% en cada zona... ¡299 puntos! Eso sí, al 100% la caja no cierra. Recuerda la lección: hay que dejar espacio de trabajo. ¿Entendido?', when:'after'},
+  {msg:'Vas bien, ve rellenando zonas. Eso sí, al 100% en cualquier zona, la caja no cierra. Recuerda la lección: hay que dejar espacio de trabajo. ¿Entendido?', when:'after'},
   {msg:'¡Ya lo tienes! A partir de ahora, tú solo.', when:'before'}
 ];
 
@@ -136,6 +136,7 @@ let taskCompleted = false;
 let tutStep = 0;        // 0-4 = tutorial active, >=5 = done
 let firstGame = true;
 let busy = false;       // blocks drag while showing messages
+let safeStreak = 0;     // consecutive min-score closes after objective
 
 // Current box state
 let zones = {entrada:0, derivacion:0, salida:0};
@@ -167,12 +168,15 @@ function buildCableQueue(){
   cableQueue = [];
   const safeMode = totalScore < OBJ_POINTS;
 
-  if(safeMode){
-    // Safe mode: guarantee every zone reaches at least 50% (2 cables each)
-    // Batch 1: one per family (shuffled) — guarantees 25/25/25
-    const g1 = shuffle(FAMILIAS.map(f=>pickRandom(cablesByFamilia(f))));
-    cableQueue.push(...g1);
-    // Batch 2: 3 random cables, but patch any family that only has 1
+  // Balanced batch: 1 per family + 3 random patched to min 2/family
+  const useBalanced = safeMode || safeStreak < 3;
+
+  // Batch 1: one per family (shuffled) — guarantees 25/25/25
+  const g1 = shuffle(FAMILIAS.map(f=>pickRandom(cablesByFamilia(f))));
+  cableQueue.push(...g1);
+
+  if(useBalanced){
+    // Batch 2: 3 random cables, patched so every family has at least 2
     const counts = {entrada:1, derivacion:1, salida:1};
     const batch2 = [];
     for(let i=0;i<3;i++){
@@ -180,7 +184,6 @@ function buildCableQueue(){
       batch2.push(f);
       counts[f]++;
     }
-    // Patch: ensure every family has at least 2
     for(const f of FAMILIAS){
       while(counts[f]<2){
         const donor = batch2.findIndex(b=>counts[b]>2);
@@ -193,8 +196,8 @@ function buildCableQueue(){
     shuffle(batch2);
     cableQueue.push(...batch2.map(f=>pickRandom(cablesByFamilia(f))));
   } else {
-    // Post-objective: fully random from the start
-    for(let i=0;i<6;i++){
+    // Degraded: 3 fully random (no patch) — some zones may stay at 25%
+    for(let i=0;i<3;i++){
       cableQueue.push(pickRandom(cablesByFamilia(FAMILIAS[Math.random()*3|0])));
     }
   }
@@ -258,11 +261,7 @@ function updateBars(){
 }
 
 function updateMultiplierInfo(){
-  if(!allZonesMin50()){el.multInfo.textContent='';return}
-  const p=calcBoxPoints();
-  el.multInfo.innerHTML = p>=299
-    ? '¡<b>'+p+' pts</b> si cierras ahora!'
-    : '<b>'+p+' pts</b> si cierras ahora';
+  el.multInfo.textContent='';
 }
 
 /* ---------- PIECE RENDERING ---------- */
@@ -463,6 +462,9 @@ function showBlackjackDecision(){
 function closeBox(){
   el.bjOverlay.classList.add('hidden');
   const pts = calcBoxPoints();
+  if(totalScore >= OBJ_POINTS){
+    safeStreak = pts <= 75 ? safeStreak + 1 : 0;
+  }
   totalScore += pts;
   boxesCompleted++;
   updateHUD();
@@ -577,6 +579,7 @@ function startGame(){
   boxesCompleted = 0;
   boxesBusted = 0;
   taskCompleted = false;
+  safeStreak = 0;
   piecesPlacedThisBox = 0;
   if(!firstGame) tutStep = TUTORIAL.length;
 
