@@ -636,9 +636,6 @@ function nextN1Round() {
    ================================================================ */
 function initN2() {
   $('mission-text').textContent = 'Conecta cada simbolo con su nombre';
-  /* Show Alex at bottom */
-  $('bottom-av').classList.remove('hidden');
-  $('bottom-av-img').src = ALEX.base;
   n2Round = 0;
   var picked = pickN(SYMBOLS, 10);
   n2Pairs = [picked.slice(0, 5), picked.slice(5, 10)];
@@ -800,13 +797,12 @@ function setupN2Drag(wrapper, colLeft, colRight) {
         nameEl.classList.add('matched');
         addScore(25);
         n2Matched++;
-        $('bottom-av-img').src = ALEX.happy;
         setTimeout(function() {
           busy = false;
           if (n2Matched >= 5) {
             if (n2RoundErrors === 0) addScore(20);
             n2Round++;
-            setTimeout(nextN2Round, 500);
+            showN2Inter();
           }
         }, 400);
       } else {
@@ -818,7 +814,6 @@ function setupN2Drag(wrapper, colLeft, colRight) {
         line.setAttribute('x2', c2.x);
         line.setAttribute('y2', c2.y);
         nameEl.classList.add('wrong');
-        $('bottom-av-img').src = ALEX.worried;
         loseLife();
         var oldLine = line;
         setTimeout(function() {
@@ -847,6 +842,20 @@ function setupN2Drag(wrapper, colLeft, colRight) {
   wrapper.addEventListener('mousemove', moveDrag);
   wrapper.addEventListener('touchend', endDrag);
   wrapper.addEventListener('mouseup', endDrag);
+}
+
+/* N2 interstitial: show Alex big between rounds */
+function showN2Inter() {
+  var ok = n2RoundErrors === 0;
+  $('n2-inter-img').src = ok ? ALEX.happy : ALEX.worried;
+  $('n2-inter-msg').textContent = ok
+    ? (n2Round < 2 ? '¡Ronda perfecta! Vamos a por la segunda.' : '¡Perfecto! Todas conectadas.')
+    : (n2Round < 2 ? 'Algunos fallos… ¡A por la ronda 2!' : 'Ronda terminada. ¡Puedo mejorar!');
+  $('n2-inter').classList.add('show');
+  setTimeout(function() {
+    $('n2-inter').classList.remove('show');
+    setTimeout(nextN2Round, 300);
+  }, 1600);
 }
 
 /* ================================================================
