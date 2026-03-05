@@ -6,33 +6,34 @@
 'use strict';
 
 /* ---------- ASSET PATHS ---------- */
+const CDN = 'https://res.cloudinary.com/kampe/image/upload/';
 const A = {
-  sonia_happy:       'assets/sonia_happy.png',
-  sonia_celebrating: 'assets/sonia_celebrating.png',
-  sonia_worried:     'assets/sonia_worried.png',
-  bg_intro:          'assets/background_intro.jpg',
-  bg_play:           'assets/background_gameplay.jpg',
-  caja_abierta:      'assets/caja_abierta.png',
-  caja_cerrada:      'assets/caja_cerrada.png',
-  caja_bust:         'assets/caja_bust.png'
+  sonia_happy:       CDN+'v1772746687/sonia_happy_wpawxd.png',
+  sonia_celebrating: CDN+'v1772746687/sonia_celebrating_piq1d9.png',
+  sonia_worried:     CDN+'v1772746686/sonia_worried_mpwj5i.png',
+  bg_intro:          CDN+'v1772746686/background_intro_btukpk.jpg',
+  bg_play:           CDN+'v1772746685/background_gameplay_wjriyn.jpg',
+  caja_abierta:      CDN+'v1772746681/caja_abierta_uzcfxb.png',
+  caja_cerrada:      CDN+'v1772746679/caja_cerrada_n1aebk.png',
+  caja_bust:         CDN+'v1772746683/caja_bust_pg24sc.png'
 };
 
 /* ---------- CABLE POOL ---------- */
 const CABLES = [
-  {id:'in_cuadro',       name:'Alimentación cuadro',       desc:'Viene del cuadro general',           tag:'IN',  familia:'entrada',     icon:'assets/cable_in_cuadro.jpg'},
-  {id:'in_diferencial',  name:'Alimentación diferencial',  desc:'Viene del diferencial',              tag:'IN',  familia:'entrada',     icon:'assets/cable_in_diferencial.jpg'},
-  {id:'in_acometida',    name:'Acometida',                 desc:'Acometida desde contador',            tag:'IN',  familia:'entrada',     icon:'assets/cable_in_acometida.jpg'},
-  {id:'v1_viajero',      name:'Viajero ida',               desc:'Viajero conmutada — ida',            tag:'V1',  familia:'derivacion',  icon:'assets/cable_v1_viajero.jpg'},
-  {id:'v2_viajero',      name:'Viajero vuelta',            desc:'Viajero conmutada — vuelta',         tag:'V2',  familia:'derivacion',  icon:'assets/cable_v2_viajero.jpg'},
-  {id:'v1_puente',       name:'Puente bornas',             desc:'Puente entre bornas',                tag:'V1',  familia:'derivacion',  icon:'assets/cable_v1_puente.jpg'},
-  {id:'l1_luz_pasillo',  name:'Luz pasillo',               desc:'Línea a luz del pasillo',            tag:'L1',  familia:'salida',      icon:'assets/cable_l1_luz_pasillo.jpg'},
-  {id:'l2_luz_cocina',   name:'Luz cocina',                desc:'Línea a luz de cocina',              tag:'L2',  familia:'salida',      icon:'assets/cable_l2_luz_cocina.jpg'},
-  {id:'l3_luz_salon',    name:'Luz salón',                 desc:'Línea a luz del salón',              tag:'L3',  familia:'salida',      icon:'assets/cable_l3_luz_salon.jpg'},
-  {id:'out_toma_salon',  name:'Toma salón',                desc:'Línea a toma del salón',             tag:'OUT', familia:'salida',      icon:'assets/cable_out_toma_salon.jpg'},
-  {id:'out_toma_cocina', name:'Toma cocina',               desc:'Línea a toma de cocina',             tag:'OUT', familia:'salida',      icon:'assets/cable_out_toma_cocina.jpg'},
-  {id:'out_horno',       name:'Horno',                     desc:'Línea al horno',                     tag:'OUT', familia:'salida',      icon:'assets/cable_out_horno.jpg'},
-  {id:'out_aire',        name:'Aire acondicionado',        desc:'Línea al aire acondicionado',        tag:'OUT', familia:'salida',      icon:'assets/cable_out_aire.jpg'},
-  {id:'out_termo',       name:'Termo',                     desc:'Línea al termo',                     tag:'OUT', familia:'salida',      icon:'assets/cable_out_termo.jpg'}
+  {id:'in_cuadro',       name:'Alimentación cuadro',       desc:'Viene del cuadro general',           tag:'IN',  familia:'entrada',     icon:CDN+'v1772746685/cable_in_cuadro_rm2lja.jpg'},
+  {id:'in_diferencial',  name:'Alimentación diferencial',  desc:'Viene del diferencial',              tag:'IN',  familia:'entrada',     icon:CDN+'v1772746683/cable_in_diferencial_w2zo6k.jpg'},
+  {id:'in_acometida',    name:'Acometida',                 desc:'Acometida desde contador',            tag:'IN',  familia:'entrada',     icon:CDN+'v1772746685/cable_in_acometida_jyif2l.jpg'},
+  {id:'v1_viajero',      name:'Viajero ida',               desc:'Viajero conmutada — ida',            tag:'V1',  familia:'derivacion',  icon:CDN+'v1772746680/cable_v1_viajero_ec3vfo.jpg'},
+  {id:'v2_viajero',      name:'Viajero vuelta',            desc:'Viajero conmutada — vuelta',         tag:'V2',  familia:'derivacion',  icon:CDN+'v1772746678/cable_v2_viajero_mbb8wv.jpg'},
+  {id:'v1_puente',       name:'Puente bornas',             desc:'Puente entre bornas',                tag:'V1',  familia:'derivacion',  icon:CDN+'v1772746678/cable_v1_puente_q6cxps.jpg'},
+  {id:'l1_luz_pasillo',  name:'Luz pasillo',               desc:'Línea a luz del pasillo',            tag:'L1',  familia:'salida',      icon:CDN+'v1772746682/cable_l1_luz_pasillo_ovsg6g.jpg'},
+  {id:'l2_luz_cocina',   name:'Luz cocina',                desc:'Línea a luz de cocina',              tag:'L2',  familia:'salida',      icon:CDN+'v1772746682/cable_l2_luz_cocina_fyqwiz.jpg'},
+  {id:'l3_luz_salon',    name:'Luz salón',                 desc:'Línea a luz del salón',              tag:'L3',  familia:'salida',      icon:CDN+'v1772746682/cable_l3_luz_salon_eeh3iu.jpg'},
+  {id:'out_toma_salon',  name:'Toma salón',                desc:'Línea a toma del salón',             tag:'OUT', familia:'salida',      icon:CDN+'v1772746679/cable_out_toma_salon_crq4sy.jpg'},
+  {id:'out_toma_cocina', name:'Toma cocina',               desc:'Línea a toma de cocina',             tag:'OUT', familia:'salida',      icon:CDN+'v1772746678/cable_out_toma_cocina_jmzaja.jpg'},
+  {id:'out_horno',       name:'Horno',                     desc:'Línea al horno',                     tag:'OUT', familia:'salida',      icon:CDN+'v1772746679/cable_out_horno_ncgiuk.jpg'},
+  {id:'out_aire',        name:'Aire acondicionado',        desc:'Línea al aire acondicionado',        tag:'OUT', familia:'salida',      icon:CDN+'v1772746681/cable_out_aire_ft03ps.jpg'},
+  {id:'out_termo',       name:'Termo',                     desc:'Línea al termo',                     tag:'OUT', familia:'salida',      icon:CDN+'v1772746679/cable_out_termo_byeahm.jpg'}
 ];
 
 const FAMILIAS = ['entrada','derivacion','salida'];
