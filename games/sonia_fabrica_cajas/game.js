@@ -1,5 +1,5 @@
 /* ================================================================
-   SONIA Y LA FABRICA DE CAJAS ELECTRICAS — Kampe Games — Logic
+   SONIA Y LA FÁBRICA DE CAJAS ELÉCTRICAS — Kampe Games — Logic
    ================================================================ */
 
 (function(){
@@ -19,32 +19,32 @@ const A = {
 
 /* ---------- CABLE POOL ---------- */
 const CABLES = [
-  {id:'in_cuadro',       name:'Alimentacion cuadro',       desc:'Viene del cuadro general',           tag:'IN',  familia:'entrada',     icon:'assets/cable_in_cuadro.jpg'},
-  {id:'in_diferencial',  name:'Alimentacion diferencial',  desc:'Viene del diferencial',              tag:'IN',  familia:'entrada',     icon:'assets/cable_in_diferencial.jpg'},
+  {id:'in_cuadro',       name:'Alimentación cuadro',       desc:'Viene del cuadro general',           tag:'IN',  familia:'entrada',     icon:'assets/cable_in_cuadro.jpg'},
+  {id:'in_diferencial',  name:'Alimentación diferencial',  desc:'Viene del diferencial',              tag:'IN',  familia:'entrada',     icon:'assets/cable_in_diferencial.jpg'},
   {id:'in_acometida',    name:'Acometida',                 desc:'Acometida desde contador',            tag:'IN',  familia:'entrada',     icon:'assets/cable_in_acometida.jpg'},
   {id:'v1_viajero',      name:'Viajero ida',               desc:'Viajero conmutada — ida',            tag:'V1',  familia:'derivacion',  icon:'assets/cable_v1_viajero.jpg'},
   {id:'v2_viajero',      name:'Viajero vuelta',            desc:'Viajero conmutada — vuelta',         tag:'V2',  familia:'derivacion',  icon:'assets/cable_v2_viajero.jpg'},
   {id:'v1_puente',       name:'Puente bornas',             desc:'Puente entre bornas',                tag:'V1',  familia:'derivacion',  icon:'assets/cable_v1_puente.jpg'},
-  {id:'l1_luz_pasillo',  name:'Luz pasillo',               desc:'Linea a luz del pasillo',            tag:'L1',  familia:'salida',      icon:'assets/cable_l1_luz_pasillo.jpg'},
-  {id:'l2_luz_cocina',   name:'Luz cocina',                desc:'Linea a luz de cocina',              tag:'L2',  familia:'salida',      icon:'assets/cable_l2_luz_cocina.jpg'},
-  {id:'l3_luz_salon',    name:'Luz salon',                 desc:'Linea a luz del salon',              tag:'L3',  familia:'salida',      icon:'assets/cable_l3_luz_salon.jpg'},
-  {id:'out_toma_salon',  name:'Toma salon',                desc:'Linea a toma del salon',             tag:'OUT', familia:'salida',      icon:'assets/cable_out_toma_salon.jpg'},
-  {id:'out_toma_cocina', name:'Toma cocina',               desc:'Linea a toma de cocina',             tag:'OUT', familia:'salida',      icon:'assets/cable_out_toma_cocina.jpg'},
-  {id:'out_horno',       name:'Horno',                     desc:'Linea al horno',                     tag:'OUT', familia:'salida',      icon:'assets/cable_out_horno.jpg'},
-  {id:'out_aire',        name:'Aire acondicionado',        desc:'Linea al aire acondicionado',        tag:'OUT', familia:'salida',      icon:'assets/cable_out_aire.jpg'},
-  {id:'out_termo',       name:'Termo',                     desc:'Linea al termo',                     tag:'OUT', familia:'salida',      icon:'assets/cable_out_termo.jpg'}
+  {id:'l1_luz_pasillo',  name:'Luz pasillo',               desc:'Línea a luz del pasillo',            tag:'L1',  familia:'salida',      icon:'assets/cable_l1_luz_pasillo.jpg'},
+  {id:'l2_luz_cocina',   name:'Luz cocina',                desc:'Línea a luz de cocina',              tag:'L2',  familia:'salida',      icon:'assets/cable_l2_luz_cocina.jpg'},
+  {id:'l3_luz_salon',    name:'Luz salón',                 desc:'Línea a luz del salón',              tag:'L3',  familia:'salida',      icon:'assets/cable_l3_luz_salon.jpg'},
+  {id:'out_toma_salon',  name:'Toma salón',                desc:'Línea a toma del salón',             tag:'OUT', familia:'salida',      icon:'assets/cable_out_toma_salon.jpg'},
+  {id:'out_toma_cocina', name:'Toma cocina',               desc:'Línea a toma de cocina',             tag:'OUT', familia:'salida',      icon:'assets/cable_out_toma_cocina.jpg'},
+  {id:'out_horno',       name:'Horno',                     desc:'Línea al horno',                     tag:'OUT', familia:'salida',      icon:'assets/cable_out_horno.jpg'},
+  {id:'out_aire',        name:'Aire acondicionado',        desc:'Línea al aire acondicionado',        tag:'OUT', familia:'salida',      icon:'assets/cable_out_aire.jpg'},
+  {id:'out_termo',       name:'Termo',                     desc:'Línea al termo',                     tag:'OUT', familia:'salida',      icon:'assets/cable_out_termo.jpg'}
 ];
 
 const FAMILIAS = ['entrada','derivacion','salida'];
-const FAMILIA_LABELS = {entrada:'Entrada', derivacion:'Derivacion', salida:'Salida'};
+const FAMILIA_LABELS = {entrada:'Entrada', derivacion:'Derivación', salida:'Salida'};
 
 /* ---------- FEEDBACK MESSAGES ---------- */
 const FEEDBACK_OK = {
   entrada: 'Bien. Este cable se etiqueta <b>IN</b> — viene del cuadro.',
   derivacion_v: 'Correcto. Los viajeros se etiquetan <b>V1</b> y <b>V2</b> — ida y vuelta.',
   derivacion_p: 'Bien. Los puentes internos se etiquetan <b>V1</b>.',
-  salida_l: 'Perfecto. Las lineas de luz se etiquetan <b>L1, L2, L3</b>.',
-  salida_out: 'Eso es. Las lineas de fuerza se etiquetan <b>OUT</b>.'
+  salida_l: 'Perfecto. Las líneas de luz se etiquetan <b>L1, L2, L3</b>.',
+  salida_out: 'Eso es. Las líneas de fuerza se etiquetan <b>OUT</b>.'
 };
 
 function getOkMsg(cable){
@@ -55,26 +55,26 @@ function getOkMsg(cable){
 
 const FEEDBACK_ERR = {
   'entrada_salida':     'Este cable llega a la caja — es entrada, no salida. Los que van juntos, juntos.',
-  'entrada_derivacion': 'La alimentacion no es una derivacion interna. Va con la familia de entrada.',
+  'entrada_derivacion': 'La alimentación no es una derivación interna. Va con la familia de entrada.',
   'salida_entrada':     'Este cable sale hacia un punto de consumo. No llega a la caja — va con la familia de salida.',
-  'salida_derivacion':  'Este cable va a un aparato o punto de luz — es salida, no derivacion interna.',
-  'derivacion_entrada': 'Los viajeros son conexiones internas entre elementos. Van con la familia de derivacion.',
-  'derivacion_salida':  'Aunque el viajero conecta con un interruptor, es un cable interno. Va con derivacion.'
+  'salida_derivacion':  'Este cable va a un aparato o punto de luz — es salida, no derivación interna.',
+  'derivacion_entrada': 'Los viajeros son conexiones internas entre elementos. Van con la familia de derivación.',
+  'derivacion_salida':  'Aunque el viajero conecta con un interruptor, es un cable interno. Va con derivación.'
 };
 
 const BJ_MSGS = [
-  'La caja llega al minimo. Como hemos explicado en la leccion, no debes llenar demasiado las cajas. ¿Quieres arriesgar?',
-  'Recuerda: una caja ordenada es una caja contratable. ¿Quieres seguir llenando o la cerramos?',
-  'En una instalacion real, las cajas tienen un cierre suave. No las llenes demasiado. ¿Seguimos?'
+  'Cuidado, Oompa Loompa. Como hemos visto en la lección, no debes llenar demasiado las cajas. ¿Quieres arriesgar?',
+  'Recuerda: una caja ordenada es una caja contratable. Wonka no acepta chapuzas. ¿Seguimos llenando?',
+  'En la fábrica, las cajas tienen un cierre suave. No las llenes demasiado o Wonka se enfadará. ¿Seguimos?'
 ];
 
 /* Tutorial: shown BEFORE pieces 1-5 on first game */
 const TUTORIAL = [
-  {msg:()=>'Mira el cable que llega. El icono y el texto te dicen que es. Este cable es de la familia <b>'+FAMILIA_LABELS[currentCable.familia]+'</b>.', when:'before'},
+  {msg:()=>'Mira el cable que llega. El icono y el texto te dicen qué es. Este cable es de la familia <b>'+FAMILIA_LABELS[currentCable.familia]+'</b>.', when:'before'},
   {msg:()=>'Arrastra el cable a la zona <b>'+FAMILIA_LABELS[currentCable.familia]+'</b> de la caja. Los cables de la misma familia van juntos.', when:'before'},
   {msg:'Mira la barra: cada cable llena un 25% de su zona. Cuando todas las zonas lleguen al 50%, puedes cerrar la caja, pero solo te llevarás la puntuación mínima.', when:'after'},
-  {msg:'Vas bien. Si llegas al 75% en cada zona... 10000 puntos! Eso sí, al 100% la caja no cierra. Recuerda la lección: hay que dejar reserva. ¿Entendido?', when:'after'},
-  {msg:'Ya lo tienes! A partir de ahora, tu solo.', when:'before'}
+  {msg:'Vas bien. Si llegas al 75% en cada zona... ¡299 puntos! Eso sí, al 100% la caja no cierra. Recuerda la lección: hay que dejar reserva. ¿Entendido?', when:'after'},
+  {msg:'¡Ya lo tienes! A partir de ahora, tú solo.', when:'before'}
 ];
 
 /* ---------- CONSTANTS ---------- */
@@ -199,8 +199,8 @@ function nextCable(){
 function calcBoxPoints(){
   let n75 = 0;
   for(const f of FAMILIAS) if(zones[f]>=75) n75++;
-  if(n75===3) return 10000;
-  if(n75===2) return 500;
+  if(n75===3) return 299;
+  if(n75===2) return 149;
   if(n75===1) return 99;
   return 75;
 }
@@ -211,10 +211,10 @@ function anyZone100(){return FAMILIAS.some(f=>zones[f]>=100)}
 function updateHUD(){
   el.hudScore.textContent = totalScore+' pts';
   if(totalScore>=OBJ_POINTS){
-    el.hudObj.textContent = 'Completado!';
+    el.hudObj.textContent = '¡Completado!';
     el.hudObj.classList.add('hud-obj-done');
   } else {
-    el.hudObj.textContent = 'Obj: '+OBJ_POINTS;
+    el.hudObj.textContent = 'Objetivo: '+OBJ_POINTS+' pts';
     el.hudObj.classList.remove('hud-obj-done');
   }
 }
@@ -237,8 +237,8 @@ function updateBars(){
 function updateMultiplierInfo(){
   if(!allZonesMin50()){el.multInfo.textContent='';return}
   const p=calcBoxPoints();
-  el.multInfo.innerHTML = p>=10000
-    ? '<b>'+p+' pts</b> si cierras ahora!'
+  el.multInfo.innerHTML = p>=299
+    ? '¡<b>'+p+' pts</b> si cierras ahora!'
     : '<b>'+p+' pts</b> si cierras ahora';
 }
 
@@ -423,7 +423,7 @@ function showBlackjackDecision(){
   el.bjOverlay.classList.remove('hidden');
   if(firstBlackjack){
     firstBlackjack = false;
-    el.bjMsg.textContent = 'Bien! Esta caja ya se puede cerrar. Pero puedes aprovechar mas el espacio para ganar mas puntos... sin pasarte, que al 100% la caja no cierra!';
+    el.bjMsg.textContent = '¡Bien, Oompa Loompa! Esta caja ya se puede cerrar. Pero puedes aprovechar más el espacio para ganar más puntos... sin pasarte, que al 100% la caja no cierra.';
   } else {
     el.bjMsg.textContent = pickRandom(BJ_MSGS);
   }
@@ -431,10 +431,10 @@ function showBlackjackDecision(){
   // Show current score + what closing now gives
   el.bjScore.textContent = 'Cerrar ahora: +'+p+' pts';
   // Show what next tier would give
-  if(p<99) el.bjIncentive.textContent = '... o sigue llenando: hasta 99, 500 o 10000 pts!';
-  else if(p<500) el.bjIncentive.textContent = '... o sigue llenando: hasta 500 o 10000 pts!';
-  else if(p<10000) el.bjIncentive.textContent = '... o sigue llenando: hasta 10000 pts!';
-  else el.bjIncentive.textContent = 'Maximo! Cierra para asegurar.';
+  if(p<99) el.bjIncentive.textContent = '... o sigue llenando: hasta 99, 149 o 299 pts!';
+  else if(p<149) el.bjIncentive.textContent = '... o sigue llenando: hasta 149 o 299 pts!';
+  else if(p<299) el.bjIncentive.textContent = '... o sigue llenando: hasta 299 pts!';
+  else el.bjIncentive.textContent = '¡Máximo! Cierra para asegurar.';
 }
 
 function closeBox(){
@@ -466,7 +466,7 @@ function bust(){
   boxesBusted++;
   el.cajaImg.src = A.caja_bust;
   el.multInfo.textContent = '';
-  showSoniaMsg('Demasiado llena. Hay que dejar margen de manipulacion.','worried', true, ()=>{
+  showSoniaMsg('¡Demasiado llena! Si Wonka ve esto... hay que dejar margen de manipulación, Oompa Loompa.','worried', true, ()=>{
     showBoxResult(0, true);
   });
 }
@@ -483,9 +483,9 @@ function showBoxResult(pts, isBust){
     el.boxBtn.onclick = ()=>{ el.boxOverlay.classList.add('hidden'); showResults(); };
   } else {
     el.boxIcon.textContent = '';
-    el.boxMsg.textContent = pts>=10000
-      ? 'INCREIBLE! 75% en cada zona! Puntuacion maxima!'
-      : 'Caja cerrada! Eso es una caja contratable.';
+    el.boxMsg.textContent = pts>=299
+      ? '¡INCREÍBLE! 75% en cada zona. ¡Puntuación máxima!'
+      : '¡Caja cerrada! Eso es una caja contratable.';
     el.boxPts.textContent = '+'+pts+' pts';
     el.boxPts.classList.remove('bust');
     el.cajaImg.src = A.caja_cerrada;
@@ -516,7 +516,7 @@ function nextBox(){
   buildCableQueue();
   if(justCompletedTask){
     justCompletedTask = false;
-    showSoniaMsg('Tarea conseguida! Pero a ver hasta donde llegas...','celebrating', true, ()=>{ nextCable(); });
+    showSoniaMsg('¡Objetivo cumplido, Oompa Loompa! Pero en esta fábrica siempre hay más cajas... ¡a ver hasta dónde llegas!','celebrating', true, ()=>{ nextCable(); });
   } else {
     nextCable();
   }
@@ -535,15 +535,15 @@ function showResults(){
   el.resRecord.textContent = best;
   el.resNew.classList.toggle('hidden',!isNew);
 
-  if(totalScore>=1000){
+  if(totalScore>=600){
     el.resAv.src = A.sonia_celebrating;
-    el.resMsg.textContent = 'Impresionante. Mi fabrica funciona mejor contigo.';
+    el.resMsg.innerHTML = 'Wonka estaría orgulloso. ¡Eres el mejor Oompa Loompa que ha pasado por mi fábrica!';
   } else if(totalScore>=OBJ_POINTS){
     el.resAv.src = A.sonia_celebrating;
-    el.resMsg.textContent = '300 puntos! Has superado el nivel.';
+    el.resMsg.innerHTML = '¡Objetivo cumplido! Buen trabajo, Oompa Loompa. La fábrica sigue funcionando gracias a ti.';
   } else {
     el.resAv.src = A.sonia_worried;
-    el.resMsg.textContent = 'Hmm... repasemos. Cada cable tiene su familia y su sitio.';
+    el.resMsg.innerHTML = 'La fábrica necesita más práctica, Oompa Loompa. Recuerda: cada cable tiene su familia y su sitio.';
   }
   el.resStats.textContent = boxesCompleted+' cajas cerradas \u00B7 '+boxesBusted+' cajas fallidas';
 }
@@ -583,7 +583,7 @@ function init(){
   el.introAv.src = A.sonia_happy;
   el.avatarImg.src = A.sonia_happy;
   el.cajaImg.src = A.caja_abierta;
-  el.introMsg.textContent = 'Bienvenido a mi fabrica. Aqui cada cable tiene su sitio dentro de la caja. ¿Crees que puedes seguir el ritmo?';
+  el.introMsg.innerHTML = '¡Oompa Loompa! Necesito tu ayuda en la fábrica. Hay que montar las <b>cajas eléctricas</b> y cada cable tiene su sitio. Clasifica bien los cables, llena las cajas sin pasarte... y no me hagas quedar mal con Wonka. ¿Listo?';
 
   el.introBtn.addEventListener('click', startGame);
   el.bjClose.addEventListener('click', closeBox);
