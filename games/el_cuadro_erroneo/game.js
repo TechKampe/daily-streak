@@ -632,7 +632,8 @@
         const area = gameArea();
 
         area.innerHTML = `
-            ${charRow(YOLANDA.enfadada, q.yolanda, 'yolanda')}
+            <img class="quiz-yolanda" src="${YOLANDA.enfadada}" alt="Yolanda">
+            <div class="quiz-bub">${q.yolanda}</div>
             <div class="options-grid mt-8">
                 ${q.options.map((o, j) => `<button class="option-chip" data-i="${j}">${o}</button>`).join('')}
             </div>
@@ -754,8 +755,8 @@
                     <span class="label">Record</span>
                     <span class="value">${newRecord}</span>
                 </div>
-                ${score >= TASK_THRESHOLD ? '<div class="badge">COMPLETADO</div>' : ''}
             </div>
+            ${score >= TASK_THRESHOLD ? '<p class="completed-text">¡COMPLETADO!</p>' : ''}
             <button class="btn-primary" id="btn-replay">Repetir</button>
         `;
         container.querySelector('#btn-replay').addEventListener('click', () => location.reload());
