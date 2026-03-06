@@ -16,7 +16,7 @@ const SMOOTH_FRAMES     = 5;      // frames suavizado acelerómetro
 const SENSITIVITY       = 8;      // px por grado
 const RING_CIRCUM       = 2 * Math.PI * 48; // r=48 → ≈301.6
 const CLIP_SPACING_PX   = 60;     // distancia entre abrazaderas
-const CORNER_RADIUS_PX  = 28;     // radio de esquina auto-generada
+const CORNER_RADIUS_PX  = 38;     // radio de esquina auto-generada
 
 // ─── NIVELES ───────────────────────────────────────────────────
 // Cada segmento: { type: 'H'|'V' }
@@ -533,37 +533,33 @@ function addClips(a, b, len, type) {
 // ─── AUTO-CORNER ───────────────────────────────────────────────
 
 function addCorner(pivot, prevType, nextType) {
-  const r = CORNER_RADIUS_PX;
-  let x1, y1, x2, y2, sweepFlag;
+  // Corner SVG: 100×100 viewBox, inner corner at (50,50).
+  // SIZE tuned to match straight-piece thickness on screen.
+  const SIZE = 30;
 
-  // Determine the arc endpoints relative to the pivot (shared waypoint)
+  const div = document.createElement('div');
+  div.className = 'snapped-img';
+  const img = document.createElement('img');
+  img.src = 'assets/corner_hv.svg?v=2';
+  img.style.cssText = 'width:100%;height:100%;object-fit:fill;display:block;';
+
+  let left, top, rotate;
+
   if (prevType === 'H' && nextType === 'V') {
-    // Coming from left, turning down: arc from (pivot.x, pivot.y - r) to (pivot.x + r, pivot.y)
-    // Adjust based on actual direction — simple version:
-    x1 = pivot.x - r; y1 = pivot.y;
-    x2 = pivot.x;     y2 = pivot.y + r;
-    sweepFlag = 0;
+    // H→V: H arm goes LEFT, V arm goes DOWN from pivot
+    left = pivot.x - 23;
+    top  = pivot.y - 8;
+    rotate = '';
   } else {
-    // Coming from top, turning right
-    x1 = pivot.x;     y1 = pivot.y - r;
-    x2 = pivot.x + r; y2 = pivot.y;
-    sweepFlag = 1;
+    // V→H: V arm goes UP, H arm goes RIGHT from pivot (SVG rotated 180°)
+    left = pivot.x - 7;
+    top  = pivot.y - 22;
+    rotate = 'transform:rotate(180deg);';
   }
 
-  const arc = makeSVG('path', {
-    d: `M ${x1} ${y1} A ${r} ${r} 0 0 ${sweepFlag} ${x2} ${y2}`,
-    class: 'corner-arc',
-  });
-  // Set dasharray length to actual arc length (~πr/2)
-  const arcLen = Math.round(Math.PI * r / 2);
-  arc.style.strokeDasharray  = arcLen;
-  arc.style.strokeDashoffset = arcLen;
-  EL.routeSvg.appendChild(arc);
-  // Trigger animation
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    arc.style.transition = 'stroke-dashoffset .4s ease-out';
-    arc.style.strokeDashoffset = 0;
-  }));
+  div.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${SIZE}px;height:${SIZE}px;${rotate}`;
+  div.appendChild(img);
+  EL.routeArea.appendChild(div);
 }
 
 // ─── JOHNNY BUBBLE ─────────────────────────────────────────────
