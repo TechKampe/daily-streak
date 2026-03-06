@@ -564,6 +564,7 @@ var checkedZones = []; /* indices of zones already inspected this panel */
 
 function startCheck() {
   currentPanel = 0;
+  $('diego-av').classList.add('quiz-big');
   showScreen('play');
   startPanel();
 }
