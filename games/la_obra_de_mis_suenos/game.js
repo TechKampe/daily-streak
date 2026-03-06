@@ -14,7 +14,7 @@ const ZONE_INNER_PX     = 15;     // px perpendicular para zona interior
 const ZONE_MARGIN_PX    = 24;     // margen extra en los extremos del segmento
 const SMOOTH_FRAMES     = 5;      // frames suavizado acelerómetro
 const SENSITIVITY       = 8;      // px por grado
-const RING_CIRCUM       = 2 * Math.PI * 34; // r=34 → ≈213.6
+const RING_CIRCUM       = 2 * Math.PI * 48; // r=48 → ≈301.6
 const CLIP_SPACING_PX   = 60;     // distancia entre abrazaderas
 const CORNER_RADIUS_PX  = 28;     // radio de esquina auto-generada
 
@@ -28,35 +28,35 @@ const LEVELS = [
     name: 'El Pasillo de Entrada',
     bg: 'assets/bg_nivel1.jpg',
     segments: ['H','H','H','H'],
-    briefing: 'La canalización va de A a B. Horizontal. Recta. Sin serpientes. Parece fácil. No lo es.',
+    briefing: 'Horizontal pura. Recta visual de A a B. Sin serpientes. Las abrazaderas a distancia constante. Parece fácil. Los chapuceros también lo creen.',
   },
   {
     id: 2,
     name: 'El Cuarto Técnico',
     bg: 'assets/bg_nivel2.jpg',
     segments: ['V','V','V'],
-    briefing: 'Bajada vertical. De arriba abajo. Misma regla: recta visual, fijaciones constantes. El cuadro eléctrico está mirando.',
+    briefing: 'Bajada vertical. Misma regla: recta visual, fijaciones a distancia constante. La plomada no miente. El cuadro eléctrico está mirando.',
   },
   {
     id: 3,
     name: 'El Rincón del Salón',
     bg: 'assets/bg_nivel3.jpg',
     segments: ['H','H','V','V'],
-    briefing: 'Aquí hay una esquina. Horizontal primero, luego bajamos. El radio lo pone el sistema — tú pon la recta.',
+    briefing: 'Primera esquina. Horizontal, luego bajamos. El radio suave lo pone el sistema — tú pon la recta en cada tramo. Si tienes que forzar, ya vas mal.',
   },
   {
     id: 4,
     name: 'La Vuelta del Pasillo',
     bg: 'assets/bg_nivel4.jpg',
     segments: ['V','V','H','H','H'],
-    briefing: 'Bajamos primero, luego giramos. Si la esquina sale fea, Andrés lo va a notar. Y los espectadores también.',
+    briefing: 'Bajamos, luego giramos. Recta visual en cada tramo. Fijación homogénea. El radio sale solo — no lo fuerces. Andrés lo va a notar. Y los espectadores también.',
   },
   {
     id: 5,
     name: 'La Cocina',
     bg: 'assets/bg_nivel5.jpg',
     segments: ['H','H','V','V','H','H'],
-    briefing: 'Cocina. Dos esquinas. Si ves que el radio sale solo y queda suave… eso es exactamente lo que debe pasar.',
+    briefing: 'Cocina. Dos esquinas. Recta, giro suave, recta, otro giro suave, recta. Fijación homogénea en todos los tramos. Si el radio sale solo y queda suave, eso es exactamente lo que debe pasar.',
   },
   {
     id: 6,
@@ -69,22 +69,30 @@ const LEVELS = [
 
 // ─── CONTENT ───────────────────────────────────────────────────
 
-const INTRO_TEXT = '¡Bienvenidos a LA OBRA DE MIS SUEÑOS! Esta semana… esta semana es DIFERENTE. Las cámaras lo grabarán TODO. No hay second takes. No hay apaños. Johnny, diles lo que necesitamos.';
+const INTRO_TEXT = '¡Esta semana instalamos canalizaciones rectas, con radios suaves y fijación homogénea. Sin quiebros. Sin serpientes. Sin apaños. Las cámaras lo grabarán TODO.';
 
 const REVEAL_DIALOGS = [
-  '¡¿Podéis verlo?! ¡RECTA VISUAL! ¡Abrazaderas a distancia CONSTANTE! ¡Y ese radio… ese radio me hace querer llorar de alegría!',
-  '¡ESTO es lo que llamamos instalación PROFESIONAL! ¿Hay serpientes? NO. ¿Hay quiebros? ¡TAMPOCO! ¡IMPRESIONANTE!',
-  '¡Primera esquina de la noche y queda PERFECTA! El radio suave, señoras y señores. ESO separa un instalador de un chapucero.',
-  '¡Recta, vuelta, recta. Sin UN milímetro de desviación! Johnny, ¿estás viendo esto? ¡¿ESTÁS VIENDO ESTO?!',
-  '¡DOS ESQUINAS en la misma habitación y los DOS radios perfectos! Esto no se ve todos los días en La Obra de Mis Sueños.',
-  '¡¡LA HABITACIÓN DE SUS SUEÑOS!! ¡¡CON LA INSTALACIÓN DE SUS SUEÑOS!! Recta. Fijación homogénea. Radios suaves. ¡¡ESTO VA DIRECTO AL PRIME TIME!!',
+  // Nivel 1: ['H','H','H','H'] — tramo horizontal puro, sin esquinas
+  '¡RECTA VISUAL pura! Sin serpientes. Las abrazaderas a distancia CONSTANTE, de principio a fin. ¿Sabéis por qué importa? Porque dentro de un año, cuando haya que revisar ese tramo, cualquier instalador lo seguirá sin problema. ESO es obra profesional.',
+  // Nivel 2: ['V','V','V'] — bajada vertical pura, sin esquinas
+  '¡Bajada vertical impecable! Recta como una plomada y fijación homogénea de arriba abajo. La norma es clara: fijaciones cada 80 cm máximo, pero la CONSTANCIA es lo que lo convierte en trabajo de verdad. ¡Sin esto, hay chapuza!',
+  // Nivel 3: ['H','H','V','V'] — 1 esquina H→V
+  '¡Recta en horizontal, recta en vertical, y ese radio suave en la esquina! Un radio suave no es estética, es FUNCIÓN: el cable no se dobla, el aislamiento no se daña, el mantenimiento futuro es limpio. ESO separa a un instalador de un chapucero.',
+  // Nivel 4: ['V','V','H','H','H'] — 1 esquina V→H
+  '¡Bajamos, giramos y seguimos recto! Recta visual en cada tramo. Ese radio en la vuelta — sin forzar, sin "ya valdrá" — demuestra que sabes que si tienes que forzar el material, YA VAS MAL. ¡Esto lo deben ver en portada!',
+  // Nivel 5: ['H','H','V','V','H','H'] — 2 esquinas
+  '¡DOS ESQUINAS con radios perfectos y el tramo central recto como un láser! Dos esquinas es doble oportunidad de hacer una chapuza. Y en lugar de eso: recta visual, fijación homogénea, radios suaves. La trifecta. ¡Impresionante!',
+  // Nivel 6: ['H','H','H','H','V','V','V'] — 1 esquina, nivel final
+  '¡¡LA HABITACIÓN DE SUS SUEÑOS!! Recta visual. Fijación homogénea. Radio suave. Estas tres reglas son LAS TRES REGLAS de cualquier instalación profesional. Hoy las has practicado. Hoy las recuerdas. ¡¡ESTO VA DIRECTO AL PRIME TIME!!',
 ];
 
 const JOHNNY_SNAPS = [
-  'Fijado.',
-  'Eso es trabajo de profesional.',
-  'Bien. Siguiente.',
-  'Exactamente ahí.',
+  'Fijado. Recta visual.',
+  'Eso es. Distancia constante.',
+  'Bien. Siguiente tramo.',
+  'Exactamente ahí. Sin forzar.',
+  'Eso es fijación homogénea.',
+  'Recta. Como debe ser.',
 ];
 
 const NEWS_TICKER = [
@@ -119,6 +127,7 @@ const EL = {
   ltIntroRole:  $('lt-intro-role'),
   hudLevel:     $('hud-level'),
   levelBg:      $('level-bg'),
+  routeArea:    $('route-area'),
   routeSvg:     $('route-svg'),
   pieceWrap:    $('piece-wrap'),
   pieceBody:    $('piece-body'),
@@ -164,6 +173,7 @@ const S = {
   ltIdx:        0,
   rafId:        null,
   lastT:        0,
+  tutorialDone: false,
 };
 
 // ─── HELPERS ───────────────────────────────────────────────────
@@ -172,7 +182,7 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const rand  = arr => arr[Math.floor(Math.random() * arr.length)];
 
 function showScreen(id) {
-  ['intro','play','credits'].forEach(s => {
+  ['intro','howto','play','credits'].forEach(s => {
     $(s).classList.toggle('off', s !== id);
   });
 }
@@ -216,15 +226,16 @@ function getOrientationDelta() {
 // ─── INTRO SEQUENCE ────────────────────────────────────────────
 
 function runIntro() {
-  tvStatic(380, () => {
+  tvStatic(800, () => {
     EL.introLogo.classList.add('show');
     setTimeout(() => {
       EL.introEpisode.classList.add('show');
-      setTimeout(() => lowerThirdIntro('ANDRÉS', 'Presentador', () => {
-        setTimeout(() => lowerThirdIntro('JOHNNY', 'Técnico (y el gemelo con criterio)', () => {
+      setTimeout(() => lowerThirdIntro('ANDRÉS', 'Presentador', 'left', () => {
+        setTimeout(() => lowerThirdIntro('JOHNNY', 'Técnico (y el gemelo con criterio)', 'right', () => {
           setTimeout(() => {
             EL.introBubble.textContent = INTRO_TEXT;
             EL.introBubble.classList.add('show');
+            EL.introBtn.classList.remove('hidden');
           }, 500);
         }), 800);
       }), 800);
@@ -234,6 +245,7 @@ function runIntro() {
 
 function tvStatic(ms, cb) {
   const cv = EL.tvStatic;
+  cv.style.opacity = '1';
   cv.classList.remove('hidden');
   cv.width  = EL.W.offsetWidth;
   cv.height = EL.W.offsetHeight;
@@ -247,15 +259,22 @@ function tvStatic(ms, cb) {
       img.data[i+3] = 255;
     }
     ctx.putImageData(img, 0, 0);
-    if (Date.now() < end) requestAnimationFrame(draw);
-    else { cv.classList.add('hidden'); cb?.(); }
+    if (Date.now() < end) { requestAnimationFrame(draw); return; }
+    // Fade out via CSS transition, then hide and fire callback
+    cv.style.opacity = '0';
+    cv.addEventListener('transitionend', () => {
+      cv.classList.add('hidden');
+      cv.style.opacity = '';
+      cb?.();
+    }, { once: true });
   };
   draw();
 }
 
-function lowerThirdIntro(name, role, cb) {
+function lowerThirdIntro(name, role, side, cb) {
   EL.ltIntroName.textContent = name;
   EL.ltIntroRole.textContent = role;
+  EL.ltIntro.classList.toggle('right-side', side === 'right');
   EL.ltIntro.classList.remove('hidden');
   requestAnimationFrame(() => EL.ltIntro.classList.add('in'));
   setTimeout(() => {
@@ -307,6 +326,7 @@ function buildWaypoints(level) {
 
 function drawGhostRoute(level) {
   EL.routeSvg.innerHTML = '';
+  EL.routeArea.querySelectorAll('.snapped-img').forEach(d => d.remove());
   buildWaypoints(level);
   level.segments.forEach((_, i) => {
     const a = S.waypoints[i], b = S.waypoints[i + 1];
@@ -352,8 +372,7 @@ function spawnPiece() {
 }
 
 function updatePieceDOM() {
-  EL.pieceWrap.style.left = (S.px - 40) + 'px';
-  EL.pieceWrap.style.top  = (S.py - 40) + 'px';
+  EL.pieceWrap.style.transform = `translate(${S.px - 55}px, ${S.py - 55}px)`;
 }
 
 function setRing(fraction) {
@@ -448,9 +467,21 @@ function doSnap() {
   // 2. OOOOH on inner snap
   if (S.snapZone === 'inner') showOoooh();
 
-  // 3. Draw snapped segment
-  const line = makeSVG('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: 'snapped-seg' });
-  EL.routeSvg.appendChild(line);
+  // 3. Draw snapped segment as PNG image
+  const segLen = S.segLengths[i];
+  const segDiv = document.createElement('div');
+  segDiv.className = 'snapped-img';
+  const segImg = document.createElement('img');
+  segImg.src = 'assets/piece_h.svg?v=2';
+  if (segs[i] === 'H') {
+    segDiv.style.cssText = `position:absolute;left:${a.x}px;top:${a.y - 40}px;width:${segLen}px;height:80px;`;
+  } else {
+    const midY = a.y + segLen / 2;
+    segDiv.style.cssText = `position:absolute;left:${a.x - segLen / 2}px;top:${midY - 40}px;width:${segLen}px;height:80px;transform:rotate(90deg);`;
+  }
+  segImg.style.cssText = `width:100%;height:100%;object-fit:fill;display:block;`;
+  segDiv.appendChild(segImg);
+  EL.routeArea.appendChild(segDiv);
   // Remove ghost segment
   $(`ghost-${i}`)?.remove();
 
@@ -460,9 +491,9 @@ function doSnap() {
   // 5. Auto-corner (when direction changes)
   if (i > 0 && segs[i] !== segs[i - 1]) {
     addCorner(S.waypoints[i], segs[i - 1], segs[i]);
-    showJohnnyBubble('¿Ves ese radio? Así se hace una curva. Sin forzar.', 2200);
+    showJohnnyBubble('¿Ves ese radio? Así se hace una curva. Sin forzar.', 3500);
   } else {
-    showJohnnyBubble(rand(JOHNNY_SNAPS), 1500);
+    showJohnnyBubble(rand(JOHNNY_SNAPS), 2500);
   }
 
   // 6. Lower third (occasional)
@@ -484,7 +515,7 @@ function doSnap() {
 
 function addClips(a, b, len, type) {
   const n       = Math.max(2, Math.floor(len / CLIP_SPACING_PX));
-  const HALF_W  = 6; // half-width of clip perpendicular arm
+  const HALF_W  = 18; // half-width of clip perpendicular arm
 
   for (let k = 1; k <= n; k++) {
     const t  = k / (n + 1);
@@ -639,8 +670,15 @@ function startLevel(idx) {
 
   drawGhostRoute(level);
   spawnPiece();
+
+  // Show tutorial on level 1: modal first, then Johnny briefing after dismiss
+  if (idx === 0 && !S.tutorialDone) {
+    $('tutorial-modal').classList.remove('hidden');
+    return; // loop + briefing start when tutorial is dismissed
+  }
+
   showLowerThirdPlay(`NIVEL ${idx + 1}/6`, level.name, 3000);
-  showJohnnyBubble(level.briefing, 4000);
+  showJohnnyBubble(level.briefing, 6000);
 
   // Breaking news: once, on level 1 or 2
   if (!S.newsShown && (idx === 1 || idx === 2)) {
@@ -656,6 +694,14 @@ function startLevel(idx) {
 
 function showCredits() {
   showScreen('credits');
+  // Restart credits roll animation (the element lives in DOM from page load,
+  // so the animation must be re-triggered here, not via CSS on load)
+  EL.creditsText.style.animation = 'none';
+  EL.creditsText.style.transform = 'translateY(110%)';
+  EL.creditsText.offsetHeight; // force reflow
+  // 'both' fill-mode applies the 0% keyframe (translateY(110%)) during the delay → no flash
+  EL.creditsText.style.animation = 'creditsRoll 22s linear .5s both';
+
   const alreadyDone = localStorage.getItem(RECORD_KEY) === 'completado';
   localStorage.setItem(RECORD_KEY, 'completado');
 
@@ -676,7 +722,7 @@ function showCredits() {
 
   // Show rewind button after credits finish (or on tap)
   const showRewind = () => EL.rewindBtn.classList.remove('hidden');
-  setTimeout(showRewind, 14500);
+  setTimeout(showRewind, 22500);
   EL.creditsText.addEventListener('animationend', showRewind, { once: true });
   EL.credits.addEventListener('click', showRewind, { once: true });
 }
@@ -691,9 +737,11 @@ function sendTaskCompleted() {
 // ─── REWIND / RESTART ──────────────────────────────────────────
 
 function restart() {
-  S.newsShown = false;
-  S.ltIdx     = 0;
+  S.newsShown     = false;
+  S.ltIdx         = 0;
+  S.tutorialDone  = false;
   EL.rewindBtn.classList.add('hidden');
+  EL.routeArea.querySelectorAll('.snapped-img').forEach(d => d.remove());
   EL.routeSvg.innerHTML = '';
   showScreen('play');
   startLevel(0);
@@ -705,11 +753,37 @@ function init() {
   showScreen('intro');
   runIntro();
 
-  EL.introBtn.addEventListener('click', async () => {
+  EL.introBtn.addEventListener('click', () => showScreen('howto'));
+
+  $('howto-btn').addEventListener('click', async () => {
     await requestOrientation();
     startOrientation();
     showScreen('play');
     startLevel(0);
+  });
+
+  // ? button mid-game: show howto with back button
+  $('hud-help-btn').addEventListener('click', () => {
+    $('howto-back-btn').classList.remove('hidden');
+    $('howto-btn').classList.add('hidden');
+    showScreen('howto');
+  });
+  $('howto-back-btn').addEventListener('click', () => {
+    $('howto-back-btn').classList.add('hidden');
+    $('howto-btn').classList.remove('hidden');
+    showScreen('play');
+  });
+
+  $('tutorial-ok-btn').addEventListener('click', () => {
+    S.tutorialDone = true;
+    $('tutorial-modal').classList.add('hidden');
+    calibrate();
+    const level = LEVELS[S.levelIdx];
+    showLowerThirdPlay(`NIVEL ${S.levelIdx + 1}/6`, level.name, 3000);
+    showJohnnyBubble(level.briefing, 6000);
+    S.lastT = performance.now();
+    cancelAnimationFrame(S.rafId);
+    S.rafId = requestAnimationFrame(gameLoop);
   });
 
   EL.rewindBtn.addEventListener('click', restart);
