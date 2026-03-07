@@ -530,7 +530,9 @@ function doSnap() {
   // 7. Advance
   S.pieceIdx++;
   if (S.pieceIdx >= segs.length) {
-    setTimeout(() => endLevel(), 900);
+    // Wait for Johnny's message to be readable before curtains close
+    const msgTime = (i > 0 && segs[i] !== segs[i - 1]) ? 3500 : 2500;
+    setTimeout(() => endLevel(), msgTime + 500);
   } else {
     updateTargetSegment();
     spawnPiece();
@@ -642,6 +644,7 @@ function showBreakingNews() {
 // ─── CURTAINS ──────────────────────────────────────────────────
 
 function closeCurtains(cb) {
+  EL.newsBanner.classList.add('hidden');
   EL.W.classList.add('curtains-closed');
   setTimeout(cb, 550);
 }
