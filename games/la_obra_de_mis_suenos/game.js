@@ -327,15 +327,43 @@ function buildWaypoints(level) {
 function drawGhostRoute(level) {
   EL.routeSvg.innerHTML = '';
   EL.routeArea.querySelectorAll('.snapped-img').forEach(d => d.remove());
+  EL.routeArea.querySelector('.route-backdrop')?.remove();
   buildWaypoints(level);
-  level.segments.forEach((_, i) => {
-    const a = S.waypoints[i], b = S.waypoints[i + 1];
-    const line = makeSVG('line', {
-      x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-      class: 'ghost-seg' + (i === S.pieceIdx ? ' target' : ''),
-      id: `ghost-${i}`,
-    });
-    EL.routeSvg.appendChild(line);
+
+  // Backdrop behind the whole route for contrast against busy backgrounds
+  const PAD = 50;
+  const xs = S.waypoints.map(p => p.x);
+  const ys = S.waypoints.map(p => p.y);
+  const minX = Math.min(...xs) - PAD, maxX = Math.max(...xs) + PAD;
+  const minY = Math.min(...ys) - PAD, maxY = Math.max(...ys) + PAD;
+  const bd = document.createElement('div');
+  bd.className = 'route-backdrop';
+  bd.style.cssText = `position:absolute;left:${minX}px;top:${minY}px;width:${maxX - minX}px;height:${maxY - minY}px;`;
+  EL.routeArea.insertBefore(bd, EL.routeSvg);
+
+  const GHOST_H = 24; // height of ghost rect (half = 12)
+  level.segments.forEach((seg, i) => {
+    const a = S.waypoints[i];
+    const segLen = S.segLengths[i];
+    let rect;
+    if (seg === 'H') {
+      rect = makeSVG('rect', {
+        x: a.x, y: a.y - GHOST_H / 2,
+        width: segLen, height: GHOST_H,
+        rx: 6, ry: 6,
+        class: 'ghost-seg' + (i === S.pieceIdx ? ' target' : ''),
+        id: `ghost-${i}`,
+      });
+    } else {
+      rect = makeSVG('rect', {
+        x: a.x - GHOST_H / 2, y: a.y,
+        width: GHOST_H, height: segLen,
+        rx: 6, ry: 6,
+        class: 'ghost-seg' + (i === S.pieceIdx ? ' target' : ''),
+        id: `ghost-${i}`,
+      });
+    }
+    EL.routeSvg.appendChild(rect);
   });
 }
 
@@ -515,7 +543,7 @@ function doSnap() {
 
 function addClips(a, b, len, type) {
   const n       = Math.max(2, Math.floor(len / CLIP_SPACING_PX));
-  const HALF_W  = 18; // half-width of clip perpendicular arm
+  const HALF_W  = 10; // half-width of clip perpendicular arm
 
   for (let k = 1; k <= n; k++) {
     const t  = k / (n + 1);
