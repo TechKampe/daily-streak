@@ -7,6 +7,24 @@
 
 // ─── CONSTANTES ────────────────────────────────────────────────
 
+const CDN = 'https://res.cloudinary.com/kampe/image/upload';
+const A = {
+  bg1:              `${CDN}/v1772871079/bg_nivel1_ws91j0.jpg`,
+  bg2:              `${CDN}/v1772871079/bg_nivel2_vn8hqc.jpg`,
+  bg3:              `${CDN}/v1772871079/bg_nivel3_hrreuq.jpg`,
+  bg4:              `${CDN}/v1772871080/bg_nivel4_dchuin.jpg`,
+  bg5:              `${CDN}/v1772871080/bg_nivel5_t2bkql.jpg`,
+  bg6:              `${CDN}/v1772871081/bg_nivel6_womka4.jpg`,
+  piece_h:          `${CDN}/v1772871083/piece_h_i4znaf.svg`,
+  corner_hv:        `${CDN}/v1772871081/corner_hv_xg2yfu.svg`,
+  andres_happy:     `${CDN}/v1772871079/andres_happy_n8wljk.png`,
+  andres_celebrating:`${CDN}/v1772871079/andres_celebrating_nswuou.png`,
+  andres_worried:   `${CDN}/v1772871079/andres_worried_acela4.png`,
+  johnny_happy:     `${CDN}/v1772871082/johnny_happy_akd6ed.png`,
+  johnny_celebrating:`${CDN}/v1772871082/johnny_celebrating_vy7iyl.png`,
+  johnny_worried:   `${CDN}/v1772871083/johnny_worried_rkz6yx.png`,
+};
+
 const RECORD_KEY        = 'la_obra_de_mis_suenos_record';
 const SNAP_MS           = 3000;   // ms para auto-snap
 const ZONE_OUTER_PX     = 40;     // px perpendicular para zona exterior
@@ -26,44 +44,44 @@ const LEVELS = [
   {
     id: 1,
     name: 'El Pasillo de Entrada',
-    bg: 'assets/bg_nivel1.jpg',
-    segments: ['H','H','H','H'],
+    bg: A.bg1,
+    segments: ['H','H','H'],
     briefing: 'Horizontal pura. Recta visual de A a B. Sin serpientes. Las abrazaderas a distancia constante. Parece fácil. Los chapuceros también lo creen.',
   },
   {
     id: 2,
     name: 'El Cuarto Técnico',
-    bg: 'assets/bg_nivel2.jpg',
+    bg: A.bg2,
     segments: ['V','V','V'],
     briefing: 'Bajada vertical. Misma regla: recta visual, fijaciones a distancia constante. La plomada no miente. El cuadro eléctrico está mirando.',
   },
   {
     id: 3,
     name: 'El Rincón del Salón',
-    bg: 'assets/bg_nivel3.jpg',
+    bg: A.bg3,
     segments: ['H','H','V','V'],
     briefing: 'Primera esquina. Horizontal, luego bajamos. El radio suave lo pone el sistema — tú pon la recta en cada tramo. Si tienes que forzar, ya vas mal.',
   },
   {
     id: 4,
     name: 'La Vuelta del Pasillo',
-    bg: 'assets/bg_nivel4.jpg',
+    bg: A.bg4,
     segments: ['V','V','H','H','H'],
     briefing: 'Bajamos, luego giramos. Recta visual en cada tramo. Fijación homogénea. El radio sale solo — no lo fuerces. Andrés lo va a notar. Y los espectadores también.',
   },
   {
     id: 5,
     name: 'La Cocina',
-    bg: 'assets/bg_nivel5.jpg',
-    segments: ['H','H','V','V','H','H'],
-    briefing: 'Cocina. Dos esquinas. Recta, giro suave, recta, otro giro suave, recta. Fijación homogénea en todos los tramos. Si el radio sale solo y queda suave, eso es exactamente lo que debe pasar.',
+    bg: A.bg5,
+    segments: ['H','H','V','V','H'],
+    briefing: 'Cocina. Dos esquinas. Recta, giro suave, bajada, otro giro suave, recta. Fijación homogénea en todos los tramos. Si el radio sale solo y queda suave, eso es exactamente lo que debe pasar.',
   },
   {
     id: 6,
     name: 'La Habitación de Sus Sueños',
-    bg: 'assets/bg_nivel6.jpg',
-    segments: ['H','H','H','H','V','V','V'],
-    briefing: 'La habitación principal. La más larga. La más importante. Esto es lo que va en portada del episodio.',
+    bg: A.bg6,
+    segments: ['V','V','H','H','V','V','H'],
+    briefing: 'La habitación principal. Tres esquinas. La ruta más larga. La más importante. Esto es lo que va en portada del episodio.',
   },
 ];
 
@@ -461,6 +479,10 @@ function gameLoop(ts) {
   if (zone) {
     S.snapMs += dt;
     setRing(S.snapMs / SNAP_MS);
+    // Haptic tick every ~400ms while filling
+    if (navigator.vibrate && Math.floor(S.snapMs / 400) > Math.floor((S.snapMs - dt) / 400)) {
+      navigator.vibrate(15);
+    }
     if (S.snapMs >= SNAP_MS) { doSnap(); return; }
   } else if (S.snapMs > 0) {
     S.snapMs = Math.max(0, S.snapMs - dt * 2.5);
@@ -488,9 +510,10 @@ function doSnap() {
   const a    = S.waypoints[i];
   const b    = S.waypoints[i + 1];
 
-  // 1. Snap flash
+  // 1. Snap flash + haptic
   EL.pieceBody.style.animation = 'snapFlash .35s';
   setTimeout(() => { EL.pieceBody.style.animation = ''; }, 350);
+  if (navigator.vibrate) navigator.vibrate([30, 50, 60]);
 
   // 2. OOOOH on inner snap
   if (S.snapZone === 'inner') showOoooh();
@@ -500,7 +523,7 @@ function doSnap() {
   const segDiv = document.createElement('div');
   segDiv.className = 'snapped-img';
   const segImg = document.createElement('img');
-  segImg.src = 'assets/piece_h.svg?v=2';
+  segImg.src = A.piece_h;
   if (segs[i] === 'H') {
     segDiv.style.cssText = `position:absolute;left:${a.x}px;top:${a.y - 14}px;width:${segLen}px;height:28px;`;
   } else {
@@ -570,7 +593,7 @@ function addCorner(pivot, prevType, nextType) {
   const div = document.createElement('div');
   div.className = 'snapped-img';
   const img = document.createElement('img');
-  img.src = 'assets/corner_hv.svg?v=2';
+  img.src = A.corner_hv;
   img.style.cssText = 'width:100%;height:100%;object-fit:fill;display:block;';
 
   let left, top, rotate;
