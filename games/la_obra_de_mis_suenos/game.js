@@ -291,8 +291,8 @@ function lowerThirdIntro(name, role, side, cb) {
 function buildWaypoints(level) {
   const W = EL.W.offsetWidth;
   const H = EL.W.offsetHeight;
-  const SEG_H = Math.round(W * 0.18);  // length of one horizontal segment
-  const SEG_V = Math.round(H * 0.13);  // length of one vertical segment
+  const SEG_H = Math.max(Math.round(W * 0.24), 100);  // length of one H seg (≥ floating piece width)
+  const SEG_V = Math.max(Math.round(H * 0.14), 100);  // length of one V seg (≥ floating piece width)
   const segs = level.segments;
 
   // Calculate total extent to center the route
@@ -341,7 +341,7 @@ function drawGhostRoute(level) {
   bd.style.cssText = `position:absolute;left:${minX}px;top:${minY}px;width:${maxX - minX}px;height:${maxY - minY}px;`;
   EL.routeArea.insertBefore(bd, EL.routeSvg);
 
-  const GHOST_H = 24; // height of ghost rect (half = 12)
+  const GHOST_H = 28; // exact match to floating piece img height
   level.segments.forEach((seg, i) => {
     const a = S.waypoints[i];
     const segLen = S.segLengths[i];
@@ -502,10 +502,10 @@ function doSnap() {
   const segImg = document.createElement('img');
   segImg.src = 'assets/piece_h.svg?v=2';
   if (segs[i] === 'H') {
-    segDiv.style.cssText = `position:absolute;left:${a.x}px;top:${a.y - 40}px;width:${segLen}px;height:80px;`;
+    segDiv.style.cssText = `position:absolute;left:${a.x}px;top:${a.y - 14}px;width:${segLen}px;height:28px;`;
   } else {
     const midY = a.y + segLen / 2;
-    segDiv.style.cssText = `position:absolute;left:${a.x - segLen / 2}px;top:${midY - 40}px;width:${segLen}px;height:80px;transform:rotate(90deg);`;
+    segDiv.style.cssText = `position:absolute;left:${a.x - segLen / 2}px;top:${midY - 14}px;width:${segLen}px;height:28px;transform:rotate(90deg);`;
   }
   segImg.style.cssText = `width:100%;height:100%;object-fit:fill;display:block;`;
   segDiv.appendChild(segImg);
@@ -545,7 +545,7 @@ function doSnap() {
 
 function addClips(a, b, len, type) {
   const n       = Math.max(2, Math.floor(len / CLIP_SPACING_PX));
-  const HALF_W  = 10; // half-width of clip perpendicular arm
+  const HALF_W  = 14; // half-width of clip perpendicular arm
 
   for (let k = 1; k <= n; k++) {
     const t  = k / (n + 1);
@@ -565,7 +565,7 @@ function addClips(a, b, len, type) {
 function addCorner(pivot, prevType, nextType) {
   // Corner SVG: 100×100 viewBox, inner corner at (50,50).
   // SIZE tuned to match straight-piece thickness on screen.
-  const SIZE = 30;
+  const SIZE = 40;
 
   const div = document.createElement('div');
   div.className = 'snapped-img';
@@ -577,13 +577,13 @@ function addCorner(pivot, prevType, nextType) {
 
   if (prevType === 'H' && nextType === 'V') {
     // H→V: H arm goes LEFT, V arm goes DOWN from pivot
-    left = pivot.x - 23;
-    top  = pivot.y - 8;
+    left = pivot.x - 30;
+    top  = pivot.y - 10;
     rotate = '';
   } else {
     // V→H: V arm goes UP, H arm goes RIGHT from pivot (SVG rotated 180°)
-    left = pivot.x - 7;
-    top  = pivot.y - 22;
+    left = pivot.x - 10;
+    top  = pivot.y - 30;
     rotate = 'transform:rotate(180deg);';
   }
 
