@@ -38,7 +38,7 @@ const PTS_BASE = 100;
 const PTS_BONUS = 50;
 const TASK_THRESHOLD = 900;
 const RECORD_KEY = 'cables_a_su_sitio_record';
-const SNAP_DIST = 90;
+const SNAP_DIST = 60;
 const BELT_SPEED = 1.0;
 
 /* ── panel layout ── */
@@ -120,7 +120,7 @@ let beltAnim = null;
 
 /* ── DOM ── */
 const $ = id => document.getElementById(id);
-const screens = { intro: $('intro'), play: $('play'), results: $('results') };
+const screens = { intro: $('intro'), howto: $('howto'), play: $('play'), results: $('results') };
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -173,7 +173,7 @@ function buildIntro() {
     </div>
     <button class="cta" id="start-btn">Empezar a cablear</button>
   `;
-  $('start-btn').onclick = startGame;
+  $('start-btn').onclick = showHowto;
 
   /* slider auto-rotate */
   const slides = document.querySelectorAll('.intro-slide');
@@ -188,6 +188,38 @@ function buildIntro() {
   }, 2500);
 }
 
+/* ── howto ── */
+function showHowto() {
+  show('howto');
+  $('howto-inner').innerHTML = `
+    <div class="howto-card">
+      <h3>Cómo cablear</h3>
+      <div class="howto-row">
+        <span class="howto-icon">👆</span>
+        <p><strong>Arrastra</strong> cada cable desde la cinta hasta su destino en el cuadro.</p>
+      </div>
+      <div class="howto-row">
+        <span class="howto-icon" style="color:var(--n-blue)">━</span>
+        <p><strong>Azul (N)</strong> → Barra N</p>
+      </div>
+      <div class="howto-row">
+        <span class="howto-icon" style="color:var(--pe-green)">━</span>
+        <p><strong>Verde-amarillo (PE)</strong> → Barra PE</p>
+      </div>
+      <div class="howto-row">
+        <span class="howto-icon" style="color:#666">━</span>
+        <p><strong>Circuitos (C1, C2...)</strong> → su PIA correspondiente</p>
+      </div>
+      <div class="howto-row">
+        <span class="howto-icon" style="color:var(--rojo)">✗</span>
+        <p>Cable con <strong>peluca, tenso o etiqueta rara</strong> → zona Rehacer</p>
+      </div>
+    </div>
+    <button class="cta" id="howto-btn">Empezar</button>
+  `;
+  $('howto-btn').onclick = startGame;
+}
+
 /* ── HUD ── */
 function updateHUD() {
   $('hud-round').textContent = `${correctCount}/${cables.length}`;
@@ -197,13 +229,18 @@ function updateHUD() {
   $('hud-lives').innerHTML = h;
 }
 
-/* ── fer ── */
+/* ── fer popup ── */
 function showFer(msg, state, dur) {
   clearTimeout(ferTimer);
+  const popup = $('fer-popup');
   $('fer-img').src = FER[state || 'happy'];
   $('fer-msg').textContent = msg;
-  $('fer-bubble').classList.remove('hidden');
-  if (dur) ferTimer = setTimeout(() => $('fer-bubble').classList.add('hidden'), dur);
+  popup.classList.remove('hidden');
+  /* re-trigger animation */
+  popup.style.animation = 'none';
+  popup.offsetHeight;
+  popup.style.animation = '';
+  if (dur) ferTimer = setTimeout(() => popup.classList.add('hidden'), dur);
 }
 
 /* ── build panel ── */
@@ -215,7 +252,7 @@ function buildPanel() {
     slot.className = 'barra-slot';
     slot.dataset.id = b.id;
     const isVA = b.id === 'barra-pe';
-    const bg = isVA ? 'linear-gradient(90deg,#2ECC40 50%,#FFD700 50%)' : b.color;
+    const bg = isVA ? 'repeating-linear-gradient(90deg,#2ECC40 0,#2ECC40 12px,#FFD700 12px,#FFD700 24px)' : b.color;
     slot.innerHTML = `<div class="barra-bar" style="background:${bg}"></div><span class="barra-label">${b.label}</span>`;
     br.appendChild(slot);
   });
@@ -248,16 +285,20 @@ function buildConveyor() {
   correctCount = 0;
   const cableW = 60, gap = 24;
 
-  cables.forEach((c, i) => {
-    cableErrors[i] = 0;
-    const el = document.createElement('div');
-    el.className = 'cable-item';
-    el.dataset.idx = i;
-    el.innerHTML = makeCableHTML(c);
-    el.style.left = (belt.offsetWidth + i * (cableW + gap)) + 'px';
-    belt.appendChild(el);
+  /* Use requestAnimationFrame so the play screen has rendered and belt has width */
+  requestAnimationFrame(() => {
+    const startX = belt.offsetWidth || window.innerWidth;
+    cables.forEach((c, i) => {
+      cableErrors[i] = 0;
+      const el = document.createElement('div');
+      el.className = 'cable-item';
+      el.dataset.idx = i;
+      el.innerHTML = makeCableHTML(c);
+      el.style.left = (startX + i * (cableW + gap)) + 'px';
+      belt.appendChild(el);
+    });
+    startBelt();
   });
-  startBelt();
 }
 
 function startBelt() {
@@ -343,18 +384,20 @@ function distToRect(px, py, r) {
 }
 
 function updateHighlights(p) {
+  clearHL();
+  let bestEl = null, bestD = Infinity;
   document.querySelectorAll('.barra-slot').forEach(el => {
     const d = distToRect(p.x, p.y, el.getBoundingClientRect());
-    el.classList.toggle('highlight', d < SNAP_DIST);
+    if (d < SNAP_DIST && d < bestD) { bestD = d; bestEl = el; }
   });
-  document.querySelectorAll('.comp-slot').forEach(el => {
-    if (el.classList.contains('filled')) return;
+  document.querySelectorAll('.comp-slot:not(.filled)').forEach(el => {
     const d = distToRect(p.x, p.y, el.getBoundingClientRect());
-    el.classList.toggle('highlight', d < SNAP_DIST);
+    if (d < SNAP_DIST && d < bestD) { bestD = d; bestEl = el; }
   });
   const rz = $('rehacer-zone');
   const d = distToRect(p.x, p.y, rz.getBoundingClientRect());
-  rz.classList.toggle('highlight', d < SNAP_DIST);
+  if (d < SNAP_DIST && d < bestD) { bestD = d; bestEl = rz; }
+  if (bestEl) bestEl.classList.add('highlight');
 }
 
 function clearHL() {
@@ -452,7 +495,10 @@ function onCorrect(item, ghost, cable, target, idx) {
     cnt.classList.remove('hidden');
     cnt.textContent = parseInt(cnt.textContent || '0') + 1;
   } else {
-    if (!target.id.startsWith('barra')) target.el.classList.add('filled');
+    if (!target.id.startsWith('barra')) {
+      target.el.classList.add('filled');
+      setTimeout(() => target.el.classList.remove('filled'), 600);
+    }
     // Flash green on barras
     if (target.id.startsWith('barra')) {
       const bar = target.el.querySelector('.barra-bar');
@@ -557,12 +603,11 @@ function startGame() {
   buildPanel();
   setActiveSlots();
   updateHUD();
-  $('fer-img').src = FER.happy;
+  $('fer-popup').classList.add('hidden');
   $('rehacer-count').textContent = '0';
   $('rehacer-count').classList.add('hidden');
   $('rehacer-zone').classList.remove('has-cables');
   buildConveyor();
-  showFer(MSG.tutorial, 'happy', 3000);
 }
 
 /* ── init ── */
