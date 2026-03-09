@@ -36,7 +36,7 @@ const CABLE_IMG = {
 const LIVES_MAX = 3;
 const PTS_BASE = 100;
 const PTS_BONUS = 50;
-const TASK_THRESHOLD = 900;
+const TASK_THRESHOLD = 8;
 const RECORD_KEY = 'cables_a_su_sitio_record';
 const SNAP_DIST = 60;
 const BELT_SPEED = 1.0;
@@ -54,21 +54,31 @@ const BARRAS = [
   { id: 'barra-pe', label: 'PE', color: '#2ECC40' }
 ];
 
-/* ── single cable pool (all cables at once) ── */
-const ALL_CABLES = [
-  { color: 'azul', etiqueta: 'N',  reserva: 'OK',     destino: 'barra-n',  defecto: null },
-  { color: 'verde-amarillo', etiqueta: 'PE', reserva: 'OK',     destino: 'barra-pe', defecto: null },
-  { color: 'negro', etiqueta: 'C1', reserva: 'OK',     destino: 'pia-c1',  defecto: null },
-  { color: 'marron', etiqueta: 'C2', reserva: 'OK',     destino: 'pia-c2',  defecto: null },
-  { color: 'gris', etiqueta: 'C3', reserva: 'OK',     destino: 'pia-c3',  defecto: null },
-  { color: 'verde-amarillo', etiqueta: 'PE', reserva: 'Peluca', destino: 'rehacer', defecto: 'peluca' },
-  { color: 'marron', etiqueta: 'C2', reserva: 'Tenso',  destino: 'rehacer', defecto: 'tenso' },
-  { color: 'azul', etiqueta: 'PE', reserva: 'OK',     destino: 'rehacer', defecto: 'etiqueta' },
-  { color: 'negro', etiqueta: 'C1', reserva: 'Peluca', destino: 'rehacer', defecto: 'peluca' },
-  { color: 'verde-amarillo', etiqueta: 'PE', reserva: 'OK',     destino: 'barra-pe', defecto: null },
-  { color: 'azul', etiqueta: 'N',  reserva: 'OK',     destino: 'barra-n',  defecto: null },
-  { color: 'gris', etiqueta: 'C3', reserva: 'OK',     destino: 'pia-c3',  defecto: null }
+/* ── cable templates (picked randomly, infinite supply) ── */
+const CABLE_TEMPLATES = [
+  /* good cables — ~60% of the pool */
+  { color: 'azul', etiqueta: 'N',  destino: 'barra-n',  defecto: null },
+  { color: 'azul', etiqueta: 'N',  destino: 'barra-n',  defecto: null },
+  { color: 'verde-amarillo', etiqueta: 'PE', destino: 'barra-pe', defecto: null },
+  { color: 'verde-amarillo', etiqueta: 'PE', destino: 'barra-pe', defecto: null },
+  { color: 'negro', etiqueta: 'C1', destino: 'pia-c1',  defecto: null },
+  { color: 'marron', etiqueta: 'C2', destino: 'pia-c2',  defecto: null },
+  { color: 'gris', etiqueta: 'C3', destino: 'pia-c3',  defecto: null },
+  { color: 'negro', etiqueta: 'C1', destino: 'pia-c1',  defecto: null },
+  { color: 'marron', etiqueta: 'C2', destino: 'pia-c2',  defecto: null },
+  { color: 'gris', etiqueta: 'C3', destino: 'pia-c3',  defecto: null },
+  /* defective cables — ~40% */
+  { color: 'verde-amarillo', etiqueta: 'PE', destino: 'rehacer', defecto: 'peluca' },
+  { color: 'marron', etiqueta: 'C2', destino: 'rehacer', defecto: 'tenso' },
+  { color: 'azul', etiqueta: 'PE', destino: 'rehacer', defecto: 'etiqueta' },
+  { color: 'negro', etiqueta: 'C1', destino: 'rehacer', defecto: 'peluca' },
+  { color: 'gris', etiqueta: 'C3', destino: 'rehacer', defecto: 'tenso' },
+  { color: 'azul', etiqueta: 'N',  destino: 'rehacer', defecto: 'peluca' },
+  { color: 'verde-amarillo', etiqueta: 'N', destino: 'rehacer', defecto: 'etiqueta' },
 ];
+
+const GAME_TIME = 90; /* seconds */
+const BELT_CABLES_COUNT = 6; /* visible on belt at once */
 
 /* ── messages ── */
 const MSG = {
@@ -117,6 +127,12 @@ let cables = [], cableErrors = {};
 let dragging = null, dragOffX = 0, dragOffY = 0, dragStartX = 0, dragStartY = 0, isDragging = false;
 let correctCount = 0, ferTimer = null;
 let beltAnim = null;
+let timeLeft = GAME_TIME, timerInterval = null, cableIdx = 0;
+
+function randomCable() {
+  const t = CABLE_TEMPLATES[Math.floor(Math.random() * CABLE_TEMPLATES.length)];
+  return { ...t };
+}
 
 /* ── DOM ── */
 const $ = id => document.getElementById(id);
@@ -222,11 +238,29 @@ function showHowto() {
 
 /* ── HUD ── */
 function updateHUD() {
-  $('hud-round').textContent = `${correctCount}/${cables.length}`;
-  $('hud-score').textContent = '';
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  $('hud-round').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  $('hud-score').textContent = `${correctCount} cables`;
   let h = '';
   for (let i = 0; i < LIVES_MAX; i++) h += `<span class="heart${i >= lives ? ' lost' : ''}">♥</span>`;
   $('hud-lives').innerHTML = h;
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = GAME_TIME;
+  updateHUD();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateHUD();
+    if (timeLeft <= 10) $('hud-round').style.color = 'var(--rojo)';
+    if (timeLeft <= 0) { clearInterval(timerInterval); stopBelt(); showResults(); }
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
 }
 
 /* ── fer popup ── */
@@ -277,28 +311,49 @@ function setActiveSlots() {
 }
 
 /* ── conveyor belt ── */
+function spawnCable(belt, startX) {
+  const c = randomCable();
+  const idx = cableIdx++;
+  cables[idx] = c;
+  cableErrors[idx] = 0;
+  const el = document.createElement('div');
+  el.className = 'cable-item';
+  el.dataset.idx = idx;
+  el.innerHTML = makeCableHTML(c);
+  el.style.left = startX + 'px';
+  belt.appendChild(el);
+  return el;
+}
+
 function buildConveyor() {
   const belt = $('belt-cables');
   belt.innerHTML = '';
-  cables = shuffle([...ALL_CABLES]);
+  cables = [];
   cableErrors = {};
   correctCount = 0;
+  cableIdx = 0;
   const cableW = 60, gap = 24;
 
-  /* Use requestAnimationFrame so the play screen has rendered and belt has width */
   requestAnimationFrame(() => {
-    const startX = belt.offsetWidth || window.innerWidth;
-    cables.forEach((c, i) => {
-      cableErrors[i] = 0;
-      const el = document.createElement('div');
-      el.className = 'cable-item';
-      el.dataset.idx = i;
-      el.innerHTML = makeCableHTML(c);
-      el.style.left = (startX + i * (cableW + gap)) + 'px';
-      belt.appendChild(el);
-    });
+    const bw = belt.offsetWidth || window.innerWidth;
+    for (let i = 0; i < BELT_CABLES_COUNT; i++) {
+      spawnCable(belt, bw + i * (cableW + gap));
+    }
     startBelt();
   });
+}
+
+function replenishBelt() {
+  const belt = $('belt-cables');
+  const items = belt.querySelectorAll('.cable-item:not(.ghost)');
+  if (items.length < BELT_CABLES_COUNT && timeLeft > 0) {
+    let maxX = 0;
+    items.forEach(el => {
+      const x = parseFloat(el.style.left) || 0;
+      if (x > maxX) maxX = x;
+    });
+    spawnCable(belt, maxX + 60 + 24);
+  }
 }
 
 function startBelt() {
@@ -506,8 +561,6 @@ function onCorrect(item, ghost, cable, target, idx) {
     }
   }
 
-  const bonus = cableErrors[idx] === 0 ? PTS_BONUS : 0;
-  score += PTS_BASE + bonus;
   updateHUD();
 
   if (cable.defecto) showFer(MSG.defectCaught[Math.floor(Math.random()*MSG.defectCaught.length)], 'celebrating', 1800);
@@ -562,13 +615,13 @@ function onGoodToRehacer(item, ghost, idx) {
 
 /* ── end check ── */
 function checkRound() {
-  if (correctCount < cables.length) return;
-  setTimeout(() => { stopBelt(); showResults(); }, 800);
+  replenishBelt();
 }
 
 /* ── game over ── */
 function showGameOver() {
   stopBelt();
+  stopTimer();
   $('go-av').src = FER.worried;
   $('go-txt').textContent = MSG.gameOver;
   $('gameover-overlay').classList.remove('hidden');
@@ -576,21 +629,24 @@ function showGameOver() {
 
 /* ── results ── */
 function showResults() {
+  stopTimer();
+  stopBelt();
   show('results');
+  const total = correctCount;
   const rec = parseInt(localStorage.getItem(RECORD_KEY) || '0');
-  const isNew = score > rec;
-  if (isNew) localStorage.setItem(RECORD_KEY, score);
+  const isNew = total > rec;
+  if (isNew) localStorage.setItem(RECORD_KEY, total);
   let av, msg;
-  if (score >= 1400) { av = FER.celebrating; msg = MSG.resultHigh; }
-  else if (score >= 900) { av = FER.happy; msg = MSG.resultMid; }
+  if (total >= 15) { av = FER.celebrating; msg = MSG.resultHigh; }
+  else if (total >= 8) { av = FER.happy; msg = MSG.resultMid; }
   else { av = FER.worried; msg = MSG.resultLow; }
-  if (score >= TASK_THRESHOLD && window.ReactNativeWebView)
+  if (total >= TASK_THRESHOLD && window.ReactNativeWebView)
     window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
   $('res-inner').innerHTML = `
     <h2>Cables a Su Sitio</h2>
     <img class="res-av" src="${av}" alt="Fer">
-    <div class="res-score">${score} pts</div>
-    <div class="res-record ${isNew?'new-rec':''}">${isNew ? `Récord: ${rec} → <strong>${score}</strong>` : `Récord: ${Math.max(rec,score)}`}</div>
+    <div class="res-score">${total} cables</div>
+    <div class="res-record ${isNew?'new-rec':''}">${isNew ? `Récord: ${rec} → <strong>${total}</strong>` : `Récord: ${Math.max(rec,total)}`}</div>
     <p style="text-align:center;font-size:14px;line-height:1.5;max-width:300px">${msg}</p>
     <button class="cta" id="retry-btn">Volver a intentar</button>`;
   $('retry-btn').onclick = () => { show('play'); startGame(); };
@@ -600,14 +656,16 @@ function showResults() {
 function startGame() {
   show('play');
   score = 0; lives = LIVES_MAX;
+  $('hud-round').style.color = '';
   buildPanel();
   setActiveSlots();
-  updateHUD();
   $('fer-popup').classList.add('hidden');
   $('rehacer-count').textContent = '0';
   $('rehacer-count').classList.add('hidden');
   $('rehacer-zone').classList.remove('has-cables');
+  document.querySelectorAll('.comp-slot').forEach(el => el.classList.remove('filled'));
   buildConveyor();
+  startTimer();
 }
 
 /* ── init ── */
