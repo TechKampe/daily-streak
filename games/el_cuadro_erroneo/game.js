@@ -256,11 +256,11 @@
     //  PHASE 2 — "Reordena el Carril"
     // =========================================================
     const dinComponents = [
-        { id: 'iga', label: 'IGA', imgType: 'iga', slot: 0 },
-        { id: 'id', label: 'ID', imgType: 'id', slot: 1 },
-        { id: 'pia1', label: 'PIA Alumbrado', imgType: 'pia', isPIA: true },
-        { id: 'pia2', label: 'PIA Enchufes', imgType: 'pia', isPIA: true },
-        { id: 'pia3', label: 'PIA Horno', imgType: 'pia', isPIA: true }
+        { id: 'iga', label: 'General', imgType: 'iga', slot: 0 },
+        { id: 'id', label: 'Diferencial', imgType: 'id', slot: 1 },
+        { id: 'pia1', label: 'Alumbrado', imgType: 'pia', isPIA: true },
+        { id: 'pia2', label: 'Enchufes', imgType: 'pia', isPIA: true },
+        { id: 'pia3', label: 'Horno', imgType: 'pia', isPIA: true }
     ];
 
     function startPhase2() {
@@ -397,11 +397,11 @@
     //  PHASE 3 — "Etiqueta como un profesional"
     // =========================================================
     const labelData = [
-        { component: 'IGA', imgType: 'iga', correct: 'IGA', distractors: ['ID', 'PIA', 'General'] },
-        { component: 'ID', imgType: 'id', correct: 'ID', distractors: ['IGA', 'Dif', 'PIA'] },
-        { component: 'PIA 1', imgType: 'pia', correct: 'PIA 1 — Alumbrado', distractors: ['PIA 1 — Enchufes', 'PIA 2 — Alumbrado', 'IGA'] },
-        { component: 'PIA 2', imgType: 'pia', correct: 'PIA 2 — Enchufes', distractors: ['PIA 1 — Enchufes', 'PIA 3 — Enchufes', 'ID'] },
-        { component: 'PIA 3', imgType: 'pia', correct: 'PIA 3 — Horno', distractors: ['PIA 2 — Horno', 'PIA 3 — Enchufes', 'IGA'] }
+        { component: 'IGA', imgType: 'iga', correct: 'General', distractors: ['Diferencial', 'Alumbrado'] },
+        { component: 'ID', imgType: 'id', correct: 'Diferencial', distractors: ['General', 'Enchufes'] },
+        { component: 'PIA de Alumbrado', imgType: 'pia', correct: 'Alumbrado', distractors: ['Enchufes', 'Horno'] },
+        { component: 'PIA de Enchufes', imgType: 'pia', correct: 'Enchufes', distractors: ['Alumbrado', 'Horno'] },
+        { component: 'PIA del Horno', imgType: 'pia', correct: 'Horno', distractors: ['Enchufes', 'Alumbrado'] }
     ];
 
     function startPhase3() {
@@ -427,7 +427,7 @@
         }).join('');
 
         area.innerHTML = `
-            ${charRow(SALVA.base, `El compañero no puso ni una etiqueta. Etiqueta: <strong>${l.component}</strong>. Grande, legible, consistente.`)}
+            ${charRow(SALVA.base, `Etiqueta este componente: <strong>${l.component}</strong>. ¿Que pondrias en la etiqueta?`)}
             <div class="din-labeled">${slotsHTML}</div>
             <p class="progress-text mt-6">Selecciona la etiqueta correcta:</p>
             <div class="label-selector">
@@ -448,8 +448,8 @@
                     btn.classList.add('incorrect');
                     phaseData.errors++;
                     let msg = l.component === 'IGA' || l.component === 'ID'
-                        ? 'No. El IGA es el general, el ID es el diferencial. Si los confundes en la etiqueta, imaginate Yolanda.'
-                        : 'Cada PIA protege un circuito. Si la etiqueta dice "Enchufes" pero es el de alumbrado, Yolanda toca el que no es.';
+                        ? 'No. El IGA se etiqueta "General" y el ID "Diferencial". Si los confundes, imaginate Yolanda.'
+                        : 'Cada PIA se etiqueta con el circuito que protege: Alumbrado, Enchufes o Horno. Si pones el nombre equivocado, Yolanda toca el que no es.';
                     if (!loseLife()) {
                         showFeedback(msg, false, () => { phaseData.idx++; showP3Label(); });
                     }
