@@ -29,19 +29,19 @@
   // Each cable: { id, from:{comp,term}, to:{comp,term}, family, label, color, name }
   // Terminals are keyed like "id_out_l", "bar_n_2" etc.
   const LEVELS = [
-    { // Level 1: Tutorial — 2 cables
+    { // Level 1: Tutorial — 2 cables (N and PE from ID down to bars)
       cables: [
-        { id:'n1',  from:'id_out_l',  to:'bar_n_3',  family:'n',  label:'N',  color:COLORS.n,  name:'Neutro' },
-        { id:'pe1', from:'id_out_r',  to:'bar_pe_3', family:'pe', label:'PE', color:COLORS.pe, name:'Tierra' }
+        { id:'n1',  from:'id_out_l',  to:'bar_n_1',  family:'n',  label:'N',  color:COLORS.n,  name:'Neutro' },
+        { id:'pe1', from:'id_out_r',  to:'bar_pe_1', family:'pe', label:'PE', color:COLORS.pe, name:'Tierra' }
       ],
       labels: ['N','PE'],
       components: ['id'],
       briefing: null // tutorial handles it
     },
-    { // Level 2: 4 cables
+    { // Level 2: 4 cables (ID N/PE + 2 circuit outputs)
       cables: [
-        { id:'n1',  from:'id_out_l',  to:'bar_n_2',  family:'n',  label:'N',  color:COLORS.n,  name:'Neutro' },
-        { id:'pe1', from:'id_out_r',  to:'bar_pe_2', family:'pe', label:'PE', color:COLORS.pe, name:'Tierra' },
+        { id:'n1',  from:'id_out_l',  to:'bar_n_1',  family:'n',  label:'N',  color:COLORS.n,  name:'Neutro' },
+        { id:'pe1', from:'id_out_r',  to:'bar_pe_1', family:'pe', label:'PE', color:COLORS.pe, name:'Tierra' },
         { id:'c1',  from:'pia1_out',  to:'sal_1',    family:'sal',label:'C1', color:COLORS.sal,name:'Alumbrado' },
         { id:'c2',  from:'pia2_out',  to:'sal_2',    family:'sal',label:'C2', color:COLORS.sal,name:'Enchufes' }
       ],
@@ -49,11 +49,11 @@
       components: ['id','pia1','pia2'],
       briefing: { text:'Bien el primero. Ahora te toca uno con 4 cables. Aparecen los circuitos de alumbrado y enchufes. Misma secuencia: rutas, etiquetas, reservas.', time:'15:47' }
     },
-    { // Level 3: 6 cables
+    { // Level 3: 6 cables (IGA→ID feed + N/PE + 3 circuits)
       cables: [
         { id:'ali1',from:'iga_out',   to:'id_in',    family:'ali',label:'ALI',color:COLORS.ali,name:'Alimentación' },
-        { id:'n1',  from:'id_out_l',  to:'bar_n_2',  family:'n',  label:'N',  color:COLORS.n,  name:'Neutro' },
-        { id:'pe1', from:'id_out_r',  to:'bar_pe_2', family:'pe', label:'PE', color:COLORS.pe, name:'Tierra' },
+        { id:'n1',  from:'id_out_l',  to:'bar_n_1',  family:'n',  label:'N',  color:COLORS.n,  name:'Neutro' },
+        { id:'pe1', from:'id_out_r',  to:'bar_pe_1', family:'pe', label:'PE', color:COLORS.pe, name:'Tierra' },
         { id:'c1',  from:'pia1_out',  to:'sal_1',    family:'sal',label:'C1', color:COLORS.sal,name:'Alumbrado' },
         { id:'c2',  from:'pia2_out',  to:'sal_2',    family:'sal',label:'C2', color:COLORS.sal,name:'Enchufes' },
         { id:'c3',  from:'pia3_out',  to:'sal_3',    family:'sal',label:'C3', color:COLORS.sal,name:'Horno' }
@@ -62,7 +62,7 @@
       components: ['iga','id','pia1','pia2','pia3'],
       briefing: { text:'Vas bien. Este tiene 6 cables y aparece la alimentación del IGA al diferencial. Planifica las rutas antes de trazar — con 6 cables, si no piensas primero, cruzas seguro.', time:'16:12' }
     },
-    { // Level 4: 8 cables
+    { // Level 4: 8 cables (IGA→ID + N/PE + phase bridge + 4 circuits)
       cables: [
         { id:'ali1',from:'iga_out',   to:'id_in',    family:'ali',label:'ALI',color:COLORS.ali,name:'Alimentación IGA→ID' },
         { id:'n1',  from:'id_out_l',  to:'bar_n_1',  family:'n',  label:'N',  color:COLORS.n,  name:'Neutro' },
@@ -80,44 +80,52 @@
   ];
 
   // ── Terminal positions (relative to cuadro 380x460) ──
-  // Layout: ID outputs L/R are separated wide enough (140/240) so N goes left, PE goes right
-  // Bar N points are on the LEFT side, Bar PE points on the RIGHT — no crossing needed
+  // Layout: HORIZONTAL row like a real panel — IGA | ID | PIAs left-to-right on DIN rail
+  // Cables go DOWN from components to bars below
+  // Bar N at y:350, Bar PE at y:410
   const TERMINALS = {
-    iga_out:  { x:190, y:80,  family:'ali' },
-    id_in:    { x:190, y:105, family:'ali' },
-    id_out_l: { x:140, y:170, family:'n' },   // N exit — left side
-    id_out_r: { x:240, y:170, family:'pe' },   // PE exit — right side
-    id_out_f: { x:190, y:170, family:'ali' },
-    pia1_in:  { x:55,  y:205, family:'ali' },
-    pia1_out: { x:55,  y:270, family:'sal' },
-    pia2_in:  { x:135, y:205, family:'ali' },
-    pia2_out: { x:135, y:270, family:'sal' },
-    pia3_in:  { x:245, y:205, family:'ali' },
-    pia3_out: { x:245, y:270, family:'sal' },
-    pia4_in:  { x:325, y:205, family:'ali' },
-    pia4_out: { x:325, y:270, family:'sal' },
-    bar_n_1:  { x:55,  y:350, family:'n' },
-    bar_n_2:  { x:105, y:350, family:'n' },
-    bar_n_3:  { x:140, y:350, family:'n' },    // aligned under id_out_l
-    bar_n_4:  { x:190, y:350, family:'n' },
-    bar_pe_1: { x:190, y:410, family:'pe' },
-    bar_pe_2: { x:240, y:410, family:'pe' },   // aligned under id_out_r
-    bar_pe_3: { x:290, y:410, family:'pe' },
-    bar_pe_4: { x:340, y:410, family:'pe' },
-    sal_1:    { x:55,  y:310, family:'sal' },
-    sal_2:    { x:135, y:310, family:'sal' },
-    sal_3:    { x:245, y:310, family:'sal' },
-    sal_4:    { x:325, y:310, family:'sal' }
+    // IGA output → bottom of IGA, feeds into ID
+    iga_out:  { x:38,  y:100, family:'ali' },
+    // ID input ← top of ID
+    id_in:    { x:98,  y:50,  family:'ali' },
+    // ID outputs: N (left bottom), PE (right bottom), phase feed (center bottom)
+    id_out_l: { x:82,  y:100, family:'n' },
+    id_out_r: { x:114, y:100, family:'pe' },
+    id_out_f: { x:98,  y:100, family:'ali' },
+    // PIA inputs (top) and outputs (bottom)
+    pia1_in:  { x:172, y:50,  family:'ali' },
+    pia1_out: { x:172, y:100, family:'sal' },
+    pia2_in:  { x:228, y:50,  family:'ali' },
+    pia2_out: { x:228, y:100, family:'sal' },
+    pia3_in:  { x:284, y:50,  family:'ali' },
+    pia3_out: { x:284, y:100, family:'sal' },
+    pia4_in:  { x:340, y:50,  family:'ali' },
+    pia4_out: { x:340, y:100, family:'sal' },
+    // Bar N connection points — spaced along the bar at y:350
+    bar_n_1:  { x:82,  y:350, family:'n' },
+    bar_n_2:  { x:140, y:350, family:'n' },
+    bar_n_3:  { x:190, y:350, family:'n' },
+    bar_n_4:  { x:240, y:350, family:'n' },
+    // Bar PE connection points — at y:410
+    bar_pe_1: { x:114, y:410, family:'pe' },
+    bar_pe_2: { x:170, y:410, family:'pe' },
+    bar_pe_3: { x:226, y:410, family:'pe' },
+    bar_pe_4: { x:282, y:410, family:'pe' },
+    // Circuit outputs (salidas) — below each PIA, mid-height
+    sal_1:    { x:172, y:260, family:'sal' },
+    sal_2:    { x:228, y:260, family:'sal' },
+    sal_3:    { x:284, y:260, family:'sal' },
+    sal_4:    { x:340, y:260, family:'sal' }
   };
 
-  // ── Component positions on cuadro ──
+  // ── Component positions on cuadro (horizontal DIN rail layout) ──
   const COMP_POS = {
-    iga:  { x:155, y:20,  w:70, h:70, img:'iga', lbl:'IGA' },
-    id:   { x:155, y:100, w:70, h:70, img:'id',  lbl:'ID' },
-    pia1: { x:25,  y:195, w:60, h:70, img:'pia', lbl:'PIA C1' },
-    pia2: { x:105, y:195, w:60, h:70, img:'pia', lbl:'PIA C2' },
-    pia3: { x:215, y:195, w:60, h:70, img:'pia', lbl:'PIA C3' },
-    pia4: { x:295, y:195, w:60, h:70, img:'pia', lbl:'PIA C4' }
+    iga:  { x:8,   y:28, w:56, h:70, img:'iga', lbl:'IGA' },
+    id:   { x:68,  y:28, w:56, h:70, img:'id',  lbl:'ID' },
+    pia1: { x:146, y:28, w:50, h:70, img:'pia', lbl:'PIA C1' },
+    pia2: { x:202, y:28, w:50, h:70, img:'pia', lbl:'PIA C2' },
+    pia3: { x:258, y:28, w:50, h:70, img:'pia', lbl:'PIA C3' },
+    pia4: { x:314, y:28, w:50, h:70, img:'pia', lbl:'PIA C4' }
   };
 
   // ── State ──
@@ -362,20 +370,21 @@
   }
 
   // Build final route from A to B with L-shape
+  // In horizontal layout, cables go DOWN first, then horizontal to reach the bar point
   function buildFinalRoute(fromKey, toKey) {
     const a = TERMINALS[fromKey];
     const b = TERMINALS[toKey];
     if (!a || !b) return [];
 
-    // If mostly vertical (same column), go straight
+    // If mostly vertical (same column ±15px), go straight down
     if (Math.abs(a.x - b.x) < 15) {
       return [[a.x, a.y], [a.x, b.y]];
     }
-    // If mostly horizontal (same row), go straight
+    // If mostly horizontal (same row), go straight across
     if (Math.abs(a.y - b.y) < 15) {
       return [[a.x, a.y], [b.x, a.y]];
     }
-    // L-shape: vertical first, then horizontal
+    // L-shape: go DOWN first from component, then horizontal to bar point
     return [[a.x, a.y], [a.x, b.y], [b.x, b.y]];
   }
 
@@ -424,6 +433,11 @@
       cuadro.appendChild(div);
     });
 
+    // Render DIN rail (visual reference line behind components)
+    const rail = document.createElement('div');
+    rail.style.cssText = 'position:absolute;left:4px;top:58px;width:372px;height:8px;background:#666;border-radius:2px;z-index:1;box-shadow:inset 0 1px 3px rgba(0,0,0,.4)';
+    cuadro.appendChild(rail);
+
     // Render bars
     const barN = document.createElement('div');
     barN.className = 'bar bar-n';
@@ -436,6 +450,19 @@
     barPE.style.cssText = 'left:30px;top:404px;width:320px';
     barPE.innerHTML = '<span class="bar-label">PE</span>';
     cuadro.appendChild(barPE);
+
+    // Render salida labels (where circuit cables end)
+    const salLabels = { sal_1:'C1', sal_2:'C2', sal_3:'C3', sal_4:'C4' };
+    level.cables.forEach(c => {
+      if (c.to.startsWith('sal_') && salLabels[c.to]) {
+        const t = TERMINALS[c.to];
+        const lbl = document.createElement('div');
+        lbl.className = 'sal-label';
+        lbl.textContent = '→ ' + salLabels[c.to];
+        lbl.style.cssText = `left:${t.x + 14}px;top:${t.y - 6}px`;
+        cuadro.appendChild(lbl);
+      }
+    });
 
     // Render terminals
     const relevantTerms = new Set();
