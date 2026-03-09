@@ -262,6 +262,38 @@
     const scaleX = canvas.width / 380;
     const scaleY = canvas.height / 460;
 
+    // Draw ghost guides for pending cables (phase 1 only)
+    if (S.phase === 1) {
+      const level = LEVELS[S.level];
+      level.cables.forEach(c => {
+        if (S.tracedCables.find(tc => tc.id === c.id)) return; // already traced
+        const a = TERMINALS[c.from];
+        const b = TERMINALS[c.to];
+        if (!a || !b) return;
+        ctx.save();
+        ctx.strokeStyle = c.color + '33'; // very transparent
+        ctx.lineWidth = 2 * scaleX;
+        ctx.setLineDash([4 * scaleX, 6 * scaleX]);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        // Draw the L-shape guide
+        if (Math.abs(a.x - b.x) < 15) {
+          ctx.moveTo(a.x * scaleX, a.y * scaleY);
+          ctx.lineTo(a.x * scaleX, b.y * scaleY);
+        } else if (Math.abs(a.y - b.y) < 15) {
+          ctx.moveTo(a.x * scaleX, a.y * scaleY);
+          ctx.lineTo(b.x * scaleX, a.y * scaleY);
+        } else {
+          ctx.moveTo(a.x * scaleX, a.y * scaleY);
+          ctx.lineTo(a.x * scaleX, b.y * scaleY);
+          ctx.lineTo(b.x * scaleX, b.y * scaleY);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      });
+    }
+
     // Draw traced cables
     S.tracedCables.forEach(c => {
       ctx.beginPath();
@@ -967,7 +999,12 @@
 
     if (S.level === 0 && !S.tutorialDone) {
       setTimeout(() => showTutorialStep(0), 500);
+    } else {
+      // Brief reminder for non-tutorial levels
+      ferBubble('Arrastra de cada borne a su destino. Las líneas punteadas te guían.', 3000);
     }
+
+    drawAllCables(); // draw ghost guides immediately
   }
 
   // ── Tutorial ──
@@ -1054,12 +1091,26 @@
     };
   }
 
+  // ── Help ──
+  const HELP = {
+    1: 'FASE 1 — Rutas: Arrastra desde cada borne de salida (punto pulsando) hasta su destino. Las líneas punteadas te muestran el camino. Intenta no cruzar cables.',
+    2: 'FASE 2 — Etiquetas: El cable resaltado necesita su nombre. Pulsa el botón correcto (N, PE, C1, C2...).',
+    3: 'FASE 3 — Reservas: Desliza para ajustar la reserva de cada cable. Ni muy tenso ni peluca — busca el punto OK.'
+  };
+
+  function showHelp() {
+    showEdu(HELP[S.phase] || HELP[1], 'happy');
+  }
+
   // ── Init ──
   function init() {
     resetState();
 
     // Wire up edu overlay button
     $('#edu-btn').onclick = dismissEdu;
+
+    // Help button
+    $('#help-btn').onclick = showHelp;
 
     // Global restart
     window._restart = () => {
