@@ -92,27 +92,27 @@
       verdict: 'pro',
       round: 1,
       image: ASSETS.escenario_1,
-      correctQualities: ['Radio suave en la esquina', 'Remate cerrado y limpio'],
-      qualityOptions: ['Radio suave en la esquina', 'Remate cerrado y limpio', 'Se puede abrir para mantenimiento'],
-      detailFeedbackPerfect: 'Exacto. Radio suave y remate limpio. Don Esteban domina las esquinas.',
-      detailFeedbackPartial: 'Buen juicio, pero fíjate: el radio suave Y el remate cerrado son las dos cualidades que destacan aquí.',
-      defectOptions: ['Esquina torcida', 'Fijación irregular', 'Corte sin medir'],
-      eduOverlayText: 'Esta instalación cumple todos los criterios: línea recta, fijación a distancia constante, radio suave en la esquina y corte limpio. No todo es chapuza. Aprende a reconocer el buen trabajo.',
+      correctQualities: ['Radio suave en la esquina', 'Fijación a distancia constante'],
+      qualityOptions: ['Radio suave en la esquina', 'Fijación a distancia constante', 'Tubo de mayor sección'],
+      detailFeedbackPerfect: 'Exacto. Radio suave y abrazaderas a distancia constante. Don Esteban domina las esquinas.',
+      detailFeedbackPartial: 'Buen juicio, pero fíjate: el radio suave Y la fijación constante son las dos cualidades que destacan aquí.',
+      defectOptions: ['Esquina torcida', 'Fijación irregular', 'Falta abrazadera'],
+      eduOverlayText: 'Esta instalación cumple todos los criterios: radio suave en la esquina, abrazaderas a distancia constante y tubo bien alineado. No todo es chapuza. Aprende a reconocer el buen trabajo.',
     },
     {
       name: 'Kevin',
       experience: 'Ninguna oficial',
       training: 'Autodidacta (YouTube)',
-      task: 'Esquina exterior · Reforma parcial',
+      task: 'Esquina interior · Reforma parcial',
       verdict: 'chapuza',
       round: 1,
       image: ASSETS.escenario_2,
-      correctDefects: ['Esquina torcida', 'Corte sin medir'],
-      defectOptions: ['Esquina torcida', 'Corte sin medir', 'Impide mantenimiento'],
-      detailFeedbackPerfect: 'Exacto. Esquina sin radio y corte a ojo. Kevin necesita empezar por lo básico.',
-      detailFeedbackPartial: 'Buen ojo, pero aquí hay más de un defecto. La esquina está forzada Y el corte es irregular.',
-      qualityOptions: ['Radio suave en la esquina', 'Fijación a distancia constante', 'Remate cerrado y limpio'],
-      eduOverlayText: 'Era chapuza. Defectos: esquina torcida y corte sin medir. No tiene radio suave y el corte está hecho a ojo.',
+      correctDefects: ['Esquina forzada sin radio', 'Falta abrazadera en la curva'],
+      defectOptions: ['Esquina forzada sin radio', 'Falta abrazadera en la curva', 'Tubo de sección incorrecta'],
+      detailFeedbackPerfect: 'Exacto. Esquina forzada sin radio suave y falta una abrazadera junto a la curva. Kevin necesita empezar por lo básico.',
+      detailFeedbackPartial: 'Buen ojo, pero aquí hay más de un defecto. La esquina está forzada Y falta una abrazadera cerca de la curva para sujetarla.',
+      qualityOptions: ['Radio suave en la esquina', 'Fijación a distancia constante', 'Abrazadera en cada cambio de dirección'],
+      eduOverlayText: 'Era chapuza. Defectos: esquina forzada (sin radio suave, el tubo está doblado a lo bruto) y falta abrazadera junto a la curva. Siempre hay que poner una abrazadera antes y después de cada cambio de dirección.',
     },
     {
       name: 'Marcos',
@@ -122,12 +122,12 @@
       verdict: 'chapuza',
       round: 1,
       image: ASSETS.escenario_3,
-      correctDefects: ['Corte sin medir'],
-      defectOptions: ['Esquina torcida', 'Corte sin medir', 'Fijación irregular'],
-      detailFeedbackPerfect: 'Correcto. El corte se hace midiendo y marcando ANTES. Medir, marcar, cortar, presentar, fijar.',
-      detailFeedbackPartial: 'El problema principal es el corte sin medir: irregular, con rebabas. La regla: medir, marcar, cortar. Siempre.',
-      qualityOptions: ['Radio suave en la esquina', 'Remate cerrado y limpio', 'Se puede abrir para mantenimiento'],
-      eduOverlayText: 'Era chapuza. El defecto: corte sin medir. El corte está irregular, con rebabas. La regla: medir, marcar, cortar, presentar, fijar.',
+      correctDefects: ['Tubo roto en el empalme'],
+      defectOptions: ['Tubo roto en el empalme', 'Esquina torcida', 'Fijación irregular'],
+      detailFeedbackPerfect: 'Correcto. El tubo está reventado en la unión. Esto pasa cuando se fuerza el empalme sin presentar la pieza antes.',
+      detailFeedbackPartial: 'El problema principal es el tubo roto: se ve el agujero en la unión. Hay que presentar siempre antes de forzar.',
+      qualityOptions: ['Radio suave en la esquina', 'Empalme limpio y cerrado', 'Se puede abrir para mantenimiento'],
+      eduOverlayText: 'Era chapuza. El defecto: tubo roto en el empalme. Se ve un agujero donde se forzó la unión. La regla: medir, presentar la pieza, y solo entonces fijar. Nunca forzar.',
     },
     {
       name: 'Doña Carmen',
@@ -137,12 +137,12 @@
       verdict: 'pro',
       round: 2,
       image: ASSETS.escenario_4,
-      correctQualities: ['Fijación a distancia constante', 'Se puede abrir para mantenimiento'],
-      qualityOptions: ['Fijación a distancia constante', 'Radio suave en la esquina', 'Se puede abrir para mantenimiento'],
-      detailFeedbackPerfect: 'Correcto. Fijación constante y accesible para mantenimiento. Doña Carmen piensa en el mañana.',
-      detailFeedbackPartial: 'Buen juicio. Pero aquí destacan dos cosas: la fijación constante Y que se puede abrir mañana sin romper nada.',
-      defectOptions: ['Remate abierto', 'Impide mantenimiento', 'Fijación irregular'],
-      eduOverlayText: 'Doña Carmen lo ha hecho perfecto: remate cerrado y limpio a la caja, fijación constante, y lo más importante: se puede abrir y repasar mañana sin romper nada.',
+      correctQualities: ['Llegada limpia a la caja', 'Se puede abrir para mantenimiento'],
+      qualityOptions: ['Llegada limpia a la caja', 'Se puede abrir para mantenimiento', 'Doble abrazadera en la llegada'],
+      detailFeedbackPerfect: 'Correcto. Llegada limpia y accesible para mantenimiento. Doña Carmen piensa en el mañana.',
+      detailFeedbackPartial: 'Buen juicio. Pero aquí destacan dos cosas: la llegada limpia a la caja Y que se puede abrir mañana sin romper nada.',
+      defectOptions: ['Cables a la vista', 'Impide mantenimiento', 'Fijación irregular'],
+      eduOverlayText: 'Doña Carmen lo ha hecho perfecto: llegada limpia y alineada a la caja, y lo más importante: se puede abrir y repasar mañana sin romper nada.',
     },
     {
       name: 'Rubén "El Rápido"',
@@ -152,12 +152,12 @@
       verdict: 'chapuza',
       round: 2,
       image: ASSETS.escenario_5,
-      correctDefects: ['Fijación irregular'],
-      defectOptions: ['Corte sin medir', 'Esquina torcida', 'Fijación irregular'],
-      detailFeedbackPerfect: 'Correcto. Las abrazaderas a ojo. Se mide, se marca, y se fija con separación uniforme.',
-      detailFeedbackPartial: 'El problema es la fijación irregular: separación desigual entre abrazaderas. Se mide antes de fijar, siempre.',
-      qualityOptions: ['Fijación a distancia constante', 'Se puede abrir para mantenimiento', 'Remate cerrado y limpio'],
-      eduOverlayText: 'Era chapuza. El defecto: fijación irregular. Las abrazaderas están puestas a ojo. Se mide la separación antes de fijar, siempre.',
+      correctDefects: ['Fijación irregular', 'Agujeros sin tapar en la pared'],
+      defectOptions: ['Fijación irregular', 'Agujeros sin tapar en la pared', 'Empalme mal alineado'],
+      detailFeedbackPerfect: 'Correcto. Abrazaderas a ojo y agujeros de tacos sin tapar. Las prisas se notan.',
+      detailFeedbackPartial: 'Hay más de un problema aquí. La separación entre abrazaderas es desigual Y se ven agujeros de tacos fallidos sin tapar.',
+      qualityOptions: ['Fijación a distancia constante', 'Pared limpia sin agujeros', 'Empalme bien alineado'],
+      eduOverlayText: 'Era chapuza. Defectos: fijación irregular (abrazaderas puestas a ojo, sin medir) y agujeros de tacos sin tapar. Se mide antes de taladrar, y si fallas un taco, se tapa el agujero.',
     },
     {
       name: 'Iker',
@@ -167,12 +167,12 @@
       verdict: 'chapuza',
       round: 2,
       image: ASSETS.escenario_6,
-      correctDefects: ['Impide mantenimiento'],
-      defectOptions: ['Fijación irregular', 'Remate abierto', 'Impide mantenimiento'],
-      detailFeedbackPerfect: 'Bien visto. Se ve limpio, pero está sellado. Si mañana alguien lo abre, tiene que romperlo todo.',
-      detailFeedbackPartial: 'El problema es sutil: impide mantenimiento. Se ve limpio pero no se puede abrir sin romper.',
-      qualityOptions: ['Fijación a distancia constante', 'Remate cerrado y limpio', 'Se puede abrir para mantenimiento'],
-      eduOverlayText: 'Era chapuza. El defecto: impide mantenimiento. Se ve limpio, pero está sellado. Si mañana alguien lo abre, tiene que romperlo todo.',
+      correctDefects: ['Cables a la vista', 'Sellado con silicona (chapuza)'],
+      defectOptions: ['Cables a la vista', 'Sellado con silicona (chapuza)', 'Fijación irregular'],
+      detailFeedbackPerfect: 'Exacto. Cables expuestos y silicona por todos lados. Iker ha intentado tapar el desastre con silicona en vez de hacer un remate limpio.',
+      detailFeedbackPartial: 'Aquí hay más de un problema. Los cables están a la vista Y se ha sellado con silicona en vez de hacer una llegada limpia al mecanismo.',
+      qualityOptions: ['Llegada limpia al mecanismo', 'Cables protegidos', 'Se puede abrir para mantenimiento'],
+      eduOverlayText: 'Era chapuza. Defectos: cables a la vista y sellado con silicona. La silicona no es un remate: es un parche. La llegada al mecanismo debe ser limpia, con el tubo entrando recto y los cables protegidos dentro.',
     },
     {
       name: 'Javi',
@@ -182,27 +182,27 @@
       verdict: 'chapuza',
       round: 3,
       image: ASSETS.escenario_7,
-      correctDefects: ['Remate abierto', 'Corte sin medir'],
-      defectOptions: ['Remate abierto', 'Impide mantenimiento', 'Corte sin medir'],
-      detailFeedbackPerfect: 'Exacto. Remate abierto y corte sin medir. Javi no presentó la pieza antes de fijar.',
-      detailFeedbackPartial: 'Aquí hay dos problemas: el remate queda abierto Y el corte es irregular. Hay que presentar antes de fijar.',
-      qualityOptions: ['Remate cerrado y limpio', 'Se puede abrir para mantenimiento', 'Fijación a distancia constante'],
-      eduOverlayText: 'Era chapuza. Defectos: remate abierto y corte sin medir. Se ven cables y el corte está hecho a ojo.',
+      correctDefects: ['Remate abierto (cables a la vista)', 'Agujero en la pared sin tapar'],
+      defectOptions: ['Remate abierto (cables a la vista)', 'Agujero en la pared sin tapar', 'Fijación irregular'],
+      detailFeedbackPerfect: 'Exacto. Remate sin terminar con cables al aire y un agujero en la pared. Javi lo ha dejado a medias.',
+      detailFeedbackPartial: 'Aquí hay más de un problema: el tubo termina abierto con cables al aire Y se ve el agujero de la pared sin sellar.',
+      qualityOptions: ['Remate cerrado y limpio', 'Cables protegidos dentro del tubo', 'Pared sellada en la entrada'],
+      eduOverlayText: 'Era chapuza. Defectos: remate abierto (los cables asoman del tubo) y agujero en la pared sin tapar. El tubo debe terminar con un remate cerrado, los cables dentro, y la entrada a la pared sellada.',
     },
     {
       name: 'Ana',
       experience: '2 años',
-      training: 'Kämpe + FP Electricidad',
+      training: 'BootKämp de Kämpe',
       task: 'Remate completo · Obra nueva',
       verdict: 'pro',
       round: 3,
       image: ASSETS.escenario_8,
-      correctQualities: ['Se puede abrir para mantenimiento', 'Fijación a distancia constante', 'Remate cerrado y limpio'],
-      qualityOptions: ['Se puede abrir para mantenimiento', 'Fijación a distancia constante', 'Remate cerrado y limpio'],
-      detailFeedbackPerfect: 'Eso es. Todo perfecto: remate cerrado, fijación constante, mantenible. Ana lo borda.',
-      detailFeedbackPartial: 'Era todo correcto. Ana ha hecho un trabajo impecable en los tres aspectos.',
-      defectOptions: ['Esquina torcida', 'Impide mantenimiento', 'Remate abierto'],
-      eduOverlayText: 'Trabajo impecable. Línea recta, fijación constante, remate cerrado, y se puede abrir mañana sin romper nada. Esto es calidad pro.',
+      correctQualities: ['Radio suave en la esquina', 'Fijación a distancia constante', 'Remate cerrado y limpio'],
+      qualityOptions: ['Radio suave en la esquina', 'Fijación a distancia constante', 'Remate cerrado y limpio'],
+      detailFeedbackPerfect: 'Eso es. Todo perfecto: radio suave, fijación constante y remate limpio. Ana lo borda.',
+      detailFeedbackPartial: 'Era todo correcto. Ana ha hecho un trabajo impecable: radio, fijación y remate. Las tres cosas.',
+      defectOptions: ['Esquina torcida', 'Falta abrazadera', 'Remate abierto'],
+      eduOverlayText: 'Trabajo impecable. Radio suave en la esquina, abrazaderas a distancia constante por todo el recorrido, y remate cerrado y limpio. Esto es calidad pro.',
     },
   ];
 
@@ -718,6 +718,7 @@
     const missed = correctArr.filter(d => !selectedSet.has(d));
 
     const isPerfect = correctHits.length === correctSet.size && wrongHits.length === 0;
+    const hasWrongSelections = wrongHits.length > 0;
     const isPartial = correctHits.length > 0 && !isPerfect;
 
     // Visual feedback on buttons
@@ -745,11 +746,18 @@
       showPublicText(PUBLIC_TEXT_SUCCESS[publicTextRotation % 3], 'var(--lime)');
       publicTextRotation++;
       setAvatar('celebrating');
-    } else if (isPartial) {
+    } else if (isPartial && !hasWrongSelections) {
+      // Missed some correct, but didn't select anything wrong
       points = 100;
       addScore(100);
       markSegment(currentScenario, true);
       setAvatar('happy');
+    } else if (hasWrongSelections) {
+      // Selected wrong options (even if also got some correct)
+      points = 50;
+      addScore(50);
+      markSegment(currentScenario, true);
+      setAvatar('worried');
     } else {
       points = 50;
       addScore(50);
@@ -766,7 +774,16 @@
 
     if (currentScenario === 0 && tutorialStep === 2) tutorialStep = 3;
 
-    const feedbackMsg = isPerfect ? s.detailFeedbackPerfect : s.detailFeedbackPartial;
+    let feedbackMsg;
+    if (isPerfect) {
+      feedbackMsg = s.detailFeedbackPerfect;
+    } else if (hasWrongSelections) {
+      // Build specific feedback calling out wrong selections
+      const wrongNames = wrongHits.map(w => '"' + w + '"').join(' y ');
+      feedbackMsg = 'Has marcado ' + wrongNames + ' y eso no es correcto aquí. ' + s.detailFeedbackPartial;
+    } else {
+      feedbackMsg = s.detailFeedbackPartial;
+    }
 
     if (isPerfect) {
       if (currentScenario === 0 && tutorialStep === 3) {
@@ -779,6 +796,11 @@
         detailOptions.classList.add('hidden');
         transitionToNext();
       }, 2500);
+    } else if (hasWrongSelections) {
+      showWrongSelectionsToast(feedbackMsg, () => {
+        detailOptions.classList.add('hidden');
+        transitionToNext();
+      });
     } else {
       showPartialToast(feedbackMsg, () => {
         detailOptions.classList.add('hidden');
@@ -791,6 +813,13 @@
   function showEduOverlay(scenario) {
     const isPro = scenario.verdict === 'pro';
     eduCard.innerHTML = '';
+
+    // Avatar
+    const avatar = document.createElement('img');
+    avatar.className = 'edu-avatar';
+    avatar.src = ASSETS.lucia_worried;
+    avatar.alt = 'Lucía';
+    eduCard.appendChild(avatar);
 
     // Icon
     const icon = document.createElement('div');
@@ -882,13 +911,29 @@
   // --- Toasts ---
   function showSuccessToast(msg) {
     toast.className = 'success';
-    toast.innerHTML = '<p>' + msg + '</p>';
+    toast.innerHTML = '<img src="' + ASSETS.lucia_celebrating + '" class="toast-avatar" alt="">' +
+      '<p>' + msg + '</p>';
     toast.classList.remove('hidden');
   }
 
   function showPartialToast(msg, onDismiss) {
     toast.className = 'partial';
-    toast.innerHTML = '<p>' + msg + '</p><button class="btn-entendido">Entendido</button>';
+    toast.innerHTML = '<img src="' + ASSETS.lucia_happy + '" class="toast-avatar" alt="">' +
+      '<p>' + msg + '</p><button class="btn-entendido">Entendido</button>';
+    toast.classList.remove('hidden');
+    const btn = toast.querySelector('.btn-entendido');
+    btn.addEventListener('click', function handler() {
+      btn.removeEventListener('click', handler);
+      toast.classList.add('hidden');
+      inputLocked = false;
+      if (onDismiss) onDismiss();
+    });
+  }
+
+  function showWrongSelectionsToast(msg, onDismiss) {
+    toast.className = 'wrong-selections';
+    toast.innerHTML = '<img src="' + ASSETS.lucia_worried + '" class="toast-avatar" alt="">' +
+      '<p>' + msg + '</p><button class="btn-entendido">Entendido</button>';
     toast.classList.remove('hidden');
     const btn = toast.querySelector('.btn-entendido');
     btn.addEventListener('click', function handler() {
@@ -1061,21 +1106,20 @@
         setTimeout(() => { scoreEl.style.transform = 'scale(1)'; }, 200);
 
         // Record
+        recordEl.classList.remove('hidden');
         if (isNewRecord && score > 0) {
           setTimeout(() => {
             recordEl.textContent = 'Nuevo récord!';
             recordEl.style.color = 'var(--lemon)';
-            recordEl.classList.remove('hidden');
-            recordEl.style.transform = 'translateY(20px)';
             recordEl.style.opacity = '0';
-            recordEl.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+            recordEl.style.transition = 'opacity 0.3s ease-out';
             void recordEl.offsetWidth;
-            recordEl.style.transform = 'translateY(0)';
             recordEl.style.opacity = '1';
           }, 300);
         } else if (record > 0) {
           recordEl.textContent = 'Record: ' + record + ' pts';
-          recordEl.classList.remove('hidden');
+        } else {
+          recordEl.textContent = '\u00A0'; // non-breaking space placeholder
         }
       }
     }
