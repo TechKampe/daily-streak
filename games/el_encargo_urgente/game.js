@@ -80,32 +80,34 @@
   ];
 
   // ── Terminal positions (relative to cuadro 380x460) ──
+  // Layout: ID outputs L/R are separated wide enough (140/240) so N goes left, PE goes right
+  // Bar N points are on the LEFT side, Bar PE points on the RIGHT — no crossing needed
   const TERMINALS = {
     iga_out:  { x:190, y:80,  family:'ali' },
     id_in:    { x:190, y:105, family:'ali' },
-    id_out_l: { x:170, y:170, family:'n' },
-    id_out_r: { x:210, y:170, family:'pe' },
+    id_out_l: { x:140, y:170, family:'n' },   // N exit — left side
+    id_out_r: { x:240, y:170, family:'pe' },   // PE exit — right side
     id_out_f: { x:190, y:170, family:'ali' },
     pia1_in:  { x:55,  y:205, family:'ali' },
     pia1_out: { x:55,  y:270, family:'sal' },
     pia2_in:  { x:135, y:205, family:'ali' },
     pia2_out: { x:135, y:270, family:'sal' },
-    pia3_in:  { x:215, y:205, family:'ali' },
-    pia3_out: { x:215, y:270, family:'sal' },
-    pia4_in:  { x:295, y:205, family:'ali' },
-    pia4_out: { x:295, y:270, family:'sal' },
+    pia3_in:  { x:245, y:205, family:'ali' },
+    pia3_out: { x:245, y:270, family:'sal' },
+    pia4_in:  { x:325, y:205, family:'ali' },
+    pia4_out: { x:325, y:270, family:'sal' },
     bar_n_1:  { x:55,  y:350, family:'n' },
-    bar_n_2:  { x:135, y:350, family:'n' },
-    bar_n_3:  { x:215, y:350, family:'n' },
-    bar_n_4:  { x:295, y:350, family:'n' },
-    bar_pe_1: { x:55,  y:410, family:'pe' },
-    bar_pe_2: { x:135, y:410, family:'pe' },
-    bar_pe_3: { x:215, y:410, family:'pe' },
-    bar_pe_4: { x:295, y:410, family:'pe' },
+    bar_n_2:  { x:105, y:350, family:'n' },
+    bar_n_3:  { x:140, y:350, family:'n' },    // aligned under id_out_l
+    bar_n_4:  { x:190, y:350, family:'n' },
+    bar_pe_1: { x:190, y:410, family:'pe' },
+    bar_pe_2: { x:240, y:410, family:'pe' },   // aligned under id_out_r
+    bar_pe_3: { x:290, y:410, family:'pe' },
+    bar_pe_4: { x:340, y:410, family:'pe' },
     sal_1:    { x:55,  y:310, family:'sal' },
     sal_2:    { x:135, y:310, family:'sal' },
-    sal_3:    { x:215, y:310, family:'sal' },
-    sal_4:    { x:295, y:310, family:'sal' }
+    sal_3:    { x:245, y:310, family:'sal' },
+    sal_4:    { x:325, y:310, family:'sal' }
   };
 
   // ── Component positions on cuadro ──
@@ -114,8 +116,8 @@
     id:   { x:155, y:100, w:70, h:70, img:'id',  lbl:'ID' },
     pia1: { x:25,  y:195, w:60, h:70, img:'pia', lbl:'PIA C1' },
     pia2: { x:105, y:195, w:60, h:70, img:'pia', lbl:'PIA C2' },
-    pia3: { x:185, y:195, w:60, h:70, img:'pia', lbl:'PIA C3' },
-    pia4: { x:265, y:195, w:60, h:70, img:'pia', lbl:'PIA C4' }
+    pia3: { x:215, y:195, w:60, h:70, img:'pia', lbl:'PIA C3' },
+    pia4: { x:295, y:195, w:60, h:70, img:'pia', lbl:'PIA C4' }
   };
 
   // ── State ──
