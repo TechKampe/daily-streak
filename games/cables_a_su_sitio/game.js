@@ -236,6 +236,18 @@ function showHowto() {
   $('howto-btn').onclick = startGame;
 }
 
+/* ── check toast ── */
+function showCheckToast(targetEl) {
+  const r = targetEl.getBoundingClientRect();
+  const toast = document.createElement('div');
+  toast.className = 'check-toast';
+  toast.textContent = '✓';
+  toast.style.left = (r.left + r.width / 2) + 'px';
+  toast.style.top = (r.top + r.height / 2) + 'px';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 700);
+}
+
 /* ── HUD ── */
 function updateHUD() {
   const m = Math.floor(timeLeft / 60);
@@ -563,8 +575,7 @@ function onCorrect(item, ghost, cable, target, idx) {
 
   updateHUD();
 
-  if (cable.defecto) showFer(MSG.defectCaught[Math.floor(Math.random()*MSG.defectCaught.length)], 'celebrating', 1800);
-  else showFer(MSG.correct[Math.floor(Math.random()*MSG.correct.length)], 'celebrating', 1800);
+  showCheckToast(target.el);
 
   correctCount++;
   checkRound();
