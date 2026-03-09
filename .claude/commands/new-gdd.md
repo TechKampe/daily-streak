@@ -1,1 +1,0 @@
-../../GDDs/.claude/commands/new-gdd.md
