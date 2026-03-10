@@ -347,7 +347,7 @@ function tutorialStep2(cb) {
   G.bloqueado = true;
   setJC('happy');
   typewrite(
-    'Bien. Ahora fíjate en el ticket de aparcamiento — arriba a la izquierda. Si te equivocas pierdo 5 minutos. Si llega a cero, arranco con lo que haya.',
+    'Bien. Ahora fíjate en el ticket de aparcamiento — abajo a la izquierda, en la pantalla. Si te equivocas pierdo 5 minutos. Si llega a cero, arranco con lo que haya.',
     () => setTimeout(() => {
       G.tutorialPaso = 2;
       localStorage.setItem(KEY_TUTORIAL, '1');
