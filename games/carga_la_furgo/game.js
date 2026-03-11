@@ -11,16 +11,16 @@ const KEY_RECORD   = 'carga_la_furgo_record';
 const KEY_TUTORIAL = 'carga_la_furgo_tutorial_done';
 
 const AVATAR = {
-  happy:       'assets/juancarlos_happy.jpg',
-  celebrating: 'assets/juancarlos_celebrating.jpg',
-  worried:     'assets/juancarlos_worried.jpg',
+  happy:       'https://res.cloudinary.com/kampe/image/upload/v1773226591/juancarlos_happy_awvcdt.jpg',
+  celebrating: 'https://res.cloudinary.com/kampe/image/upload/v1773226590/juancarlos_celebrating_nhimea.jpg',
+  worried:     'https://res.cloudinary.com/kampe/image/upload/v1773226590/juancarlos_worried_uaazox.jpg',
 };
 
 // ── Pool de contenido ───────────────────────────
 const PIEZAS = [
   {
     id: 'llave_corte', nombre: 'Llave de corte',
-    img: 'assets/pieza_llave_corte.png',
+    img: 'https://res.cloudinary.com/kampe/image/upload/v1773226591/pieza_llave_corte_g1umsd.png',
     desc: [
       'Necesito lo que para el agua antes de tocar nada. La regla de oro.',
       'El cliente no puede cortar el agua de ese tramo. ¿Qué le falta instalar?',
@@ -31,7 +31,7 @@ const PIEZAS = [
   },
   {
     id: 'sifon', nombre: 'Sifón',
-    img: 'assets/pieza_sifon.png',
+    img: 'https://res.cloudinary.com/kampe/image/upload/v1773226591/pieza_sifon_to2yin.png',
     desc: [
       'Necesito la pieza que evita que suban los olores por el desagüe.',
       'El cliente dice que huele a alcantarilla en el baño. ¿Qué falta o está mal?',
@@ -42,7 +42,7 @@ const PIEZAS = [
   },
   {
     id: 'latiguillo', nombre: 'Latiguillo',
-    img: 'assets/pieza_latiguillo.png',
+    img: 'https://res.cloudinary.com/kampe/image/upload/v1773226590/pieza_latiguillo_fegyog.png',
     desc: [
       'Necesito la conexión flexible entre el grifo y la toma de pared.',
       'Gotea justo debajo del fregadero, en la entrada del agua. ¿Qué hay que revisar?',
@@ -53,7 +53,7 @@ const PIEZAS = [
   },
   {
     id: 'junta', nombre: 'Junta',
-    img: 'assets/pieza_junta.png',
+    img: 'https://res.cloudinary.com/kampe/image/upload/v1773226590/pieza_junta_ayu1vl.png',
     desc: [
       'Necesito lo que sella entre dos piezas para que no gotee en la unión.',
       'Aprieto y aprieto pero sigue goteando en la rosca. ¿Qué puede faltar?',
@@ -64,7 +64,7 @@ const PIEZAS = [
   },
   {
     id: 'teflon', nombre: 'Teflón',
-    img: 'assets/pieza_teflon.png',
+    img: 'https://res.cloudinary.com/kampe/image/upload/v1773226595/pieza_teflon_rrs4zz.png',
     desc: [
       'Necesito lo que se enrolla en la rosca macho antes de apretar para sellar.',
       'La rosca no gotea a chorro pero suda. ¿Qué no se puso al montar?',
@@ -75,7 +75,7 @@ const PIEZAS = [
   },
   {
     id: 'racor', nombre: 'Racor',
-    img: 'assets/pieza_racor.png',
+    img: 'https://res.cloudinary.com/kampe/image/upload/v1773226591/pieza_racor_miarvl.png',
     desc: [
       'Necesito la unión recta para empalmar dos tramos del mismo diámetro.',
       'Hay un tramo cortado y hay que empalmarlo en línea recta. ¿Qué pieza uso?',
@@ -86,7 +86,7 @@ const PIEZAS = [
   },
   {
     id: 'codo', nombre: 'Codo',
-    img: 'assets/pieza_codo.png',
+    img: 'https://res.cloudinary.com/kampe/image/upload/v1773226590/pieza_codo_aifa8s.png',
     desc: [
       'Necesito la pieza para cambiar la dirección de la tubería.',
       'La tubería tiene que girar noventa grados por la pared. ¿Qué pieza uso?',
@@ -97,7 +97,7 @@ const PIEZAS = [
   },
   {
     id: 'reduccion', nombre: 'Reducción',
-    img: 'assets/pieza_reduccion.png',
+    img: 'https://res.cloudinary.com/kampe/image/upload/v1773226591/pieza_reduccion_psk3cu.png',
     desc: [
       'Necesito algo para conectar dos tubos que no son del mismo grosor.',
       'El tubo nuevo es más estrecho que el existente. ¿Qué necesito para conectarlos?',
