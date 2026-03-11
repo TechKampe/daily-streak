@@ -140,7 +140,7 @@ const EL = {
   play:       $('screen-play'),
   results:    $('screen-results'),
   dial:       $('parking-dial'),
-  progress:   $('hud-progress'),
+  progress:   $('hud-progress'),   // overlay sobre la imagen
   jcImg:      $('jc-img'),
   callBubble: $('call-bubble'),
   callText:   $('call-text'),
