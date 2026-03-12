@@ -480,19 +480,19 @@ function showResults() {
   // Avatar y mensaje según tier
   let avatarSrc, msg;
   if (S.score >= 900) {
-    avatarSrc = 'assets/pedro_celebrating.png';
+    avatarSrc = PEDRO_URLS.celebrating;
     msg = 'Guardia limpia. Seis casos, criterio claro. Eso es diagnóstico, no suerte.';
   } else if (S.score >= 600) {
-    avatarSrc = 'assets/pedro_happy.png';
+    avatarSrc = PEDRO_URLS.happy;
     msg = 'Hecho. Algún error en el diagnóstico — repasa la diferencia entre fuerza y cantidad.';
   } else {
-    avatarSrc = 'assets/pedro_worried.png';
+    avatarSrc = PEDRO_URLS.worried;
     msg = 'La guardia no ha ido bien. Presión y caudal no son lo mismo. Vuelve a intentarlo.';
   }
 
   if (esRecord && S.score >= 600) {
     msg = 'Nuevo récord. El café ya está frío pero ha merecido la pena.';
-    avatarSrc = 'assets/pedro_celebrating.png';
+    avatarSrc = PEDRO_URLS.celebrating;
   }
 
   $('results-avatar').src = avatarSrc;
@@ -530,9 +530,15 @@ function showFase(nombre) {
   $('fase-ajuste').classList.toggle('hidden', nombre !== 'ajuste');
 }
 
+const PEDRO_URLS = {
+  happy:       'https://res.cloudinary.com/kampe/image/upload/v1773309926/pedro_happy_uhfhdb.png',
+  celebrating: 'https://res.cloudinary.com/kampe/image/upload/v1773309926/pedro_celebrating_xo8x80.png',
+  worried:     'https://res.cloudinary.com/kampe/image/upload/v1773309926/pedro_worried_mchura.png',
+};
+
 function setPedroState(state) {
   const el = $('pedro-gameplay');
-  el.src = `assets/pedro_${state}.png`;
+  el.src = PEDRO_URLS[state] || PEDRO_URLS.happy;
 }
 
 function showPedroBubble(msg) {
