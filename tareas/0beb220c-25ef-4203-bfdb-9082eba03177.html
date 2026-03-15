@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: Herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Apretar un tornillo con cabeza en cruz",opts:["Destornillador plano","Destornillador estrella ✦","Llave Allen"],ans:1,correct:"Destornillador estrella",why:"El plano resbala y daña la cabeza. La Allen no encaja en cruz."},
+{task:"Cortar un cable eléctrico de 2.5mm²",opts:["Alicates universales","Alicates de corte ✂","Pelacables"],ans:1,correct:"Alicates de corte",why:"Los universales aplastan el cable. El pelacables solo quita aislante."},
+{task:"Medir el ancho de un mueble de 80cm",opts:["Flexómetro 📏","Nivel de burbuja","Escuadra"],ans:0,correct:"Flexómetro",why:"El nivel comprueba horizontalidad. La escuadra mide ángulos, no longitudes."},
+{task:"Pelar el aislante de un cable sin dañar el cobre",opts:["Alicates de corte","Cúter","Pelacables"],ans:2,correct:"Pelacables",why:"El corte puede seccionar hilos. El cúter es peligroso y poco preciso."},
+{task:"Aflojar una tuerca hexagonal de 13mm",opts:["Llave inglesa","Alicates universales","Llave fija 13mm 🔧"],ans:2,correct:"Llave fija 13mm",why:"La inglesa puede resbalar. Los alicates redondean las aristas."},
+{task:"Comprobar si una balda está horizontal",opts:["Flexómetro","Nivel de burbuja ⚖","Escuadra"],ans:1,correct:"Nivel de burbuja",why:"El flexómetro mide distancia. La escuadra verifica ángulos de 90°."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx];
+const correct=i===t.ans;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i){
+b.classList.add(correct?'correct':'incorrect');
+b.innerHTML+= correct?' ✓':' ✗';
+}
+});
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correct:t.correct,ok:correct,why:t.why});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const tips=`<div class="result-item"><div class="result-question">💡 Consejos prácticos</div><div class="result-explanation">• Destornillador: usa siempre el que encaje exacto en la cabeza.<br>• Alicates de corte: para seccionar; universales para sujetar.<br>• Pelacables: ajusta al grosor del cable.<br>• Llaves fijas: más precisas que la inglesa si conoces la medida.<br>• Nivel: imprescindible antes de fijar cualquier elemento.</div></div>`;
+scene.innerHTML=`<div class="results-scroll"><div class="results-header"><div class="results-title">¡Reto completado!</div><div class="results-score">${score}/${tasks.length}</div><div class="results-subtitle">Herramientas correctas</div></div><div class="results-list">${answers.map(a=>`<div class="result-item ${a.ok?'correct':'incorrect'}"><div class="result-question">${a.task}</div><div class="result-answer">${a.ok?'✓ '+a.correct:'✗ Elegiste: '+a.user+' → Correcta: '+a.correct}</div><div class="result-explanation">${a.why}</div></div>`).join('')}${tips}</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
