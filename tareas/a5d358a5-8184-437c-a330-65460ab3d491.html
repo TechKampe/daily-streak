@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas de fontanería - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Cortar tubo de PVC de 32mm",opts:["Cortatubos","Llave grifa","Soplete"],ans:0,why:["Corte limpio y preciso en plástico","La llave grifa es para apretar, no cortar","El soplete derretiría el PVC"]},
+{task:"Apretar tuerca de sifón",opts:["Llave grifa","Llave inglesa","Cortatubos"],ans:0,why:["Agarre firme en tuercas redondas","Resbala en superficies lisas/redondas","Solo sirve para cortar tubos"]},
+{task:"Doblar tubo de cobre sin colapsar",opts:["Doblador de tubos","Llave grifa","Soplete"],ans:0,why:["Curva uniforme sin aplastar","No sirve para doblar tubos","Ablandaría el cobre pero no lo dobla"]},
+{task:"Desatascar bajante obstruido",opts:["Desatascador","Cortatubos","Llave inglesa"],ans:0,why:["Presión para liberar obstrucciones","No sirve para desobstruir","No tiene función de desatasco"]},
+{task:"Aplicar teflón en rosca",opts:["Teflón manual","Soplete","Doblador de tubos"],ans:0,why:["Sellado hermético de roscas","El calor no sella roscas","Solo sirve para doblar tubos"]},
+{task:"Soldar unión de tubo de cobre",opts:["Soplete","Llave grifa","Desatascador"],ans:0,why:["Calor necesario para soldar","Solo aprieta, no suelda","No tiene relación con soldadura"]}
+];
+let idx=0,score=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];locked=false;
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+if(locked)return;locked=true;
+const t=tasks[idx],correct=i===t.ans;
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correct:t.opts[t.ans],isCorrect:correct,whyCorrect:t.why[0],whyWrong:t.why});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+if(j===i){
+b.classList.add(correct?'correct':'incorrect');
+b.innerHTML=t.opts[j]+(correct?' ✓':' ✗');
+}
+});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const tips=[
+"Cortatubos: Úsalo siempre para cortes limpios en tubos de PVC, cobre o multicapa.",
+"Llave grifa: Ideal para tuercas redondas y racores donde la inglesa resbala.",
+"Doblador: Imprescindible para curvas en cobre sin aplastar el tubo.",
+"Desatascador: Primera opción antes de usar químicos o desmontajes.",
+"Teflón: Enrolla en sentido horario, 5-6 vueltas para buen sellado.",
+"Soplete: Solo para soldadura. Protege zonas cercanas del calor."
+];
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.isCorrect?'✓ '+a.user:'✗ '+a.user+' → '+a.correct}</div>
+<div class="result-explanation">${a.isCorrect?a.whyCorrect:a.whyWrong[answers.indexOf(a)%3]||a.whyWrong[1]}</div>
+</div>`).join('')}
+</div>
+<div class="results-tips">
+<div class="modal-title">💡 Consejos prácticos</div>
+${tips.map(t=>`<div class="result-explanation">${t}</div>`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
