@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">Seguridad eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-area"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">¿Verdadero o Falso? Elige tu respuesta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const statements=[
+{text:"La madera siempre aísla la electricidad",answer:false,exp:"MITO. La madera húmeda conduce electricidad. Solo la madera completamente seca tiene propiedades aislantes limitadas."},
+{text:"Un diferencial protege contra todos los contactos eléctricos",answer:false,exp:"MITO. El diferencial protege contra contactos indirectos, pero NO contra contactos directos entre fase y neutro."},
+{text:"Los guantes de látex domésticos sirven como aislantes eléctricos",answer:false,exp:"MITO. Solo los guantes dieléctricos homologados (clase 00 o superior) ofrecen protección real contra descargas."},
+{text:"Trabajar con baja tensión no requiere desconectar el circuito",answer:false,exp:"MITO. Toda intervención eléctrica requiere desconexión previa. La baja tensión también puede causar accidentes graves."},
+{text:"El agua destilada pura no conduce electricidad",answer:true,exp:"REALIDAD. El agua destilada pura carece de iones, pero en la práctica siempre hay impurezas que la hacen conductora."},
+{text:"Antes de trabajar hay que verificar ausencia de tensión con un detector",answer:true,exp:"REALIDAD. Las 5 reglas de oro incluyen verificar ausencia de tensión. Nunca confíes solo en que el interruptor está apagado."},
+{text:"Un cable pelado pero sin tocar nada no supone peligro inmediato",answer:false,exp:"MITO. Un cable con tensión expuesto siempre es peligroso: puede generar arcos eléctricos o contactos accidentales."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),stmtArea=document.getElementById('statement-area'),optsEl=document.getElementById('options'),progBar=document.getElementById('progress-bar'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=statements.length){showResults();return}
+const s=statements[idx];
+progBar.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+stmtArea.innerHTML=`<div class="statement-text">${s.text}</div>`;
+optsEl.innerHTML=`<button class="btn-option" id="btn-true" onclick="answer(true)">✓ Verdadero</button><button class="btn-option" id="btn-false" onclick="answer(false)">✗ Falso</button>`;
+ensureFits();
+}
+
+function answer(userAnswer){
+const s=statements[idx];
+const correct=userAnswer===s.answer;
+const btnTrue=document.getElementById('btn-true');
+const btnFalse=document.getElementById('btn-false');
+btnTrue.disabled=true;btnFalse.disabled=true;
+if(userAnswer){
+btnTrue.classList.add(correct?'correct':'incorrect');
+}else{
+btnFalse.classList.add(correct?'correct':'incorrect');
+}
+answers.push({text:s.text,userAnswer,correctAnswer:s.answer,correct,exp:s.exp});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAnswer?'Verdadero':'Falso'} ${a.correct?'✓':'✗'} | Correcta: ${a.correctAnswer?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo práctico:</strong> Siempre aplica las 5 reglas de oro: desconectar, enclavamiento, verificar ausencia de tensión, puesta a tierra y señalización. Nunca confíes en que "alguien ya lo desconectó".
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
