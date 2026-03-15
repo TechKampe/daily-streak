@@ -1,0 +1,116 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 📋 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle">Tu primer día como ayudante</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="sentence-container"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">📋 Manual de Herramientas</div>
+<div class="modal-body">Es tu primer día y debes completar el manual. ¡Rellena los huecos con la herramienta correcta!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+<script>
+const data=[
+{sentence:"Para comprobar si hay corriente sin tocar el cable, uso el ___.",answer:"buscapolos",opts:["buscapolos","multímetro","pinza amperimétrica"],exp:"El buscapolos detecta tensión sin contacto directo, ideal para verificar presencia de corriente de forma segura."},
+{sentence:"Para medir exactamente cuántos voltios tiene un enchufe, uso el ___.",answer:"multímetro",opts:["multímetro","buscapolos"],exp:"El multímetro mide valores exactos de tensión, corriente y resistencia. El buscapolos solo indica presencia."},
+{sentence:"Para trabajar en un cuadro eléctrico con tensión, necesito un destornillador ___.",answer:"aislado",opts:["aislado","convencional","magnético"],exp:"El destornillador aislado protege contra descargas eléctricas gracias a su mango certificado hasta 1000V."},
+{sentence:"Para retirar el aislamiento de cables finos sin dañar el cobre, uso el ___.",answer:"pelacables",opts:["pelacables","alicates","cúter"],exp:"El pelacables tiene calibres específicos que cortan solo el aislamiento, sin mellar el conductor."},
+{sentence:"Para proteger empalmes expuestos a humedad, es mejor usar ___.",answer:"tubo termorretráctil",opts:["tubo termorretráctil","cinta aislante"],exp:"El termorretráctil sella herméticamente y resiste mejor la humedad que la cinta aislante convencional."},
+{sentence:"Para medir la corriente sin abrir el circuito, uso la ___.",answer:"pinza amperimétrica",opts:["pinza amperimétrica","multímetro","buscapolos"],exp:"La pinza amperimétrica mide corriente por inducción, sin necesidad de interrumpir el circuito."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal'),sentenceContainer=document.getElementById('sentence-container');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+sentenceContainer.innerHTML='<p style="font-size:1.1rem;line-height:1.5;text-align:center;margin:0 0 1rem 0;">'+d.sentence.replace('___','<span style="border-bottom:2px dashed var(--accent);padding:0 0.5rem;font-weight:700;">___</span>')+'</p>';
+opts.innerHTML=d.opts.map(o=>'<button class="btn-option" onclick="selectOption(\''+o+'\')">'+o+'</button>').join('');
+helper.textContent='Selecciona la palabra correcta';
+ensureFits();
+}
+
+function selectOption(selected){
+const d=data[idx];
+const correct=selected===d.answer;
+answers.push({sentence:d.sentence,correct,answer:d.answer,user:selected,exp:d.exp,opts:d.opts});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===d.answer)b.classList.add('correct');
+else if(b.textContent===selected&&!correct)b.classList.add('incorrect');
+});
+helper.textContent=correct?'¡Correcto!':'La respuesta era: '+d.answer;
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML='<div class="results-scroll"><div class="results-header"><div class="results-title">¡Manual Completado!</div><div class="results-score">'+score+'/'+data.length+'</div><div class="results-subtitle">Respuestas correctas</div></div><div class="results-list">'+answers.map(a=>'<div class="result-item '+(a.correct?'correct':'incorrect')+'"><div class="result-question">'+a.sentence.replace('___','<strong>'+a.answer+'</strong>')+'</div><div class="result-answer">'+(a.correct?'✓ Correcto: '+a.user:'✗ Tu respuesta: '+a.user)+'</div><div class="result-explanation">'+a.exp+'</div></div>').join('')+'</div><div class="result-item"><div class="result-question">💡 Consejo final</div><div class="result-explanation">Dominar el vocabulario técnico es clave para comunicarte con tu equipo y clientes. Usa siempre el nombre correcto de cada herramienta.</div></div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>';
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
