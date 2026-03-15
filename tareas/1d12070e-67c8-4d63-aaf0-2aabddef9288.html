@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 ¿Seguro o Peligro? Decisiones en Obra - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 ¿Seguro o Peligro?</div>
+<div class="subtitle" id="subtitle">Decisiones en Obra</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="tinder-card">
+<div class="tinder-card-content" id="card-content"></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o pulsa para responder</div>
+<div class="tinder-buttons" id="tinder-buttons">
+<button class="btn-option" id="btn-incorrect" aria-label="Incorrecto">❌ Incorrecto</button>
+<button class="btn-option" id="btn-correct" aria-label="Correcto">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 ¿Seguro o Peligro?</div>
+<div class="modal-body">Desliza a la derecha si la práctica es CORRECTA o a la izquierda si es INCORRECTA. ¡Demuestra tu criterio preventivo!</div>
+<div class="modal-actions">
+<button class="cta" id="start-btn">Comenzar</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{text:"Usar casco en zona con trabajos en altura",correct:true,exp:"El casco protege de caídas de objetos. Es EPI obligatorio en obra."},
+{text:"Trabajar en un cuadro eléctrico sin cortar la corriente",correct:false,exp:"Siempre hay que cortar y verificar ausencia de tensión antes de intervenir."},
+{text:"Dejar cables sueltos en zona de paso",correct:false,exp:"Los cables en el suelo son riesgo de tropiezo y daño. Deben estar recogidos."},
+{text:"Comprobar el estado de la herramienta antes de usarla",correct:true,exp:"Revisar herramientas previene accidentes por mal estado o defectos."},
+{text:"Usar guantes aislantes para manipular conexiones",correct:true,exp:"Los guantes aislantes protegen contra contactos eléctricos directos."},
+{text:"Ignorar la señalización de riesgo eléctrico",correct:false,exp:"La señalización indica peligros reales. Ignorarla puede causar accidentes graves."}
+];
+let idx=0,answers=[],startX=0,startY=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('tinder-card'),cardContent=document.getElementById('card-content'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect'),container=document.getElementById('tinder-container');
+
+document.getElementById('start-btn').onclick=()=>{modal.classList.remove('active');render();};
+
+function render(){
+if(idx>=data.length){showResults();return;}
+const d=data[idx];
+cardContent.textContent=d.text;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+card.classList.remove('correct','incorrect');
+ensureFits();
+}
+
+function handleAnswer(isCorrect){
+const correct=data[idx].correct===isCorrect;
+answers.push({q:data[idx].text,userAnswer:isCorrect,correct,exp:data[idx].exp,expected:data[idx].correct});
+const dir=isCorrect?1:-1;
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+card.style.transform=`translateX(${dir*300}px) rotate(${dir*20}deg)`;
+card.style.opacity='0';
+setTimeout(()=>{card.style.transition='none';idx++;render();},300);
+}
+
+btnCorrect.onclick=()=>handleAnswer(true);
+btnIncorrect.onclick=()=>handleAnswer(false);
+
+card.addEventListener('touchstart',e=>{
+isDragging=true;
+startX=e.touches[0].clientX;
+startY=e.touches[0].clientY;
+card.style.transition='none';
+},{passive:true});
+
+card.addEventListener('touchmove',e=>{
+if(!isDragging)return;
+currentX=e.touches[0].clientX-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+if(currentX>50)card.classList.add('correct');
+else card.classList.remove('correct');
+if(currentX<-50)card.classList.add('incorrect');
+else card.classList.remove('incorrect');
+},{passive:true});
+
+card.addEventListener('touchend',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(currentX>80){handleAnswer(true);}
+else if(currentX<-80){handleAnswer(false);}
+else{card.style.transition='transform 0.2s ease';card.style.transform='translateX(0) rotate(0deg)';card.classList.remove('correct','incorrect');}
+currentX=0;
+});
+
+card.addEventListener('mousedown',e=>{
+isDragging=true;
+startX=e.clientX;
+card.style.transition='none';
+});
+
+document.addEventListener('mousemove',e=>{
+if(!isDragging)return;
+currentX=e.clientX-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+if(currentX>50)card.classList.add('correct');
+else card.classList.remove('correct');
+if(currentX<-50)card.classList.add('incorrect');
+else card.classList.remove('incorrect');
+});
+
+document.addEventListener('mouseup',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(currentX>80){handleAnswer(true);}
+else if(currentX<-80){handleAnswer(false);}
+else{card.style.transition='transform 0.2s ease';card.style.transform='translateX(0) rotate(0deg)';card.classList.remove('correct','incorrect');}
+currentX=0;
+});
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll"><div class="results-header"><div class="results-title">¡Inspección completada!</div><div class="results-score">${score}/${data.length}</div><div class="results-subtitle">Situaciones identificadas correctamente</div></div><div class="results-list">${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}"><div class="result-question">${a.q}</div><div class="result-answer">${a.correct?'✓ Acertaste':'✗ Fallaste'} - Respondiste: ${a.userAnswer?'Correcto':'Incorrecto'}</div><div class="result-explanation">${a.exp}</div></div>`).join('')}</div><div class="results-message">${score>=4?'¡Excelente ojo preventivo! Estás listo para trabajar con seguridad.':'Repasa las normas de PRL. La seguridad es lo primero en obra.'}</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;padding:16px;perspective:1000px;}
+.tinder-card{background:#fff;border:3px solid #00E6BC;border-radius:16px;padding:24px;min-height:180px;max-width:300px;width:100%;display:flex;align-items:center;justify-content:center;text-align:center;cursor:grab;user-select:none;touch-action:none;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
+.tinder-card.correct{border-color:#00E676;box-shadow:0 0 20px rgba(0,230,118,0.4);}
+.tinder-card.incorrect{border-color:#FF5252;box-shadow:0 0 20px rgba(255,82,82,0.4);}
+.tinder-card-content{font-size:1.1rem;font-weight:500;color:#333;line-height:1.4;}
+.tinder-buttons{display:flex;gap:12px;width:100%;justify-content:center;}
+.tinder-buttons .btn-option{flex:1;max-width:150px;}
+.results-message{text-align:center;padding:16px;font-size:1rem;color:#666;font-style:italic;}
+</style>
+</body>
+</html>
