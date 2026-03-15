@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Kit del Electricista ⚡ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Kit del Electricista ⚡</div>
+<div class="subtitle" id="subtitle">Primer día de prácticas en el taller</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="cloze-sentence"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra correcta para el hueco</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const clozes = [
+{
+sentence: "Para detectar si un cable tiene corriente, uso el ___.",
+options: ["buscapolos", "pelacables", "multímetro"],
+answer: 0,
+explanation: "El buscapolos detecta presencia de tensión. El pelacables quita aislante y el multímetro mide valores exactos."
+},
+{
+sentence: "El cable de color azul corresponde al ___.",
+options: ["neutro", "fase", "tierra"],
+answer: 0,
+explanation: "El azul es neutro por normativa. La fase es marrón/negro y tierra es verde/amarillo."
+},
+{
+sentence: "Para medir tensión exacta en voltios, necesito el ___.",
+options: ["multímetro", "buscapolos"],
+answer: 0,
+explanation: "El multímetro da lecturas precisas de tensión, corriente y resistencia. El buscapolos solo indica presencia."
+},
+{
+sentence: "Los cables van protegidos dentro del ___.",
+options: ["tubo corrugado", "cinta aislante"],
+answer: 0,
+explanation: "El tubo corrugado protege el cableado en instalaciones empotradas. La cinta aísla empalmes puntuales."
+},
+{
+sentence: "Para conectar varios cables uso una ___.",
+options: ["regleta", "cinta aislante", "pelacables"],
+answer: 0,
+explanation: "La regleta une cables de forma segura. La cinta aísla y el pelacables prepara el cable."
+},
+{
+sentence: "Antes de pelar el cable, retiro el aislante con el ___.",
+options: ["pelacables", "destornillador", "multímetro"],
+answer: 0,
+explanation: "El pelacables quita el aislante sin dañar el cobre. El destornillador aprieta y el multímetro mide."
+}
+];
+
+let currentIndex = 0;
+let answers = [];
+const scene = document.getElementById('scene');
+const sentenceEl = document.getElementById('cloze-sentence');
+const optionsEl = document.getElementById('options');
+const progressBar = document.getElementById('progress-bar');
+const counterEl = document.getElementById('counter');
+const subtitleEl = document.getElementById('subtitle');
+const helperEl = document.getElementById('helper');
+
+function renderCloze() {
+if (currentIndex >= clozes.length) {
+showResults();
+return;
+}
+const cloze = clozes[currentIndex];
+const parts = cloze.sentence.split('___');
+sentenceEl.innerHTML = parts[0] + '<u style="border-bottom:2px dashed var(--accent);padding:0 8px;">______</u>' + (parts[1] || '');
+progressBar.style.width = ((currentIndex) / clozes.length * 100) + '%';
+counterEl.textContent = (currentIndex + 1) + '/' + clozes.length;
+subtitleEl.textContent = 'Completa la frase con el término correcto';
+optionsEl.innerHTML = cloze.options.map((opt, i) =>
+`<button class="btn-option" onclick="selectOption(${i})">${opt}</button>`
+).join('');
+ensureFits();
+}
+
+function selectOption(index) {
+const cloze = clozes[currentIndex];
+const correct = index === cloze.answer;
+const buttons = optionsEl.querySelectorAll('.btn-option');
+buttons.forEach((btn, i) => {
+btn.disabled = true;
+if (i === cloze.answer) btn.classList.add('correct');
+else if (i === index && !correct) btn.classList.add('incorrect');
+});
+const parts = cloze.sentence.split('___');
+sentenceEl.innerHTML = parts[0] + '<u style="border-bottom:2px solid var(--ok);padding:0 4px;background:rgba(76,175,80,0.15);">' + cloze.options[cloze.answer] + '</u>' + (parts[1] || '');
+answers.push({
+sentence: cloze.sentence.replace('___', cloze.options[cloze.answer]),
+userAnswer: cloze.options[index],
+correctAnswer: cloze.options[cloze.answer],
+correct: correct,
+explanation: cloze.explanation
+});
+setTimeout(() => {
+currentIndex++;
+renderCloze();
+}, 800);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+const correctCount = answers.filter(a => a.correct).length;
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Kit Completado!</div>
+<div class="results-score">${correctCount}/${clozes.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a, i) => `
+<div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+<div class="result-question">${i + 1}. ${a.sentence}</div>
+<div class="result-answer">${a.correct ? '✓ ' + a.userAnswer : '✗ Dijiste: ' + a.userAnswer + ' → Correcto: ' + a.correctAnswer}</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo final:</strong> Dominar la terminología técnica te permite comunicarte con precisión con tu equipo y clientes. Un buen electricista nombra cada herramienta correctamente.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>
+`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({
+action: 'TASK_COMPLETED'
+}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale', scale);
+}
+}
+
+window.addEventListener('load', () => { renderCloze(); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
