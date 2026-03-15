@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🧠 Conecta los Conceptos: Seguridad en Obra - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;width:100%;max-width:400px;margin:0 auto}
+.mem-card{height:70px;width:100%;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;transition:transform 0.2s,background 0.2s;padding:4px;box-sizing:border-box}
+.mem-card.covered{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.mem-card.revealed{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.shake{animation:shake 0.4s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.mem-card.pop{animation:pop 0.2s}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats-row{display:flex;justify-content:space-between;font-size:14px;color:#0B214A;padding:0 16px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🧠 Seguridad en Obra</div>
+<div class="subtitle">Empareja cada EPI con su riesgo</div>
+</div>
+</div>
+<div class="stats-row">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="memory-board" id="board"></div>
+<div class="footer">
+<div class="helper">Toca 2 cartas para emparejar EPI y riesgo</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,a:"Casco",b:"Caída de objetos",exp:"El casco protege la cabeza de impactos por objetos que caen desde altura."},
+{id:2,a:"Guantes de cuero",b:"Cortes y abrasiones",exp:"Los guantes de cuero protegen las manos de cortes y rozaduras al manipular materiales."},
+{id:3,a:"Gafas de seguridad",b:"Proyección de partículas",exp:"Las gafas evitan que partículas o virutas entren en los ojos."},
+{id:4,a:"Mascarilla FFP2",b:"Inhalación de polvo",exp:"La mascarilla FFP2 filtra partículas finas evitando daños respiratorios."}
+];
+let cards=[],first=null,second=null,locked=false,attempts=0,matched=0,history=[];
+const board=document.getElementById('board'),attEl=document.getElementById('attempts'),pairEl=document.getElementById('pairs'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.a,type:'a'});
+cards.push({pairId:p.id,text:p.b,type:'b'});
+});
+shuffle(cards);
+render();
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+function render(){
+board.innerHTML='';
+cards.forEach((c,i)=>{
+const div=document.createElement('div');
+div.className='mem-card covered';
+div.textContent='?';
+div.dataset.index=i;
+div.onclick=()=>flip(i,div);
+board.appendChild(div);
+});
+updateStats();
+ensureFits();
+}
+
+function flip(i,el){
+if(locked)return;
+const c=cards[i];
+if(c.matched||el===first)return;
+el.textContent=c.text;
+el.classList.remove('covered');
+el.classList.add('revealed','pop');
+if(!first){first=el;first.dataset.idx=i;return;}
+second=el;second.dataset.idx=i;
+locked=true;
+attempts++;
+updateStats();
+const c1=cards[parseInt(first.dataset.idx)],c2=cards[parseInt(second.dataset.idx)];
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+c1.matched=true;c2.matched=true;matched++;
+first.classList.remove('revealed');first.classList.add('matched');
+second.classList.remove('revealed');second.classList.add('matched');
+history.push({pair:pairs.find(p=>p.id===c1.pairId),found:true});
+reset();
+if(matched===4)endGame(true);
+}else{
+first.classList.add('shake');second.classList.add('shake');
+setTimeout(()=>{
+first.textContent='?';first.classList.remove('revealed','shake');first.classList.add('covered');
+second.textContent='?';second.classList.remove('revealed','shake');second.classList.add('covered');
+reset();
+if(attempts>=10)endGame(false);
+},2000);
+}
+}
+
+function reset(){first=null;second=null;locked=false;updateStats();}
+function updateStats(){attEl.textContent='Intento '+attempts+'/10';pairEl.textContent=matched+'/4 parejas';}
+
+function endGame(win){
+const missing=pairs.filter(p=>!history.find(h=>h.pair.id===p.id));
+missing.forEach(m=>history.push({pair:m,found:false}));
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${win?'¡Buen trabajo!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/4</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${history.map(h=>`
+<div class="result-item ${h.found?'correct':'incorrect'}">
+<div class="result-question">${h.pair.a} ↔ ${h.pair.b}</div>
+<div class="result-answer">${h.found?'✓ Emparejado':'✗ No encontrado'}</div>
+<div class="result-explanation">${h.pair.exp}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{init();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
