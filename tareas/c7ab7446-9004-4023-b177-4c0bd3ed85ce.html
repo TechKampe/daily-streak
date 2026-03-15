@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 ¿Seguro o Peligro? Swipe Eléctrico - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 ¿Seguro o Peligro?</div>
+<div class="subtitle" id="subtitle">Swipe Eléctrico</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="swipe-container" id="swipeContainer">
+<div class="swipe-card" id="swipeCard">
+<div class="swipe-card-content" id="cardContent"></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o pulsa para responder</div>
+<div class="swipe-buttons" id="swipeButtons">
+<button class="btn-option" id="btnIncorrect">❌ Incorrecto</button>
+<button class="btn-option" id="btnCorrect">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primer día de prácticas</div>
+<div class="modal-body">Tu tutor te muestra situaciones reales. Desliza derecha si es SEGURO, izquierda si es PELIGROSO.</div>
+<div class="modal-actions">
+<button class="cta" id="startBtn">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Trabajar en el cuadro eléctrico sin desconectar la corriente",safe:false,exp:"Siempre debes cortar la alimentación antes de intervenir. Es la regla de oro de la PRL eléctrica."},
+{text:"Usar guantes aislantes antes de manipular cables",safe:true,exp:"Los guantes aislantes son EPI obligatorio para protegerte de contactos eléctricos."},
+{text:"Comprobar ausencia de tensión con un buscapolos",safe:true,exp:"Verificar que no hay tensión es imprescindible antes de tocar cualquier conductor."},
+{text:"Utilizar un destornillador con el mango mojado",safe:false,exp:"La humedad conduce la electricidad. Nunca uses herramientas mojadas."},
+{text:"Señalizar el cuadro con cartel de 'Trabajos en curso'",safe:true,exp:"La señalización evita que alguien reconecte mientras trabajas."},
+{text:"Dejar cables y herramientas desordenados en el suelo",safe:false,exp:"El desorden causa tropiezos y accidentes. Mantén tu zona de trabajo limpia."}
+];
+let idx=0,answers=[],startX=0,startY=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),startBtn=document.getElementById('startBtn'),swipeCard=document.getElementById('swipeCard'),cardContent=document.getElementById('cardContent'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),btnCorrect=document.getElementById('btnCorrect'),btnIncorrect=document.getElementById('btnIncorrect');
+
+startBtn.onclick=()=>{modal.classList.remove('active');renderCard();};
+modal.classList.add('active');
+
+function renderCard(){
+if(idx>=cards.length){showResults();return;}
+const c=cards[idx];
+cardContent.textContent=c.text;
+swipeCard.style.transform='translateX(0) rotate(0deg)';
+swipeCard.style.opacity='1';
+swipeCard.classList.remove('swipe-left','swipe-right');
+prog.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+helper.textContent='¿Es seguro o peligroso?';
+ensureFits();
+}
+
+function answer(isSafe){
+const correct=(isSafe===cards[idx].safe);
+answers.push({text:cards[idx].text,userSafe:isSafe,correct,exp:cards[idx].exp,actualSafe:cards[idx].safe});
+const dir=isSafe?1:-1;
+swipeCard.style.transform=`translateX(${dir*400}px) rotate(${dir*30}deg)`;
+swipeCard.style.opacity='0';
+setTimeout(()=>{idx++;renderCard();},300);
+}
+
+btnCorrect.onclick=()=>answer(true);
+btnIncorrect.onclick=()=>answer(false);
+
+swipeCard.addEventListener('touchstart',e=>{
+isDragging=true;
+startX=e.touches[0].clientX;
+startY=e.touches[0].clientY;
+},{passive:true});
+
+swipeCard.addEventListener('touchmove',e=>{
+if(!isDragging)return;
+currentX=e.touches[0].clientX-startX;
+const rotate=currentX*0.1;
+swipeCard.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+},{passive:true});
+
+swipeCard.addEventListener('touchend',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(currentX>80){answer(true);}
+else if(currentX<-80){answer(false);}
+else{swipeCard.style.transform='translateX(0) rotate(0deg)';}
+currentX=0;
+});
+
+let mouseDown=false,mouseStartX=0;
+swipeCard.addEventListener('mousedown',e=>{mouseDown=true;mouseStartX=e.clientX;});
+document.addEventListener('mousemove',e=>{
+if(!mouseDown)return;
+currentX=e.clientX-mouseStartX;
+const rotate=currentX*0.1;
+swipeCard.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+});
+document.addEventListener('mouseup',()=>{
+if(!mouseDown)return;
+mouseDown=false;
+if(currentX>80){answer(true);}
+else if(currentX<-80){answer(false);}
+else{swipeCard.style.transform='translateX(0) rotate(0deg)';}
+currentX=0;
+});
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Identificaste correctamente</div>
+</div>
+<div class="results-list">${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.actualSafe?'✅ SEGURO':'❌ PELIGROSO'} — Tú: ${a.userSafe?'Seguro':'Peligroso'} ${a.correct?'✓':'✗'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}</div>
+<div class="results-message">Identificar riesgos es el primer paso para ser un profesional de confianza. ¡Sigue aprendiendo!</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
