@@ -1,0 +1,206 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Errores de Novato - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="scene-desc">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento que contiene el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="intro-modal">
+<div class="modal">
+<div class="modal-title">Tu primera semana 👷</div>
+<div class="modal-body">Tu supervisor te pone a prueba: detecta el error en cada escena del día a día laboral.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡A por ello!</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes = [
+{
+desc: "Almacén: Tu compañero va a cortar chapa metálica.",
+items: ["Gafas de seguridad", "Guantes de cuero", "Chanclas de playa"],
+error: 2,
+explanation: "Nunca uses calzado abierto en obra. Se requiere calzado de seguridad con puntera reforzada."
+},
+{
+desc: "Obra: Hay que aflojar un tornillo de cabeza Phillips.",
+items: ["Destornillador de estrella", "Destornillador plano", "Llave Allen"],
+error: 1,
+explanation: "El destornillador plano daña los tornillos Phillips. Usa siempre la herramienta adecuada al tipo de cabeza."
+},
+{
+desc: "Visita cliente: Llegas a una casa para revisar una avería.",
+items: ["Saludar y presentarte", "Entrar directo sin avisar", "Pedir permiso para pasar"],
+error: 1,
+explanation: "Entrar sin avisar es una falta de respeto. Siempre saluda, preséntate y pide permiso."
+},
+{
+desc: "Cuadro eléctrico: Vas a manipular un circuito.",
+items: ["Cortar el diferencial primero", "Verificar ausencia de tensión", "Trabajar con corriente activa"],
+error: 2,
+explanation: "Trabajar con tensión activa es muy peligroso. Siempre corta y verifica antes de tocar."
+},
+{
+desc: "Fontanería: Hay que conectar un tubo de cobre a PVC.",
+items: ["Usar racor de transición", "Soldar directo cobre a PVC", "Consultar al jefe si hay dudas"],
+error: 1,
+explanation: "El cobre y PVC no se sueldan juntos. Usa siempre racores de transición homologados."
+}
+];
+
+let currentScene = 0;
+let answers = [];
+const scene = document.getElementById('scene');
+const sceneDesc = document.getElementById('scene-desc');
+const options = document.getElementById('options');
+const progressBar = document.getElementById('progress-bar');
+const counter = document.getElementById('counter');
+const helper = document.getElementById('helper');
+const introModal = document.getElementById('intro-modal');
+
+function startGame() {
+introModal.classList.remove('active');
+renderScene();
+}
+
+function renderScene() {
+if (currentScene >= scenes.length) {
+showResults();
+return;
+}
+const s = scenes[currentScene];
+sceneDesc.textContent = s.desc;
+progressBar.style.width = ((currentScene) / scenes.length * 100) + '%';
+counter.textContent = (currentScene + 1) + '/5';
+helper.textContent = 'Toca el elemento que contiene el error';
+
+options.innerHTML = s.items.map((item, i) =>
+`<button class="btn-option" data-idx="${i}">${item}</button>`
+).join('');
+
+options.querySelectorAll('.btn-option').forEach(btn => {
+btn.onclick = () => selectAnswer(parseInt(btn.dataset.idx));
+});
+ensureFits();
+}
+
+function selectAnswer(idx) {
+const s = scenes[currentScene];
+const btns = options.querySelectorAll('.btn-option');
+btns.forEach(b => b.disabled = true);
+
+btns[idx].classList.add('selected');
+const isCorrect = idx === s.error;
+
+setTimeout(() => {
+btns[idx].classList.add(isCorrect ? 'correct' : 'incorrect');
+if (!isCorrect) {
+btns[s.error].classList.add('correct');
+}
+}, 200);
+
+answers.push({
+scene: s.desc,
+selected: s.items[idx],
+correct: s.items[s.error],
+isCorrect: isCorrect,
+explanation: s.explanation
+});
+
+setTimeout(() => {
+currentScene++;
+renderScene();
+}, 900);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+
+const correctCount = answers.filter(a => a.isCorrect).length;
+
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Revisión completada!</div>
+<div class="results-score">${correctCount}/5</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a, i) => `
+<div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+<div class="result-question">Escena ${i + 1}: ${a.scene}</div>
+<div class="result-answer">${a.isCorrect ? '✓ ' : '✗ '}Elegiste: ${a.selected}</div>
+${!a.isCorrect ? `<div class="result-answer">Error real: ${a.correct}</div>` : ''}
+<div class="result-explanation">${a.explanation}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> En tus primeros meses, pregunta siempre antes de actuar. La atención al detalle evita accidentes y gana la confianza de tu equipo.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({
+action: 'TASK_COMPLETED'
+}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale', scale);
+}
+}
+
+window.addEventListener('load', () => {
+introModal.classList.add('active');
+ensureFits();
+});
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
