@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 🔧</div>
+<div class="subtitle">Elige la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="sentence"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">¡Bienvenido, aprendiz! 👷</div>
+<div class="modal-body">Es tu primer día. Demuestra que conoces las herramientas completando el manual técnico.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+<script>
+const data=[
+{sentence:"Para comprobar si hay corriente sin contacto, uso el ___.",blank:"buscapolos",opts:["buscapolos","polímetro","pelacables"],exp:"El buscapolos detecta tensión sin contacto directo. El polímetro requiere conexión y el pelacables es para pelar cables."},
+{sentence:"Antes de empalmar cables, los pelo con ___.",blank:"pelacables",opts:["alicates de corte","pelacables","destornillador"],exp:"El pelacables retira el aislante sin dañar el conductor. Los alicates cortan y el destornillador no sirve para esto."},
+{sentence:"Para fijar una regleta a la pared necesito un ___.",blank:"taladro",opts:["taladro","nivel","flexómetro"],exp:"El taladro hace agujeros para los tacos. El nivel verifica horizontalidad y el flexómetro mide distancias."},
+{sentence:"Para medir la intensidad de corriente uso la ___.",blank:"pinza amperimétrica",opts:["pinza amperimétrica","buscapolos","cinta aislante"],exp:"La pinza amperimétrica mide intensidad sin cortar el circuito. El buscapolos solo detecta tensión."},
+{sentence:"Para cortar cables gruesos utilizo los ___.",blank:"alicates de corte",opts:["pelacables","alicates de corte","destornillador"],exp:"Los alicates de corte tienen filo y palanca para cortar. El pelacables solo retira aislante."},
+{sentence:"Para verificar que una superficie está horizontal uso el ___.",blank:"nivel",opts:["flexómetro","nivel","taladro"],exp:"El nivel tiene burbuja que indica horizontalidad. El flexómetro mide longitud y el taladro perfora."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sentenceEl=document.getElementById('sentence'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+sentenceEl.innerHTML=d.sentence.replace('___','<u>___</u>');
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" onclick="selectOption('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(chosen){
+const d=data[idx];
+const correct=chosen===d.blank;
+answers.push({sentence:d.sentence,blank:d.blank,user:chosen,correct,exp:d.exp});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===d.blank)b.classList.add('correct');
+else if(b.textContent===chosen&&!correct)b.classList.add('incorrect');
+});
+sentenceEl.innerHTML=d.sentence.replace('___',`<u>${d.blank}</u>`);
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___',`<strong>${a.blank}</strong>`)}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Dominar el vocabulario técnico es clave para comunicarte con tu equipo en obra y evitar errores costosos.
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
