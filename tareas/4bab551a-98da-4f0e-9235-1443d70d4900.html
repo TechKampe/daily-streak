@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ EPIs al descubierto - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">EPIs al descubierto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-area"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">¿Verdadero o Falso? Elige tu respuesta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🛡️ Prueba de EPIs</div>
+<div class="modal-body">Es tu primera semana y el responsable de prevención te pone a prueba. ¿Sabes distinguir mitos de realidades sobre los EPIs?</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements = [
+{
+text: "Los guantes de látex domésticos protegen contra descargas eléctricas.",
+answer: false,
+exp: "MITO. Los guantes de látex NO aíslan la electricidad. Se necesitan guantes dieléctricos homologados según tensión de trabajo."
+},
+{
+text: "El calzado de seguridad debe tener suela aislante en trabajos eléctricos.",
+answer: true,
+exp: "REALIDAD. El calzado con suela aislante evita que la corriente circule a tierra a través del cuerpo."
+},
+{
+text: "Los EPIs no tienen fecha de caducidad si se conservan bien.",
+answer: false,
+exp: "MITO. Muchos EPIs (guantes aislantes, arneses, cascos) tienen fecha de caducidad obligatoria aunque no se usen."
+},
+{
+text: "El casco de seguridad es obligatorio en instalaciones con riesgo de caída de objetos.",
+answer: true,
+exp: "REALIDAD. El casco protege de impactos y es obligatorio en obras y zonas con riesgo de caída de materiales."
+},
+{
+text: "Las gafas de protección solo son necesarias al soldar.",
+answer: false,
+exp: "MITO. Las gafas protegen de salpicaduras, partículas y arcos eléctricos en múltiples tareas, no solo soldadura."
+},
+{
+text: "El arnés anticaídas es obligatorio a partir de 2 metros de altura.",
+answer: true,
+exp: "REALIDAD. La normativa exige protección anticaídas en trabajos a más de 2 metros sin protección colectiva."
+},
+{
+text: "Un EPI con pequeños desperfectos puede seguir usándose si funciona.",
+answer: false,
+exp: "MITO. Cualquier desperfecto (grietas, desgaste, roturas) invalida el EPI. Debe sustituirse inmediatamente."
+}
+];
+
+let currentIndex = 0;
+let score = 0;
+let answers = [];
+let gameStarted = false;
+
+const scene = document.getElementById('scene');
+const statementArea = document.getElementById('statement-area');
+const optionsDiv = document.getElementById('options');
+const progressBar = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const modal = document.getElementById('modal');
+
+function startGame() {
+modal.classList.remove('active');
+gameStarted = true;
+renderStatement();
+}
+
+function renderStatement() {
+if (currentIndex >= statements.length) {
+showResults();
+return;
+}
+
+const stmt = statements[currentIndex];
+progressBar.style.width = ((currentIndex) / statements.length * 100) + '%';
+counter.textContent = (currentIndex + 1) + '/' + statements.length;
+
+statementArea.innerHTML = `<div class="statement-text">${stmt.text}</div>`;
+optionsDiv.innerHTML = `
+<button class="btn-option" id="btn-true" onclick="selectAnswer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btn-false" onclick="selectAnswer(false)">✗ Falso</button>
+`;
+
+ensureFits();
+}
+
+function selectAnswer(userAnswer) {
+if (!gameStarted) return;
+
+const stmt = statements[currentIndex];
+const isCorrect = userAnswer === stmt.answer;
+const btnTrue = document.getElementById('btn-true');
+const btnFalse = document.getElementById('btn-false');
+
+btnTrue.disabled = true;
+btnFalse.disabled = true;
+
+if (userAnswer) {
+btnTrue.classList.add(isCorrect ? 'correct' : 'incorrect');
+} else {
+btnFalse.classList.add(isCorrect ? 'correct' : 'incorrect');
+}
+
+if (isCorrect) score++;
+
+answers.push({
+text: stmt.text,
+userAnswer: userAnswer,
+correctAnswer: stmt.answer,
+isCorrect: isCorrect,
+explanation: stmt.exp
+});
+
+setTimeout(() => {
+currentIndex++;
+renderStatement();
+}, 1000);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+
+const resultsHTML = answers.map(a => `
+<div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">
+Tu respuesta: ${a.userAnswer ? 'Verdadero' : 'Falso'} ${a.isCorrect ? '✓' : '✗'}
+${!a.isCorrect ? `<br>Correcta: ${a.correctAnswer ? 'Verdadero' : 'Falso'}` : ''}
+</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>
+`).join('');
+
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${resultsHTML}
+<div class="result-item" style="background: var(--surface-alt, #f0f4ff); border-left: 4px solid var(--accent, #6366f1);">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Antes de cada jornada, revisa visualmente tus EPIs: busca grietas, desgaste o fechas de caducidad. Un EPI dañado no protege. Ante la duda, sustitúyelo.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>
+`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({
+action: 'TASK_COMPLETED'
+}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) {
+scene.classList.add('compact');
+}
+if (scene.scrollHeight > scene.clientHeight) {
+scene.classList.add('compact-xs');
+}
+if (scene.scrollHeight > scene.clientHeight) {
+const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale', scale);
+}
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
