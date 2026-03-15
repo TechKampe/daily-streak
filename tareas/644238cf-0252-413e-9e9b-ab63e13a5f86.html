@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 ¿Seguro o Peligro? Decisiones Eléctricas - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 ¿Seguro o Peligro?</div>
+<div class="subtitle" id="subtitle">Decisiones Eléctricas</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="card-container" style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o pulsa los botones</div>
+<div style="display:flex;gap:12px;width:100%;">
+<button class="cta" id="btn-incorrect" style="flex:1;background:#ff6b6b;">❌ Incorrecto</button>
+<button class="cta" id="btn-correct" style="flex:1;">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 Primera semana como ayudante</div>
+<div class="modal-body">Desliza a la derecha si la práctica es SEGURA o a la izquierda si es PELIGROSA. También puedes usar los botones.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Trabajar en un cuadro eléctrico sin desconectar el diferencial",correct:false,exp:"Siempre debes desconectar el diferencial antes de intervenir. Trabajar con tensión puede causar electrocución."},
+{text:"Usar destornillador con mango aislante para manipular cables",correct:true,exp:"Las herramientas aisladas protegen contra descargas eléctricas. Es obligatorio en trabajos eléctricos."},
+{text:"Tocar cables con las manos húmedas",correct:false,exp:"El agua es conductora de electricidad. Nunca manipules instalaciones eléctricas con manos mojadas."},
+{text:"Verificar ausencia de tensión con un buscapolos antes de tocar",correct:true,exp:"Comprobar que no hay tensión es el primer paso de seguridad antes de cualquier intervención."},
+{text:"Usar una escalera metálica para trabajar cerca de cables aéreos",correct:false,exp:"El metal conduce electricidad. Usa escaleras de fibra de vidrio o madera cerca de instalaciones eléctricas."},
+{text:"Colocar cinta y señales para delimitar la zona de trabajo",correct:true,exp:"Señalizar evita que otras personas entren en contacto con la instalación mientras trabajas."}
+];
+let idx=0,answers=[],startX=0,startY=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),container=document.getElementById('card-container'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');renderCard();}
+
+function renderCard(){
+if(idx>=cards.length){showResults();return}
+prog.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+const card=document.createElement('div');
+card.className='card';
+card.id='current-card';
+card.style.cssText='position:absolute;width:85%;max-width:300px;min-height:180px;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;box-sizing:border-box;cursor:grab;user-select:none;transition:none;border:3px solid #00E6BC;background:#fff;border-radius:16px;';
+card.innerHTML=`<span style="font-size:1.1rem;line-height:1.4;">${cards[idx].text}</span>`;
+container.innerHTML='';
+container.appendChild(card);
+addSwipeListeners(card);
+ensureFits();
+}
+
+function addSwipeListeners(card){
+card.addEventListener('mousedown',onStart);
+card.addEventListener('touchstart',onStart,{passive:false});
+document.addEventListener('mousemove',onMove);
+document.addEventListener('touchmove',onMove,{passive:false});
+document.addEventListener('mouseup',onEnd);
+document.addEventListener('touchend',onEnd);
+}
+
+function onStart(e){
+isDragging=true;
+const card=document.getElementById('current-card');
+if(card)card.style.cursor='grabbing';
+const point=e.touches?e.touches[0]:e;
+startX=point.clientX;
+startY=point.clientY;
+currentX=0;
+}
+
+function onMove(e){
+if(!isDragging)return;
+e.preventDefault();
+const point=e.touches?e.touches[0]:e;
+currentX=point.clientX-startX;
+const card=document.getElementById('current-card');
+if(card){
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+if(currentX>50)card.style.borderColor='#00E6BC';
+else if(currentX<-50)card.style.borderColor='#ff6b6b';
+else card.style.borderColor='#00E6BC';
+}
+}
+
+function onEnd(){
+if(!isDragging)return;
+isDragging=false;
+const card=document.getElementById('current-card');
+if(card)card.style.cursor='grab';
+if(Math.abs(currentX)>80){
+const isRight=currentX>0;
+animateOut(isRight);
+}else{
+if(card){
+card.style.transition='transform 0.3s ease';
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.borderColor='#00E6BC';
+}
+}
+currentX=0;
+}
+
+function animateOut(isRight){
+const card=document.getElementById('current-card');
+if(!card)return;
+const userAnswer=isRight;
+const correct=cards[idx].correct===userAnswer;
+answers.push({q:cards[idx].text,userAnswer,correctAnswer:cards[idx].correct,correct,exp:cards[idx].exp});
+card.style.transition='transform 0.4s ease, opacity 0.4s ease';
+card.style.transform=`translateX(${isRight?400:-400}px) rotate(${isRight?30:-30}deg)`;
+card.style.opacity='0';
+setTimeout(()=>{idx++;renderCard();},400);
+}
+
+btnCorrect.onclick=()=>{if(idx<cards.length)animateOut(true);};
+btnIncorrect.onclick=()=>{if(idx<cards.length)animateOut(false);};
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Decisiones correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.q}</div>
+<div class="result-answer">Tu respuesta: ${a.userAnswer?'✅ Seguro':'❌ Peligro'} ${a.correct?'✓':'✗'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div style="padding:16px;text-align:center;background:linear-gradient(135deg,#e8f5e9,#fff);border-radius:12px;margin:16px 0;">
+<p style="margin:0;font-size:1rem;">💪 ${score>=4?'¡Excelente! Tienes buen ojo para la seguridad.':'Repasa las normas de PRL eléctrica. ¡La seguridad es lo primero!'}</p>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
