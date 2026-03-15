@@ -1,0 +1,300 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>El Cliente Difícil 🗣️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const avatars = {
+mentor: {name: 'Carlos (Mentor)', img: 'https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png'},
+cliente: {name: 'Sr. Ramírez (Cliente)', img: 'https://techkampe.github.io/daily-streak/assets/Avatar 4_low.png'},
+companero: {name: 'Luis (Compañero)', img: 'https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png'}
+};
+
+const turns = [
+{
+messages: [
+{from: 'cliente', text: '¡Esto es inaceptable! El otro técnico dejó todo peor y ahora tengo una fuga enorme. ¡Exijo que lo arreglen YA!', emotion: '😡'},
+{from: 'mentor', text: 'Tranquilo, escucha al cliente primero. ¿Cómo responderías?', emotion: '🤔'}
+],
+options: [
+{text: 'Entiendo su frustración, cuénteme qué pasó', score: 2, feedback: 'Excelente: escucha activa y empatía.', reaction: '😌'},
+{text: 'No fue culpa nuestra, fue otro técnico', score: 0, feedback: 'Mal: culpar a otros escala el conflicto.', reaction: '😠'},
+{text: 'Cálmese, no es para tanto', score: 1, feedback: 'Regular: minimizar emociones no ayuda.', reaction: '😤'}
+]
+},
+{
+messages: [
+{from: 'cliente', text: 'Pues el técnico anterior dijo que estaba arreglado y ahora tengo el baño inundado. ¡Quiero una explicación!', emotion: '😤'},
+{from: 'companero', text: 'Uf, está muy alterado. ¿Qué le dirías?', emotion: '😬'}
+],
+options: [
+{text: 'Lamento mucho esta situación. Vamos a solucionarlo hoy.', score: 2, feedback: 'Perfecto: disculpa sin culpar + compromiso.', reaction: '😐'},
+{text: 'Ese técnico no era de los buenos, nosotros sí.', score: 0, feedback: 'Mal: hablar mal de compañeros es poco profesional.', reaction: '😡'},
+{text: 'A veces las reparaciones fallan, es normal.', score: 1, feedback: 'Regular: justificar no genera confianza.', reaction: '😒'}
+]
+},
+{
+messages: [
+{from: 'cliente', text: 'Vale, pero necesito saber qué van a hacer exactamente. No quiero más sorpresas.', emotion: '😐'},
+{from: 'mentor', text: 'Buen momento para ofrecer una solución concreta. Adelante.', emotion: '👍'}
+],
+options: [
+{text: 'Revisaremos la fuga, repararemos y haremos prueba de presión.', score: 2, feedback: 'Genial: solución específica y verificable.', reaction: '🙂'},
+{text: 'Lo arreglaremos, no se preocupe.', score: 1, feedback: 'Regular: muy vago, no genera confianza.', reaction: '😐'},
+{text: 'Depende de lo que encontremos, ya veremos.', score: 0, feedback: 'Mal: incertidumbre aumenta la desconfianza.', reaction: '😤'}
+]
+},
+{
+messages: [
+{from: 'cliente', text: '¿Y si vuelve a fallar? Ya no me fío de nadie. Esto me ha costado dinero y tiempo.', emotion: '😞'},
+{from: 'companero', text: 'Tiene miedo de que pase otra vez. ¿Cómo le tranquilizas?', emotion: '🤷'}
+],
+options: [
+{text: 'Le doy garantía por escrito y mi teléfono directo para cualquier duda.', score: 2, feedback: 'Excelente: compromiso personal genera confianza.', reaction: '😊'},
+{text: 'Si falla, volvemos gratis.', score: 1, feedback: 'Bien, pero falta compromiso personal.', reaction: '🙂'},
+{text: 'No debería fallar si seguimos el protocolo.', score: 0, feedback: 'Mal: suena a excusa anticipada.', reaction: '😒'}
+]
+},
+{
+messages: [
+{from: 'cliente', text: 'Está bien, confiaré en ustedes esta vez. Pero espero que cumplan.', emotion: '🙂'},
+{from: 'mentor', text: 'Muy bien llevado. ¿Cómo cerrarías la conversación?', emotion: '😊'}
+],
+options: [
+{text: 'Gracias por su confianza. Le llamo mañana para confirmar que todo sigue bien.', score: 2, feedback: 'Perfecto: seguimiento proactivo fideliza.', reaction: '😄'},
+{text: 'Genial, nos vemos entonces.', score: 1, feedback: 'Regular: falta compromiso de seguimiento.', reaction: '🙂'},
+{text: 'Si tiene problemas, ya sabe dónde estamos.', score: 0, feedback: 'Mal: pasivo, no genera vínculo.', reaction: '😐'}
+]
+}
+];
+
+let currentTurn = 0, chatHistory = [], userAnswers = [], totalScore = 0;
+const scene = document.getElementById('scene');
+
+function renderIntro() {
+scene.innerHTML = `
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">El Cliente Difícil 🗣️</div>
+<div class="modal-body">Un cliente furioso llama por una fuga. Gestiona la situación con tu mentor y demuestra comunicación profesional.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>`;
+}
+
+function startGame() {
+currentTurn = 0;
+chatHistory = [];
+userAnswers = [];
+totalScore = 0;
+renderTurn();
+}
+
+function renderTurn() {
+const turn = turns[currentTurn];
+turn.messages.forEach(m => {
+chatHistory.push({from: m.from, text: m.text, isUser: false});
+});
+
+scene.innerHTML = `
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">El Cliente Difícil 🗣️</div>
+<div class="subtitle">Elige tu respuesta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i style="width:${(currentTurn / turns.length) * 100}%"></i></div>
+</div>
+<span class="badge">${currentTurn + 1}/${turns.length}</span>
+</div>
+</div>
+<div class="chat-container" id="chatContainer">
+<div class="chat-history" id="chatHistory">
+${chatHistory.map(m => renderMessage(m)).join('')}
+</div>
+</div>
+<div class="options-container" id="optionsContainer">
+${turn.options.map((o, i) => `<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join('')}
+</div>`;
+
+const chatEl = document.getElementById('chatHistory');
+chatEl.scrollTop = chatEl.scrollHeight;
+ensureFits();
+}
+
+function renderMessage(m) {
+if (m.isUser) {
+return `<div class="chat-message user-message"><div class="message-bubble user-bubble">${m.text}</div></div>`;
+}
+const av = avatars[m.from];
+return `<div class="chat-message npc-message">
+<img class="message-avatar" src="${av.img}" alt="${av.name}">
+<div class="message-content">
+<div class="message-name">${av.name}</div>
+<div class="message-bubble">${m.text}</div>
+</div>
+</div>`;
+}
+
+function selectOption(idx) {
+const turn = turns[currentTurn];
+const opt = turn.options[idx];
+userAnswers.push({turn: currentTurn + 1, text: opt.text, score: opt.score, feedback: opt.feedback});
+totalScore += opt.score;
+chatHistory.push({from: 'user', text: opt.text, isUser: true});
+
+const reactor = turn.messages[0].from;
+const reactionText = opt.score === 2 ? 'Gracias por entenderme.' : opt.score === 1 ? 'Hmm, supongo...' : '¡Eso no me ayuda nada!';
+chatHistory.push({from: reactor, text: `${turn.options[idx].reaction} ${reactionText}`, isUser: false});
+
+currentTurn++;
+if (currentTurn < turns.length) {
+renderTurn();
+} else {
+showResults();
+}
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+const maxScore = turns.length * 2;
+const pct = Math.round((totalScore / maxScore) * 100);
+let mensaje = pct >= 80 ? '¡Excelente gestión!' : pct >= 50 ? 'Buen intento, puedes mejorar.' : 'Necesitas practicar más.';
+
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${mensaje}</div>
+<div class="results-score">${totalScore}/${maxScore}</div>
+<div class="results-subtitle">Puntos obtenidos</div>
+</div>
+<div class="results-list">
+${userAnswers.map(a => `
+<div class="result-item ${a.score === 2 ? 'correct' : a.score === 1 ? '' : 'incorrect'}">
+<div class="result-question">Turno ${a.turn}</div>
+<div class="result-answer">${a.score === 2 ? '✓' : a.score === 1 ? '~' : '✗'} ${a.text}</div>
+<div class="result-explanation">${a.feedback}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Una queja bien gestionada puede convertir a un cliente enfadado en tu mejor recomendación. Escucha, no culpes y ofrece soluciones concretas con seguimiento.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({action: 'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+}
+}
+
+window.addEventListener('load', () => { renderIntro(); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+<style>
+.chat-container {
+flex: 1;
+display: flex;
+flex-direction: column;
+overflow: hidden;
+padding: 8px 16px;
+min-height: 0;
+}
+.chat-history {
+flex: 1;
+overflow-y: auto;
+display: flex;
+flex-direction: column;
+gap: 8px;
+padding-bottom: 8px;
+-webkit-overflow-scrolling: touch;
+}
+.chat-message {
+display: flex;
+align-items: flex-start;
+gap: 8px;
+}
+.npc-message {
+flex-direction: row;
+}
+.user-message {
+flex-direction: row-reverse;
+}
+.message-avatar {
+width: 36px;
+height: 36px;
+border-radius: 50%;
+object-fit: cover;
+flex-shrink: 0;
+}
+.message-content {
+display: flex;
+flex-direction: column;
+gap: 2px;
+max-width: 75%;
+}
+.message-name {
+font-size: 11px;
+font-weight: 700;
+color: var(--accent);
+}
+.message-bubble {
+background: var(--card);
+padding: 10px 14px;
+border-radius: 16px;
+font-size: 14px;
+line-height: 1.4;
+box-shadow: var(--shadow-sm);
+}
+.user-bubble {
+background: var(--ink);
+color: #fff;
+max-width: 75%;
+}
+.options-container {
+display: flex;
+flex-direction: column;
+gap: 8px;
+padding: 12px 16px 24px;
+background: var(--bg);
+flex-shrink: 0;
+}
+.options-container .btn-option {
+font-size: 13px;
+padding: 12px 16px;
+text-align: left;
+}
+</style>
+</body>
+</html>
