@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el manual 🔧</div>
+<div class="subtitle" id="instruction">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="sentence-text"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Tu primer día: repasa el manual básico</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const clozes=[
+{sentence:"Antes de manipular un cuadro eléctrico, debo comprobar la ausencia de tensión con el ___.",answer:"buscapolos",options:["buscapolos","pelacables","alicates"],explanation:"El buscapolos detecta tensión. El pelacables pela cables y los alicates sujetan o cortan."},
+{sentence:"Para medir la intensidad de corriente en un circuito, utilizo la ___.",answer:"pinza amperimétrica",options:["pinza amperimétrica","cinta aislante","regleta"],explanation:"La pinza amperimétrica mide intensidad sin cortar el circuito. La cinta aísla y la regleta conecta cables."},
+{sentence:"Los cables se protegen dentro de un ___ cuando van empotrados en la pared.",answer:"tubo corrugado",options:["tubo corrugado","multímetro","destornillador"],explanation:"El tubo corrugado protege cables empotrados. El multímetro mide y el destornillador ajusta tornillos."},
+{sentence:"Para unir varios cables de forma segura en una caja de registro, uso una ___.",answer:"regleta",options:["regleta","buscapolos","pinza amperimétrica"],explanation:"La regleta conecta cables de forma segura. El buscapolos detecta tensión y la pinza mide corriente."},
+{sentence:"Al terminar una conexión, debo aislar los empalmes con ___.",answer:"cinta aislante",options:["cinta aislante","tubo corrugado","pelacables"],explanation:"La cinta aislante protege empalmes. El tubo corrugado protege tramos largos y el pelacables prepara cables."},
+{sentence:"Antes de trabajar en una instalación, debo ___ el cuadro eléctrico.",answer:"desconectar",options:["desconectar","señalizar","verificar"],explanation:"Primero se desconecta para cortar la corriente. Señalizar y verificar son pasos posteriores."}
+];
+let currentIdx=0,answers=[];
+const scene=document.getElementById('scene'),sentenceEl=document.getElementById('sentence-text'),optionsEl=document.getElementById('options'),progressBar=document.getElementById('progress-bar'),counterEl=document.getElementById('counter'),helperEl=document.getElementById('helper'),instructionEl=document.getElementById('instruction');
+
+function render(){
+if(currentIdx>=clozes.length){showResults();return}
+const c=clozes[currentIdx];
+sentenceEl.innerHTML=c.sentence.replace('___','<u>___</u>');
+progressBar.style.width=(currentIdx/clozes.length*100)+'%';
+counterEl.textContent=(currentIdx+1)+'/'+clozes.length;
+instructionEl.textContent='Selecciona la palabra correcta';
+helperEl.textContent='Elige la opción que completa la frase';
+optionsEl.innerHTML=c.options.map(o=>`<button class="btn-option" onclick="selectOption('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(selected){
+const c=clozes[currentIdx];
+const correct=selected===c.answer;
+answers.push({sentence:c.sentence,answer:c.answer,selected:selected,correct:correct,explanation:c.explanation});
+const btns=optionsEl.querySelectorAll('.btn-option');
+btns.forEach(btn=>{
+btn.disabled=true;
+if(btn.textContent===selected){
+btn.classList.add(correct?'correct':'incorrect');
+}
+if(btn.textContent===c.answer&&!correct){
+btn.classList.add('correct');
+}
+});
+sentenceEl.innerHTML=c.sentence.replace('___',`<u>${selected}</u>`);
+setTimeout(()=>{currentIdx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual completado!</div>
+<div class="results-score">${score}/${clozes.length}</div>
+<div class="results-subtitle">Frases correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.answer+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Tu respuesta: '+a.selected}</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Usar el vocabulario técnico correcto evita confusiones y accidentes en obra. Asegúrate de conocer cada herramienta y su función específica.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
