@@ -6,11 +6,11 @@ const TASK_THRESHOLD = 400;
 
 // ===== PIEZAS (assets reales) =====
 const PIECE_ASSETS = {
-  codo:       'assets/pieza_codo.png',
-  manguito:   'assets/pieza_manguito.png',
-  te:         'assets/pieza_t.png',
-  reduccion:  'assets/pieza_reduccion.png',
-  abrazadera: 'assets/pieza_abrazadera.png',
+  codo:       'https://res.cloudinary.com/kampe/image/upload/v1773662021/pieza_codo_jfegf2.png',
+  manguito:   'https://res.cloudinary.com/kampe/image/upload/v1773662021/pieza_manguito_pgpb7c.png',
+  te:         'https://res.cloudinary.com/kampe/image/upload/v1773662021/pieza_t_wepzmt.png',
+  reduccion:  'https://res.cloudinary.com/kampe/image/upload/v1773662021/pieza_reduccion_i4bgpt.png',
+  abrazadera: 'https://res.cloudinary.com/kampe/image/upload/v1773662021/pieza_abrazadera_qa5woz.png',
 };
 
 const PIECE_NAMES = {
@@ -587,7 +587,14 @@ const IMG_DIMS = [
 
 function renderInstallation(levelIdx) {
   const img = $('installation-img');
-  img.src = `assets/instalacion_n${levelIdx + 1}.png`;
+  const INSTALL_URLS = [
+    'https://res.cloudinary.com/kampe/image/upload/v1773662020/instalacion_n1_xtywqk.png',
+    'https://res.cloudinary.com/kampe/image/upload/v1773662021/instalacion_n2_pkvt3s.png',
+    'https://res.cloudinary.com/kampe/image/upload/v1773662020/instalacion_n3_m79kgv.png',
+    'https://res.cloudinary.com/kampe/image/upload/v1773662020/instalacion_n4_z2gbnw.png',
+    'https://res.cloudinary.com/kampe/image/upload/v1773662022/instalacion_n5_c6hq8m.png',
+  ];
+  img.src = INSTALL_URLS[levelIdx];
   // Ajustar viewBox del SVG a las dimensiones reales del PNG
   const [w, h] = IMG_DIMS[levelIdx];
   $('hotspot-svg').setAttribute('viewBox', `0 0 ${w} ${h}`);
@@ -641,9 +648,9 @@ function startLevel(idx) {
 // ===== AVATAR =====
 function avatarSrc(state) {
   switch (state) {
-    case 'celebrating': return 'assets/yaiza_celebrating.png';
-    case 'worried':     return 'assets/yaiza_worried.png';
-    default:            return 'assets/yaiza_happy.png';
+    case 'celebrating': return 'https://res.cloudinary.com/kampe/image/upload/v1773662022/yaiza_celebrating_gwmo3q.png';
+    case 'worried':     return 'https://res.cloudinary.com/kampe/image/upload/v1773662022/yaiza_worried_kykdgn.png';
+    default:            return 'https://res.cloudinary.com/kampe/image/upload/v1773662022/yaiza_happy_ctah8q.png';
   }
 }
 
