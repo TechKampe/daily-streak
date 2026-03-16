@@ -14,61 +14,61 @@ const DECK = [
     id: 'compresor',
     nombre: 'Compresor',
     lado: 'caliente',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675473/card_compresor_anufur.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/v1773675473/card_compresor_anufur.png'
   },
   {
     id: 'evaporador',
     nombre: 'Evaporador',
     lado: 'frio',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_evaporador_aioivc.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_evaporador_aioivc.png'
   },
   {
     id: 'condensador',
     nombre: 'Condensador',
     lado: 'caliente',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_condensador_ihp9uo.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_condensador_ihp9uo.png'
   },
   {
     id: 'vent_interior',
     nombre: 'Ventilador interior',
     lado: 'frio',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_ventilador_interior_ed6asq.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_ventilador_interior_ed6asq.png'
   },
   {
     id: 'tuberia',
     nombre: 'Tubería frigorífica',
     lado: 'ambos',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_tuberia_adw4m6.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_tuberia_adw4m6.png'
   },
   {
     id: 'vent_exterior',
     nombre: 'Ventilador exterior',
     lado: 'caliente',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_ventilador_exterior_yhp7uu.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_ventilador_exterior_yhp7uu.png'
   },
   {
     id: 'filtro',
     nombre: 'Filtro',
     lado: 'frio',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_filtro_djokew.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_filtro_djokew.png'
   },
   {
     id: 'drenaje',
     nombre: 'Tubo de drenaje',
     lado: 'frio',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_drenaje_olqzwv.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_drenaje_olqzwv.png'
   },
   {
     id: 'placa',
     nombre: 'Placa electrónica',
     lado: 'frio',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_placa_dzjesb.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_placa_dzjesb.png'
   },
   {
     id: 'cable',
     nombre: 'Cable eléctrico',
     lado: 'ambos',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675473/card_cable_zwpu9x.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/v1773675473/card_cable_zwpu9x.png'
   }
 ];
 
@@ -83,7 +83,7 @@ const ROUNDS = [
     bannerSub: 'Meses sin limpiar — ¿qué está obstruido?',
     error: {
       name: 'El aire apenas sale',
-      art: 'https://res.cloudinary.com/kampe/image/upload/w_320,f_auto,q_auto/v1773682054/error_filtro_fy0dkb.jpg',
+      art: 'https://res.cloudinary.com/kampe/image/upload/v1773682054/error_filtro_fy0dkb.jpg',
       consequence: 'Caudal · Confort',
       scenario: 'La unidad interior lleva meses sin mantenimiento. El flujo de aire es mínimo. El cliente lleva semanas quejándose del calor.',
       check: 'Limpieza'
@@ -110,7 +110,7 @@ const ROUNDS = [
     bannerSub: '¿Qué componentes están implicados?',
     error: {
       name: 'El aire no llega al fondo',
-      art: 'https://res.cloudinary.com/kampe/image/upload/w_320,f_auto,q_auto/v1773682054/error_ubicacion_interior_kzanho.jpg',
+      art: 'https://res.cloudinary.com/kampe/image/upload/v1773682054/error_ubicacion_interior_kzanho.jpg',
       consequence: 'Temperatura · Distribución',
       scenario: 'La unidad interior se instaló en un rincón mal estudiado. El chorro de aire no alcanza la zona de trabajo. Un lado de la sala siempre tiene más calor.',
       check: 'Ubicación'
@@ -137,7 +137,7 @@ const ROUNDS = [
     bannerSub: '¿Qué componentes están implicados?',
     error: {
       name: 'El split no rinde en verano',
-      art: 'https://res.cloudinary.com/kampe/image/upload/w_320,f_auto,q_auto/v1773682053/error_ubicacion_exterior_pgt8ek.jpg',
+      art: 'https://res.cloudinary.com/kampe/image/upload/v1773682053/error_ubicacion_exterior_pgt8ek.jpg',
       consequence: 'Rendimiento · Eficiencia',
       scenario: 'La unidad exterior quedó encajonada entre dos paredes. El calor no se disipa. En los días de verano el sistema entra en protección y el consumo se disparó.',
       check: 'Ubicación'
@@ -164,7 +164,7 @@ const ROUNDS = [
     bannerSub: '¿Qué componentes están implicados?',
     error: {
       name: 'El techo está goteando',
-      art: 'https://res.cloudinary.com/kampe/image/upload/w_320,f_auto,q_auto/v1773682055/error_drenaje_wd3w19.jpg',
+      art: 'https://res.cloudinary.com/kampe/image/upload/v1773682055/error_drenaje_wd3w19.jpg',
       consequence: 'Goteos · Daños materiales',
       scenario: 'Agua acumulándose en la bandeja de condensados. El tubo de drenaje no tiene pendiente suficiente o está obstruido. El agua cae por la pared del cliente.',
       check: 'Drenaje'
@@ -191,7 +191,7 @@ const ROUNDS = [
     bannerSub: '¿Qué componentes están implicados?',
     error: {
       name: 'El cliente llama: hay ruido',
-      art: 'https://res.cloudinary.com/kampe/image/upload/w_320,f_auto,q_auto/v1773682053/error_vibracion_f4v0wq.jpg',
+      art: 'https://res.cloudinary.com/kampe/image/upload/v1773682053/error_vibracion_f4v0wq.jpg',
       consequence: 'Ruido · Vibraciones',
       scenario: 'La unidad exterior hace un ruido continuo y molesto. Los vecinos se quejan. La estructura vibra cuando el equipo funciona a plena potencia.',
       check: 'Nivel · Vibración'
@@ -218,7 +218,7 @@ const ROUNDS = [
     bannerSub: '¿Qué componentes están implicados?',
     error: {
       name: 'La tubería queda forzada',
-      art: 'https://res.cloudinary.com/kampe/image/upload/w_320,f_auto,q_auto/v1773682054/error_ruta_j3crld.jpg',
+      art: 'https://res.cloudinary.com/kampe/image/upload/v1773682054/error_ruta_j3crld.jpg',
       consequence: 'Estética · Tensiones mecánicas',
       scenario: 'El recorrido entre unidades tiene curvas cerradas y tensiones visibles. La instalación parece improvisada. A largo plazo hay riesgo de rotura en las conexiones.',
       check: 'Ruta'
@@ -245,7 +245,7 @@ const ROUNDS = [
     bannerSub: '¿Qué componentes están implicados?',
     error: {
       name: 'Parece una chapuza',
-      art: 'https://res.cloudinary.com/kampe/image/upload/w_320,f_auto,q_auto/v1773682054/error_remates_gfiamw.jpg',
+      art: 'https://res.cloudinary.com/kampe/image/upload/v1773682054/error_remates_gfiamw.jpg',
       consequence: 'Imagen · Profesionalidad',
       scenario: 'La instalación funciona, pero tiene canaletas sin rematar, cables sin fijar y sellados descuidados en los pasos de pared. El cliente no confía. Te llama para repetir el trabajo.',
       check: 'Remates · Limpieza'
@@ -480,7 +480,9 @@ function dealHand(round) {
       <div class="hand-card-nameplate">
         <span class="hand-card-name">${cardData.nombre}</span>
       </div>
-      <div class="hand-card-art-window" style="background-image:url('${cardData.art}')"></div>
+      <div class="hand-card-art-window">
+        <img class="hand-card-art" src="${cardData.art}" alt="${cardData.nombre}" loading="lazy">
+      </div>
     `;
 
     el.addEventListener('touchend', e => { e.preventDefault(); onCardTap(e); });
