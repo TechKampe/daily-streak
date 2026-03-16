@@ -369,9 +369,12 @@ function onWrong(firstError, hasFault) {
 
   S.pendingFault = firstError;
 
+  const asset = currentAsset();
   setTimeout(() => {
-    if (hasFault) {
-      openDiagnostico(currentAsset().faults);
+    if (asset.faults.length === 0) {
+      openMontajeOk();
+    } else if (hasFault) {
+      openDiagnostico(asset.faults);
     } else {
       openEduOverlay(firstError);
     }
@@ -405,8 +408,8 @@ function openDiagnostico(faultParams) {
   }
 
   $('diag-title').textContent = isMulti
-    ? `Hay ${faultParams.length} fallos. ¿Cuáles son?`
-    : '¿Qué está fallando?';
+    ? 'Has fallado. Tienes otra oportunidad. Fíjate bien y di qué falla (hay 2).'
+    : 'Has fallado. Tienes otra oportunidad. Fíjate bien y di lo que falla.';
 
   document.querySelectorAll('.btn-option').forEach((btn, i) => {
     btn.textContent     = options[i].label;
@@ -502,6 +505,11 @@ function onDiagConfirm() {
   }
 }
 
+// ── Modal montaje OK (falsa alarma) ───────────────────────────────────────────
+function openMontajeOk() {
+  show($('modal-montaje-ok'));
+}
+
 // ── Overlay educativo ─────────────────────────────────────────────────────────
 function openEduOverlay(param) {
   const d = DIAG_DATA[param];
@@ -553,6 +561,7 @@ function resetGame() {
 
   hide($('modal-diagnostico'));
   hide($('modal-educativo'));
+  hide($('modal-montaje-ok'));
   hide($('check-tick'));
   $('montaje-img').classList.remove('landed', 'fault-flash');
 
@@ -596,6 +605,13 @@ function initEvents() {
 
   // Diagnóstico — los onclick se asignan dinámicamente en openDiagnostico
   $('btn-diag-confirm').addEventListener('click', onDiagConfirm);
+
+  // Montaje OK (falsa alarma)
+  $('btn-montaje-ok').addEventListener('click', () => {
+    hide($('modal-montaje-ok'));
+    setAvatar('gameplay-avatar', 'happy');
+    nextAsset();
+  });
 
   // Educativo
   $('btn-edu-ok').addEventListener('click', () => {
