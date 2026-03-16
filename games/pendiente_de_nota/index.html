@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Pendiente de Nota</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════ INTRO -->
+  <div id="intro" class="screen active">
+    <div class="screen-bg"></div>
+    <div class="wrapper">
+      <div class="intro-content">
+        <h1 class="game-title">Pendiente<br>de Nota</h1>
+        <div class="intro-avatar">
+          <img src="https://res.cloudinary.com/kampe/image/upload/v1773664970/Pablo_happy_rtnvol.png" alt="Pablo" id="intro-avatar">
+        </div>
+        <div class="speech-bubble intro-bubble">
+          <p>¡Bienvenido al único reality donde la pendiente importa más que el drama! Aquí se monta evacuación de verdad. Tú montas la bajante. Yo la evalúo. ¿Estás listo para ganarte la nota?</p>
+        </div>
+        <button class="btn-primary" id="btn-start">¡A montar!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ TUTORIAL MODAL -->
+  <div id="tutorial-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h2 class="modal-title">¿Cómo funciona?</h2>
+      <div class="tutorial-steps">
+        <div class="tutorial-step" id="tut-step-1">
+          <span class="tut-icon">👆</span>
+          <p>Arrastra el extremo libre del tubo para darle la inclinación que creas correcta. No hay indicadores — a ojo, como en obra.</p>
+        </div>
+        <div class="tutorial-step" id="tut-step-2">
+          <span class="tut-icon">💧</span>
+          <p>Suelta y el agua te dirá si acertaste. Fluye hacia la bajante: bien. Se atasca: pendiente insuficiente. Retrocede: pendiente al revés.</p>
+        </div>
+        <div class="tutorial-step" id="tut-step-3">
+          <span class="tut-icon">🧠</span>
+          <p>Al terminar cada habitación, responde una pregunta sobre lo que has montado. Acertar da puntos extra y ayuda a recordar la teoría.</p>
+        </div>
+      </div>
+      <button class="btn-primary" id="btn-tutorial-ok">¡Entendido!</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ PLAY -->
+  <div id="play" class="screen hidden">
+    <div class="wrapper">
+
+      <!-- HUD -->
+      <div id="hud">
+        <div class="hud-lives" id="hud-lives">
+          <span class="heart" id="h1">❤</span>
+          <span class="heart" id="h2">❤</span>
+          <span class="heart" id="h3">❤</span>
+        </div>
+        <div class="hud-score" id="hud-score">0 pts</div>
+        <div class="hud-round" id="hud-round">Ronda 1/4</div>
+      </div>
+
+      <!-- Etiqueta ronda + tramo -->
+      <div id="round-label" class="round-label">BAÑO — Tramo 1/3</div>
+
+      <!-- Zona de juego: tubo SVG -->
+      <div id="game-area">
+        <div id="pipe-origin-label" class="pipe-label">Origen</div>
+        <svg id="pipe-svg" viewBox="0 0 560 160" xmlns="http://www.w3.org/2000/svg" style="height:160px">
+          <!-- Segmentos y handles generados por JS -->
+          <g id="water-particles"></g>
+        </svg>
+        <div id="pipe-dest-label" class="pipe-label pipe-label-right">Bajante</div>
+        <div id="drag-hint">
+          <span class="hint-arrow">☝</span>
+          <span class="hint-text">Arrastra el punto verde hacia la bajante</span>
+        </div>
+
+        <!-- Pregunta educativa (al final de cada ronda) -->
+        <div id="siphon-step" class="hidden">
+          <p id="edu-question-prompt" class="siphon-prompt"></p>
+          <div id="edu-question-options" class="edu-options"></div>
+          <p id="edu-question-feedback" class="edu-q-feedback hidden"></p>
+        </div>
+      </div>
+
+      <!-- Personaje Pablo -->
+      <div id="pablo-container">
+        <div id="pablo-bubble" class="speech-bubble gameplay-bubble hidden"></div>
+        <img src="https://res.cloudinary.com/kampe/image/upload/v1773664970/Pablo_happy_rtnvol.png" alt="Pablo" id="pablo-avatar">
+      </div>
+
+      <!-- Canvas partículas ASMR -->
+      <canvas id="asmr-canvas"></canvas>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ OVERLAY EDUCATIVO -->
+  <div id="edu-overlay" class="overlay hidden">
+    <div class="wrapper">
+      <div class="edu-card">
+        <img src="https://res.cloudinary.com/kampe/image/upload/v1773664967/Pablo_worried_uevq5g.png" alt="Pablo" id="edu-avatar" class="edu-avatar">
+        <div class="edu-content">
+          <div class="edu-row"><span class="edu-label">Qué hiciste</span><p id="edu-what"></p></div>
+          <div class="edu-row"><span class="edu-label">Por qué está mal</span><p id="edu-why"></p></div>
+          <div class="edu-row edu-rule"><span class="edu-label">La regla</span><p id="edu-rule"></p></div>
+          <div class="edu-row"><span class="edu-label">Qué hacer</span><p id="edu-action"></p></div>
+        </div>
+        <button class="btn-primary" id="btn-edu-ok">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ OVERLAY TRANSICIÓN RONDA -->
+  <div id="round-overlay" class="overlay hidden">
+    <div class="wrapper">
+      <div class="round-result-card">
+        <img src="https://res.cloudinary.com/kampe/image/upload/v1773664970/Pablo_happy_rtnvol.png" alt="Pablo" id="round-avatar" class="round-avatar">
+        <div id="round-pts" class="round-pts">+0 pts</div>
+        <p id="round-msg" class="round-msg"></p>
+        <button class="btn-primary" id="btn-next-round">Siguiente habitación →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ RESULTS -->
+  <div id="results" class="screen hidden">
+    <div class="screen-bg"></div>
+    <div class="wrapper results-wrapper">
+      <div class="results-content">
+        <img src="https://res.cloudinary.com/kampe/image/upload/v1773664970/Pablo_happy_rtnvol.png" alt="Pablo" id="results-avatar" class="results-avatar">
+        <div class="results-card">
+          <div id="results-score" class="results-score">0 pts</div>
+          <div id="results-record" class="results-record"></div>
+          <p id="results-msg" class="results-msg"></p>
+        </div>
+        <button class="btn-primary" id="btn-retry">Volver a intentar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
