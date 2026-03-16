@@ -633,16 +633,14 @@ function showEduQuestion() {
         setPablo('worried', 'Casi. Recuerda esto para la siguiente instalación.');
       }
 
-      // Show next button after short pause
-      setTimeout(() => {
-        const nextBtn = document.createElement('button');
-        nextBtn.id        = 'siphon-next-btn';
-        nextBtn.className = 'btn-primary';
-        nextBtn.style.marginTop = '16px';
-        nextBtn.textContent = S.roundIdx < ROUNDS.length - 1 ? 'Siguiente habitación →' : 'Ver resultado →';
-        nextBtn.onclick = () => finishRound();
-        step.appendChild(nextBtn);
-      }, 800);
+      // Show next button immediately
+      const nextBtn = document.createElement('button');
+      nextBtn.id        = 'siphon-next-btn';
+      nextBtn.className = 'btn-primary';
+      nextBtn.style.marginTop = '16px';
+      nextBtn.textContent = S.roundIdx < ROUNDS.length - 1 ? 'Siguiente habitación →' : 'Ver resultado →';
+      nextBtn.onclick = () => finishRound();
+      step.appendChild(nextBtn);
     };
     optsDiv.appendChild(btn);
   });
@@ -656,24 +654,9 @@ function finishRound() {
     S.score += SCORE.ROUND_BONUS;
     updateHUD();
   }
-
-  const perfect    = S.roundErrors === 0 && S.eduAnsweredCorrect;
-  const pabloState = perfect ? 'celebrating' : 'happy';
-  const roundMsg   = perfect ? MSG.round_perfect : MSG.round_errors;
-
-  $('round-avatar').src       = AVATARS[pabloState];
-  $('round-pts').textContent  = S.score + ' pts';
-  $('round-msg').textContent  = roundMsg;
-
-  const overlay = $('round-overlay');
-  overlay.classList.remove('hidden');
-
-  $('btn-next-round').onclick = () => {
-    overlay.classList.add('hidden');
-    S.roundIdx++;
-    if (S.roundIdx >= ROUNDS.length) showResults();
-    else startRound();
-  };
+  S.roundIdx++;
+  if (S.roundIdx >= ROUNDS.length) showResults();
+  else startRound();
 }
 
 // ── Start round ───────────────────────────────────────────
