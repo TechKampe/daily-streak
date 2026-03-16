@@ -480,9 +480,7 @@ function dealHand(round) {
       <div class="hand-card-nameplate">
         <span class="hand-card-name">${cardData.nombre}</span>
       </div>
-      <div class="hand-card-art-window">
-        <img class="hand-card-art" src="${cardData.art}" alt="${cardData.nombre}" loading="lazy">
-      </div>
+      <div class="hand-card-art-window" style="background-image:url('${cardData.art}')"></div>
     `;
 
     el.addEventListener('touchend', e => { e.preventDefault(); onCardTap(e); });
