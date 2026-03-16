@@ -14,61 +14,61 @@ const DECK = [
     id: 'compresor',
     nombre: 'Compresor',
     lado: 'caliente',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,h_224,c_fill,f_auto,q_auto/v1773675473/card_compresor_anufur.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675473/card_compresor_anufur.png'
   },
   {
     id: 'evaporador',
     nombre: 'Evaporador',
     lado: 'frio',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,h_224,c_fill,f_auto,q_auto/v1773675472/card_evaporador_aioivc.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_evaporador_aioivc.png'
   },
   {
     id: 'condensador',
     nombre: 'Condensador',
     lado: 'caliente',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,h_224,c_fill,f_auto,q_auto/v1773675472/card_condensador_ihp9uo.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_condensador_ihp9uo.png'
   },
   {
     id: 'vent_interior',
     nombre: 'Ventilador interior',
     lado: 'frio',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,h_224,c_fill,f_auto,q_auto/v1773675472/card_ventilador_interior_ed6asq.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_ventilador_interior_ed6asq.png'
   },
   {
     id: 'tuberia',
     nombre: 'Tubería frigorífica',
     lado: 'ambos',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,h_224,c_fill,f_auto,q_auto/v1773675472/card_tuberia_adw4m6.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_tuberia_adw4m6.png'
   },
   {
     id: 'vent_exterior',
     nombre: 'Ventilador exterior',
     lado: 'caliente',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,h_224,c_fill,f_auto,q_auto/v1773675472/card_ventilador_exterior_yhp7uu.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_ventilador_exterior_yhp7uu.png'
   },
   {
     id: 'filtro',
     nombre: 'Filtro',
     lado: 'frio',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,h_224,c_fill,f_auto,q_auto/v1773675472/card_filtro_djokew.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_filtro_djokew.png'
   },
   {
     id: 'drenaje',
     nombre: 'Tubo de drenaje',
     lado: 'frio',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,h_224,c_fill,f_auto,q_auto/v1773675472/card_drenaje_olqzwv.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_drenaje_olqzwv.png'
   },
   {
     id: 'placa',
     nombre: 'Placa electrónica',
     lado: 'frio',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,h_224,c_fill,f_auto,q_auto/v1773675472/card_placa_dzjesb.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675472/card_placa_dzjesb.png'
   },
   {
     id: 'cable',
     nombre: 'Cable eléctrico',
     lado: 'ambos',
-    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,h_224,c_fill,f_auto,q_auto/v1773675473/card_cable_zwpu9x.png'
+    art: 'https://res.cloudinary.com/kampe/image/upload/w_160,f_auto,q_auto/v1773675473/card_cable_zwpu9x.png'
   }
 ];
 
