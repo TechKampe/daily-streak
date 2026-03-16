@@ -522,6 +522,7 @@ function loadPipe() {
   $('round-label').textContent = round.label + ' — Tramo ' + (S.pipeIdx + 1) + '/' + round.pipes.length;
   $('round-label').style.visibility = 'visible';
   $('siphon-step').classList.add('hidden');
+  $('game-area').classList.remove('hidden');
   $('pipe-svg').classList.remove('hidden');
 
   $('pipe-origin-label').style.visibility = 'visible';
@@ -571,6 +572,7 @@ function showEduQuestion() {
   S.inputEnabled = false;
   S.eduAnsweredCorrect = false;
 
+  $('game-area').classList.add('hidden');
   $('pipe-svg').classList.add('hidden');
   $('pipe-origin-label').style.visibility = 'hidden';
   $('pipe-dest-label').style.visibility   = 'hidden';
