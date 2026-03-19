@@ -71,7 +71,7 @@ const ROUNDS = [
   // ─── RONDA 1 — Tornillo suelto ───
   {
     roundIntro: {
-      badge: 'Ronda 1 de 3',
+      badge: 'Ronda 1 de 6',
       title: 'Fijación mecánica',
       hint:  'La unidad vibra desde que arrancó. Gira el soporte y busca el tornillo que no está bien apretado al muro.',
     },
@@ -83,7 +83,7 @@ const ROUNDS = [
         type: 'screw',
         weight: 0.80,
         inspect: {
-          icon: '🔩',
+          icon: '',
           title: 'Tornillo suelto',
           desc: 'Este tornillo de fijación no está apretado al muro.',
           options: [
@@ -104,7 +104,7 @@ const ROUNDS = [
   // ─── RONDA 2 — Sin tacos de goma ───
   {
     roundIntro: {
-      badge: 'Ronda 2 de 3',
+      badge: 'Ronda 2 de 6',
       title: 'Aislamiento elástico',
       hint:  'El tornillo está apretado, pero la vibración sigue. Algo falta entre el soporte y la pared.',
     },
@@ -116,7 +116,7 @@ const ROUNDS = [
         type: 'pad',
         weight: 0.65,
         inspect: {
-          icon: '⬛',
+          icon: '',
           title: 'Sin tacos de goma',
           desc: 'No hay tacos de goma entre el soporte y la pared. La vibración se transmite directamente a la estructura.',
           options: [
@@ -137,7 +137,7 @@ const ROUNDS = [
   // ─── RONDA 3 — Tres fallos simultáneos ───
   {
     roundIntro: {
-      badge: 'Ronda 3 de 3',
+      badge: 'Ronda 3 de 6',
       title: 'Todo a la vez',
       hint:  'Esta vez hay tres fallos simultáneos: nivel, tornillos y un taco de goma. Resuélvelos todos para calmar a Doña Concha.',
     },
@@ -149,7 +149,7 @@ const ROUNDS = [
         type: 'level',
         weight: 0.30,
         inspect: {
-          icon: '⊡',
+          icon: '',
           title: 'Nivel incorrecto',
           desc: 'El soporte-escuadra no está perfectamente horizontal. La unidad carga más en un lado que en el otro.',
           options: [
@@ -170,7 +170,7 @@ const ROUNDS = [
         type: 'screw',
         weight: 0.35,
         inspect: {
-          icon: '🔩',
+          icon: '',
           title: 'Dos tornillos sueltos',
           desc: 'Dos tornillos de fijación están sin apretar. El soporte no está correctamente anclado.',
           options: [
@@ -191,7 +191,7 @@ const ROUNDS = [
         type: 'pad',
         weight: 0.25,
         inspect: {
-          icon: '⬛',
+          icon: '',
           title: 'Un taco de goma falta',
           desc: 'Uno de los tacos de goma antivibración no está instalado. La vibración sigue transmitiéndose por ese punto de apoyo.',
           options: [
@@ -203,6 +203,189 @@ const ROUNDS = [
             why:   'Inclinar el soporte para compensar un taco ausente crea un nuevo problema de nivelado y no elimina la transmisión de vibración por ese punto de apoyo.',
             rule:  'Todos los puntos de apoyo del soporte deben tener su taco de goma. Un solo punto sin taco transmite vibración directamente a la estructura del edificio.',
             todo:  'Instala el taco de goma que falta.',
+          },
+        },
+      },
+    ],
+  },
+
+  // ─── RONDA 4 — Secuencia de montaje incorrecta ───
+  {
+    roundIntro: {
+      badge: 'Ronda 4 de 6',
+      title: 'El orden del proceso',
+      hint:  'Los tornillos se apretaron antes de verificar el nivel. El soporte quedó bloqueado en una posición incorrecta.',
+    },
+    intensity: 0.85,
+    faults: [
+      {
+        id: 'level-pre-tightened',
+        elementIds: ['lvl'],
+        type: 'level',
+        weight: 0.45,
+        inspect: {
+          icon: '',
+          title: 'Nivel bloqueado por tornillos',
+          desc: 'El soporte se apretó antes de verificar el nivel. La burbuja no puede centrarse porque el soporte está forzado contra la pared.',
+          options: [
+            { text: 'Aflojar tornillos, nivelar el soporte y volver a apretar', correct: true },
+            { text: 'Añadir calzos bajo la esquina más baja para compensar', correct: false },
+          ],
+          error: {
+            what:  'Intentaste compensar la inclinación con calzos.',
+            why:   'Un calzo añadido al final es un "arreglo", no una solución. El soporte sigue sin estar correctamente nivelado desde el replanteo.',
+            rule:  'La secuencia correcta es: replantear → presentar → fijar a mitad → nivelar fino → apretar final. El nivel debe salir del replanteo, no de trucos posteriores.',
+            todo:  'Afloja los tornillos, ajusta el soporte hasta que la burbuja centre y luego aprieta uniformemente.',
+          },
+        },
+      },
+      {
+        id: 'screws-diagonal',
+        elementIds: ['s1', 's4'],
+        type: 'screw',
+        weight: 0.40,
+        inspect: {
+          icon: '',
+          title: 'Tornillos apretados en orden incorrecto',
+          desc: 'Los tornillos se apretaron en diagonal simultáneamente en lugar de seguir el orden cruzado. El soporte está torcido.',
+          options: [
+            { text: 'Aflojar y volver a apretar en orden cruzado (↖↘ → ↗↙)', correct: true },
+            { text: 'Añadir arandelas para distribuir la presión', correct: false },
+          ],
+          error: {
+            what:  'Intentaste añadir arandelas para compensar la torsión.',
+            why:   'Las arandelas distribuyen presión pero no corrigen la torsión del soporte causada por el orden incorrecto de apretado.',
+            rule:  'El apretado final siempre se hace en orden cruzado: primero un tornillo, luego el opuesto en diagonal, luego los otros dos. Así el soporte asienta uniformemente.',
+            todo:  'Afloja los cuatro tornillos y vuelve a apretar en orden cruzado.',
+          },
+        },
+      },
+    ],
+  },
+
+  // ─── RONDA 5 — Consecuencias de mala ubicación ───
+  {
+    roundIntro: {
+      badge: 'Ronda 5 de 6',
+      title: 'Consecuencias de la ubicación',
+      hint:  'La unidad se instaló demasiado cerca de la bajante. Para encajar el soporte, el técnico tuvo que comprometer la instalación. Busca los daños.',
+    },
+    intensity: 0.75,
+    faults: [
+      {
+        id: 'pad-corner-skipped',
+        elementIds: ['p2'],
+        type: 'pad',
+        weight: 0.38,
+        inspect: {
+          icon: '',
+          title: 'Taco de goma omitido — esquina interior',
+          desc: 'El técnico no instaló el taco de la esquina interior porque la bajante dejaba poco espacio. La vibración se transmite por ese punto directamente al muro.',
+          options: [
+            { text: 'Reubicar el soporte para ganar espacio e instalar el taco', correct: true },
+            { text: 'Dejar sin taco — esa esquina transmite poca vibración', correct: false },
+          ],
+          error: {
+            what:  'Decidiste dejar esa esquina sin taco porque "transmite poca vibración".',
+            why:   'Cada punto de apoyo sin taco es un puente rígido directo entre el soporte y la estructura. No hay puntos "de poca vibración" — todos cuentan.',
+            rule:  'Si la ubicación no permite instalar todos los tacos de goma correctamente, la ubicación está mal elegida. Reubica primero.',
+            todo:  'Selecciona una posición donde todos los tacos puedan instalarse correctamente.',
+          },
+        },
+      },
+      {
+        id: 'level-bad-location',
+        elementIds: ['lvl'],
+        type: 'level',
+        weight: 0.37,
+        inspect: {
+          icon: '',
+          title: 'Soporte inclinado por replanteo impreciso',
+          desc: 'Al montar en una ubicación ajustada, el replanteo no fue riguroso. El soporte quedó 2 mm inclinado hacia la pared.',
+          options: [
+            { text: 'Remarcar la posición correcta y volver a instalar', correct: true },
+            { text: 'Compensar apretando más los tornillos del lado alto', correct: false },
+          ],
+          error: {
+            what:  'Intentaste compensar la inclinación apretando más los tornillos del lado alto.',
+            why:   'Apretar más en un lado añade tensión asimétrica al soporte y al muro — no corrige el ángulo y puede agrietar la fijación con el tiempo.',
+            rule:  'Un replanteo impreciso no se corrige con tornillos. Se corrige marcando de nuevo con nivel y reposicionando el soporte antes del anclaje.',
+            todo:  'Vuelve al replanteo: marca los puntos con nivel, taladra en la posición correcta y reinstala.',
+          },
+        },
+      },
+    ],
+  },
+
+  // ─── RONDA 6 — Verificación final completa ───
+  {
+    roundIntro: {
+      badge: 'Ronda 6 de 6',
+      title: 'Verificación final',
+      hint:  'Revisión completa antes de arrancar el equipo. Tres puntos críticos están fallando. Encuéntralos todos — Doña Concha no perdona.',
+    },
+    intensity: 0.95,
+    faults: [
+      {
+        id: 'final-level',
+        elementIds: ['lvl'],
+        type: 'level',
+        weight: 0.30,
+        inspect: {
+          icon: '',
+          title: 'Nivel — verificación final',
+          desc: 'La verificación final detecta que el soporte no está perfectamente horizontal. El compresor cargará asimétricamente desde el primer arranque.',
+          options: [
+            { text: 'Nivelar el soporte antes de la puesta en marcha', correct: true },
+            { text: 'Arrancar y esperar a ver si la vibración es tolerable', correct: false },
+          ],
+          error: {
+            what:  'Decidiste arrancar el equipo y esperar a ver si vibra demasiado.',
+            why:   'Un soporte mal nivelado somete al compresor a cargas asimétricas desde el primer ciclo. El daño es progresivo y puede invalidar la garantía.',
+            rule:  'La verificación final incluye nivel + fijación antes del arranque, siempre. Un "medio bien" no vale.',
+            todo:  'Nivela el soporte ahora, antes de encender el equipo.',
+          },
+        },
+      },
+      {
+        id: 'final-screw',
+        elementIds: ['s3'],
+        type: 'screw',
+        weight: 0.30,
+        inspect: {
+          icon: '',
+          title: 'Tornillo sin apretar — verificación final',
+          desc: 'Un tornillo quedó sin el apretado final. En la verificación de firmeza se detecta movimiento en ese punto de anclaje.',
+          options: [
+            { text: 'Apretar el tornillo y verificar firmeza del conjunto', correct: true },
+            { text: 'El resto de tornillos compensan — es suficiente', correct: false },
+          ],
+          error: {
+            what:  'Decidiste que los demás tornillos compensan el que falta por apretar.',
+            why:   'Un soporte con cuatro puntos de anclaje pero solo tres efectivos no está bien fijado. El punto suelto concentrará vibración y fatiga el soporte.',
+            rule:  'La verificación de firmeza se hace empujando el soporte con fuerza en todas las direcciones. Si hay movimiento, hay problema.',
+            todo:  'Aprieta el tornillo y repite la verificación de firmeza.',
+          },
+        },
+      },
+      {
+        id: 'final-pads',
+        elementIds: ['p1', 'p4'],
+        type: 'pad',
+        weight: 0.35,
+        inspect: {
+          icon: '',
+          title: 'Dos tacos de goma ausentes',
+          desc: 'La verificación final detecta dos tacos de goma sin instalar en las esquinas opuestas. El aislamiento anti-vibración está incompleto.',
+          options: [
+            { text: 'Instalar los dos tacos antes de la puesta en marcha', correct: true },
+            { text: 'Con dos tacos es suficiente para reducir la vibración', correct: false },
+          ],
+          error: {
+            what:  'Decidiste que dos tacos de goma son suficientes.',
+            why:   'Los dos puntos sin taco son puentes rígidos directos entre soporte y muro. La vibración se transmite por ellos aunque los otros dos estén aislados.',
+            rule:  'El aislamiento anti-vibratorio es efectivo solo cuando todos los puntos de contacto tienen su elemento elástico. Uno solo que falte anula el sistema.',
+            todo:  'Instala los dos tacos que faltan y verifica que todos los puntos están aislados antes de arrancar.',
           },
         },
       },
@@ -246,7 +429,7 @@ function showFloatingText(text, extraClass = '') {
 }
 
 function fillDots() {
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= ROUNDS.length; i++) {
     document.getElementById(`dot-${i}`).classList.toggle('filled', i <= state.round);
   }
 }
@@ -368,12 +551,14 @@ function onOptionTap(e) {
 
   if (isCorrect) {
     btn.classList.add('flash-correct');
-    setTimeout(() => { hideAllOverlays(); applyFix(state.currentFault); }, 300);
+    showFloatingText('✓ ' + btn.textContent);
+    setTimeout(() => { hideAllOverlays(); applyFix(state.currentFault); }, 900);
   } else {
     btn.classList.add('flash-wrong');
+    showFloatingText('✗ ' + btn.textContent, ' toast-wrong');
     VIBRATION.start(Math.min(1.0, state.intensity + 0.3));
     setTimeout(() => VIBRATION.start(state.intensity), 1000);
-    setTimeout(() => { hideAllOverlays(); openError(state.currentFault.inspect.error); }, 300);
+    setTimeout(() => { hideAllOverlays(); openError(state.currentFault.inspect.error); }, 900);
   }
 }
 
@@ -601,7 +786,7 @@ function initThree() {
   }
 
   // LED indicator
-  const led = cyl(0.032, 0.032, 0.022, 10, lam(0x00FF88, { emissive: new THREE.Color(0x004422) }));
+  const led = cyl(0.032, 0.022, 10, lam(0x00FF88, { emissive: new THREE.Color(0x004422) }));
   add(led, 0.72, BH/2 - 0.38, fz + 0.022);
 
   // Pipe stubs
