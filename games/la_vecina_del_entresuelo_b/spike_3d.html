@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Spike 3D — La Vecina del Entresuelo B</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #0B214A;
+      font-family: 'Segoe UI', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    canvas { display: block; }
+
+    #status {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      color: #00E6BC; font-size: 14px; font-weight: 700;
+      text-align: center; pointer-events: none; z-index: 10;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.7); white-space: nowrap;
+    }
+    #hint {
+      position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%);
+      color: rgba(197,255,223,0.6); font-size: 13px;
+      text-align: center; pointer-events: none; z-index: 10; white-space: nowrap;
+    }
+    #inspect {
+      position: fixed; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.78); padding: 24px; z-index: 100;
+    }
+    #inspect.hidden { display: none; }
+    .panel {
+      background: #fff; border-radius: 10px; padding: 24px;
+      width: 100%; max-width: 340px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .panel h2 { font-size: 18px; font-weight: 800; color: #0B214A; margin-bottom: 10px; }
+    .panel p  { font-size: 14px; color: #555; line-height: 1.55; margin-bottom: 18px; }
+    .btn {
+      display: block; width: 100%; padding: 14px; border: none;
+      border-radius: 6px; font-size: 15px; font-weight: 700;
+      cursor: pointer; margin-bottom: 8px;
+    }
+    .btn:last-child { margin-bottom: 0; }
+    .btn-fix  { background: #00E6BC; color: #0B214A; }
+    .btn-back { background: #f0f0f0; color: #333; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="status">Gira la unidad para ver el soporte trasero</div>
+  <div id="hint">Arrastra para girar · Toca un elemento rojo</div>
+  <div id="inspect" class="hidden">
+    <div class="panel">
+      <h2 id="inspect-title"></h2>
+      <p  id="inspect-desc"></p>
+      <button class="btn btn-fix"  id="btn-fix">Arreglar</button>
+      <button class="btn btn-back" id="btn-back">Volver</button>
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module">
+  import * as THREE from 'three';
+  import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+  (function () {
+
+    // ────────────────────────────────────────────────────────
+    //  RENDERER + SCENE + CAMERA
+    // ────────────────────────────────────────────────────────
+    const canvas   = document.getElementById('canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+
+    const scene  = new THREE.Scene();
+    scene.background = new THREE.Color(0x0B214A);
+    scene.fog        = new THREE.Fog(0x0B214A, 18, 30);
+
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0.5, 6.2);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ── Lights ──
+    // Hemisphere: warm sky top, cool ground bottom
+    scene.add(new THREE.HemisphereLight(0xFFF4E0, 0x1A3060, 0.65));
+
+    const sun = new THREE.DirectionalLight(0xFFFDF0, 1.2);
+    sun.position.set(5, 8, 6);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.near = 1; sun.shadow.camera.far = 30;
+    scene.add(sun);
+
+    const fill = new THREE.DirectionalLight(0xAAD0FF, 0.45);
+    fill.position.set(-5, -2, -4);
+    scene.add(fill);
+
+    const rim = new THREE.DirectionalLight(0x00E6BC, 0.25);
+    rim.position.set(0, -5, -6);
+    scene.add(rim);
+
+    // ── Shadow plane ──
+    const shadowPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(10, 10),
+      new THREE.ShadowMaterial({ opacity: 0.25 })
+    );
+    shadowPlane.rotation.x = -Math.PI / 2;
+    shadowPlane.position.y = -1.3;
+    shadowPlane.receiveShadow = true;
+    scene.add(shadowPlane);
+
+    // ────────────────────────────────────────────────────────
+    //  CANVAS TEXTURES
+    // ────────────────────────────────────────────────────────
+
+    // Condenser fin texture (for sides)
+    function makeFinTexture() {
+      const c = document.createElement('canvas');
+      c.width = 64; c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#DCDCDA';
+      ctx.fillRect(0, 0, 64, 512);
+      for (let i = 0; i < 38; i++) {
+        ctx.fillStyle = i % 2 === 0 ? '#C4C4C2' : '#E8E8E6';
+        ctx.fillRect(0, i * 13.5, 64, 7);
+      }
+      const t = new THREE.CanvasTexture(c);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(1, 1);
+      return t;
+    }
+
+    // Top vent texture
+    function makeTopVentTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512; c.height = 64;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#E0E0DE';
+      ctx.fillRect(0, 0, 512, 64);
+      for (let i = 0; i < 28; i++) {
+        ctx.fillStyle = '#C8C8C6';
+        ctx.fillRect(i * 18, 8, 10, 48);
+      }
+      return new THREE.CanvasTexture(c);
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  MATERIALS
+    // ────────────────────────────────────────────────────────
+    const finTex     = makeFinTexture();
+    const topVentTex = makeTopVentTexture();
+
+    function lambert(color, opts = {}) {
+      return new THREE.MeshLambertMaterial({ color, ...opts });
+    }
+
+    const M = {
+      body:        lambert(0xF2F1ED),                              // cream white
+      bodyShade:   lambert(0xE0DFD9),                              // slightly darker for contrast
+      bodyDark:    lambert(0xC8C7C2),                              // bottom/under
+      finSide:     lambert(0xE0E0DE, { map: finTex }),             // condenser fins
+      topVent:     lambert(0xE4E4E2, { map: topVentTex }),         // top ventilation
+      accent:      lambert(0x00E6BC),                              // turquesa brand strip
+      accentDark:  lambert(0x009E82),                              // darker turquesa
+      grilleDark:  lambert(0x303030),                              // fan housing
+      grilleMid:   lambert(0x2E2E2E),                              // fan ring
+      blade:       lambert(0x3A3A3A),                              // fan blades
+      panel:       lambert(0xD0CFCB),                              // small panel areas
+      bracket:     lambert(0x8E8E8E),                              // back bracket plate
+      bracketRail: lambert(0xA0A0A0),                              // rail highlights
+      pipe:        lambert(0xB0AFA9),                              // connection pipes
+      fault:       () => new THREE.MeshLambertMaterial({ color: 0xE74C3C, emissive: new THREE.Color(0x2A0000) }),
+      fixed:       () => new THREE.MeshLambertMaterial({ color: 0x00E6BC, emissive: new THREE.Color(0x003B2A) }),
+    };
+
+    // ────────────────────────────────────────────────────────
+    //  HELPERS
+    // ────────────────────────────────────────────────────────
+    const unitGroup = new THREE.Group();
+    scene.add(unitGroup);
+    unitGroup.rotation.y = 0.35;
+
+    function box(w, h, d, mat) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      m.castShadow = true; m.receiveShadow = true;
+      return m;
+    }
+    function cyl(rTop, rBot, h, segs, mat) {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, h, segs), mat);
+      m.castShadow = true;
+      return m;
+    }
+    function add(mesh, x, y, z) {
+      mesh.position.set(x, y, z);
+      unitGroup.add(mesh);
+      return mesh;
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  UNIT GEOMETRY
+    //  Dimensions: W=2.7  H=2.0  D=1.35
+    //  Face order for BoxGeometry materials: +x -x +y -y +z(front) -z(back)
+    // ────────────────────────────────────────────────────────
+    const BW = 2.7, BH = 2.0, BD = 1.35;
+    const fz = BD / 2, bz = -BD / 2;
+
+    // ── Main body — rounded corners ──
+    const RADIUS = 0.13, SEGS = 4;
+    const bodyMesh = new THREE.Mesh(new RoundedBoxGeometry(BW, BH, BD, SEGS, RADIUS), M.body);
+    bodyMesh.castShadow = true; bodyMesh.receiveShadow = true;
+    unitGroup.add(bodyMesh);
+
+    // Side fin overlays (flat planes on sides, inside the rounded zone)
+    for (const side of [-1, 1]) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(BD * 0.82, BH * 0.82), M.finSide);
+      m.rotation.y = side * Math.PI / 2;
+      m.position.set(side * (BW / 2 + 0.001), 0, 0);
+      unitGroup.add(m);
+    }
+
+    // Top vent overlay
+    const topVentMesh = new THREE.Mesh(new THREE.PlaneGeometry(BW * 0.84, BD * 0.80), M.topVent);
+    topVentMesh.rotation.x = -Math.PI / 2;
+    topVentMesh.position.set(0, BH / 2 + 0.001, 0);
+    unitGroup.add(topVentMesh);
+
+    // ── Top overhang lip ──
+    add(box(BW + 0.06, 0.08, BD + 0.06, M.bodyShade), 0, BH/2 + 0.04, 0);
+
+    // ── Bottom base plinth ──
+    add(box(BW + 0.04, 0.12, BD + 0.04, M.bodyDark), 0, -BH/2 - 0.06, 0);
+
+    // ── Turquesa brand strip (top of front face) ──
+    add(box(BW, 0.18, 0.03, M.accent), 0, BH/2 - 0.09, fz + 0.015);
+
+    // ── Small accent ridge below brand strip ──
+    add(box(BW, 0.04, 0.025, M.accentDark), 0, BH/2 - 0.20, fz + 0.012);
+
+    // ── FAN GRILLE (dominates left ~55% of front face) ──
+    const fanCX = -0.30, fanCY = -0.05;
+    const fanR  = 0.72;
+
+    // Recess cylinder (dark housing)
+    const fanHousing = cyl(fanR, fanR, 0.10, 48, M.grilleDark);
+    fanHousing.rotation.x = Math.PI / 2;
+    add(fanHousing, fanCX, fanCY, fz + 0.04);
+
+    // Fan blades (5 swept blades using rotated boxes, slightly angled)
+    const bladeGroup = new THREE.Group();
+    for (let i = 0; i < 5; i++) {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.56, 0.025), M.blade);
+      b.rotation.z = (i / 5) * Math.PI * 2;
+      b.position.set(Math.sin((i / 5) * Math.PI * 2) * 0.18, Math.cos((i / 5) * Math.PI * 2) * 0.18, 0);
+      bladeGroup.add(b);
+    }
+    bladeGroup.position.set(fanCX, fanCY, fz + 0.05);
+    unitGroup.add(bladeGroup);
+
+    // Hub cap
+    const hub = cyl(0.08, 0.10, 0.04, 16, M.grilleMid);
+    hub.rotation.x = Math.PI / 2;
+    add(hub, fanCX, fanCY, fz + 0.07);
+
+    // Grille guard: outer ring
+    const outerRing = new THREE.Mesh(
+      new THREE.RingGeometry(fanR - 0.07, fanR + 0.015, 48),
+      new THREE.MeshLambertMaterial({ color: 0x282828, side: THREE.DoubleSide })
+    );
+    add(outerRing, fanCX, fanCY, fz + 0.09);
+
+    // Grille guard: concentric rings (wire guard style)
+    for (let r = 0.22; r < fanR - 0.10; r += 0.175) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(r, r + 0.028, 40),
+        new THREE.MeshLambertMaterial({ color: 0x333333, side: THREE.DoubleSide })
+      );
+      add(ring, fanCX, fanCY, fz + 0.09);
+    }
+
+    // Grille guard: radial spokes
+    for (let i = 0; i < 8; i++) {
+      const spoke = box(0.022, (fanR - 0.08) * 2, 0.015, M.grilleMid);
+      spoke.rotation.z = (i / 8) * Math.PI;
+      add(spoke, fanCX, fanCY, fz + 0.09);
+    }
+
+    // ── RIGHT SIDE: LED indicator only ──
+    const led = cyl(0.032, 0.032, 0.022, 10, lambert(0x00FF88, { emissive: new THREE.Color(0x004422) }));
+    led.rotation.x = Math.PI / 2;
+    add(led, 0.72, BH/2 - 0.38, fz + 0.022);
+
+    // ── BOTTOM: pipe connection panel ──
+    add(box(0.90, 0.28, 0.04, M.panel), 0.5, -BH/2 + 0.14, fz + 0.018);
+
+    // Copper-ish pipe stubs
+    for (const [px, pr] of [[-0.05, 0.065], [0.28, 0.048]]) {
+      const stub = cyl(pr, pr * 0.9, 0.22, 12, lambert(0xC49A50));
+      add(stub, px + 0.42, -BH/2 - 0.11, 0.1);
+    }
+    // Pipe insulation wrap (foam around large pipe)
+    const insul = cyl(0.095, 0.095, 0.20, 12, lambert(0x222222));
+    add(insul, 0.42 - 0.05, -BH/2 - 0.11, 0.1);
+
+    // ── BACK FACE: wall bracket plate ──
+    add(box(BW - 0.25, BH - 0.30, 0.08, M.bracket), 0, 0.05, bz - 0.04);
+
+    // Horizontal mounting rails
+    for (const ry of [0.52, -0.42]) {
+      add(box(BW - 0.35, 0.12, 0.06, M.bracketRail), 0, ry, bz - 0.08);
+    }
+
+    // Diagonal support ribs (gives the bracket a real structural feel)
+    for (const rx of [-0.5, 0.5]) {
+      const rib = box(0.06, BH * 0.60, 0.05, M.bracket);
+      add(rib, rx, 0.05, bz - 0.085);
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  FAULT ELEMENTS (on back face)
+    // ────────────────────────────────────────────────────────
+    const faults = [];
+
+    function makeFault(mesh, data) {
+      mesh.material   = M.fault();
+      mesh.castShadow = true;
+      unitGroup.add(mesh);
+      faults.push({ mesh, fixed: false, ...data });
+    }
+
+    // 4 Screws — hex bolt style
+    const screwPos = [[-0.85, 0.58], [0.85, 0.58], [-0.85, -0.52], [0.85, -0.52]];
+    screwPos.forEach(([sx, sy], i) => {
+      const head = cyl(0.09, 0.09, 0.07, 6, null); // hex head
+      head.position.set(sx, sy, bz - 0.09);
+      makeFault(head, {
+        type: 'screw', label: `Tornillo ${i + 1}`,
+        desc: 'Tornillo con el paso de rosca deteriorado. Causa micromovimientos cíclicos que amplifican la vibración del compresor y pueden aflojar los demás elementos.'
+      });
+    });
+
+    // 4 Rubber pads — rectangular bumpers
+    const padPos = [[-0.62, 0.52], [0.62, 0.52], [-0.62, -0.46], [0.62, -0.46]];
+    padPos.forEach(([px, py], i) => {
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.08), null);
+      pad.position.set(px, py, bz - 0.09);
+      makeFault(pad, {
+        type: 'pad', label: `Taco antivibratorio ${i + 1}`,
+        desc: 'Taco de goma ausente o endurecido por fatiga. Sin amortiguación elástica, la vibración del compresor se transmite directamente a la escuadra y a la fachada.'
+      });
+    });
+
+    // Level indicator — pill shape
+    const lvlMesh = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.06, 0.80, 6, 14),
+      null
+    );
+    lvlMesh.rotation.z = Math.PI / 2;
+    lvlMesh.position.set(0, -0.70, bz - 0.09);
+    makeFault(lvlMesh, {
+      type: 'level', label: 'Nivel de burbuja',
+      desc: 'La unidad no está nivelada. Una inclinación superior a 3° impide el retorno correcto del aceite al compresor y genera vibración resonante en el soporte.'
+    });
+
+    // ────────────────────────────────────────────────────────
+    //  DRAG-TO-ROTATE
+    // ────────────────────────────────────────────────────────
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
+    let rotY = unitGroup.rotation.y, rotX = 0;
+    let velY = 0, velX = 0;
+    let pointerDownX = 0, pointerDownY = 0;
+
+    canvas.addEventListener('pointerdown', e => {
+      isDragging = true;
+      dragStartX = pointerDownX = e.clientX;
+      dragStartY = pointerDownY = e.clientY;
+      velY = velX = 0;
+    });
+
+    canvas.addEventListener('pointermove', e => {
+      if (!isDragging) return;
+      velY = (e.clientX - dragStartX) * 0.013;
+      velX = (e.clientY - dragStartY) * 0.010;
+      rotY += velY;
+      rotX  = Math.max(-0.58, Math.min(0.58, rotX + velX));
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+    });
+
+    canvas.addEventListener('pointerup', e => {
+      isDragging = false;
+      const dx = e.clientX - pointerDownX, dy = e.clientY - pointerDownY;
+      if (Math.sqrt(dx*dx + dy*dy) < 9) handleTap(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('pointercancel', () => { isDragging = false; });
+
+    // ────────────────────────────────────────────────────────
+    //  RAYCAST TAP
+    // ────────────────────────────────────────────────────────
+    const raycaster = new THREE.Raycaster();
+    const ptr       = new THREE.Vector2();
+
+    function handleTap(cx, cy) {
+      ptr.set((cx / window.innerWidth) * 2 - 1, -(cy / window.innerHeight) * 2 + 1);
+      raycaster.setFromCamera(ptr, camera);
+      const hits = raycaster.intersectObjects(faults.map(f => f.mesh));
+      if (hits.length) {
+        const f = faults.find(f => f.mesh === hits[0].object);
+        if (f && !f.fixed) openInspect(f);
+      }
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  INSPECT PANEL
+    // ────────────────────────────────────────────────────────
+    let activeFault = null;
+
+    function openInspect(f) {
+      activeFault = f;
+      document.getElementById('inspect-title').textContent = f.label;
+      document.getElementById('inspect-desc').textContent  = f.desc;
+      document.getElementById('inspect').classList.remove('hidden');
+    }
+
+    document.getElementById('btn-fix').addEventListener('click', () => {
+      if (!activeFault) return;
+      activeFault.fixed         = true;
+      activeFault.mesh.material = M.fixed();
+      document.getElementById('inspect').classList.add('hidden');
+      activeFault = null;
+      updateStatus();
+    });
+
+    document.getElementById('btn-back').addEventListener('click', () => {
+      document.getElementById('inspect').classList.add('hidden');
+      activeFault = null;
+    });
+
+    function updateStatus() {
+      const rem = faults.filter(f => !f.fixed).length;
+      const el  = document.getElementById('status');
+      const hint = document.getElementById('hint');
+      if (rem === 0) {
+        el.textContent  = '✓ ¡Todo arreglado! Doña Concha puede dormir.';
+        el.style.color  = '#04FFB4';
+        hint.textContent = '';
+        vibIntensity = 0;
+      } else {
+        el.textContent = `${rem} fallo${rem !== 1 ? 's' : ''} por corregir — busca los elementos rojos`;
+      }
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  RENDER LOOP
+    // ────────────────────────────────────────────────────────
+    let vibIntensity = 0.8;
+    let t = 0;
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      t += dt;
+
+      // Inertia
+      if (!isDragging) {
+        velY *= 0.91; velX *= 0.91;
+        rotY += velY;
+        rotX  = Math.max(-0.58, Math.min(0.58, rotX + velX));
+      }
+      unitGroup.rotation.y = rotY;
+      unitGroup.rotation.x = rotX;
+
+      // Vibration
+      if (vibIntensity > 0.01) {
+        const s = vibIntensity * 0.048;
+        unitGroup.position.x = Math.sin(t * 44) * s;
+        unitGroup.position.y = Math.cos(t * 39) * s * 0.55;
+      } else {
+        unitGroup.position.x *= 0.88;
+        unitGroup.position.y *= 0.88;
+      }
+
+      // Slow blade spin
+      bladeGroup.rotation.z -= dt * (1.5 + vibIntensity * 3.0);
+
+      // Fault element pulse
+      faults.forEach(f => {
+        if (!f.fixed) {
+          const p = 0.5 + 0.5 * Math.sin(t * 3.8);
+          f.mesh.material.emissive.setRGB(p * 0.38, 0, 0);
+        }
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+    updateStatus();
+
+  })();
+  </script>
+
+</body>
+</html>
