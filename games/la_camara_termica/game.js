@@ -22,7 +22,7 @@ function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ─── CONSTANTES ─────────────────────────────────
 
-const TOTAL_SECTIONS = 6;
+const TOTAL_SECTIONS = 10;
 const PASS_THRESHOLD = 75;
 const RECORD_KEY = 'la_camara_termica_record';
 const PIPE_WIDTH = 20;
@@ -69,12 +69,16 @@ const MESSAGES = {
     'Un mal aislamiento se nota enseguida: condensación, goteo, trabajo de principiante. Lo que has practicado aquí evita exactamente eso.',
   ],
   transition: [
-    '', // section 0 has no transition msg (it's the first)
+    '',
     'Vamos con la siguiente. Aquí hay un codo a 90° — el radio tiene que salir suave.',
     'Bajante de techo. Vertical a horizontal. Dos juntas — no me dejes ninguna abierta.',
     'Esta va alrededor de una ventana. Dos codos seguidos. Ritmo constante, chaval.',
     'Marco de puerta. Tres juntas, dos cambios de dirección. Aquí se nota quién tiene oficio.',
-    'Última sección. La ruta completa interior-exterior. Tres codos. Esto es lo que cuenta.',
+    'Ruta interior-exterior. Tres codos. Cada curva cuenta.',
+    'Subida a techo. Vertical hacia arriba y luego horizontal. Contra la gravedad, mismo estándar.',
+    'Esquivar estructura. La tubería cambia de dirección dos veces. Mantén el ritmo.',
+    'Bajante doble. Ruta larga con tres codos apretados. Esto es nivel profesional.',
+    'Última sección. Instalación completa. Cuatro codos, tolerancia mínima. Todo lo que has aprendido.',
   ],
   defects: {
     uncovered:  'Eso rojo de ahí es tubería al aire — sin aislar. Da igual lo bien que hagas el resto si dejas un trozo pelado.',
@@ -380,6 +384,121 @@ function buildSections(W, H) {
       ideal, cumDist: cum, markers, tolerance: 15,
       scenario: 'Ruta interior-exterior',
       bendIndices: markerIndices(cum, [0.22, 0.48, 0.72]),
+    });
+  }
+
+  // ── Section 7: L-shape inverted (vertical up + 90° right) ──
+  {
+    const x0 = pad + 40, y0 = H * 0.7;
+    const y1 = y0 - 140;
+    const cx1 = x0 + bendR, cy1 = y1;
+    const x2 = cx1 + 150;
+
+    const segs = [
+      { type: 'line', from: {x: x0, y: y0}, to: {x: x0, y: y1} },
+      { type: 'arc', cx: cx1, cy: cy1, r: bendR, startA: PI, endA: -HALF_PI },
+      { type: 'line', from: {x: cx1, y: cy1 - bendR}, to: {x: x2, y: cy1 - bendR} },
+    ];
+    const ideal = sampleSegments(segs, 2);
+    const cum = cumulativeDist(ideal);
+    const markers = markerIndices(cum, [0.5]);
+    sectionData.push({
+      segments: segs, drawPath: segmentsToDrawPath(segs),
+      ideal, cumDist: cum, markers, tolerance: 22,
+      scenario: 'Subida a techo',
+      bendIndices: [markerIndices(cum, [0.45])[0]],
+    });
+  }
+
+  // ── Section 8: Z-shape (horizontal + 90° down + 90° left) ──
+  {
+    const x0 = pad + 10, y0 = H * 0.2;
+    const x1 = x0 + 120;
+    const cx1 = x1, cy1 = y0 + bendR;
+    const y2 = cy1 + 80;
+    const cx2 = x1 - bendR;
+    const x3 = cx2 - 100;
+
+    const segs = [
+      { type: 'line', from: {x: x0, y: y0}, to: {x: x1, y: y0} },
+      { type: 'arc', cx: cx1, cy: cy1, r: bendR, startA: -HALF_PI, endA: 0 },
+      { type: 'line', from: {x: x1 + bendR, y: cy1}, to: {x: x1 + bendR, y: y2} },
+      { type: 'arc', cx: cx1, cy: y2, r: bendR, startA: 0, endA: HALF_PI },
+      { type: 'line', from: {x: cx1, y: y2 + bendR}, to: {x: x3, y: y2 + bendR} },
+    ];
+    const ideal = sampleSegments(segs, 2);
+    const cum = cumulativeDist(ideal);
+    const markers = markerIndices(cum, [0.25, 0.5, 0.75]);
+    sectionData.push({
+      segments: segs, drawPath: segmentsToDrawPath(segs),
+      ideal, cumDist: cum, markers, tolerance: 18,
+      scenario: 'Esquivar estructura',
+      bendIndices: markerIndices(cum, [0.28, 0.65]),
+    });
+  }
+
+  // ── Section 9: Long U-shape with tight bends ──
+  {
+    const x0 = pad + 10, y0 = H * 0.15;
+    const x1 = x0 + 100;
+    const cx1 = x1, cy1 = y0 + bendR;
+    const y2 = cy1 + 130;
+    const cx2 = x1 + bendR, cy2 = y2;
+    const x3 = cx2 + 60;
+    const y4 = y2 + bendR - 130;
+
+    const segs = [
+      { type: 'line', from: {x: x0, y: y0}, to: {x: x1, y: y0} },
+      { type: 'arc', cx: cx1, cy: cy1, r: bendR, startA: -HALF_PI, endA: 0 },
+      { type: 'line', from: {x: x1 + bendR, y: cy1}, to: {x: x1 + bendR, y: y2} },
+      { type: 'arc', cx: cx2, cy: cy2, r: bendR, startA: PI, endA: HALF_PI, ccw: true },
+      { type: 'line', from: {x: cx2, y: cy2 + bendR}, to: {x: x3, y: cy2 + bendR} },
+      { type: 'arc', cx: x3, cy: cy2, r: bendR, startA: HALF_PI, endA: 0, ccw: true },
+      { type: 'line', from: {x: x3 + bendR, y: cy2}, to: {x: x3 + bendR, y: y4} },
+    ];
+    const ideal = sampleSegments(segs, 2);
+    const cum = cumulativeDist(ideal);
+    const markers = markerIndices(cum, [0.2, 0.4, 0.6, 0.8]);
+    sectionData.push({
+      segments: segs, drawPath: segmentsToDrawPath(segs),
+      ideal, cumDist: cum, markers, tolerance: 15,
+      scenario: 'Bajante doble',
+      bendIndices: markerIndices(cum, [0.22, 0.50, 0.72]),
+    });
+  }
+
+  // ── Section 10: Full installation — 4 bends, tight tolerances ──
+  {
+    const x0 = pad + 10, y0 = H * 0.15;
+    const y1 = y0 + 80;
+    const cx1 = x0 + bendR, cy1 = y1;
+    const x2 = cx1 + 100;
+    const cx2 = x2, cy2 = y1 + bendR + bendR;
+    const y3 = cy2 + 60;
+    const cx3 = x2 - bendR;
+    const x4 = cx3 - 80;
+    const cy4 = y3 + bendR;
+    const y5 = cy4 + 80;
+
+    const segs = [
+      { type: 'line', from: {x: x0, y: y0}, to: {x: x0, y: y1} },
+      { type: 'arc', cx: cx1, cy: cy1, r: bendR, startA: PI, endA: HALF_PI, ccw: true },
+      { type: 'line', from: {x: cx1, y: cy1 + bendR}, to: {x: x2, y: cy1 + bendR} },
+      { type: 'arc', cx: cx2, cy: cy2, r: bendR, startA: -HALF_PI, endA: 0 },
+      { type: 'line', from: {x: x2 + bendR, y: cy2}, to: {x: x2 + bendR, y: y3} },
+      { type: 'arc', cx: cx2, cy: y3, r: bendR, startA: 0, endA: HALF_PI },
+      { type: 'line', from: {x: cx2, y: y3 + bendR}, to: {x: x4, y: y3 + bendR} },
+      { type: 'arc', cx: x4, cy: cy4, r: bendR, startA: -HALF_PI, endA: PI, ccw: true },
+      { type: 'line', from: {x: x4 - bendR, y: cy4}, to: {x: x4 - bendR, y: y5} },
+    ];
+    const ideal = sampleSegments(segs, 2);
+    const cum = cumulativeDist(ideal);
+    const markers = markerIndices(cum, [0.2, 0.4, 0.6, 0.8]);
+    sectionData.push({
+      segments: segs, drawPath: segmentsToDrawPath(segs),
+      ideal, cumDist: cum, markers, tolerance: 12,
+      scenario: 'Instalación completa',
+      bendIndices: markerIndices(cum, [0.18, 0.38, 0.58, 0.78]),
     });
   }
 
@@ -1493,7 +1612,7 @@ function showTutorial() {
 function showResults() {
   S.totalScore = S.scores.reduce((a, b) => a + b, 0);
   const avg = S.totalScore / TOTAL_SECTIONS;
-  const isHigh = S.totalScore >= 540;
+  const isHigh = S.totalScore >= 900; // 90% avg across 10 sections
 
   // Avatar & message
   const state = isHigh ? 'celebrating' : 'happy';
