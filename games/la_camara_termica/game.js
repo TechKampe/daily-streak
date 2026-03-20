@@ -129,7 +129,10 @@ function buildSections(W, H) {
   // Helper: sample points along an arc
   function sampleArc(cx, cy, r, startA, endA, step) {
     const pts = [];
-    const totalAngle = endA - startA;
+    let totalAngle = endA - startA;
+    // Normalize to [-PI, PI] to always take the shortest path (max 180°)
+    while (totalAngle > Math.PI) totalAngle -= 2 * Math.PI;
+    while (totalAngle < -Math.PI) totalAngle += 2 * Math.PI;
     const arcLen = Math.abs(totalAngle) * r;
     const n = Math.max(4, Math.round(arcLen / step));
     for (let i = 0; i <= n; i++) {
@@ -155,7 +158,11 @@ function buildSections(W, H) {
             ctx.moveTo(sp.x, sp.y);
             first = false;
           }
-          ctx.arc(seg.cx, seg.cy, seg.r, seg.startA, seg.endA, seg.ccw || false);
+          // Compute ccw dynamically to match sampleArc's normalized angle
+          let _da = seg.endA - seg.startA;
+          while (_da > Math.PI) _da -= 2 * Math.PI;
+          while (_da < -Math.PI) _da += 2 * Math.PI;
+          ctx.arc(seg.cx, seg.cy, seg.r, seg.startA, seg.endA, _da < 0);
         }
       }
     };
@@ -388,16 +395,17 @@ function buildSections(W, H) {
   }
 
   // ── Section 7: L-shape inverted (vertical up + 90° right) ──
+  // Verified: up→right uses center (x+r, y), startA=PI, endA=PI+PI/2
+  // At PI: (x,y). At 3PI/2: (x+r, y-r). Normalized totalAngle = +PI/2.
   {
-    const x0 = pad + 40, y0 = H * 0.7;
-    const y1 = y0 - 140;
-    const cx1 = x0 + bendR, cy1 = y1;
-    const x2 = cx1 + 150;
+    const x0 = pad + 60, yBot = H * 0.65, yTop = H * 0.3;
+    const cx1 = x0 + bendR, cy1 = yTop;
+    const xEnd = cx1 + 150;
 
     const segs = [
-      { type: 'line', from: {x: x0, y: y0}, to: {x: x0, y: y1} },
-      { type: 'arc', cx: cx1, cy: cy1, r: bendR, startA: PI, endA: -HALF_PI },
-      { type: 'line', from: {x: cx1, y: cy1 - bendR}, to: {x: x2, y: cy1 - bendR} },
+      { type: 'line', from: {x: x0, y: yBot}, to: {x: x0, y: yTop} },
+      { type: 'arc', cx: cx1, cy: cy1, r: bendR, startA: PI, endA: PI + HALF_PI },
+      { type: 'line', from: {x: cx1, y: cy1 - bendR}, to: {x: xEnd, y: cy1 - bendR} },
     ];
     const ideal = sampleSegments(segs, 2);
     const cum = cumulativeDist(ideal);
@@ -410,21 +418,24 @@ function buildSections(W, H) {
     });
   }
 
-  // ── Section 8: Z-shape (horizontal + 90° down + 90° left) ──
+  // ── Section 8: S-shape (right → down → right) — 2 bends ──
+  // Bend 1: right→down. Center (x1, y0+r). startA=-PI/2, endA=0.
+  // Bend 2: down→right. Center (x1+2r, y2). startA=PI, endA=PI/2.
+  // Normalized: bend2 totalAngle = PI/2-PI = -PI/2 → stays -PI/2 (CCW). ✓
   {
     const x0 = pad + 10, y0 = H * 0.2;
     const x1 = x0 + 120;
-    const cx1 = x1, cy1 = y0 + bendR;
+    const cy1 = y0 + bendR;
     const y2 = cy1 + 80;
-    const cx2 = x1 - bendR;
-    const x3 = cx2 - 100;
+    const cx2 = x1 + bendR + bendR; // center for down→right bend
+    const xEnd = cx2 + 100;
 
     const segs = [
       { type: 'line', from: {x: x0, y: y0}, to: {x: x1, y: y0} },
-      { type: 'arc', cx: cx1, cy: cy1, r: bendR, startA: -HALF_PI, endA: 0 },
+      { type: 'arc', cx: x1, cy: cy1, r: bendR, startA: -HALF_PI, endA: 0 },
       { type: 'line', from: {x: x1 + bendR, y: cy1}, to: {x: x1 + bendR, y: y2} },
-      { type: 'arc', cx: cx1, cy: y2, r: bendR, startA: 0, endA: HALF_PI },
-      { type: 'line', from: {x: cx1, y: y2 + bendR}, to: {x: x3, y: y2 + bendR} },
+      { type: 'arc', cx: cx2, cy: y2, r: bendR, startA: PI, endA: HALF_PI },
+      { type: 'line', from: {x: cx2, y: y2 + bendR}, to: {x: xEnd, y: y2 + bendR} },
     ];
     const ideal = sampleSegments(segs, 2);
     const cum = cumulativeDist(ideal);
@@ -437,59 +448,69 @@ function buildSections(W, H) {
     });
   }
 
-  // ── Section 9: Long U-shape with tight bends ──
+  // ── Section 9: Zigzag 3 bends (right→down→right→down) ──
+  // All bends use proven patterns: R→D and D→R.
   {
-    const x0 = pad + 10, y0 = H * 0.15;
-    const x1 = x0 + 100;
-    const cx1 = x1, cy1 = y0 + bendR;
-    const y2 = cy1 + 130;
-    const cx2 = x1 + bendR, cy2 = y2;
-    const x3 = cx2 + 60;
-    const y4 = y2 + bendR - 130;
+    const x0 = pad + 10, y0 = H * 0.12;
+    const x1 = x0 + 90;
+    // Bend 1: right→down
+    const cy1 = y0 + bendR;
+    const y2 = cy1 + 60;
+    // Bend 2: down→right. Center at (x1+2r, y2).
+    const cx2 = x1 + bendR + bendR;
+    const x3 = cx2 + 80;
+    // Bend 3: right→down
+    const cy3 = y2 + bendR + bendR;
+    const yEnd = cy3 + 80;
 
     const segs = [
       { type: 'line', from: {x: x0, y: y0}, to: {x: x1, y: y0} },
-      { type: 'arc', cx: cx1, cy: cy1, r: bendR, startA: -HALF_PI, endA: 0 },
+      { type: 'arc', cx: x1, cy: cy1, r: bendR, startA: -HALF_PI, endA: 0 },
       { type: 'line', from: {x: x1 + bendR, y: cy1}, to: {x: x1 + bendR, y: y2} },
-      { type: 'arc', cx: cx2, cy: cy2, r: bendR, startA: PI, endA: HALF_PI, ccw: true },
-      { type: 'line', from: {x: cx2, y: cy2 + bendR}, to: {x: x3, y: cy2 + bendR} },
-      { type: 'arc', cx: x3, cy: cy2, r: bendR, startA: HALF_PI, endA: 0, ccw: true },
-      { type: 'line', from: {x: x3 + bendR, y: cy2}, to: {x: x3 + bendR, y: y4} },
+      { type: 'arc', cx: cx2, cy: y2, r: bendR, startA: PI, endA: HALF_PI },
+      { type: 'line', from: {x: cx2, y: y2 + bendR}, to: {x: x3, y: y2 + bendR} },
+      { type: 'arc', cx: x3, cy: cy3, r: bendR, startA: -HALF_PI, endA: 0 },
+      { type: 'line', from: {x: x3 + bendR, y: cy3}, to: {x: x3 + bendR, y: yEnd} },
     ];
     const ideal = sampleSegments(segs, 2);
     const cum = cumulativeDist(ideal);
-    const markers = markerIndices(cum, [0.2, 0.4, 0.6, 0.8]);
+    const markers = markerIndices(cum, [0.2, 0.5, 0.8]);
     sectionData.push({
       segments: segs, drawPath: segmentsToDrawPath(segs),
       ideal, cumDist: cum, markers, tolerance: 15,
       scenario: 'Bajante doble',
-      bendIndices: markerIndices(cum, [0.22, 0.50, 0.72]),
+      bendIndices: markerIndices(cum, [0.22, 0.50, 0.78]),
     });
   }
 
   // ── Section 10: Full installation — 4 bends, tight tolerances ──
+  // Zigzag: R→D→R→D→R (4 bends alternating right→down and down→right)
   {
-    const x0 = pad + 10, y0 = H * 0.15;
-    const y1 = y0 + 80;
-    const cx1 = x0 + bendR, cy1 = y1;
-    const x2 = cx1 + 100;
-    const cx2 = x2, cy2 = y1 + bendR + bendR;
-    const y3 = cy2 + 60;
-    const cx3 = x2 - bendR;
-    const x4 = cx3 - 80;
-    const cy4 = y3 + bendR;
-    const y5 = cy4 + 80;
+    const x0 = pad + 10, y0 = H * 0.08;
+    const x1 = x0 + 80;
+    // Bend 1: right→down
+    const cy1 = y0 + bendR;
+    const y2 = cy1 + 50;
+    // Bend 2: down→right
+    const cx2 = x1 + bendR + bendR;
+    const x3 = cx2 + 70;
+    // Bend 3: right→down
+    const cy3 = y2 + bendR + bendR;
+    const y4 = cy3 + 50;
+    // Bend 4: down→right
+    const cx4 = x3 + bendR + bendR;
+    const xEnd = cx4 + 60;
 
     const segs = [
-      { type: 'line', from: {x: x0, y: y0}, to: {x: x0, y: y1} },
-      { type: 'arc', cx: cx1, cy: cy1, r: bendR, startA: PI, endA: HALF_PI, ccw: true },
-      { type: 'line', from: {x: cx1, y: cy1 + bendR}, to: {x: x2, y: cy1 + bendR} },
-      { type: 'arc', cx: cx2, cy: cy2, r: bendR, startA: -HALF_PI, endA: 0 },
-      { type: 'line', from: {x: x2 + bendR, y: cy2}, to: {x: x2 + bendR, y: y3} },
-      { type: 'arc', cx: cx2, cy: y3, r: bendR, startA: 0, endA: HALF_PI },
-      { type: 'line', from: {x: cx2, y: y3 + bendR}, to: {x: x4, y: y3 + bendR} },
-      { type: 'arc', cx: x4, cy: cy4, r: bendR, startA: -HALF_PI, endA: PI, ccw: true },
-      { type: 'line', from: {x: x4 - bendR, y: cy4}, to: {x: x4 - bendR, y: y5} },
+      { type: 'line', from: {x: x0, y: y0}, to: {x: x1, y: y0} },
+      { type: 'arc', cx: x1, cy: cy1, r: bendR, startA: -HALF_PI, endA: 0 },
+      { type: 'line', from: {x: x1 + bendR, y: cy1}, to: {x: x1 + bendR, y: y2} },
+      { type: 'arc', cx: cx2, cy: y2, r: bendR, startA: PI, endA: HALF_PI },
+      { type: 'line', from: {x: cx2, y: y2 + bendR}, to: {x: x3, y: y2 + bendR} },
+      { type: 'arc', cx: x3, cy: cy3, r: bendR, startA: -HALF_PI, endA: 0 },
+      { type: 'line', from: {x: x3 + bendR, y: cy3}, to: {x: x3 + bendR, y: y4} },
+      { type: 'arc', cx: cx4, cy: y4, r: bendR, startA: PI, endA: HALF_PI },
+      { type: 'line', from: {x: cx4, y: y4 + bendR}, to: {x: xEnd, y: y4 + bendR} },
     ];
     const ideal = sampleSegments(segs, 2);
     const cum = cumulativeDist(ideal);
@@ -498,7 +519,7 @@ function buildSections(W, H) {
       segments: segs, drawPath: segmentsToDrawPath(segs),
       ideal, cumDist: cum, markers, tolerance: 12,
       scenario: 'Instalación completa',
-      bendIndices: markerIndices(cum, [0.18, 0.38, 0.58, 0.78]),
+      bendIndices: markerIndices(cum, [0.18, 0.38, 0.62, 0.82]),
     });
   }
 
@@ -715,7 +736,11 @@ function drawPipe() {
               ctx.moveTo(sp.x, sp.y);
               first = false;
             }
-            ctx.arc(seg.cx, seg.cy, seg.r, seg.startA, seg.endA, seg.ccw || false);
+            // Compute ccw dynamically to match sampleArc's normalized angle
+          let _da = seg.endA - seg.startA;
+          while (_da > Math.PI) _da -= 2 * Math.PI;
+          while (_da < -Math.PI) _da += 2 * Math.PI;
+          ctx.arc(seg.cx, seg.cy, seg.r, seg.startA, seg.endA, _da < 0);
           }
         }
       };
