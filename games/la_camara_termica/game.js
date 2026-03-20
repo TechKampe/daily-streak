@@ -1500,17 +1500,15 @@ function showResults() {
   dom.resultsAvatar.src = AVATARS[state];
   dom.resultsMessage.textContent = isHigh ? MESSAGES.resultHigh : MESSAGES.resultMedium;
 
-  // Score cards with section header
-  dom.resultsCards.innerHTML = '<h3 class="results-section-title">Resultados por sección</h3>';
+  // Score cards — 2-column grid
+  dom.resultsCards.innerHTML = '<h3 class="results-section-title">Resultados por sección</h3><div class="results-grid"></div>';
+  const grid = dom.resultsCards.querySelector('.results-grid');
   S.scores.forEach((score, i) => {
     const card = document.createElement('div');
     card.className = 'result-card';
-    card.style.animationDelay = (i * 0.2) + 's';
-    card.innerHTML = `
-      <span class="label">Sección ${i + 1}</span>
-      <span class="score" style="color: ${score >= 90 ? '#04FFB4' : '#00E6BC'}">${score}%</span>
-    `;
-    dom.resultsCards.appendChild(card);
+    card.style.animationDelay = (i * 0.1) + 's';
+    card.innerHTML = `<span class="label">S${i + 1}</span><span class="score" style="color: ${score >= 90 ? '#04FFB4' : '#00E6BC'}">${score}%</span>`;
+    grid.appendChild(card);
   });
 
   // Total counter animation
