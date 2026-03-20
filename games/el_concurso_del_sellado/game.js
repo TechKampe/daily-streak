@@ -8,11 +8,11 @@
 // ── Cloudinary base ──
 const CDN = 'https://res.cloudinary.com/kampe/image/upload/';
 
-// ── Assets Irina (existentes en s1d4) ──
+// ── Assets Santi (fontanero experto, Madrid) ──
 const IRINA = {
-  happy:       CDN + 'v1772110317/irina_happy_w2nu0c.png',
-  celebrating: CDN + 'v1772110324/irina_celebrating_nifggk.png',
-  worried:     CDN + 'v1772110324/irina_worried_bx2nzg.png',
+  happy:       CDN + 'v1774007456/Santi_Happy_zddena.png',
+  celebrating: CDN + 'v1774007456/Santi_celebrating_rlkj6g.png',
+  worried:     CDN + 'v1774007457/Santi_worried_u4bzlk.png',
 };
 
 // ── Assets roscas ──
@@ -228,9 +228,8 @@ function init() {
   $('tut-next-3').addEventListener('click', tutDone);
 
   // Inspección (3 opciones)
-  $('btn-esta-bien').addEventListener('click',    () => onInspeccion('bien'));
-  $('btn-falta-teflon').addEventListener('click', () => onInspeccion('falta'));
-  $('btn-hay-defecto').addEventListener('click',  () => onInspeccion('defecto'));
+  $('btn-esta-bien').addEventListener('click',  () => onInspeccion('bien'));
+  $('btn-hay-defecto').addEventListener('click', () => onInspeccion('defecto'));
 
   // Wrap
   $('btn-confirmar').addEventListener('click', onConfirmar);
@@ -566,7 +565,7 @@ function onInspeccion(respuesta) {
   const caso = CASOS[S.casoIdx];
   const esCorrecta = respuesta === caso.respuestaCorrecta;
 
-  const btnMap = { bien: $('btn-esta-bien'), falta: $('btn-falta-teflon'), defecto: $('btn-hay-defecto') };
+  const btnMap = { bien: $('btn-esta-bien'), defecto: $('btn-hay-defecto') };
   const btn = btnMap[respuesta];
 
   clearHint();
@@ -1009,13 +1008,13 @@ function mostrarResultados() {
 
   // Tier
   let irina = 'happy';
-  let msg = 'Concurso superado. Algún detalle por pulir — vuelve a las que fallaste.';
+  let msg = 'Bien, pero hay margen. En obra no hay detalle pequeño — vuelve a las que fallaste.';
   if (S.score >= 900) {
     irina = 'celebrating';
-    msg = esNuevoRecord ? 'Nuevo récord. Cada vez más fino.' : 'Sellado pro. Las seis. Eso es método, no suerte.';
+    msg = esNuevoRecord ? '¡Nuevo récord! Eso es lo que enseño en mis vídeos — método y criterio.' : 'Las seis perfectas. Eso no se improvisa, se aprende. Nivel pro.';
   } else if (S.score < 700) {
     irina = 'worried';
-    msg = 'Necesitas más práctica con el teflón. El ojo y la mano van juntos.';
+    msg = 'El teflón tiene truco. Llevo 20 años en esto y sigo viendo estos errores en obra. Practica.';
   }
 
   setIrina('results', irina);
