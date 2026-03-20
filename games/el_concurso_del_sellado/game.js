@@ -740,7 +740,10 @@ function procesarGesto(clientX, clientY) {
     // Horario — correcto
     S.vueltasRaw += delta / 360;
     S.vueltasActuales = Math.round(S.vueltasRaw * 2) / 2; // franjas de 0.5
-    S.antihorarioAlertado = false;
+    if (S.antihorarioAlertado) {
+      S.antihorarioAlertado = false;
+      ocultarBubble();
+    }
   } else if (delta < 0) {
     // Antihorario — deshace
     S.vueltasRaw = Math.max(0, S.vueltasRaw + delta / 360);
