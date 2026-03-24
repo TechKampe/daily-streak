@@ -5,10 +5,10 @@
 /* ===== ASSETS ===== */
 var CLD = 'https://res.cloudinary.com/kampe/image/upload/';
 var A = {
-  base:        CLD + 'v1771938594/salva_base_x8eghx.png',
-  happy:       CLD + 'v1771938597/salva_happy_ccjemp.png',
-  celebrating: CLD + 'v1771938594/salva_celebrating_xki0p5.png',
-  worried:     CLD + 'v1771938598/salva_worried_glnc2b.png'
+  base:        CLD + 'v1774379417/Gil-qui_Happy_h0j3hl.png',
+  happy:       CLD + 'v1774379417/Gil-qui_Happy_h0j3hl.png',
+  celebrating: CLD + 'v1774379418/Gil-qui_celebrating_tujwk9.png',
+  worried:     CLD + 'v1774379418/Gil-qui_worried_e9xv7v.png'
 };
 
 /* ===== HELPERS ===== */
@@ -672,11 +672,20 @@ function flash(color) {
   setTimeout(function() { el.className = 'flash-overlay'; }, 400);
 }
 
+var _celebTimer = null;
 function showCharMsg(text, avatar) {
-  $('char-av').src = avatar || A.happy;
+  var av = avatar || A.happy;
+  $('char-av').src = av;
   var bub = $('char-bubble');
   bub.textContent = text;
   bub.classList.add('show');
+  if (_celebTimer) { clearTimeout(_celebTimer); _celebTimer = null; }
+  if (av === A.celebrating) {
+    _celebTimer = setTimeout(function() {
+      $('char-av').src = A.happy;
+      _celebTimer = null;
+    }, 2000);
+  }
 }
 
 function hideCharMsg() {
