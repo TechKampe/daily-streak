@@ -1,5 +1,5 @@
 /* ============================================================
-   DRENAJE WARS — game.js
+   SUPER DRENAJE — game.js
    S5D4-AM: Drenaje de condensados (split doméstico)
    ============================================================ */
 
@@ -14,7 +14,7 @@ const SANTI = {
 };
 
 const TASK_COMPLETED_THRESHOLD = 400;
-const RECORD_KEY = 'drenaje_wars_record';
+const RECORD_KEY = 'super_drenaje_record';
 const MAX_WRONG_TAPS = 2;
 const HIT_RADIUS = 40; // px — tolerancia de acierto
 
