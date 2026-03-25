@@ -927,17 +927,18 @@ function onQuizAnswer(btn, isCorrect, inst) {
 
   setTimeout(() => {
     $('quiz-overlay').classList.remove('visible');
-    showEduOverlay(inst);
+    showEduOverlay(inst, isCorrect);
   }, 1200);
 }
 
 // ─── OVERLAY EDUCATIVO ───────────────────────────────────────
 
-function showEduOverlay(inst) {
+function showEduOverlay(inst, isCorrect) {
   $('edu-que-paso').textContent = inst.edu.quePaso;
   $('edu-por-que').textContent = inst.edu.porQue;
   $('edu-senal').textContent = inst.edu.senal;
   $('edu-obra').textContent = inst.edu.obra;
+  $('edu-avatar').src = isCorrect ? SANTI.happy : SANTI.worried;
   $('edu-overlay').classList.add('visible');
 }
 
