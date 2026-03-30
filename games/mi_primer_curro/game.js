@@ -557,10 +557,10 @@ const LOCATIONS = {
             offersOffer: false,
           },
           {
-            text: 'Salir del grupo',
+            text: 'Mandar un meme de electricistas',
             correct: false,
             kampePitch: false,
-            npcResponse: null,
+            npcResponse: 'Alguien responde con 😂😂😂. Otro con 👍. Nadie menciona trabajo.',
             chatMsg: { user: 'InstaladorJefe', text: 'en Valencia tira más de portales y ETTs que de WhatsApp' },
             offersOffer: false,
           },
