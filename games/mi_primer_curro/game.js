@@ -74,6 +74,7 @@ function resetState(zone) {
       state: 'available',
       mainDone: false,
       secondaryDone: {},
+      _choicesMade: 0,
       offerFound: false,
       offerHandled: false,
     };
@@ -1005,9 +1006,36 @@ function showChoices(choices, loc) {
 function onChoiceTap(choice, loc) {
   vibrate('light');
   var locState = S.locations[loc.id];
-  locState.mainDone = true;
 
-  document.getElementById('choice-buttons').classList.add('hidden');
+  // Disable tapped button, keep others visible
+  var container = document.getElementById('choice-buttons');
+  var buttons = container.querySelectorAll('.choice-btn');
+  var tappedBtn = null;
+  buttons.forEach(function(btn) {
+    if (btn.textContent === choice.text) {
+      tappedBtn = btn;
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+      btn.style.pointerEvents = 'none';
+    }
+  });
+
+  // If this choice finds an offer, mark main done and hide remaining choices
+  // (the offer card will take over)
+  if (choice.offersOffer && loc.offer) {
+    locState.mainDone = true;
+    container.classList.add('hidden');
+  }
+
+  // Track that at least one choice was made
+  if (!locState._choicesMade) locState._choicesMade = 0;
+  locState._choicesMade++;
+
+  // If all choices used, mark main done
+  var totalChoices = loc.main.choices.length;
+  if (locState._choicesMade >= totalChoices) {
+    locState.mainDone = true;
+  }
 
   var playerBubble = document.getElementById('player-bubble');
   typewriter(playerBubble, choice.text, 25, function() {
@@ -1071,8 +1099,10 @@ function afterMainResponse(choice, loc) {
         document.getElementById('loc-avatar').src = char.happy;
       }, 1500);
     }
-    locState.state = 'completed';
-    showBackButton();
+    // Only mark completed if all choices exhausted
+    if (locState.mainDone) {
+      locState.state = 'completed';
+    }
   }
 }
 
