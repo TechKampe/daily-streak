@@ -934,11 +934,11 @@ function enterLocation(loc) {
   clearDialogue();
   showScreen('location');
   buildSecondaryNPCs(loc);
+  // Always show back button — player can leave anytime
+  showBackButton();
 
   if (!locState.mainDone) {
     startMainDialogue(loc);
-  } else {
-    showBackButton();
   }
 }
 
@@ -957,7 +957,6 @@ function clearDialogue() {
   playerBubble.textContent = '';
   choiceButtons.classList.add('hidden');
   choiceButtons.innerHTML = '';
-  document.getElementById('btn-back').classList.add('hidden');
 }
 
 function typewriter(element, text, speed, callback) {
