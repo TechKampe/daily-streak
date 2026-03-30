@@ -91,22 +91,41 @@ function updateStats() {
 
 function initZone(zone) {
   resetState(zone);
-  const char = CHARACTERS[zone];
+  var char = CHARACTERS[zone];
+
+  // Show loading screen with Roblox-style connection messages
+  var loadingText = document.getElementById('loading-text');
+  loadingText.textContent = 'Conectando al servidor...';
+  showScreen('loading');
+
+  var zoneName = zone === 'urban' ? 'Valencia Centro' : 'Villahornos de Arriba';
+  setTimeout(function() {
+    loadingText.textContent = 'Cargando ' + zoneName + '...';
+  }, 800);
+  setTimeout(function() {
+    loadingText.textContent = 'Preparando escenario...';
+  }, 1600);
+
+  // Preload assets during loading
   document.getElementById('street-avatar').src = char.happy;
   document.getElementById('loc-avatar').src = char.happy;
   document.getElementById('street-bg').src = STREET_BG[zone];
   updateStats();
   buildMarkers();
-  showScreen('street');
-  startAmbientChat();
-  setTimeout(() => {
-    addChatMessage(char.introMsg, char.name, false);
-  }, 800);
-  setTimeout(() => {
-    const zoneAmb = ZONE_AMBIENT[zone];
-    const msg = zoneAmb[Math.floor(Math.random() * zoneAmb.length)];
-    addChatMessage(msg.text, msg.user);
-  }, 2500);
+
+  // Transition to street after loading
+  setTimeout(function() {
+    showScreen('street');
+    startAmbientChat();
+    setTimeout(function() {
+      addChatMessage(char.introMsg, char.name, false);
+    }, 800);
+    setTimeout(function() {
+      var zoneAmb = ZONE_AMBIENT[zone];
+      var msg = zoneAmb[Math.floor(Math.random() * zoneAmb.length)];
+      addChatMessage(msg.text, msg.user);
+    }, 2500);
+  }, 2200);
 }
 
 function buildMarkers() {
@@ -1085,12 +1104,14 @@ function afterMainResponse(choice, loc) {
 
     if (!S.firstOfferFound) {
       S.firstOfferFound = true;
-      setTimeout(function() {
-        addChatMessage('Mira, hay algo. Vamos a ver si me encaja.', char.name, false);
-      }, 1200);
     }
 
-    setTimeout(function() { showOfferCard(loc.offer); }, 1500);
+    // Beat before showing offer — let the NPC response sink in
+    setTimeout(function() {
+      addChatMessage('Mira, hay algo. Vamos a ver si me encaja.', char.name, false);
+    }, 1500);
+
+    setTimeout(function() { showOfferCard(loc.offer); }, 3000);
   } else {
     if (!choice.correct) {
       document.getElementById('loc-avatar').src = char.worried;
