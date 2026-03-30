@@ -267,8 +267,8 @@ const LOCATIONS = {
     {
       id: 'ett',
       label: 'ETT',
-      pos: { top: 25, left: 20 },
-      scale: 0.7,
+      pos: { top: 58, left: 12 },
+      scale: 0.85,
       bg: 'assets/bg_ett_urban.jpg',
       isDeadEnd: false,
       main: {
@@ -333,7 +333,7 @@ const LOCATIONS = {
     {
       id: 'taller',
       label: 'Taller',
-      pos: { top: 25, left: 65 },
+      pos: { top: 32, left: 28 },
       scale: 0.7,
       bg: 'assets/bg_taller_urban.jpg',
       isDeadEnd: false,
@@ -400,8 +400,8 @@ const LOCATIONS = {
     {
       id: 'bar',
       label: 'Bar',
-      pos: { top: 45, left: 45 },
-      scale: 0.8,
+      pos: { top: 38, left: 72 },
+      scale: 0.75,
       bg: 'assets/bg_bar_urban.jpg',
       isDeadEnd: false,
       main: {
@@ -471,7 +471,7 @@ const LOCATIONS = {
     {
       id: 'portal',
       label: 'Portal',
-      pos: { top: 65, left: 20 },
+      pos: { top: 68, left: 70 },
       scale: 0.9,
       bg: null,
       isDeadEnd: false,
@@ -531,8 +531,8 @@ const LOCATIONS = {
     {
       id: 'whatsapp',
       label: 'WhatsApp',
-      pos: { top: 65, left: 65 },
-      scale: 0.9,
+      pos: { top: 78, left: 25 },
+      scale: 0.95,
       bg: null,
       isDeadEnd: true,
       isPhoneUI: true,
@@ -574,8 +574,8 @@ const LOCATIONS = {
     {
       id: 'portal',
       label: 'Portal',
-      pos: { top: 25, left: 20 },
-      scale: 0.7,
+      pos: { top: 75, left: 18 },
+      scale: 0.9,
       bg: null,
       isDeadEnd: true,
       isPhoneUI: true,
@@ -621,8 +621,8 @@ const LOCATIONS = {
     {
       id: 'ett',
       label: 'ETT',
-      pos: { top: 25, left: 65 },
-      scale: 0.7,
+      pos: { top: 48, left: 72 },
+      scale: 0.8,
       bg: 'assets/bg_ett_rural.jpg',
       isDeadEnd: false,
       main: {
@@ -683,8 +683,8 @@ const LOCATIONS = {
     {
       id: 'taller',
       label: 'Taller',
-      pos: { top: 45, left: 45 },
-      scale: 0.8,
+      pos: { top: 55, left: 20 },
+      scale: 0.85,
       bg: 'assets/bg_taller_rural.jpg',
       isDeadEnd: false,
       main: {
@@ -746,8 +746,8 @@ const LOCATIONS = {
     {
       id: 'bar',
       label: 'Bar',
-      pos: { top: 65, left: 20 },
-      scale: 0.9,
+      pos: { top: 40, left: 10 },
+      scale: 0.75,
       bg: 'assets/bg_bar_rural.jpg',
       isDeadEnd: false,
       main: {
@@ -816,8 +816,8 @@ const LOCATIONS = {
     {
       id: 'telefono',
       label: 'Teléfono',
-      pos: { top: 65, left: 65 },
-      scale: 0.9,
+      pos: { top: 78, left: 70 },
+      scale: 0.95,
       bg: null,
       isDeadEnd: false,
       isPhoneUI: true,
