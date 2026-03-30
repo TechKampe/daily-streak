@@ -303,7 +303,7 @@ const LOCATIONS = {
       secondary: [
         {
           id: 'painter',
-          tappableArea: { top: 60, left: 10, width: 25, height: 30 },
+          tappableArea: { top: 55, left: 55, width: 35, height: 30 },
           exchanges: [
             {
               npcBubble: '¿Tú también vienes a lo de RandStaff?',
@@ -369,7 +369,7 @@ const LOCATIONS = {
       secondary: [
         {
           id: 'apprentice',
-          tappableArea: { top: 50, left: 65, width: 25, height: 35 },
+          tappableArea: { top: 35, left: 60, width: 30, height: 35 },
           exchanges: [
             {
               npcBubble: 'Ey, ¿vienes a preguntar por curro?',
@@ -428,7 +428,7 @@ const LOCATIONS = {
       secondary: [
         {
           id: 'barista',
-          tappableArea: { top: 20, left: 10, width: 30, height: 30 },
+          tappableArea: { top: 20, left: 5, width: 30, height: 30 },
           exchanges: [
             {
               npcBubble: '¿Qué te pongo?',
@@ -442,7 +442,7 @@ const LOCATIONS = {
         },
         {
           id: 'cat',
-          tappableArea: { top: 55, left: 60, width: 20, height: 20 },
+          tappableArea: { top: 72, left: 55, width: 28, height: 20 },
           exchanges: [
             {
               npcBubble: null,
@@ -500,7 +500,7 @@ const LOCATIONS = {
       secondary: [
         {
           id: 'bench_lady',
-          tappableArea: { top: 60, left: 55, width: 30, height: 30 },
+          tappableArea: { top: 65, left: 50, width: 35, height: 25 },
           exchanges: [
             {
               npcBubble: '¿Buscando trabajo en el móvil? Mi hijo hace lo mismo todo el día.',
@@ -603,7 +603,7 @@ const LOCATIONS = {
       secondary: [
         {
           id: 'dog',
-          tappableArea: { top: 70, left: 15, width: 20, height: 20 },
+          tappableArea: { top: 75, left: 10, width: 25, height: 18 },
           exchanges: [
             {
               npcBubble: null,
@@ -657,7 +657,7 @@ const LOCATIONS = {
       secondary: [
         {
           id: 'nerea_mom',
-          tappableArea: { top: 55, left: 5, width: 25, height: 35 },
+          tappableArea: { top: 70, left: 5, width: 30, height: 25 },
           exchanges: [
             {
               npcBubble: 'Anda, ¿tú eres la chica nueva del BootKämp? Mi hija Nerea también lo está haciendo. No para de hablar de cables y no sé qué de secciones. A mí me suena a chino, pero ella está encantada.',
@@ -719,7 +719,7 @@ const LOCATIONS = {
       secondary: [
         {
           id: 'neighbor',
-          tappableArea: { top: 10, left: 60, width: 30, height: 25 },
+          tappableArea: { top: 8, left: 55, width: 35, height: 25 },
           exchanges: [
             {
               npcBubble: '¿Buscas a Paco? Está dentro, siempre está dentro. Lleva trabajando solo desde que se jubiló el otro. Fijo que necesita ayuda, aunque no lo diga.',
@@ -774,7 +774,7 @@ const LOCATIONS = {
       secondary: [
         {
           id: 'barman',
-          tappableArea: { top: 15, left: 10, width: 30, height: 30 },
+          tappableArea: { top: 30, left: 5, width: 30, height: 30 },
           exchanges: [
             {
               npcBubble: '¿Qué va a ser? ¿Una caña? Aquí todo el mundo acaba hablando de trabajo. El otro día vino un chaval, Darwin, que también está haciendo vuestro curso ese del BootKämp. Preguntó por fontanería, le dije que aquí lo que hay es de electricista. Se quedó desayunando igualmente, buen chaval.',
@@ -785,7 +785,7 @@ const LOCATIONS = {
         },
         {
           id: 'old_man',
-          tappableArea: { top: 50, left: 65, width: 25, height: 30 },
+          tappableArea: { top: 40, left: 62, width: 30, height: 35 },
           exchanges: [
             {
               npcBubble: '¿Tú eres nueva por aquí?',
