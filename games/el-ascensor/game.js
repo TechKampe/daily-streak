@@ -54,13 +54,13 @@ const S = {
 // --- Content Pool ---
 const FLOORS = {
   5: {
-    context: 'En una entrevista te van a pedir ejemplos. Hay una forma de contarlos que funciona. Ordénala.',
+    context: 'El método STAR sirve para contar ejemplos en una entrevista. Arrastra cada definición a su letra.',
     timer: 35,
     slots: [
-      { id: 's1', label: 'S' },
-      { id: 's2', label: 'T' },
-      { id: 's3', label: 'A' },
-      { id: 's4', label: 'R' }
+      { id: 's1', label: 'S — Situación' },
+      { id: 's2', label: 'T — Tarea' },
+      { id: 's3', label: 'A — Acción' },
+      { id: 's4', label: 'R — Resultado' }
     ],
     cards: [
       { id: 'c1', text: 'Dónde estaba y qué hacía', slot: 's1' },
@@ -209,16 +209,16 @@ const FLOORS = {
       { id: 's2', label: 'Buena pregunta para el entrevistador' },
       { id: 's3', label: 'Buena pregunta para el entrevistador' },
       { id: 's4', label: '¿Quién entrevista en una pyme?' },
-      { id: 's5', label: '¿Qué NO preguntar?' }
+      { id: 's5', label: '¿Qué NO hacer en una entrevista?' }
     ],
     cards: [
       { id: 'c1', text: 'Me gusta trabajar con las manos y ver el resultado', slot: 's1' },
       { id: 'c2', text: '¿Cómo es el primer mes para un ayudante?', slot: 's2' },
       { id: 'c3', text: '¿Con qué tipo de instalaciones trabajáis más?', slot: 's3' },
       { id: 'c4', text: 'El dueño de la empresa o el encargado de obra', slot: 's4' },
-      { id: 'c5', text: 'El sueldo', slot: 's5' },
+      { id: 'c5', text: 'Decir "no sé" y callarte', slot: 's5' },
       { id: 'c6', text: 'Porque no encontré otra cosa', slot: null },
-      { id: 'c7', text: '¿Puedo salir antes los viernes?', slot: null }
+      { id: 'c7', text: 'Mi madre dice que soy muy trabajador', slot: null }
     ],
     feedback: {
       'c1_s2': { l1: 'Eso responde a "¿por qué este oficio?"', l2: 'Cuando preguntan por qué este oficio, quieren motivación real.', l3: '¿Por qué este oficio? → motivación real, no historia épica' },
@@ -235,12 +235,12 @@ const FLOORS = {
       'c4_s2': { l1: 'Eso responde a quién te entrevista, no es una pregunta', l2: 'El dueño o encargado es quién te entrevista en una pyme.', l3: '¿Quién entrevista en pyme? = dueño o encargado' },
       'c4_s3': { l1: 'Eso responde a quién te entrevista, no es una pregunta', l2: 'El dueño o encargado es quién te entrevista en una pyme.', l3: '¿Quién entrevista en pyme? = dueño o encargado' },
       'c4_s5': { l1: 'Eso responde a quién te entrevista', l2: 'No es algo que NO debas preguntar — es un dato sobre quién entrevista.', l3: '¿Quién entrevista en pyme? = dueño o encargado' },
-      'c5_s1': { l1: 'El sueldo es lo que NO debes preguntar', l2: 'Nunca preguntar por el sueldo en la primera entrevista.', l3: 'NO preguntar sueldo en primera entrevista' },
-      'c5_s2': { l1: 'El sueldo NO es una buena pregunta', l2: 'Preguntar por el sueldo da imagen de que solo te importa el dinero.', l3: 'NO preguntar sueldo en primera entrevista' },
-      'c5_s3': { l1: 'El sueldo NO es una buena pregunta', l2: 'Preguntar por el sueldo da imagen de que solo te importa el dinero.', l3: 'NO preguntar sueldo en primera entrevista' },
-      'c5_s4': { l1: 'El sueldo no es quién te entrevista', l2: 'Es lo que NO debes preguntar en una primera entrevista.', l3: '¿Qué NO preguntar? = el sueldo' },
+      'c5_s1': { l1: 'Eso es lo que NO debes hacer', l2: 'Decir "no sé" y callarte cierra la conversación. Siempre añade algo: "no sé, pero lo que haría es..."', l3: '¿Qué NO hacer? = decir "no sé" y parar' },
+      'c5_s2': { l1: 'Eso no es una buena pregunta — es lo que NO debes hacer', l2: 'Decir "no sé" sin más demuestra falta de interés. Siempre intenta aportar algo.', l3: '¿Qué NO hacer? = quedarte en blanco' },
+      'c5_s3': { l1: 'Eso no es una buena pregunta — es lo que NO debes hacer', l2: 'Decir "no sé" sin más demuestra falta de interés.', l3: '¿Qué NO hacer? = quedarte en blanco' },
+      'c5_s4': { l1: 'Eso no es quién te entrevista — es lo que NO debes hacer', l2: 'Decir "no sé" y callarte es lo peor en una entrevista. Siempre añade algo.', l3: '¿Qué NO hacer? = decir "no sé" y parar' },
       'c6_any': { l1: 'Eso destruye una entrevista', l2: 'Si dices que estás ahí porque no encontraste otra cosa, el entrevistador entiende que te irás en cuanto puedas.', l3: '¿Por qué este oficio? → razón honesta y concreta. NUNCA "porque no había otra cosa".' },
-      'c7_any': { l1: 'Eso no se pregunta en una entrevista', l2: 'Preguntar por horarios reducidos en la primera entrevista da la imagen de que buscas trabajar lo mínimo.', l3: 'Buenas preguntas: sobre el trabajo. Malas preguntas: sobre beneficios personales.' }
+      'c7_any': { l1: 'Lo que diga tu madre no cuenta en una entrevista', l2: 'El entrevistador quiere hechos y evidencias, no opiniones de terceros. Demuestra lo que vales con tu portfolio y tu actitud.', l3: 'En una entrevista: hechos propios y evidencias. Nunca referencias familiares.' }
     }
   }
 };
@@ -355,6 +355,8 @@ function loadFloor(floor) {
   // Render cards (shuffled)
   const cardsArea = $('cards-area');
   cardsArea.innerHTML = '';
+  // Floors with many cards: single column on the left to not cover Paco
+  cardsArea.classList.toggle('single-column', floor <= 3 && floor >= 1);
   const shuffled = [...data.cards].sort(() => Math.random() - 0.5);
   shuffled.forEach((c, i) => {
     const div = document.createElement('div');
@@ -388,7 +390,7 @@ function startTutorial() {
 
 function highlightFirstCard() {
   const cards = $('cards-area').querySelectorAll('.card:not(.placed)');
-  cards.forEach(c => c.style.opacity = S.tutorialStep <= 2 ? '0.5' : '1');
+  cards.forEach(c => c.style.opacity = '1');
   const data = FLOORS[S.currentFloor];
   const firstCorrect = data.cards.find(c => c.slot);
   if (firstCorrect) {
