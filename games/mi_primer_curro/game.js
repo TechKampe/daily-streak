@@ -104,6 +104,11 @@ function initZone(zone) {
   setTimeout(function() {
     loadingText.textContent = 'Preparando escenario...';
   }, 1600);
+  setTimeout(function() {
+    loadingText.textContent = zone === 'urban'
+      ? 'Explora la calle, habla con la gente y encuentra ofertas de trabajo'
+      : 'Recorre el pueblo, llama a puertas y descubre dónde está el curro';
+  }, 2400);
 
   // Preload assets during loading
   document.getElementById('street-avatar').src = char.happy;
@@ -112,7 +117,7 @@ function initZone(zone) {
   updateStats();
   buildMarkers();
 
-  // Transition to street after loading
+  // Transition to street after loading (enough time to read the purpose message)
   setTimeout(function() {
     showScreen('street');
     startAmbientChat();
@@ -124,7 +129,7 @@ function initZone(zone) {
       var msg = zoneAmb[Math.floor(Math.random() * zoneAmb.length)];
       addChatMessage(msg.text, msg.user);
     }, 2500);
-  }, 2200);
+  }, 4000);
 }
 
 function buildMarkers() {
