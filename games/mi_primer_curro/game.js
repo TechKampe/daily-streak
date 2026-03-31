@@ -1284,27 +1284,61 @@ function onApply() {
   var locState = S.locations[S.currentLocation.id];
   locState.offerHandled = true;
   locState.state = 'completed';
-
-  if (offer.matchPct >= 60) {
-    S.score += 50;
-    earnBadge('regla_60');
-  } else {
-    S.score += 25;
-  }
+  var char = CHARACTERS[S.zone];
+  var metCount = offer.requirements.filter(function(r) { return r.met; }).length;
+  var totalCount = offer.requirements.length;
 
   S.candidaturesSent++;
   updateStats();
 
-  if (!S.firstCandidatureSent) {
-    S.firstCandidatureSent = true;
-    earnBadge('primera_candidatura');
-    var char = CHARACTERS[S.zone];
-    addChatMessage('Enviada. La primera. Ya no vale eso de que no he buscado.', char.name, false);
+  if (offer.matchPct >= 60) {
+    // Good decision — educate why
+    S.score += 50;
+    earnBadge('regla_60');
+    vibrate('success');
+    document.getElementById('loc-avatar').src = char.celebrating;
+
+    // NPC bubble with educational feedback
+    var npcBubble = document.getElementById('npc-bubble');
+    npcBubble.classList.remove('hidden');
+    npcBubble.textContent = '';
+    typewriter(npcBubble, 'Cumples ' + metCount + ' de ' + totalCount + ' requisitos (' + offer.matchPct + '%). Buena decisión enviar.', 30);
+
+    // Chat reinforcement
+    setTimeout(function() {
+      addChatMessage('cumple el 60% y ha enviado, así se hace', 'InstaladorJefe');
+    }, 1500);
+
+    if (!S.firstCandidatureSent) {
+      S.firstCandidatureSent = true;
+      earnBadge('primera_candidatura');
+      setTimeout(function() {
+        addChatMessage('Enviada. La primera. Ya no vale eso de que no he buscado.', char.name, false);
+      }, 2500);
+    }
+
+  } else {
+    // Sent but didn't meet 60% — still counts but educate
+    S.score += 25;
+    vibrate('light');
+    document.getElementById('loc-avatar').src = char.happy;
+
+    var npcBubble = document.getElementById('npc-bubble');
+    npcBubble.classList.remove('hidden');
+    npcBubble.textContent = '';
+    typewriter(npcBubble, 'Solo cumples ' + metCount + ' de ' + totalCount + ' requisitos (' + offer.matchPct + '%). Has enviado, pero las opciones con más ajuste tienen más posibilidades.', 30);
+
+    setTimeout(function() {
+      addChatMessage('no pasa nada por enviar, pero céntrate en ofertas donde encajes más', 'ElectricistaPRO_99');
+    }, 1500);
+
+    if (!S.firstCandidatureSent) {
+      S.firstCandidatureSent = true;
+      earnBadge('primera_candidatura');
+    }
   }
 
-  vibrate('success');
   checkTaskCompleted();
-  showBackButton();
 }
 
 function onPass() {
@@ -1315,24 +1349,34 @@ function onPass() {
 
   var locState = S.locations[S.currentLocation.id];
   locState.offerHandled = true;
+  var char = CHARACTERS[S.zone];
+  var metCount = offer.requirements.filter(function(r) { return r.met; }).length;
+  var totalCount = offer.requirements.length;
 
   if (offer.matchPct >= 60) {
-    // Don't mark completed yet — wait for toast dismissal
+    // Bad pass — blocking toast (already good, keep as is)
     vibrate('error');
-    var char = CHARACTERS[S.zone];
     document.getElementById('loc-avatar').src = char.worried;
-    var metCount = offer.requirements.filter(function(r) { return r.met; }).length;
-    var totalCount = offer.requirements.length;
     document.getElementById('toast-text').textContent =
       'Cumples ' + metCount + ' de ' + totalCount + ' requisitos obligatorios (' + offer.matchPct + '%). La regla: si llegas al 60%, se envía. No esperes al 100%.';
     showOverlay('toast-overlay');
   } else {
+    // Good pass — educate why this was smart
     locState.state = 'completed';
     S.score += 25;
     earnBadge('lectura_critica');
-    addChatMessage('bien visto, esa no encajaba', 'CableMan420');
     vibrate('light');
-    showBackButton();
+    document.getElementById('loc-avatar').src = char.happy;
+
+    // NPC bubble with educational feedback
+    var npcBubble = document.getElementById('npc-bubble');
+    npcBubble.classList.remove('hidden');
+    npcBubble.textContent = '';
+    typewriter(npcBubble, 'Solo cumples ' + metCount + ' de ' + totalCount + ' requisitos (' + offer.matchPct + '%). Bien visto, mejor buscar ofertas que encajen más.', 30);
+
+    setTimeout(function() {
+      addChatMessage('bien visto, no pierdas tiempo en ofertas donde no encajas', 'CableMan420');
+    }, 1500);
   }
 }
 
