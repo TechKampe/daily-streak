@@ -1,5 +1,8 @@
 /* === Mi Primer Curro [SIMULADOR] — Game Shell === */
 
+// --- CDN ---
+var CDN = 'https://res.cloudinary.com/kampe/image/upload/f_auto,q_auto';
+
 // --- Haptic helper ---
 function vibrate(level, pattern) {
   if (window.ReactNativeWebView) {
@@ -266,23 +269,23 @@ const ZONE_AMBIENT = {
 const CHARACTERS = {
   urban: {
     name: 'Nico',
-    happy: 'assets/nico_happy.png',
-    celebrating: 'assets/nico_celebrating.png',
-    worried: 'assets/nico_worried.png',
+    happy: CDN + '/nico_happy_hx1syt.png',
+    celebrating: CDN + '/nico_celebrating_vwn5dz.png',
+    worried: CDN + '/nico_worried_jrygm6.png',
     introMsg: 'Bueno, es martes. Hoy busco curro de verdad. Vamos a ver qué hay por aquí.',
   },
   rural: {
     name: 'Vega',
-    happy: 'assets/vega_happy.png',
-    celebrating: 'assets/vega_celebrating.png',
-    worried: 'assets/vega_worried.png',
+    happy: CDN + '/vega_happy_anzbgw.png',
+    celebrating: CDN + '/vega_celebrating_q3q8qe.png',
+    worried: CDN + '/vega_worried_mqvjoh.png',
     introMsg: 'Venga, hoy toca moverse. A ver qué encuentro por el pueblo.',
   },
 };
 
 const STREET_BG = {
-  urban: 'assets/bg_street_urban.jpg',
-  rural: 'assets/bg_street_rural.jpg',
+  urban: CDN + '/bg_street_urban_nqljtb.jpg',
+  rural: CDN + '/bg_street_rural_gn7uwc.jpg',
 };
 
 // === LOCATION DATA ===
@@ -293,7 +296,7 @@ const LOCATIONS = {
       label: 'ETT',
       pos: { top: 58, left: 12 },
       scale: 0.85,
-      bg: 'assets/bg_ett_urban.jpg',
+      bg: CDN + '/bg_ett_urban_gq5hjl.jpg',
       isDeadEnd: false,
       main: {
         npcBubble: 'Buenos días. ¿Vienes a registrarte?',
@@ -359,7 +362,7 @@ const LOCATIONS = {
       label: 'Taller',
       pos: { top: 32, left: 28 },
       scale: 0.7,
-      bg: 'assets/bg_taller_urban.jpg',
+      bg: CDN + '/bg_taller_urban_xdtk0a.jpg',
       isDeadEnd: false,
       main: {
         npcBubble: null,
@@ -426,7 +429,7 @@ const LOCATIONS = {
       label: 'Bar',
       pos: { top: 38, left: 72 },
       scale: 0.75,
-      bg: 'assets/bg_bar_urban.jpg',
+      bg: CDN + '/bg_bar_urban_wflui3.jpg',
       isDeadEnd: false,
       main: {
         npcBubble: null,
@@ -647,7 +650,7 @@ const LOCATIONS = {
       label: 'ETT',
       pos: { top: 48, left: 72 },
       scale: 0.8,
-      bg: 'assets/bg_ett_rural.jpg',
+      bg: CDN + '/bg_ett_rural_upwzmq.jpg',
       isDeadEnd: false,
       main: {
         npcBubble: 'Hola, ¿tú no eres la de los cursos de electricidad? Pasa, pasa.',
@@ -709,7 +712,7 @@ const LOCATIONS = {
       label: 'Taller',
       pos: { top: 55, left: 20 },
       scale: 0.85,
-      bg: 'assets/bg_taller_rural.jpg',
+      bg: CDN + '/bg_taller_rural_gu3hsb.jpg',
       isDeadEnd: false,
       main: {
         npcBubble: null,
@@ -772,7 +775,7 @@ const LOCATIONS = {
       label: 'Bar',
       pos: { top: 40, left: 10 },
       scale: 0.75,
-      bg: 'assets/bg_bar_rural.jpg',
+      bg: CDN + '/bg_bar_rural_lwpmhu.jpg',
       isDeadEnd: false,
       main: {
         npcBubble: null,
