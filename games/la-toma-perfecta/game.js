@@ -60,7 +60,7 @@ const STEPS = [
   },
   {
     id: 'distractions',
-    msg: 'Evita las distracciones. Si algo puede interrumpir la grabación, quítalo o ciérralo.',
+    msg: 'Si hay algo que pueda distraerte, mejor cerrar la puerta y mantener las distracciones fuera de tu espacio.',
     hotspots: [
       { id: 'pet', xPct: 70, yPct: 75, icon: 'paw' },
       { id: 'door', xPct: 70, yPct: 45, icon: 'door' },
