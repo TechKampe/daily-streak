@@ -1061,11 +1061,30 @@ function showChoices(choices, loc) {
 function onChoiceTap(choice, loc) {
   vibrate('light');
   var locState = S.locations[loc.id];
-
-  // Main dialogue is ONE shot — hide all choices immediately
-  locState.mainDone = true;
   var container = document.getElementById('choice-buttons');
-  container.classList.add('hidden');
+
+  if (loc.isDeadEnd) {
+    // Dead-end locations are flavor — disable tapped, keep others
+    var buttons = container.querySelectorAll('.choice-btn');
+    buttons.forEach(function(btn) {
+      if (btn.textContent === choice.text) {
+        btn.disabled = true;
+        btn.style.opacity = '0.35';
+        btn.style.pointerEvents = 'none';
+      }
+    });
+    // Track how many used
+    if (!locState._choicesMade) locState._choicesMade = 0;
+    locState._choicesMade++;
+    if (locState._choicesMade >= loc.main.choices.length) {
+      locState.mainDone = true;
+      container.classList.add('hidden');
+    }
+  } else {
+    // Real locations — ONE shot, first impression matters
+    locState.mainDone = true;
+    container.classList.add('hidden');
+  }
 
   var playerBubble = document.getElementById('player-bubble');
   typewriter(playerBubble, choice.text, 25, function() {
