@@ -89,8 +89,9 @@ const STEPS = [
     resolveAny: true,
     onResolve: () => {
       changeBg('bg_step5.jpg');
+      // Eliminar perro inmediatamente
       const pet = document.getElementById('pet-asset');
-      if (pet) { pet.style.transition = 'opacity 0.4s'; pet.style.opacity = '0'; setTimeout(() => pet.remove(), 400); }
+      if (pet) pet.remove();
     },
     resolveMsg: 'Sin distracciones. Puerta cerrada, mascota fuera.',
   },
