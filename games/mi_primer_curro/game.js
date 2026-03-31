@@ -982,15 +982,34 @@ function clearDialogue() {
 // ~60ms per character reading time, min 3s, max 10s
 function autoDismissBubble(element, text) {
   var readTime = Math.max(3000, Math.min(10000, text.length * 60));
-  setTimeout(function() {
-    element.style.transition = 'opacity 0.5s ease';
-    element.style.opacity = '0';
-    setTimeout(function() {
-      element.classList.add('hidden');
-      element.style.opacity = '';
-      element.style.transition = '';
-    }, 500);
+  var timer = setTimeout(function() {
+    dismissBubble(element);
   }, readTime);
+  // Store timer so tap-to-dismiss can cancel it
+  element._autoDismissTimer = timer;
+}
+
+function dismissBubble(element) {
+  if (element._autoDismissTimer) {
+    clearTimeout(element._autoDismissTimer);
+    element._autoDismissTimer = null;
+  }
+  if (element.classList.contains('hidden')) return;
+  element.style.transition = 'opacity 0.3s ease';
+  element.style.opacity = '0';
+  setTimeout(function() {
+    element.classList.add('hidden');
+    element.style.opacity = '';
+    element.style.transition = '';
+  }, 300);
+}
+
+// Tap anywhere on the scene to dismiss visible bubbles
+function dismissAllBubbles() {
+  var npc = document.getElementById('npc-bubble');
+  var player = document.getElementById('player-bubble');
+  if (npc && !npc.classList.contains('hidden')) dismissBubble(npc);
+  if (player && !player.classList.contains('hidden')) dismissBubble(player);
 }
 
 function typewriter(element, text, speed, callback) {
@@ -1288,7 +1307,76 @@ function showPhoneUI(loc) {
         '</div>' +
       '</div>';
   } else if (loc.id === 'whatsapp') {
-    phoneUI.innerHTML = '<div class="phone-header">Electricistas Valencia 🔌 · 247 miembros</div><div class="phone-content"><p style="margin:8px 0;"><span style="color:var(--green);">Juan_Elec:</span> 😂😂😂</p><p style="margin:8px 0;"><span style="color:var(--green);">Milane 🇫🇷:</span> 🎤 0:47</p><p style="margin:8px 0;"><span style="color:var(--green);">Carlos_Instala:</span> Alguien vende taladro Bosch?</p><p style="margin:8px 0;"><span style="color:var(--green);">Pedro_ETT:</span> [imagen de meme]</p></div>';
+    phoneUI.innerHTML = '' +
+      '<div style="background:#111b21;border-radius:12px;overflow:hidden;height:100%;display:flex;flex-direction:column;">' +
+        // WhatsApp header
+        '<div style="background:#1f2c34;padding:10px 12px;display:flex;align-items:center;gap:10px;">' +
+          '<span style="font-size:16px;">←</span>' +
+          '<div style="width:36px;height:36px;border-radius:50%;background:#2a3942;display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>' +
+          '<div style="flex:1;">' +
+            '<div style="color:#e9edef;font-size:14px;font-weight:600;">Electricistas Valencia 🔌</div>' +
+            '<div style="color:#8696a0;font-size:11px;">247 miembros · 12 en línea</div>' +
+          '</div>' +
+        '</div>' +
+        // Chat area
+        '<div style="flex:1;background:#0b141a;background-image:url(\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect fill=%22%230d1a22%22 width=%2240%22 height=%2240%22/></svg>\');padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;">' +
+          // Timestamp
+          '<div style="align-self:center;background:#1d2831;color:#8696a0;font-size:10px;padding:3px 10px;border-radius:6px;">Hoy, 10:32</div>' +
+          // Left bubble — Juan
+          '<div style="align-self:flex-start;max-width:78%;">' +
+            '<div style="background:#1f2c34;border-radius:0 8px 8px 8px;padding:5px 8px;">' +
+              '<span style="color:#53bdeb;font-size:11px;font-weight:600;">Juan_Elec</span>' +
+              '<div style="color:#e9edef;font-size:13px;margin-top:2px;">😂😂😂😂</div>' +
+              '<div style="color:#8696a0;font-size:9px;text-align:right;margin-top:2px;">10:32</div>' +
+            '</div>' +
+          '</div>' +
+          // Left bubble — Milane audio
+          '<div style="align-self:flex-start;max-width:78%;">' +
+            '<div style="background:#1f2c34;border-radius:0 8px 8px 8px;padding:5px 8px;">' +
+              '<span style="color:#ff9500;font-size:11px;font-weight:600;">Milane 🇫🇷</span>' +
+              '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;">' +
+                '<span style="color:#53bdeb;font-size:16px;">▶</span>' +
+                '<div style="flex:1;height:3px;background:#374045;border-radius:2px;"><div style="width:35%;height:100%;background:#53bdeb;border-radius:2px;"></div></div>' +
+                '<span style="color:#8696a0;font-size:10px;">0:47</span>' +
+              '</div>' +
+              '<div style="color:#8696a0;font-size:9px;text-align:right;margin-top:2px;">10:34</div>' +
+            '</div>' +
+          '</div>' +
+          // Left bubble — Carlos
+          '<div style="align-self:flex-start;max-width:78%;">' +
+            '<div style="background:#1f2c34;border-radius:0 8px 8px 8px;padding:5px 8px;">' +
+              '<span style="color:#e667af;font-size:11px;font-weight:600;">Carlos_Instala</span>' +
+              '<div style="color:#e9edef;font-size:13px;margin-top:2px;">Alguien vende taladro Bosch? El mío ha muerto hoy 💀</div>' +
+              '<div style="color:#8696a0;font-size:9px;text-align:right;margin-top:2px;">10:38</div>' +
+            '</div>' +
+          '</div>' +
+          // Left bubble — Pedro (image placeholder)
+          '<div style="align-self:flex-start;max-width:78%;">' +
+            '<div style="background:#1f2c34;border-radius:0 8px 8px 8px;padding:5px 8px;">' +
+              '<span style="color:#7eb8e1;font-size:11px;font-weight:600;">Pedro_ETT</span>' +
+              '<div style="background:#2a3942;border-radius:6px;padding:20px;text-align:center;margin-top:3px;">' +
+                '<span style="font-size:28px;">🤣</span>' +
+                '<div style="color:#8696a0;font-size:10px;margin-top:4px;">[meme]</div>' +
+              '</div>' +
+              '<div style="color:#8696a0;font-size:9px;text-align:right;margin-top:2px;">10:41</div>' +
+            '</div>' +
+          '</div>' +
+          // Left bubble — random
+          '<div style="align-self:flex-start;max-width:78%;">' +
+            '<div style="background:#1f2c34;border-radius:0 8px 8px 8px;padding:5px 8px;">' +
+              '<span style="color:#53bdeb;font-size:11px;font-weight:600;">Juan_Elec</span>' +
+              '<div style="color:#e9edef;font-size:13px;margin-top:2px;">Que alguien le diga a Pedro que esto es un grupo de curro no de memes 😅</div>' +
+              '<div style="color:#8696a0;font-size:9px;text-align:right;margin-top:2px;">10:42</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        // Input bar
+        '<div style="background:#1f2c34;padding:6px 10px;display:flex;align-items:center;gap:8px;">' +
+          '<span style="font-size:18px;">😊</span>' +
+          '<div style="flex:1;background:#2a3942;border-radius:20px;padding:7px 14px;color:#8696a0;font-size:13px;">Escribe un mensaje</div>' +
+          '<span style="font-size:18px;">🎤</span>' +
+        '</div>' +
+      '</div>';
   } else if (loc.id === 'telefono') {
     phoneUI.innerHTML = '<div class="phone-header">Google Maps — Empresas cercanas</div><div class="phone-content"><div style="background:var(--panel);padding:12px;border-radius:8px;margin-bottom:8px;"><strong style="color:var(--white);">📍 Electricidad Comarcal</strong><p style="font-size:11px;margin-top:4px;">Carretera de Teruel, km 3 · ⭐ 4.2</p><p style="font-size:11px;color:var(--green);">📞 978 XX XX XX</p></div></div>';
   }
@@ -1633,6 +1721,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.getElementById('btn-cancel-end').addEventListener('click', function() {
     hideOverlay('confirm-overlay');
+  });
+
+  // Tap scene to dismiss bubbles
+  document.getElementById('loc-scene').addEventListener('click', function(e) {
+    // Only dismiss if tapping the scene itself, not a secondary NPC or phone UI
+    if (e.target.closest('.secondary-tap') || e.target.closest('.phone-ui')) return;
+    dismissAllBubbles();
   });
 
   // Back to street from location
