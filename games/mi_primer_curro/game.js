@@ -1611,10 +1611,14 @@ function checkAllBadges() {
 }
 
 function checkTaskCompleted() {
-  if (!S.taskCompleted && S.score >= TASK_THRESHOLD) {
+  if (S.taskCompleted) return;
+  // Task completes when all locations in the zone have been visited
+  var locs = LOCATIONS[S.zone];
+  var allDone = locs.every(function(l) { return S.locations[l.id].state !== 'available'; });
+  if (allDone) {
     S.taskCompleted = true;
     fireTaskCompleted();
-    addChatMessage('🏆 TAREA COMPLETADA — Has demostrado que sabes buscar trabajo', null, true);
+    addChatMessage('🏆 TAREA COMPLETADA — Has visitado todos los sitios', null, true);
     vibrate('success', [0, 100, 50, 200]);
   }
 }
@@ -1815,6 +1819,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     hidePhoneUI();
     showScreen('street');
+    checkTaskCompleted();
 
     // Check if all locations completed
     var allDone = true;
