@@ -1231,6 +1231,7 @@ function showSecondaryChoices(exchange) {
 // === Phone UI helpers ===
 
 function showPhoneUI(loc) {
+  document.getElementById('loc-scene').classList.add('phone-active');
   var phoneUI = document.getElementById('phone-ui');
   if (!phoneUI) {
     phoneUI = document.createElement('div');
@@ -1250,6 +1251,7 @@ function showPhoneUI(loc) {
 }
 
 function hidePhoneUI() {
+  document.getElementById('loc-scene').classList.remove('phone-active');
   var phoneUI = document.getElementById('phone-ui');
   if (phoneUI) phoneUI.classList.add('hidden');
 }
