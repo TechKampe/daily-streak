@@ -1549,14 +1549,55 @@ function onPass() {
 
 // === TASK 6: Scoring + Badges ===
 
+var badgeQueue = [];
+var badgeShowing = false;
+
 function earnBadge(badgeId) {
   if (S.badges[badgeId]) return;
   S.badges[badgeId] = true;
   var badge = BADGES.find(function(b) { return b.id === badgeId; });
   if (!badge) return;
-  var char = CHARACTERS[S.zone];
-  addChatMessage('🏆 ' + char.name + ' desbloqueó: ' + badge.label, null, true);
   vibrate('medium');
+  // Queue the banner (multiple badges can fire at once)
+  badgeQueue.push(badge);
+  if (!badgeShowing) showNextBadgeBanner();
+}
+
+function showNextBadgeBanner() {
+  if (badgeQueue.length === 0) { badgeShowing = false; return; }
+  badgeShowing = true;
+  var badge = badgeQueue.shift();
+  var char = CHARACTERS[S.zone];
+
+  // Also add to chat
+  addChatMessage('🏆 ' + char.name + ' desbloqueó: ' + badge.label, null, true);
+
+  // Create banner
+  var banner = document.createElement('div');
+  banner.className = 'badge-banner';
+  banner.innerHTML = '<span class="badge-banner-icon">' + badge.icon + '</span>' +
+    '<div class="badge-banner-text">' +
+      '<span class="badge-banner-title">Badge desbloqueado</span>' +
+      '<span class="badge-banner-label">' + badge.label + '</span>' +
+    '</div>';
+  document.getElementById('wrapper').appendChild(banner);
+
+  // Slide in
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      banner.classList.add('badge-banner-in');
+    });
+  });
+
+  // Slide out after 2.5s, then show next
+  setTimeout(function() {
+    banner.classList.remove('badge-banner-in');
+    banner.classList.add('badge-banner-out');
+    setTimeout(function() {
+      banner.remove();
+      showNextBadgeBanner();
+    }, 500);
+  }, 2500);
 }
 
 function checkAllBadges() {
