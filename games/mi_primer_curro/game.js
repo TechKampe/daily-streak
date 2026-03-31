@@ -18,7 +18,7 @@ function showScreen(id) {
   const screen = document.getElementById(id);
   if (screen) screen.classList.add('active');
   // Enable scroll for results screen
-  document.documentElement.classList.toggle('results', id === 'results');
+  // No special scroll mode — all screens fit in viewport
 }
 
 // --- Overlay management ---
@@ -1768,6 +1768,15 @@ document.addEventListener('DOMContentLoaded', function() {
   // Server Select → Street
   document.querySelectorAll('.server-card').forEach(function(card) {
     card.addEventListener('click', function() {
+      if (card.classList.contains('server-offline')) {
+        vibrate('light');
+        // Show toast message for locked servers
+        document.getElementById('toast-text').textContent =
+          'Este servidor se desbloquea por la tarde. Primero hay que aprender a encontrar ofertas.';
+        document.querySelector('#toast-card h3').textContent = 'Servidor offline';
+        showOverlay('toast-overlay');
+        return;
+      }
       vibrate('light');
       initZone(card.dataset.zone);
     });
