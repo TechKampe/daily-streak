@@ -1242,7 +1242,51 @@ function showPhoneUI(loc) {
   phoneUI.classList.remove('hidden');
 
   if (loc.id === 'portal') {
-    phoneUI.innerHTML = '<div class="phone-header">InfoCurros — Buscar empleo</div><div class="phone-content"><div style="background:var(--panel);padding:10px;border-radius:8px;margin-bottom:12px;"><span style="color:var(--grey);">🔍 Buscar...</span></div><p style="color:var(--grey);font-size:12px;text-align:center;margin-top:20px;">Escribe lo que buscas para ver resultados</p></div>';
+    phoneUI.innerHTML = '' +
+      '<div style="background:#fff;border-radius:12px;overflow:hidden;height:100%;display:flex;flex-direction:column;">' +
+        // Top nav bar
+        '<div style="background:#ff6b35;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">' +
+          '<span style="color:#fff;font-family:var(--font-title);font-size:18px;font-weight:700;">InfoCurros</span>' +
+          '<span style="color:rgba(255,255,255,0.8);font-size:11px;">Tu primer empleo</span>' +
+        '</div>' +
+        // Search bar
+        '<div style="padding:10px 12px;background:#f5f5f5;border-bottom:1px solid #e0e0e0;">' +
+          '<div style="background:#fff;border:1px solid #ddd;border-radius:20px;padding:8px 14px;display:flex;align-items:center;gap:8px;">' +
+            '<span style="color:#999;">🔍</span>' +
+            '<span style="color:#999;font-size:14px;">Buscar empleo...</span>' +
+          '</div>' +
+        '</div>' +
+        // Filters
+        '<div style="padding:8px 12px;display:flex;gap:6px;border-bottom:1px solid #eee;">' +
+          '<span style="background:#ff6b35;color:#fff;padding:4px 10px;border-radius:12px;font-size:11px;">Electricidad</span>' +
+          '<span style="background:#eee;color:#666;padding:4px 10px;border-radius:12px;font-size:11px;">Mi zona</span>' +
+          '<span style="background:#eee;color:#666;padding:4px 10px;border-radius:12px;font-size:11px;">Hoy</span>' +
+        '</div>' +
+        // Job listings placeholder
+        '<div style="flex:1;padding:12px;overflow-y:auto;">' +
+          '<p style="color:#999;font-size:13px;text-align:center;margin-top:30px;">Escribe lo que buscas para ver resultados</p>' +
+          // Fake listing skeletons
+          '<div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">' +
+            '<div style="background:#f0f0f0;border-radius:8px;padding:12px;">' +
+              '<div style="background:#e0e0e0;height:14px;width:70%;border-radius:4px;margin-bottom:6px;"></div>' +
+              '<div style="background:#e0e0e0;height:10px;width:50%;border-radius:4px;margin-bottom:4px;"></div>' +
+              '<div style="background:#e0e0e0;height:10px;width:40%;border-radius:4px;"></div>' +
+            '</div>' +
+            '<div style="background:#f0f0f0;border-radius:8px;padding:12px;">' +
+              '<div style="background:#e0e0e0;height:14px;width:60%;border-radius:4px;margin-bottom:6px;"></div>' +
+              '<div style="background:#e0e0e0;height:10px;width:45%;border-radius:4px;margin-bottom:4px;"></div>' +
+              '<div style="background:#e0e0e0;height:10px;width:35%;border-radius:4px;"></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        // Bottom nav
+        '<div style="display:flex;justify-content:space-around;padding:8px 0;border-top:1px solid #eee;background:#fafafa;">' +
+          '<span style="font-size:10px;color:#ff6b35;text-align:center;">🏠<br>Inicio</span>' +
+          '<span style="font-size:10px;color:#999;text-align:center;">🔍<br>Buscar</span>' +
+          '<span style="font-size:10px;color:#999;text-align:center;">💼<br>Mis ofertas</span>' +
+          '<span style="font-size:10px;color:#999;text-align:center;">👤<br>Perfil</span>' +
+        '</div>' +
+      '</div>';
   } else if (loc.id === 'whatsapp') {
     phoneUI.innerHTML = '<div class="phone-header">Electricistas Valencia 🔌 · 247 miembros</div><div class="phone-content"><p style="margin:8px 0;"><span style="color:var(--green);">Juan_Elec:</span> 😂😂😂</p><p style="margin:8px 0;"><span style="color:var(--green);">Milane 🇫🇷:</span> 🎤 0:47</p><p style="margin:8px 0;"><span style="color:var(--green);">Carlos_Instala:</span> Alguien vende taladro Bosch?</p><p style="margin:8px 0;"><span style="color:var(--green);">Pedro_ETT:</span> [imagen de meme]</p></div>';
   } else if (loc.id === 'telefono') {
