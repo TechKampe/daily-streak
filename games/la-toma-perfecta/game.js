@@ -95,7 +95,7 @@ const STEPS = [
       lucaPrefix = '';
       lucaGroomed = true;
     },
-    resolveMsg: '¡Listo! Ahora sí que estoy presentable.',
+    resolveMsg: 'Listo, ya me he peinado. ¡Ahora sí estoy presentable!',
   },
   {
     id: 'zone',
@@ -432,8 +432,13 @@ function buildPanorama() {
 }
 
 function updatePanorama() {
-  const minX = -(S.panWidth - S.viewW);
-  S.panOffsetX = Math.max(minX, Math.min(0, S.panOffsetX));
+  if (S.panWidth <= S.viewW) {
+    // Image fits in viewport — center it, no scroll
+    S.panOffsetX = -(S.panWidth - S.viewW) / 2;
+  } else {
+    const minX = -(S.panWidth - S.viewW);
+    S.panOffsetX = Math.max(minX, Math.min(0, S.panOffsetX));
+  }
   document.getElementById('panorama').style.transform = 'translateX(' + S.panOffsetX + 'px)';
 }
 
@@ -446,6 +451,9 @@ function showStep(index) {
 
   clearHotspots();
   setLuca('happy');
+  // Ensure Luca is visible
+  const lucaEl = document.getElementById('luca');
+  if (lucaEl) { lucaEl.style.display = ''; lucaEl.style.opacity = '1'; }
   showSpeech(step.msg);
 
   // Run onStart if defined
