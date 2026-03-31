@@ -25,6 +25,7 @@ const CDN = 'https://res.cloudinary.com/kampe/image/upload/';
 const ASSETS = {
   luca_pijama_happy: CDN + 'luca_pijama_happy_bntwls.png',
   luca_pijama_worried: CDN + 'luca_worried_oyx2eg.png',
+  luca_pijama_celebrating: CDN + 'v1774948234/luca_pijama_celebrating_hwswom.png',
   luca_happy: CDN + 'luca_happy_tk0ql0.png',
   luca_worried: CDN + 'luca_worried_oyx2eg.png',
   luca_celebrating: CDN + 'luca_celebrating_s4ytpx.png',
