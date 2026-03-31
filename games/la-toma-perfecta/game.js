@@ -20,18 +20,38 @@ function taskCompleted() {
 // --- Image dimensions ---
 const IMG_H = 944;
 
+// --- Cloudinary CDN ---
+const CDN = 'https://res.cloudinary.com/kampe/image/upload/game_assets/s6d1/';
+const ASSETS = {
+  luca_pijama_happy: CDN + 'luca_pijama_happy_bntwls.png',
+  luca_pijama_worried: CDN + 'luca_worried_oyx2eg.png',
+  luca_happy: CDN + 'luca_happy_tk0ql0.png',
+  luca_worried: CDN + 'luca_worried_oyx2eg.png',
+  luca_celebrating: CDN + 'luca_celebrating_s4ytpx.png',
+  luca_dressed_messy: CDN + 'luca_dressed_messy_nprjhc.png',
+  bg_panorama: CDN + 'bg_panorama_glu3gf.jpg',
+  bg_step1: CDN + 'bg_step1_toe79d.jpg',
+  bg_step2: CDN + 'bg_step2_vqmg2g.jpg',
+  bg_step3: CDN + 'bg_step3_jgybps.jpg',
+  bg_step5: CDN + 'bg_step5_mtpjae.jpg',
+  pet_dog: 'assets/pet_dog.png',
+  outfit_a: 'assets/outfit_a.png',
+  outfit_b: 'assets/outfit_b.png',
+  outfit_c: 'assets/outfit_c.png',
+};
+
 // --- Luca states per phase ---
-// Before outfit: pijama assets. After outfit + groom: normal assets.
-let lucaPrefix = 'pijama_'; // 'pijama_' or '' (dressed)
+let lucaPrefix = 'pijama_';
 let lucaGroomed = false;
 
 function setLuca(state) {
   const img = document.getElementById('luca-img');
   if (!img) return;
   if (state === 'dressed_messy') {
-    img.src = 'assets/luca_dressed_messy.png';
+    img.src = ASSETS.luca_dressed_messy;
   } else {
-    img.src = 'assets/luca_' + lucaPrefix + state + '.png';
+    const key = 'luca_' + lucaPrefix + state;
+    img.src = ASSETS[key] || ASSETS['luca_' + state];
   }
 }
 
@@ -253,11 +273,14 @@ function markCheck(index) {
 // --- Background change ---
 function changeBg(filename) {
   const img = document.querySelector('#panorama img.bg');
+  // filename is like 'bg_step1.jpg' — map to CDN key
+  const key = filename.replace('.jpg', '').replace('.png', '');
+  const src = ASSETS[key] || ('assets/' + filename);
   if (img) {
     img.style.transition = 'opacity 0.3s';
     img.style.opacity = '0.5';
     setTimeout(() => {
-      img.src = 'assets/' + filename;
+      img.src = src;
       img.onload = () => {
         const panorama = document.getElementById('panorama');
         const panH = panorama.clientHeight;
@@ -361,18 +384,10 @@ function createComputerBlink() {
   panorama.appendChild(blink);
 }
 
-// --- Preload all Luca images ---
-const LUCA_IMAGES = [
-  'assets/luca_pijama_happy.png',
-  'assets/luca_pijama_worried.png',
-  'assets/luca_happy.png',
-  'assets/luca_worried.png',
-  'assets/luca_celebrating.png',
-  'assets/luca_dressed_messy.png',
-];
+// --- Preload all images from CDN ---
 const preloadedImages = {};
 function preloadImages() {
-  LUCA_IMAGES.forEach(src => {
+  Object.values(ASSETS).forEach(src => {
     const img = new Image();
     img.src = src;
     preloadedImages[src] = img;
@@ -400,6 +415,8 @@ function startPhase1() {
   lucaPrefix = 'pijama_';
   lucaGroomed = false;
   showScreen('play');
+  const lucaEl = document.getElementById('luca');
+  if (lucaEl) lucaEl.hidden = false;
   setLuca('worried');
   buildPanorama();
 }
@@ -412,7 +429,7 @@ function buildPanorama() {
 
   const img = document.createElement('img');
   img.className = 'bg';
-  img.src = 'assets/bg_panorama.jpg';
+  img.src = ASSETS.bg_panorama;
   panorama.appendChild(img);
 
   img.onload = () => {
@@ -453,7 +470,7 @@ function showStep(index) {
   setLuca('happy');
   // Ensure Luca is visible
   const lucaEl = document.getElementById('luca');
-  if (lucaEl) { lucaEl.style.display = ''; lucaEl.style.opacity = '1'; }
+  if (lucaEl) lucaEl.hidden = false;
   showSpeech(step.msg);
 
   // Run onStart if defined
@@ -891,6 +908,8 @@ function endPhase2() {
 function showResults() {
   S.phase = 'RESULTS';
   showScreen('results');
+  const lucaEl = document.getElementById('luca');
+  if (lucaEl) lucaEl.hidden = true;
 
   const tier = S.score >= 800 ? 'high' : S.score >= 600 ? 'mid' : 'low';
 
