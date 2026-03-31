@@ -779,6 +779,8 @@ function showRound() {
   const round = S.recRounds[S.recRoundIndex];
   const container = document.getElementById('rec-content');
   container.innerHTML = '';
+  // Remove previous "Siguiente" button if any
+  document.querySelectorAll('#recording > .btn-primary').forEach(b => b.remove());
 
   // Update HUD
   const timer = document.getElementById('rec-timer');
@@ -825,12 +827,12 @@ function showRound() {
     });
   });
 
-  // "Siguiente" button
+  // "Siguiente" button — pinned to bottom
   const btn = document.createElement('button');
   btn.className = 'btn-primary';
   btn.textContent = S.recRoundIndex < 3 ? 'Siguiente ›' : 'Ver resultado';
-  btn.style.cssText = 'max-width:200px;font-size:15px;padding:10px 20px;margin-top:12px;';
-  container.appendChild(btn);
+  btn.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:200px;font-size:15px;padding:10px 20px;z-index:141;';
+  document.getElementById('recording').appendChild(btn);
 
   btn.addEventListener('click', () => {
     resolveRound(round, tapped);
