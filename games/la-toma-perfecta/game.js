@@ -362,8 +362,27 @@ function createComputerBlink() {
   panorama.appendChild(blink);
 }
 
+// --- Preload all Luca images ---
+const LUCA_IMAGES = [
+  'assets/luca_pijama_happy.png',
+  'assets/luca_pijama_worried.png',
+  'assets/luca_happy.png',
+  'assets/luca_worried.png',
+  'assets/luca_celebrating.png',
+  'assets/luca_dressed_messy.png',
+];
+const preloadedImages = {};
+function preloadImages() {
+  LUCA_IMAGES.forEach(src => {
+    const img = new Image();
+    img.src = src;
+    preloadedImages[src] = img;
+  });
+}
+
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
+  preloadImages();
   document.getElementById('btn-start').addEventListener('click', startPhase1);
   document.getElementById('btn-retry').addEventListener('click', () => { resetGame(); showScreen('intro'); });
 
@@ -739,10 +758,17 @@ function startPhase2() {
     '<button class="btn-primary" id="btn-rec-start" style="max-width:220px;font-size:16px;padding:12px;">¡Grabar!</button>';
   frame.appendChild(intro);
 
-  document.getElementById('btn-rec-start').onclick = () => {
+  const startBtn = document.getElementById('btn-rec-start');
+  const startHandler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    startBtn.removeEventListener('touchend', startHandler);
+    startBtn.removeEventListener('click', startHandler);
     intro.remove();
     showRound();
   };
+  startBtn.addEventListener('touchend', startHandler);
+  startBtn.addEventListener('click', startHandler);
 }
 
 function showRound() {
@@ -780,13 +806,13 @@ function showRound() {
     el.style.top = positions[i];
     frame.appendChild(el);
 
-    el.addEventListener('pointerdown', (e) => {
+    const cardTapHandler = (e) => {
       e.stopPropagation();
+      e.preventDefault();
       if (tapped.has(i)) return;
       tapped.add(i);
 
       if (card.bad) {
-        // Correct — eliminate
         el.style.background = 'rgba(76, 175, 80, 0.35)';
         el.style.borderColor = '#4CAF50';
         el.style.color = '#4CAF50';
@@ -796,7 +822,6 @@ function showRound() {
         vibrate('success');
         colorFlush('#4CAF50', '0.1');
       } else {
-        // Wrong — shouldn't have tapped
         el.style.background = 'rgba(231, 76, 60, 0.35)';
         el.style.borderColor = '#E74C3C';
         el.style.color = '#E74C3C';
@@ -806,7 +831,9 @@ function showRound() {
         vibrate('error');
         colorFlush('#E53935', '0.1');
       }
-    });
+    };
+    el.addEventListener('touchend', cardTapHandler);
+    el.addEventListener('click', cardTapHandler);
   });
 
   // "Siguiente" button at the bottom
@@ -816,10 +843,15 @@ function showRound() {
   btn.style.cssText = 'position:absolute;bottom:5%;left:50%;transform:translateX(-50%);max-width:200px;font-size:15px;padding:10px 20px;z-index:131;';
   frame.appendChild(btn);
 
-  btn.addEventListener('pointerdown', (e) => {
+  const nextHandler = (e) => {
+    e.preventDefault();
     e.stopPropagation();
+    btn.removeEventListener('touchend', nextHandler);
+    btn.removeEventListener('click', nextHandler);
     resolveRound(round, tapped);
-  });
+  };
+  btn.addEventListener('touchend', nextHandler);
+  btn.addEventListener('click', nextHandler);
 }
 
 function resolveRound(round, tapped) {
