@@ -250,8 +250,8 @@ function showSpeech(text, duration) {
   clearTimeout(speechTimeout);
   const bubble = document.getElementById('speech-bubble');
   document.getElementById('speech-text').textContent = text;
-  // Force position at bottom, no arrow
-  bubble.style.cssText = 'position:fixed;bottom:20px;top:auto;left:5%;right:5%;width:90%;max-width:none;transform:none;z-index:30;background:#fff;color:#0B214A;border-radius:16px;padding:14px 18px;font-size:14px;font-weight:600;line-height:1.4;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
+  // Position above Luca — use bottom percentage so it scales with screen
+  bubble.style.cssText = 'position:fixed;bottom:42%;top:auto;left:5%;right:5%;width:90%;max-width:none;transform:none;z-index:60;background:#fff;color:#0B214A;border-radius:16px;padding:14px 18px;font-size:14px;font-weight:600;line-height:1.4;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
   bubble.hidden = false;
   if (duration) speechTimeout = setTimeout(() => { bubble.hidden = true; }, duration);
 }
