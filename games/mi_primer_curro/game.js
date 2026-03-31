@@ -74,7 +74,6 @@ function resetState(zone) {
       state: 'available',
       mainDone: false,
       secondaryDone: {},
-      _choicesMade: 0,
       offerFound: false,
       offerHandled: false,
     };
@@ -1026,35 +1025,10 @@ function onChoiceTap(choice, loc) {
   vibrate('light');
   var locState = S.locations[loc.id];
 
-  // Disable tapped button, keep others visible
+  // Main dialogue is ONE shot — hide all choices immediately
+  locState.mainDone = true;
   var container = document.getElementById('choice-buttons');
-  var buttons = container.querySelectorAll('.choice-btn');
-  var tappedBtn = null;
-  buttons.forEach(function(btn) {
-    if (btn.textContent === choice.text) {
-      tappedBtn = btn;
-      btn.disabled = true;
-      btn.style.opacity = '0.4';
-      btn.style.pointerEvents = 'none';
-    }
-  });
-
-  // If this choice finds an offer, mark main done and hide remaining choices
-  // (the offer card will take over)
-  if (choice.offersOffer && loc.offer) {
-    locState.mainDone = true;
-    container.classList.add('hidden');
-  }
-
-  // Track that at least one choice was made
-  if (!locState._choicesMade) locState._choicesMade = 0;
-  locState._choicesMade++;
-
-  // If all choices used, mark main done
-  var totalChoices = loc.main.choices.length;
-  if (locState._choicesMade >= totalChoices) {
-    locState.mainDone = true;
-  }
+  container.classList.add('hidden');
 
   var playerBubble = document.getElementById('player-bubble');
   typewriter(playerBubble, choice.text, 25, function() {
@@ -1120,10 +1094,7 @@ function afterMainResponse(choice, loc) {
         document.getElementById('loc-avatar').src = char.happy;
       }, 1500);
     }
-    // Only mark completed if all choices exhausted
-    if (locState.mainDone) {
-      locState.state = 'completed';
-    }
+    locState.state = 'completed';
   }
 }
 
@@ -1160,15 +1131,30 @@ function buildSecondaryNPCs(loc) {
   });
 }
 
+function restoreMainChoices() {
+  // If main dialogue hasn't been done, re-show the choices
+  if (!S.currentLocation) return;
+  var locState = S.locations[S.currentLocation.id];
+  if (!locState.mainDone) {
+    showChoices(S.currentLocation.main.choices, S.currentLocation);
+  }
+}
+
 function playSecondaryExchange(sec) {
   var exchange = sec.exchanges[0];
   if (!exchange) return;
 
-  if (!exchange.npcBubble && exchange.choices.length === 0) {
+  // Hide main choices while secondary plays
+  document.getElementById('choice-buttons').classList.add('hidden');
+
+  // Chat-only interaction (cat, dog, etc.)
+  if (!exchange.npcBubble && (!exchange.choices || exchange.choices.length === 0)) {
     var msgs = Array.isArray(exchange.chatMsg) ? exchange.chatMsg : [exchange.chatMsg];
     msgs.forEach(function(msg, i) {
       setTimeout(function() { addChatMessage(msg.text, msg.user); }, i * 600);
     });
+    // Restore main choices after a beat
+    setTimeout(restoreMainChoices, 1000);
     return;
   }
 
@@ -1180,10 +1166,13 @@ function playSecondaryExchange(sec) {
       if (exchange.choices && exchange.choices.length > 0) {
         showSecondaryChoices(exchange);
       } else {
+        // No choices — just flavor bubble + chat
         var msgs = Array.isArray(exchange.chatMsg) ? exchange.chatMsg : [exchange.chatMsg];
         msgs.forEach(function(msg, i) {
           setTimeout(function() { addChatMessage(msg.text, msg.user); }, 800 + i * 600);
         });
+        // Restore main choices after the exchange
+        setTimeout(restoreMainChoices, 2000);
       }
     });
   }
@@ -1213,6 +1202,8 @@ function showSecondaryChoices(exchange) {
             setTimeout(function() { addChatMessage(msg.text, msg.user); }, i * 600);
           });
         }, 800);
+        // Restore main choices after secondary resolves
+        setTimeout(restoreMainChoices, 2000);
       });
     });
     container.appendChild(btn);
