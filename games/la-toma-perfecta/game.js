@@ -122,6 +122,11 @@ const STEPS = [
     id: 'zone',
     msg: 'Ahora busca un buen fondo para grabar. Pared limpia, sin estanterías ni desorden detrás.',
     hotspots: [],
+    onStart: () => {
+      // Ensure pet is gone
+      const pet = document.getElementById('pet-asset');
+      if (pet) pet.remove();
+    },
     onResolve: null,
     resolveMsg: '¡Esta es la zona! Vamos a grabar.',
   },
@@ -881,7 +886,9 @@ function startPhase2() {
   S.recRounds = buildRounds();
   showScreen('recording');
   hideSpeech();
-  setLuca('celebrating');
+  // Hide the fixed Luca — recording screen has its own Luca inside camera-frame
+  const lucaEl = document.getElementById('luca');
+  if (lucaEl) lucaEl.hidden = true;
 
   const sidebar = document.getElementById('error-sidebar');
   sidebar.innerHTML = '';
