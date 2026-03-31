@@ -978,8 +978,24 @@ function clearDialogue() {
   choiceButtons.innerHTML = '';
 }
 
+// Auto-dismiss bubble after a delay based on text length
+// ~60ms per character reading time, min 3s, max 10s
+function autoDismissBubble(element, text) {
+  var readTime = Math.max(3000, Math.min(10000, text.length * 60));
+  setTimeout(function() {
+    element.style.transition = 'opacity 0.5s ease';
+    element.style.opacity = '0';
+    setTimeout(function() {
+      element.classList.add('hidden');
+      element.style.opacity = '';
+      element.style.transition = '';
+    }, 500);
+  }, readTime);
+}
+
 function typewriter(element, text, speed, callback) {
   element.classList.remove('hidden');
+  element.style.opacity = '1';
   element.textContent = '';
   var i = 0;
   var interval = setInterval(function() {
@@ -989,6 +1005,8 @@ function typewriter(element, text, speed, callback) {
       clearInterval(interval);
       var idx = activeTypewriters.indexOf(interval);
       if (idx > -1) activeTypewriters.splice(idx, 1);
+      // Schedule auto-dismiss
+      autoDismissBubble(element, text);
       if (callback) setTimeout(callback, 500);
     }
   }, speed);
