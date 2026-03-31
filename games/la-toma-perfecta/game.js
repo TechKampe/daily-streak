@@ -740,13 +740,12 @@ function startPhase2() {
     sidebar.appendChild(slot);
   }
 
-  // Intro
-  const frame = document.getElementById('camera-frame');
-  frame.querySelectorAll('.rec-card,.rec-btn-next,.rec-round-label').forEach(e => e.remove());
+  // Intro — use #rec-content (above camera-frame, z-index 140)
+  const container = document.getElementById('rec-content');
+  container.innerHTML = '';
 
   const intro = document.createElement('div');
-  intro.id = 'rec-intro';
-  intro.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:135;padding:24px;text-align:center;';
+  intro.style.cssText = 'text-align:center;';
   intro.innerHTML =
     '<p style="font-size:18px;font-weight:800;margin-bottom:12px;color:#FFFFAB;">La grabación</p>' +
     '<p style="font-size:15px;font-weight:600;line-height:1.6;margin-bottom:20px;">' +
@@ -755,19 +754,12 @@ function startPhase2() {
     'No toques las que están bien.<br>' +
     'Cuando hayas terminado, pulsa Siguiente.</p>' +
     '<button class="btn-primary" id="btn-rec-start" style="max-width:220px;font-size:16px;padding:12px;">¡Grabar!</button>';
-  frame.appendChild(intro);
+  container.appendChild(intro);
 
-  const startBtn = document.getElementById('btn-rec-start');
-  const startHandler = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    startBtn.removeEventListener('touchend', startHandler);
-    startBtn.removeEventListener('click', startHandler);
+  document.getElementById('btn-rec-start').addEventListener('click', () => {
     intro.remove();
     showRound();
-  };
-  startBtn.addEventListener('touchend', startHandler);
-  startBtn.addEventListener('click', startHandler);
+  });
 }
 
 function showRound() {
@@ -777,10 +769,8 @@ function showRound() {
   }
 
   const round = S.recRounds[S.recRoundIndex];
-  const frame = document.getElementById('camera-frame');
-
-  // Clear previous
-  frame.querySelectorAll('.rec-card,.rec-btn-next,.rec-round-label').forEach(e => e.remove());
+  const container = document.getElementById('rec-content');
+  container.innerHTML = '';
 
   // Update HUD
   const timer = document.getElementById('rec-timer');
@@ -788,26 +778,20 @@ function showRound() {
 
   // Round label
   const label = document.createElement('div');
-  label.className = 'rec-round-label';
   label.textContent = 'Elimina lo que está mal:';
-  label.style.cssText = 'position:absolute;top:6%;left:50%;transform:translateX(-50%);font-size:14px;font-weight:700;color:#FFFFAB;z-index:131;white-space:nowrap;';
-  frame.appendChild(label);
+  label.style.cssText = 'font-size:14px;font-weight:700;color:#FFFFAB;margin-bottom:12px;';
+  container.appendChild(label);
 
   // 3 cards
   const tapped = new Set();
-  const positions = ['12%', '26%', '40%'];
 
   round.forEach((card, i) => {
     const el = document.createElement('div');
-    el.className = 'rec-card';
-    el.dataset.idx = i;
+    el.style.cssText = 'width:100%;background:rgba(11,33,74,0.92);border:3px solid rgba(255,255,255,0.4);border-radius:12px;padding:12px 16px;color:#fff;font-weight:700;font-size:14px;text-align:center;cursor:pointer;margin-bottom:8px;transition:background 0.3s,border-color 0.3s,color 0.3s;';
     el.textContent = card.text;
-    el.style.top = positions[i];
-    frame.appendChild(el);
+    container.appendChild(el);
 
-    const cardTapHandler = (e) => {
-      e.stopPropagation();
-      e.preventDefault();
+    el.addEventListener('click', () => {
       if (tapped.has(i)) return;
       tapped.add(i);
 
@@ -830,27 +814,19 @@ function showRound() {
         vibrate('error');
         colorFlush('#E53935', '0.1');
       }
-    };
-    el.addEventListener('touchend', cardTapHandler);
-    el.addEventListener('click', cardTapHandler);
+    });
   });
 
-  // "Siguiente" button at the bottom
+  // "Siguiente" button
   const btn = document.createElement('button');
-  btn.className = 'btn-primary rec-btn-next';
+  btn.className = 'btn-primary';
   btn.textContent = S.recRoundIndex < 3 ? 'Siguiente ›' : 'Ver resultado';
-  btn.style.cssText = 'position:absolute;bottom:5%;left:50%;transform:translateX(-50%);max-width:200px;font-size:15px;padding:10px 20px;z-index:131;';
-  frame.appendChild(btn);
+  btn.style.cssText = 'max-width:200px;font-size:15px;padding:10px 20px;margin-top:12px;';
+  container.appendChild(btn);
 
-  const nextHandler = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    btn.removeEventListener('touchend', nextHandler);
-    btn.removeEventListener('click', nextHandler);
+  btn.addEventListener('click', () => {
     resolveRound(round, tapped);
-  };
-  btn.addEventListener('touchend', nextHandler);
-  btn.addEventListener('click', nextHandler);
+  });
 }
 
 function resolveRound(round, tapped) {
