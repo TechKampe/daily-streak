@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function startPhase1() {
-  S.phase = 'PHASE1';
+  S.phase = 'TOUR';
   S.currentStep = 0;
   S.stepHotspotsResolved = 0;
   lucaPrefix = 'pijama_';
@@ -419,6 +419,132 @@ function startPhase1() {
   if (lucaEl) lucaEl.hidden = false;
   setLuca('worried');
   buildPanorama();
+}
+
+// --- Tour guiado ---
+const TOUR_STEPS = [
+  {
+    msg: 'Luca necesita grabar su vídeo currículum. Pero antes hay que preparar el entorno.',
+    action: null,
+  },
+  {
+    msg: 'Desliza la habitación de lado a lado para descubrir lo que hay que arreglar.',
+    action: 'swipe-demo', // animate panorama left-right
+  },
+  {
+    msg: 'Toca los iconos parpadeantes para resolver cada problema. Cuando esté todo listo, pasarás a la grabación.',
+    action: null,
+  },
+];
+
+function startTour() {
+  S.tourStep = 0;
+  showTourStep();
+}
+
+function showTourStep() {
+  const step = TOUR_STEPS[S.tourStep];
+  const isLast = S.tourStep >= TOUR_STEPS.length - 1;
+
+  // Create overlay
+  let overlay = document.getElementById('tour-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'tour-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:20px;background:rgba(0,0,0,0.5);';
+    document.body.appendChild(overlay);
+  }
+
+  overlay.innerHTML = '';
+
+  // Tour card at the bottom
+  const card = document.createElement('div');
+  card.style.cssText = 'background:#fff;color:#0B214A;border-radius:16px;padding:18px 20px;max-width:340px;width:90%;text-align:center;margin-bottom:20px;';
+
+  // Step indicator dots
+  const dots = document.createElement('div');
+  dots.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-bottom:12px;';
+  TOUR_STEPS.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:' + (i === S.tourStep ? '#00E6BC' : '#ccc') + ';';
+    dots.appendChild(dot);
+  });
+  card.appendChild(dots);
+
+  // Message
+  const msg = document.createElement('p');
+  msg.style.cssText = 'font-size:15px;font-weight:600;line-height:1.5;margin-bottom:16px;';
+  msg.textContent = step.msg;
+  card.appendChild(msg);
+
+  // Button
+  const btn = document.createElement('button');
+  btn.className = 'btn-primary';
+  btn.style.cssText = 'max-width:200px;margin:0 auto;font-size:15px;padding:10px 20px;';
+  btn.textContent = isLast ? '¡Empezar!' : 'Siguiente';
+  card.appendChild(btn);
+
+  overlay.appendChild(card);
+
+  // Swipe demo animation
+  if (step.action === 'swipe-demo') {
+    runSwipeDemo();
+    // Show hand icon
+    const hand = document.createElement('div');
+    hand.id = 'tour-hand';
+    hand.style.cssText = 'position:fixed;top:40%;left:50%;transform:translateX(-50%);font-size:48px;z-index:201;animation:tourSwipe 1.5s ease-in-out infinite;pointer-events:none;';
+    hand.textContent = '👆';
+    document.body.appendChild(hand);
+
+    // Add swipe animation
+    const swipeStyle = document.createElement('style');
+    swipeStyle.id = 'tour-swipe-style';
+    swipeStyle.textContent = '@keyframes tourSwipe { 0%,100% { transform: translateX(-50%) translateX(40px); } 50% { transform: translateX(-50%) translateX(-40px); } }';
+    document.head.appendChild(swipeStyle);
+  }
+
+  btn.addEventListener('click', () => {
+    // Clean up demo elements
+    const hand = document.getElementById('tour-hand');
+    if (hand) hand.remove();
+    const swipeStyle = document.getElementById('tour-swipe-style');
+    if (swipeStyle) swipeStyle.remove();
+    stopSwipeDemo();
+
+    if (isLast) {
+      overlay.remove();
+      S.phase = 'PHASE1';
+      setTimeout(() => showStep(0), 300);
+    } else {
+      S.tourStep++;
+      showTourStep();
+    }
+  });
+}
+
+// Swipe demo — animate panorama left and right
+let swipeDemoRAF = null;
+function runSwipeDemo() {
+  const startOffset = S.panOffsetX;
+  const amplitude = 80;
+  const startTime = performance.now();
+
+  function animate(now) {
+    const elapsed = now - startTime;
+    const t = (elapsed % 2000) / 2000;
+    const wave = Math.sin(t * Math.PI * 2);
+    S.panOffsetX = startOffset + wave * amplitude;
+    updatePanorama();
+    swipeDemoRAF = requestAnimationFrame(animate);
+  }
+  swipeDemoRAF = requestAnimationFrame(animate);
+}
+
+function stopSwipeDemo() {
+  if (swipeDemoRAF) {
+    cancelAnimationFrame(swipeDemoRAF);
+    swipeDemoRAF = null;
+  }
 }
 
 // --- Panorama ---
@@ -441,9 +567,9 @@ function buildPanorama() {
     S.panOffsetX = -(S.panWidth - S.viewW) / 2;
     updatePanorama();
     createPetAsset();
-    // Computer blink NOT created at start — only when notifications step begins
     initDrag();
-    setTimeout(() => showStep(0), 500);
+    // Start tour instead of jumping to step 0
+    setTimeout(() => startTour(), 300);
   };
   if (img.complete && img.naturalWidth) img.onload();
 }
