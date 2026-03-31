@@ -40,7 +40,7 @@ const STEPS = [
   {
     id: 'noise',
     msg: 'Para grabar un buen vídeo currículum, necesito un sitio tranquilo. ¿Ves algo que haga ruido?',
-    hotspots: [{ id: 'window', xPct: 20, yPct: 45, icon: 'sound' }],
+    hotspots: [{ id: 'window', xPct: 24, yPct: 45, icon: 'sound' }],
     onResolve: () => { changeBg('bg_step1.jpg'); },
     resolveMsg: '¡Mejor! Sin ruido de la calle.',
   },
