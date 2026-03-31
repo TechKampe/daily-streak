@@ -21,7 +21,7 @@ function taskCompleted() {
 const IMG_H = 944;
 
 // --- Cloudinary CDN ---
-const CDN = 'https://res.cloudinary.com/kampe/image/upload/game_assets/s6d1/';
+const CDN = 'https://res.cloudinary.com/kampe/image/upload/';
 const ASSETS = {
   luca_pijama_happy: CDN + 'luca_pijama_happy_bntwls.png',
   luca_pijama_worried: CDN + 'luca_worried_oyx2eg.png',
