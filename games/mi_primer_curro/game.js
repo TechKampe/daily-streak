@@ -235,7 +235,7 @@ const AMBIENT_MESSAGES = [
   { user: 'TuboMaster_3000', text: 'yo soy fontanero pero me he metido aquí por error' },
   { user: 'xX_Rookie_Xx', text: 'alguien más nervioso o solo yo' },
   { user: 'ChispaVolt', text: 'venga que hoy encontramos algo seguro' },
-  { user: 'Ohm_Dulce_Ohm', text: 'mi madre dice que busque en Infojobs y ya' },
+  { user: 'Ohm_Dulce_Ohm', text: 'mi madre dice que busque en InfoCurros y ya' },
   { user: 'CableMan420', text: 'hay que moverse, el curro no viene solo' },
   { user: 'NoobElectricista', text: 'es mi primer día buscando, a ver qué tal' },
   { user: 'ElectricistaPRO_99', text: 'yo tardé 2 semanas en encontrar, pero encontré' },
@@ -1241,7 +1241,7 @@ function showPhoneUI(loc) {
   phoneUI.classList.remove('hidden');
 
   if (loc.id === 'portal') {
-    phoneUI.innerHTML = '<div class="phone-header">Infojobs — Buscar empleo</div><div class="phone-content"><div style="background:var(--panel);padding:10px;border-radius:8px;margin-bottom:12px;"><span style="color:var(--grey);">🔍 Buscar...</span></div><p style="color:var(--grey);font-size:12px;text-align:center;margin-top:20px;">Escribe lo que buscas para ver resultados</p></div>';
+    phoneUI.innerHTML = '<div class="phone-header">InfoCurros — Buscar empleo</div><div class="phone-content"><div style="background:var(--panel);padding:10px;border-radius:8px;margin-bottom:12px;"><span style="color:var(--grey);">🔍 Buscar...</span></div><p style="color:var(--grey);font-size:12px;text-align:center;margin-top:20px;">Escribe lo que buscas para ver resultados</p></div>';
   } else if (loc.id === 'whatsapp') {
     phoneUI.innerHTML = '<div class="phone-header">Electricistas Valencia 🔌 · 247 miembros</div><div class="phone-content"><p style="margin:8px 0;"><span style="color:var(--green);">Juan_Elec:</span> 😂😂😂</p><p style="margin:8px 0;"><span style="color:var(--green);">Milane 🇫🇷:</span> 🎤 0:47</p><p style="margin:8px 0;"><span style="color:var(--green);">Carlos_Instala:</span> Alguien vende taladro Bosch?</p><p style="margin:8px 0;"><span style="color:var(--green);">Pedro_ETT:</span> [imagen de meme]</p></div>';
   } else if (loc.id === 'telefono') {
