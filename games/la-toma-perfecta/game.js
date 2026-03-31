@@ -88,10 +88,13 @@ const STEPS = [
     ],
     resolveAny: true,
     onResolve: () => {
-      changeBg('bg_step5.jpg');
-      // Eliminar perro inmediatamente
+      // Eliminar perro — por ID y por búsqueda en panorama
       const pet = document.getElementById('pet-asset');
       if (pet) pet.remove();
+      document.querySelectorAll('#pet-asset, [id="pet-asset"]').forEach(p => p.remove());
+      // También eliminar cualquier imagen de perro suelta
+      document.querySelectorAll('#panorama img[src*="pet_dog"]').forEach(p => p.parentElement.remove());
+      changeBg('bg_step5.jpg');
     },
     resolveMsg: 'Sin distracciones. Puerta cerrada, mascota fuera.',
   },
