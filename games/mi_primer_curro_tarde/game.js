@@ -2165,42 +2165,97 @@ function populateResults() {
     })(el, delay, badgeIndex === 1);
   });
 
-  // Summary
+  // Per-location feedback
   var summaryContainer = document.getElementById('results-summary');
   summaryContainer.innerHTML = '';
-  var h4 = document.createElement('h4');
 
-  // Tier each location
+  var locationNames = { mensaje: 'El Mensaje', llamada: 'La Llamada', ett: 'La ETT' };
   var highCount = 0;
+  var medCount = 0;
+
   locIds.forEach(function(id) {
     var q = S.locations[id].quality;
-    // rough max per location ~500
-    if (q / 500 >= 0.75) highCount++;
+    var maxQ = 500;
+    var pct = Math.round((q / maxQ) * 100);
+    var tier;
+    if (pct >= 75) { tier = 'alto'; highCount++; }
+    else if (pct >= 40) { tier = 'medio'; medCount++; }
+    else { tier = 'bajo'; }
+
+    var row = document.createElement('div');
+    row.style.marginBottom = '8px';
+
+    var label = document.createElement('div');
+    label.style.fontFamily = 'var(--font-title)';
+    label.style.fontSize = '14px';
+    label.style.color = tier === 'alto' ? 'var(--green)' : tier === 'medio' ? 'var(--gold)' : 'var(--red)';
+    label.textContent = locationNames[id] + ': ' + pct + '%';
+    row.appendChild(label);
+
+    var feedback = document.createElement('div');
+    feedback.style.fontSize = '12px';
+    feedback.style.color = '#9BA0A8';
+    feedback.style.lineHeight = '1.3';
+
+    if (id === 'mensaje') {
+      if (tier === 'alto') {
+        feedback.textContent = 'Mensaje directo, con evidencia y pregunta final. Así se consiguen respuestas.';
+      } else if (tier === 'medio') {
+        feedback.textContent = 'El mensaje estaba bien, pero le faltaba algo: evidencia concreta o una pregunta que invite a responder.';
+      } else {
+        feedback.textContent = 'Recuerda: máximo 5 líneas, menciona tu portfolio verificado, y termina siempre con una pregunta concreta. "Quedo a su disposición" no funciona.';
+      }
+    } else if (id === 'llamada') {
+      if (tier === 'alto') {
+        feedback.textContent = 'Llamada clara, con presentación profesional y siguiente paso asegurado. Perfecto.';
+      } else if (tier === 'medio') {
+        feedback.textContent = 'La llamada iba bien, pero faltó cerrar con un siguiente paso concreto o mencionar tus evidencias.';
+      } else {
+        feedback.textContent = 'En una llamada: nombre y oficio en los primeros segundos, menciona tu portfolio, y nunca cuelgues sin un siguiente paso. Si dicen que no, pregunta si puedes mandar tu perfil.';
+      }
+    } else if (id === 'ett') {
+      if (tier === 'alto') {
+        feedback.textContent = 'Registro profesional: pediste por el técnico de selección, mostraste tu portfolio y programaste seguimiento.';
+      } else if (tier === 'medio') {
+        feedback.textContent = 'Te registraste, pero podrías haber pedido directamente por el técnico de selección y mostrado tu portfolio.';
+      } else {
+        feedback.textContent = 'En la ETT: pide hablar con el técnico de selección industrial, lleva tu portfolio en el móvil, y programa seguimiento cada 10-15 días. Dejar el CV en recepción no funciona.';
+      }
+    }
+    row.appendChild(feedback);
+    summaryContainer.appendChild(row);
   });
 
-  var summaryMsg;
-  if (highCount >= 3) {
-    summaryMsg = 'Tres candidaturas perfectas. Mañana toca entrevista, pero eso es otro servidor.';
-  } else if (highCount >= 1) {
-    summaryMsg = 'Has contactado bien, pero hay sitio para mejorar.';
-  } else {
-    summaryMsg = 'Contactar cuesta, pero cada intento enseña algo.';
-  }
+  // Overall message
+  var overall = document.createElement('div');
+  overall.style.marginTop = '10px';
+  overall.style.fontFamily = 'var(--font-title)';
+  overall.style.fontSize = '15px';
+  overall.style.textAlign = 'center';
 
-  h4.textContent = 'Resultado';
-  summaryContainer.appendChild(h4);
-  var p = document.createElement('p');
-  p.textContent = summaryMsg;
-  summaryContainer.appendChild(p);
+  if (highCount >= 3) {
+    overall.style.color = 'var(--green)';
+    overall.textContent = 'Tres candidaturas perfectas. Mañana toca la entrevista.';
+  } else if (highCount >= 1) {
+    overall.style.color = 'var(--gold)';
+    overall.textContent = 'Buen trabajo, pero siempre hay margen de mejora. La clave: evidencia concreta y siempre un siguiente paso.';
+  } else if (medCount >= 1) {
+    overall.style.color = 'var(--gold)';
+    overall.textContent = 'Has contactado, pero necesitas mejorar. Repasa los consejos de cada sección y vuelve a intentarlo.';
+  } else {
+    overall.style.color = 'var(--red)';
+    overall.textContent = 'Contactar cuesta, pero cada intento enseña. Tres reglas: sé directa, muestra evidencias, y cierra siempre con un siguiente paso.';
+  }
+  summaryContainer.appendChild(overall);
 
   // Vega result chat
   var vegaMsg;
   if (highCount >= 3) {
-    vegaMsg = 'Tres contactos bien hechos en una tarde. Mañana toca entrevista.';
+    vegaMsg = 'Tres contactos bien hechos en una tarde. Mañana toca preparar la entrevista.';
   } else if (highCount >= 1) {
-    vegaMsg = 'He contactado, pero puedo mejorar. Evidencia y siguiente paso.';
+    vegaMsg = 'He contactado, pero puedo mejorar. Evidencia, presentación clara, y siempre un siguiente paso.';
   } else {
-    vegaMsg = 'Contactar cuesta, pero cada intento enseña. La próxima, más directa.';
+    vegaMsg = 'No ha salido perfecto, pero ahora sé qué tengo que mejorar. La próxima vez, más directa y con el portfolio siempre a mano.';
   }
   var msgDelay = delayBase + badgeIndex * 200 + 400;
   setTimeout(function() {
