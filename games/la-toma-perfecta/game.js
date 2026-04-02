@@ -260,8 +260,7 @@ function showSpeech(text, duration) {
   clearTimeout(speechTimeout);
   const bubble = document.getElementById('speech-bubble');
   document.getElementById('speech-text').textContent = text;
-  // Position at the bottom, below Luca
-  bubble.style.cssText = 'position:fixed;bottom:20px;top:auto;left:5%;right:5%;width:90%;max-width:none;transform:none;z-index:60;background:#fff;color:#0B214A;border-radius:16px;padding:14px 18px;font-size:14px;font-weight:600;line-height:1.4;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
+  bubble.removeAttribute('style');
   bubble.hidden = false;
   if (duration) speechTimeout = setTimeout(() => { bubble.hidden = true; }, duration);
 }
@@ -986,7 +985,7 @@ function showRound() {
   const btn = document.createElement('button');
   btn.className = 'btn-primary';
   btn.textContent = S.recRoundIndex < 3 ? 'Siguiente ›' : 'Ver resultado';
-  btn.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:200px;font-size:15px;padding:10px 20px;z-index:141;';
+  btn.style.cssText = 'position:absolute;bottom:24px;left:50%;transform:translateX(-50%);max-width:200px;font-size:15px;padding:10px 20px;z-index:141;';
   document.getElementById('recording').appendChild(btn);
 
   btn.addEventListener('click', () => {
