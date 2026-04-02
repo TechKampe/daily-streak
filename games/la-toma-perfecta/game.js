@@ -985,7 +985,7 @@ function showRound() {
   const btn = document.createElement('button');
   btn.className = 'btn-primary';
   btn.textContent = S.recRoundIndex < 3 ? 'Siguiente ›' : 'Ver resultado';
-  btn.style.cssText = 'position:absolute;bottom:24px;left:50%;transform:translateX(-50%);max-width:200px;font-size:15px;padding:10px 20px;z-index:141;';
+  btn.style.cssText = 'position:absolute;bottom:calc(16px + env(safe-area-inset-bottom, 0px));left:50%;transform:translateX(-50%);max-width:220px;font-size:15px;padding:12px 20px;z-index:150;';
   document.getElementById('recording').appendChild(btn);
 
   btn.addEventListener('click', () => {
