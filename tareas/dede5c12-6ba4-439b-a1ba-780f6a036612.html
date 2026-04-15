@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obra en Acción - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneText">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el ítem con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">👷 Supervisor Junior</div>
+<div class="modal-body">Tu jefe te pide revisar 5 situaciones del día. Detecta el error en cada escena tocando el ítem incorrecto.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<script>
+const scenes=[
+{text:"El peón mezcla cemento en el patio",items:["Pala de mezcla","Agua limpia","Sin guantes al añadir cal","Cubeta metálica"],error:2,exp:"Manipular cal sin guantes causa quemaduras químicas graves. EPI obligatorio."},
+{text:"El oficial sube al andamio del segundo piso",items:["Casco puesto","Botas de seguridad","Sin línea de vida","Andamio bien anclado"],error:2,exp:"Trabajar en altura sin línea de vida incumple normativa. Riesgo de caída mortal."},
+{text:"Almacén de materiales junto a la entrada",items:["Sacos de yeso en zona húmeda","Ladrillos apilados","Herramientas ordenadas","Paso despejado"],error:0,exp:"El yeso absorbe humedad y se endurece. Debe almacenarse en lugar seco."},
+{text:"Electricista prepara la instalación",items:["Cables de colores normalizados","Cuadro eléctrico cerrado","Taladro sin broca correcta","Guantes aislantes"],error:2,exp:"Usar taladro con broca inadecuada daña material y genera riesgo de accidente."},
+{text:"Fontanero trabaja en el baño",items:["Tubería de PVC cortada","Pegamento especial","Llave inglesa","Gafas de protección en el bolsillo"],error:3,exp:"Las gafas deben estar puestas, no guardadas. Proyecciones pueden dañar los ojos."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sceneText=document.getElementById('sceneText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((it,i)=>`<button class="btn-option" onclick="selectItem(${i})">${it}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add('selected');});
+const correct=i===s.error;
+answers.push({scene:s.text,chosen:s.items[i],correctItem:s.items[s.error],correct,exp:s.exp});
+setTimeout(()=>{btns[i].classList.add(correct?'correct':'incorrect');},150);
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Revisión completada!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene}</div>
+<div class="result-answer">${a.correct?'✓ Correcto: ':'✗ Elegiste: '}${a.chosen}</div>
+${!a.correct?`<div class="result-answer">Error real: ${a.correctItem}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">La atención al detalle salva vidas. Revisa siempre EPIs, herramientas y almacenaje antes de empezar. La cultura preventiva empieza por ti.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
