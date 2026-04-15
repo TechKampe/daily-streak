@@ -1,0 +1,99 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: Herramientas de fontanería - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Apretar un racor de latón en el grifo",opts:["Llave inglesa","Alicates de punta","Llave fija"],ans:0,correct:"Llave inglesa",why:"La llave inglesa ajusta su apertura al racor. Los alicates dañarían el latón y la llave fija no se adapta."},
+{task:"Cortar tubo de cobre de 15mm",opts:["Sierra de arco","Cortatubos de cobre","Tijera de PVC"],ans:1,correct:"Cortatubos de cobre",why:"El cortatubos hace corte limpio sin virutas. La sierra deja rebabas y la tijera de PVC no corta metal."},
+{task:"Sujetar tubería para soldar",opts:["Alicates de presión","Llave inglesa","Destornillador"],ans:0,correct:"Alicates de presión",why:"Los alicates de presión fijan sin soltar. La llave resbalaría y el destornillador no sujeta tubos."},
+{task:"Desatascar sifón del lavabo",opts:["Llave de tubo","Llave inglesa","Alicates universales"],ans:0,correct:"Llave de tubo",why:"La llave de tubo agarra el sifón sin dañarlo. La inglesa resbalaría y los alicates marcarían el cromado."},
+{task:"Ajustar llave de paso empotrada",opts:["Destornillador plano","Llave Allen","Llave de carraca"],ans:1,correct:"Llave Allen",why:"Las llaves de paso llevan tornillo Allen. El destornillador no encaja y la carraca es para tuercas."},
+{task:"Sellar junta de goma en desagüe",opts:["Alicates de corte","Espátula","Llave ajustable"],ans:1,correct:"Espátula",why:"La espátula aplica sellador uniformemente. Los alicates no sirven y la llave es para apretar, no sellar."}
+];
+let idx=0,score=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];locked=false;
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+if(locked)return;locked=true;
+const t=tasks[idx],correct=i===t.ans;
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correct:t.correct,ok:correct,why:t.why});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns[i].classList.add(correct?'correct':'incorrect');
+btns[i].innerHTML=(correct?'✓ ':'✗ ')+t.opts[i];
+if(!correct)btns[t.ans].classList.add('correct');
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const tips=`<div class="result-item"><div class="result-question">💡 Consejos prácticos</div><div class="result-explanation">• Llave inglesa: racores y tuercas hexagonales.<br>• Cortatubos: cortes limpios en cobre/PVC.<br>• Alicates de presión: sujetar piezas fijas.<br>• Llave de tubo: sifones y tubos cromados.<br>• Llave Allen: tornillos empotrados.<br>• Espátula: aplicar sellador o masilla.</div></div>`;
+scene.innerHTML=`<div class="results-scroll"><div class="results-header"><div class="results-title">¡Prueba completada!</div><div class="results-score">${score}/${tasks.length}</div><div class="results-subtitle">herramientas correctas</div></div><div class="results-list">${answers.map(a=>`<div class="result-item ${a.ok?'correct':'incorrect'}"><div class="result-question">${a.task}</div><div class="result-answer">${a.ok?'✓ '+a.user:'✗ Elegiste: '+a.user+' → Correcta: '+a.correct}</div><div class="result-explanation">${a.why}</div></div>`).join('')}${tips}</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
