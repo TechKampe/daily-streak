@@ -1,0 +1,239 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primera semana de trabajo</div>
+<div class="modal-body">El oficial te asigna tareas. Demuestra que conoces qué herramienta usar en cada situación.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const tasks = [
+{
+task: "Apretar un tornillo de cabeza de estrella",
+options: ["Destornillador de estrella", "Llave inglesa", "Alicates"],
+correct: 0,
+explanations: [
+"Correcto: encaja perfectamente en la cabeza del tornillo.",
+"La llave inglesa es para tuercas, no tornillos.",
+"Los alicates dañarían la cabeza del tornillo."
+],
+tip: "Usa destornillador de estrella (Phillips) para tornillos con ranura en cruz."
+},
+{
+task: "Cortar un cable eléctrico fino",
+options: ["Alicates de corte", "Tijeras de papel", "Llave fija"],
+correct: 0,
+explanations: [
+"Correcto: diseñados para cortar cables con precisión.",
+"Las tijeras de papel no cortan cable y se dañan.",
+"La llave fija es para apretar tuercas, no corta."
+],
+tip: "Los alicates de corte tienen filos endurecidos para cables."
+},
+{
+task: "Medir el ancho de una ventana",
+options: ["Flexómetro", "Nivel de burbuja", "Destornillador plano"],
+correct: 0,
+explanations: [
+"Correcto: el flexómetro mide distancias con precisión.",
+"El nivel comprueba horizontalidad, no mide longitudes.",
+"El destornillador es para tornillos, no mide nada."
+],
+tip: "El flexómetro (metro) es esencial para medir longitudes."
+},
+{
+task: "Sujetar una pieza metálica mientras taladras",
+options: ["Tornillo de banco", "Martillo", "Cinta aislante"],
+correct: 0,
+explanations: [
+"Correcto: el tornillo de banco sujeta piezas con firmeza.",
+"El martillo golpea, no sujeta piezas.",
+"La cinta aislante no tiene fuerza para sujetar metal."
+],
+tip: "El tornillo de banco libera tus manos para trabajar seguro."
+},
+{
+task: "Pelar el extremo de un cable para conectarlo",
+options: ["Pelacables", "Alicates universales", "Llave Allen"],
+correct: 0,
+explanations: [
+"Correcto: pela el aislante sin dañar el conductor.",
+"Los alicates pueden cortar los hilos del cable.",
+"La llave Allen es para tornillos hexagonales."
+],
+tip: "El pelacables tiene muescas calibradas para cada grosor."
+},
+{
+task: "Aflojar una tuerca hexagonal oxidada",
+options: ["Llave fija", "Destornillador de estrella", "Pelacables"],
+correct: 0,
+explanations: [
+"Correcto: la llave fija aplica torque sin dañar la tuerca.",
+"El destornillador no encaja en tuercas hexagonales.",
+"El pelacables es solo para cables eléctricos."
+],
+tip: "Usa llave fija del tamaño exacto para no redondear la tuerca."
+}
+];
+
+let currentTask = 0;
+let score = 0;
+let answers = [];
+let canSelect = true;
+
+const scene = document.getElementById('scene');
+const taskEl = document.getElementById('task');
+const optionsEl = document.getElementById('options');
+const progressEl = document.getElementById('progress');
+const counterEl = document.getElementById('counter');
+const modal = document.getElementById('modal');
+
+function startGame() {
+    modal.classList.remove('active');
+    renderTask();
+}
+
+function renderTask() {
+    if (currentTask >= tasks.length) {
+        showResults();
+        return;
+    }
+    
+    canSelect = true;
+    const t = tasks[currentTask];
+    taskEl.textContent = t.task;
+    progressEl.style.width = (currentTask / tasks.length * 100) + '%';
+    counterEl.textContent = (currentTask + 1) + '/' + tasks.length;
+    
+    optionsEl.innerHTML = t.options.map((opt, i) => 
+        `<button class="btn-option" onclick="selectOption(${i})">${opt}</button>`
+    ).join('');
+    
+    ensureFits();
+}
+
+function selectOption(idx) {
+    if (!canSelect) return;
+    canSelect = false;
+    
+    const t = tasks[currentTask];
+    const isCorrect = idx === t.correct;
+    const buttons = optionsEl.querySelectorAll('.btn-option');
+    
+    buttons[idx].classList.add(isCorrect ? 'correct' : 'incorrect');
+    
+    if (isCorrect) {
+        score++;
+        buttons[idx].innerHTML += ' ✓';
+    } else {
+        buttons[idx].innerHTML += ' ✗';
+        buttons[t.correct].classList.add('correct');
+    }
+    
+    answers.push({
+        task: t.task,
+        userChoice: t.options[idx],
+        correctChoice: t.options[t.correct],
+        isCorrect: isCorrect,
+        explanations: t.explanations,
+        tip: t.tip
+    });
+    
+    setTimeout(() => {
+        currentTask++;
+        renderTask();
+    }, 1000);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">🔧 ¡Jornada completada!</div>
+                    <div class="results-score">${score}/${tasks.length}</div>
+                    <div class="results-subtitle">Herramientas correctas</div>
+                </div>
+                <div class="results-list">
+                    ${answers.map((a, i) => `
+                        <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${a.task}</div>
+                            <div class="result-answer">${a.isCorrect ? '✓ ' + a.correctChoice : '✗ Elegiste: ' + a.userChoice}</div>
+                            ${!a.isCorrect ? `<div class="result-explanation">Correcta: ${a.correctChoice}</div>` : ''}
+                            <div class="result-explanation">${a.explanations[tasks[i].correct]}</div>
+                            <div class="result-explanation"><strong>Consejo:</strong> ${a.tip}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+            action: 'TASK_COMPLETED'
+        }));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
