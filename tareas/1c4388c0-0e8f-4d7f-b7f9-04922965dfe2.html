@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Errores que Cuestan Caro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneText">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔍 Prueba de Técnico</div>
+<div class="modal-body">Tu supervisor te pone a prueba: detecta el error en cada situación antes de trabajar solo.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{text:"Instalación de agua caliente sanitaria. El técnico selecciona materiales:",
+opts:["Tubo de cobre","Tubo de PVC presión","Válvula antirretorno"],
+error:1,
+exp:"El PVC presión NO resiste agua caliente. Usa cobre, CPVC o multicapa para ACS."},
+{text:"Reparación de fuga en tubería. El técnico se prepara:",
+opts:["Cierra llave de paso","Usa gafas protectoras","Empieza a cortar directamente"],
+error:2,
+exp:"Nunca intervengas sin cerrar el suministro primero. Riesgo de inundación y daños."},
+{text:"Instalación eléctrica para horno. Cable seleccionado:",
+opts:["Cable 6mm² con tierra","Cable 1.5mm² flexible","Conexión a diferencial"],
+error:1,
+exp:"1.5mm² es insuficiente para hornos (>2kW). Mínimo 4-6mm² según potencia."},
+{text:"Cliente pregunta por garantía de la reparación:",
+opts:["2 años en piezas","Garantía verbal","Documentar por escrito"],
+error:1,
+exp:"Las garantías verbales no tienen validez legal. Siempre documenta por escrito."},
+{text:"Mantenimiento de caldera. El técnico revisa:",
+opts:["Presión del circuito","Ventilación del local","Omite revisar el CO"],
+error:2,
+exp:"No revisar emisiones de CO es peligroso. El monóxido de carbono es mortal."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),
+sceneText=document.getElementById('sceneText'),prog=document.getElementById('progress'),
+counter=document.getElementById('counter'),helper=document.getElementById('helper'),
+modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+prog.style.width=((idx)/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+helper.textContent='Toca el elemento con el error';
+opts.innerHTML=s.opts.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(i===s.error?'correct':'incorrect');
+if(j===s.error&&i!==s.error)b.classList.add('correct');
+});
+answers.push({
+scene:s.text,
+selected:s.opts[i],
+correct:s.opts[s.error],
+isCorrect:i===s.error,
+exp:s.exp
+});
+helper.textContent=i===s.error?'¡Correcto!':'Error detectado';
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+const score=answers.filter(a=>a.isCorrect).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Revisión Completa</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}</div>
+<div class="result-answer">${a.isCorrect?'✓ Detectaste: '+a.selected:'✗ Elegiste: '+a.selected}</div>
+${!a.isCorrect?`<div class="result-answer">Correcto: ${a.correct}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Antes de actuar, verifica materiales y condiciones. Ante la duda, pregunta. Un minuto de revisión evita horas de problemas.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
