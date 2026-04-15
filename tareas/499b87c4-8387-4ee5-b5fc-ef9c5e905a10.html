@@ -1,0 +1,107 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas de fontanería - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Apretar la tuerca de un grifo",tools:["Llave inglesa","Alicates","Llave de cadena"],ans:0,exp:"La llave inglesa es ajustable y no daña la tuerca. Los alicates pueden marcar el metal y la llave de cadena es para tubos redondos."},
+{task:"Sellar una unión roscada de agua",tools:["Cinta de teflón","Masilla","Silicona"],ans:0,exp:"El teflón sella roscas metálicas sin endurecerse. La masilla es para desagües y la silicona no resiste presión de agua."},
+{task:"Desatascar un sifón de lavabo",tools:["Desatascador manual","Llave de cadena","Soplete"],ans:0,exp:"El desatascador crea presión para eliminar el tapón. La llave de cadena desmonta tubos y el soplete es para soldar."},
+{task:"Cortar tubo de cobre de 15mm",tools:["Cortatubos","Sierra de arco","Tijera de PVC"],ans:0,exp:"El cortatubos hace cortes limpios sin rebabas. La sierra deja rebabas y la tijera de PVC no corta metal."},
+{task:"Doblar tubo de cobre sin aplastarlo",tools:["Muelle doblador","Alicates","Llave inglesa"],ans:0,exp:"El muelle interior evita que el tubo se aplaste al doblar. Los alicates y la llave lo deformarían."},
+{task:"Unir dos tubos de cobre con soldadura",tools:["Soplete","Pistola de silicona","Llave inglesa"],ans:0,exp:"El soplete calienta para soldar con estaño. La silicona no resiste calor ni presión y la llave solo aprieta."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.tools.map((tool,i)=>`<button class="btn-option" onclick="select(${i})">${tool}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx];
+const correct=i===t.ans;
+if(correct)score++;
+answers.push({task:t.task,correct,userChoice:t.tools[i],correctTool:t.tools[t.ans],exp:t.exp});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i){
+b.classList.add(correct?'correct':'incorrect');
+b.innerHTML=(correct?'✓ ':'✗ ')+b.textContent;
+}
+if(j===t.ans&&!correct){
+b.classList.add('correct');
+b.innerHTML='✓ '+b.textContent;
+}
+});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const tips=`<div class="result-item"><div class="result-question">💡 Consejos prácticos</div><div class="result-explanation">• Llave inglesa: para tuercas y racores ajustables.<br>• Teflón: siempre en roscas de agua a presión.<br>• Cortatubos: cortes limpios en cobre y PVC.<br>• Soplete: soldadura de cobre con estaño.</div></div>`;
+scene.innerHTML=`<div class="results-scroll"><div class="results-header"><div class="results-title">¡Jornada completada!</div><div class="results-score">${score}/${tasks.length}</div><div class="results-subtitle">Herramientas correctas</div></div><div class="results-list">${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}"><div class="result-question">${a.task}</div><div class="result-answer">${a.correct?'✓ '+a.userChoice:'✗ Elegiste: '+a.userChoice+' → Correcta: '+a.correctTool}</div><div class="result-explanation">${a.exp}</div></div>`).join('')}${tips}</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',render);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
