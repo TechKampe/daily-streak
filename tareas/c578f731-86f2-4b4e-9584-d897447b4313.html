@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Conexiones Seguras: El Quiz del Aprendiz - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Conexiones Seguras</div>
+<div class="subtitle" id="question">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Tu mentor evalúa tus conocimientos de seguridad</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">👷 Primera semana en obra</div>
+<div class="modal-body">Tu mentor quiere comprobar que conoces las normas básicas de seguridad eléctrica. ¡Demuestra lo que sabes!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startQuiz()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const data = [
+{
+q: "¿Qué EPI es obligatorio para trabajos eléctricos?",
+opts: ["Guantes aislantes", "Gafas de sol", "Rodilleras"],
+ans: 0,
+exp: "Los guantes aislantes protegen contra descargas eléctricas y son obligatorios en cualquier intervención."
+},
+{
+q: "¿De qué color es el cable de tierra según normativa?",
+opts: ["Azul", "Verde/Amarillo", "Marrón"],
+ans: 1,
+exp: "El verde/amarillo identifica siempre el conductor de protección (tierra) según la norma UNE."
+},
+{
+q: "Un compañero sufre descarga eléctrica, ¿qué haces primero?",
+opts: ["Tocarlo para apartarlo", "Cortar la corriente", "Echarle agua"],
+ans: 1,
+exp: "Primero corta la corriente para evitar que tú también te electrocutes. Nunca toques a la víctima directamente."
+},
+{
+q: "¿Cómo verificas ausencia de tensión?",
+opts: ["Tocando el cable", "Con polímetro o detector", "Mirando el cuadro"],
+ans: 1,
+exp: "Siempre usa un polímetro o detector de tensión. Nunca confíes solo en que el interruptor esté bajado."
+},
+{
+q: "¿Qué señal indica zona de riesgo eléctrico?",
+opts: ["Triángulo con rayo", "Círculo azul", "Cuadrado verde"],
+ans: 0,
+exp: "El triángulo amarillo con rayo negro es la señal universal de peligro eléctrico."
+}
+];
+
+let idx = 0, score = 0, answers = [];
+const scene = document.getElementById('scene');
+const opts = document.getElementById('options');
+const qEl = document.getElementById('question');
+const prog = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const modal = document.getElementById('modal');
+
+function startQuiz() {
+modal.classList.remove('active');
+render();
+}
+
+function render() {
+if (idx >= data.length) {
+showResults();
+return;
+}
+const d = data[idx];
+qEl.textContent = d.q;
+prog.style.width = (idx / data.length * 100) + '%';
+counter.textContent = (idx + 1) + '/' + data.length;
+opts.innerHTML = d.opts.map((o, i) => 
+`<button class="btn-option" onclick="selectAnswer(${i})" aria-label="Opción: ${o}">${o}</button>`
+).join('');
+opts.style.opacity = '1';
+ensureFits();
+}
+
+function selectAnswer(i) {
+const btns = opts.querySelectorAll('.btn-option');
+btns.forEach(b => b.disabled = true);
+const correct = i === data[idx].ans;
+btns[i].classList.add(correct ? 'correct' : 'incorrect');
+if (!correct) {
+btns[data[idx].ans].classList.add('correct');
+}
+if (correct) score++;
+answers.push({
+q: data[idx].q,
+correct,
+exp: data[idx].exp,
+user: data[idx].opts[i],
+correctAns: data[idx].opts[data[idx].ans]
+});
+opts.style.opacity = '0.7';
+setTimeout(() => {
+idx++;
+render();
+}, 800);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🎓 ¡Evaluación completada!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a, i) => `
+<div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+<div class="result-question">${i + 1}. ${a.q}</div>
+<div class="result-answer">${a.correct ? '✓ ' + a.user : '✗ Tu respuesta: ' + a.user}</div>
+${!a.correct ? `<div class="result-answer">✓ Correcta: ${a.correctAns}</div>` : ''}
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo del mentor</div>
+<div class="result-explanation">La seguridad empieza por ti. Verifica siempre antes de tocar y nunca trabajes solo en instalaciones de riesgo.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({
+action: 'TASK_COMPLETED'
+}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale', scale);
+}
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
