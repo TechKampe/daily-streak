@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 ¿Seguro o Peligro? Decisiones Eléctricas - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 ¿Seguro o Peligro?</div>
+<div class="subtitle" id="subtitle">Primera semana de prácticas</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-card" id="card">
+<div class="card-content" id="cardContent"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o pulsa para responder</div>
+<div class="tinder-buttons" id="tinderButtons">
+<button class="btn-option" id="btnIncorrect">❌ Incorrecto</button>
+<button class="btn-option" id="btnCorrect">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">👷 Tutorial</div>
+<div class="modal-body">Tu mentor te muestra situaciones. Desliza derecha si es SEGURO o izquierda si es PELIGROSO.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Desconectar el diferencial antes de manipular un enchufe",correct:true,exp:"Correcto. Es la primera regla de oro: cortar todas las fuentes de tensión."},
+{text:"Usar herramientas con mango de metal cerca de cables",correct:false,exp:"Peligroso. Siempre usa herramientas con aislamiento homologado (1000V)."},
+{text:"Comprobar ausencia de tensión con un buscapolos",correct:true,exp:"Correcto. Verificar ausencia de tensión es la tercera regla de oro."},
+{text:"Trabajar con las manos mojadas en el cuadro eléctrico",correct:false,exp:"Muy peligroso. El agua reduce la resistencia del cuerpo y aumenta el riesgo de electrocución."},
+{text:"Señalizar la zona de trabajo con carteles de advertencia",correct:true,exp:"Correcto. Señalizar evita que otros reconecten la instalación mientras trabajas."},
+{text:"Reconectar sin avisar al compañero que trabaja en el circuito",correct:false,exp:"Muy peligroso. Siempre confirma que nadie trabaja antes de reconectar."}
+];
+let idx=0,answers=[],startX=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('card'),cardContent=document.getElementById('cardContent'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),btnCorrect=document.getElementById('btnCorrect'),btnIncorrect=document.getElementById('btnIncorrect');
+
+function startGame(){modal.classList.remove('active');renderCard();}
+
+function renderCard(){
+if(idx>=cards.length){showResults();return}
+cardContent.textContent=cards[idx].text;
+progress.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+card.style.transition='none';
+ensureFits();
+}
+
+function answer(isCorrect){
+const c=cards[idx];
+const userCorrect=isCorrect===c.correct;
+answers.push({text:c.text,userAnswer:isCorrect,wasCorrect:userCorrect,exp:c.exp});
+animateCard(isCorrect);
+}
+
+function animateCard(isCorrect){
+const dir=isCorrect?1:-1;
+card.style.transition='transform 0.3s ease-out, opacity 0.3s ease-out';
+card.style.transform=`translateX(${dir*400}px) rotate(${dir*30}deg)`;
+card.style.opacity='0';
+setTimeout(()=>{idx++;renderCard();},300);
+}
+
+card.addEventListener('touchstart',e=>{
+isDragging=true;
+startX=e.touches[0].clientX;
+card.style.transition='none';
+},{passive:true});
+
+card.addEventListener('touchmove',e=>{
+if(!isDragging)return;
+currentX=e.touches[0].clientX-startX;
+const rotation=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotation}deg)`;
+},{passive:true});
+
+card.addEventListener('touchend',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(Math.abs(currentX)>80){
+answer(currentX>0);
+}else{
+card.style.transition='transform 0.2s ease-out';
+card.style.transform='translateX(0) rotate(0deg)';
+}
+currentX=0;
+});
+
+card.addEventListener('mousedown',e=>{
+isDragging=true;
+startX=e.clientX;
+card.style.transition='none';
+});
+
+document.addEventListener('mousemove',e=>{
+if(!isDragging)return;
+currentX=e.clientX-startX;
+const rotation=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotation}deg)`;
+});
+
+document.addEventListener('mouseup',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(Math.abs(currentX)>80){
+answer(currentX>0);
+}else{
+card.style.transition='transform 0.2s ease-out';
+card.style.transform='translateX(0) rotate(0deg)';
+}
+currentX=0;
+});
+
+btnCorrect.onclick=()=>answer(true);
+btnIncorrect.onclick=()=>answer(false);
+
+function showResults(){
+const score=answers.filter(a=>a.wasCorrect).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Decisiones correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.wasCorrect?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAnswer?'✅ Seguro':'❌ Peligroso'} ${a.wasCorrect?'✓':'✗'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-message">
+${score>=5?'¡Excelente! Tienes buen ojo para la seguridad eléctrica.':score>=3?'Buen intento. Repasa las 5 reglas de oro de la electricidad.':'Necesitas reforzar los conceptos de PRL eléctrica. ¡La seguridad es lo primero!'}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
