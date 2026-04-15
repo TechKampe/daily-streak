@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 🔧</div>
+<div class="subtitle" id="subtitle">Rellena el hueco con la opción correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="sentence"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{text:"Para cortar tubería de cobre uso el",blank:"cortatubos",opts:["cortatubos","sierra","llave inglesa"],exp:"El cortatubos da un corte limpio sin rebabas. La sierra dejaría bordes irregulares y la llave inglesa es para apretar."},
+{text:"El sellado de roscas se hace con",blank:"teflón",opts:["teflón","silicona","masilla"],exp:"El teflón (cinta PTFE) sella roscas metálicas. La silicona es para juntas fijas y la masilla no resiste presión."},
+{text:"Para detectar fugas aplico",blank:"agua jabonosa",opts:["agua jabonosa","pintura","aceite"],exp:"El agua jabonosa forma burbujas donde hay fuga. La pintura y el aceite no revelan escapes de gas."},
+{text:"La herramienta para apretar tuercas es la",blank:"llave inglesa",opts:["llave inglesa","alicates","destornillador"],exp:"La llave inglesa se ajusta a distintos tamaños de tuerca. Los alicates dañan las aristas y el destornillador es para tornillos."},
+{text:"Para soldar tubos de cobre necesito un",blank:"soplete",opts:["soplete","soldador eléctrico","pistola de calor"],exp:"El soplete alcanza la temperatura necesaria para soldar cobre. El soldador eléctrico es para electrónica y la pistola de calor no llega a fundir el estaño."},
+{text:"El tubo flexible para conectar grifos se llama",blank:"latiguillo",opts:["latiguillo","manguera","sifón"],exp:"El latiguillo es el flexible trenzado para grifería. La manguera es para riego y el sifón es la pieza curva del desagüe."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),sentenceEl=document.getElementById('sentence'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+sentenceEl.innerHTML=d.text+' <u>___</u>.';
+optsEl.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" onclick="selectOpt(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOpt(i){
+const d=data[idx];
+const correct=d.opts[i]===d.blank;
+answers.push({text:d.text,blank:d.blank,user:d.opts[i],correct,exp:d.exp});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(correct?'correct':'incorrect');if(d.opts[j]===d.blank)b.classList.add('correct');});
+sentenceEl.innerHTML=d.text+' <u>'+d.blank+'</u>.';
+setTimeout(()=>{idx++;render();},700);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text} <u>${a.blank}</u>.</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Usar la terminología correcta en obra evita confusiones y accidentes. Pide siempre la herramienta por su nombre exacto.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
