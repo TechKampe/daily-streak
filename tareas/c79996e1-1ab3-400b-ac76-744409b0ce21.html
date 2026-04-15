@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: Herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Apretar una tuerca en un espacio muy reducido",opts:["Llave inglesa","Llave de carraca","Alicates"],ans:1,correct:"Llave de carraca",why:"La llave de carraca permite girar en espacios reducidos sin reposicionar. La llave inglesa necesita más espacio y los alicates dañarían la tuerca."},
+{task:"Pelar el aislante de un cable eléctrico de 2.5mm",opts:["Tijeras","Alicates pelacables","Cúter"],ans:1,correct:"Alicates pelacables",why:"Los pelacables cortan solo el aislante sin dañar el cobre. Las tijeras o cúter pueden cortar los hilos conductores."},
+{task:"Comprobar que una superficie está horizontal",opts:["Flexómetro","Nivel de burbuja","Escuadra"],ans:1,correct:"Nivel de burbuja",why:"El nivel de burbuja indica si hay inclinación. El flexómetro mide distancias y la escuadra mide ángulos rectos, no horizontalidad."},
+{task:"Medir la distancia entre dos puntos en una pared",opts:["Nivel de burbuja","Regla de albañil","Flexómetro"],ans:2,correct:"Flexómetro",why:"El flexómetro (cinta métrica) mide distancias largas con precisión. El nivel no mide y la regla es corta para paredes."},
+{task:"Cortar un azulejo de cerámica",opts:["Cortavidrios","Cortadora de azulejos","Sierra de calar"],ans:1,correct:"Cortadora de azulejos",why:"La cortadora de azulejos hace cortes limpios en cerámica. El cortavidrios es para vidrio y la sierra astillaría el azulejo."},
+{task:"Aflojar un tornillo pasado de rosca",opts:["Destornillador normal","Destornillador de impacto","Alicates de punta"],ans:1,correct:"Destornillador de impacto",why:"El de impacto genera golpes que liberan tornillos atascados. El normal patinaría y los alicates dañarían la cabeza."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx];
+const correct=i===t.ans;
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(correct?'correct':'incorrect');if(j===t.ans&&!correct)b.classList.add('correct');});
+if(correct)score++;
+answers.push({task:t.task,userChoice:t.opts[i],correct:correct,correctTool:t.correct,why:t.why});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const tips="Consejo: Lleva siempre llave de carraca para espacios reducidos, pelacables para cables, nivel para superficies y flexómetro para medir.";
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Jornada completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctTool:'✗ Elegiste: '+a.userChoice+' → Correcta: '+a.correctTool}</div>
+<div class="result-explanation">${a.why}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">${tips}</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
