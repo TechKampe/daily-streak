@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🗣️ Tu primera reunión con el cliente - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🗣️ Tu primera reunión con el cliente</div>
+<div class="subtitle" id="subtitle">Primera visita solo a un cliente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="turn-badge">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="chat-container" id="chat-container"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Elige tu respuesta</div>
+<div class="chat-options" id="chat-options"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const avatars = {
+mentor: { name: "Carlos (Mentor)", img: "https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" },
+cliente: { name: "Sr. Martínez", img: "https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png" }
+};
+
+const turns = [
+{
+messages: [
+{ from: "cliente", text: "¡Por fin llegas! Llevo días con este enchufe echando chispas. ¿Eres el electricista?" }
+],
+options: [
+{ text: "Buenos días, soy técnico de Kämpe. ¿Me cuenta qué ocurre?", score: "correct" },
+{ text: "Sí, soy yo. A ver ese enchufe.", score: "partial" },
+{ text: "Tranquilo, esto lo arreglo en 5 minutos.", score: "incorrect" }
+]
+},
+{
+messages: [
+{ from: "cliente", text: "Pues mira, cada vez que enchufo la plancha, salta una chispa gorda. Me da miedo." },
+{ from: "mentor", text: "💬 Recuerda: escucha bien y haz preguntas para entender el problema." }
+],
+options: [
+{ text: "¿Desde cuándo pasa? ¿Solo con la plancha o con otros aparatos?", score: "correct" },
+{ text: "Puede ser el enchufe o la plancha. Voy a mirar.", score: "partial" },
+{ text: "Eso es normal con aparatos de mucha potencia.", score: "incorrect" }
+]
+},
+{
+messages: [
+{ from: "cliente", text: "Solo con la plancha, pero es nueva. ¿Puedes arreglarlo ya? Tengo prisa." },
+{ from: "mentor", text: "💬 Antes de tocar nada, hay que cortar la luz de ese circuito." }
+],
+options: [
+{ text: "Por seguridad, debo cortar la luz de este circuito antes de revisar. ¿Le parece bien?", score: "correct" },
+{ text: "Voy a cortar la luz general un momento.", score: "partial" },
+{ text: "No hace falta cortar nada, lo miro rápido.", score: "incorrect" }
+]
+},
+{
+messages: [
+{ from: "cliente", text: "Vale, pero date prisa que tengo una reunión en una hora. ¿Cuánto va a costar?" }
+],
+options: [
+{ text: "Primero reviso y le doy un presupuesto. Si es el enchufe, unos 40-60€ con mano de obra.", score: "correct" },
+{ text: "Depende de lo que encuentre. Ya le digo al final.", score: "partial" },
+{ text: "Unos 20€, es fácil.", score: "incorrect" }
+]
+},
+{
+messages: [
+{ from: "cliente", text: "De acuerdo, revísalo entonces. Espero que no tarde mucho." },
+{ from: "mentor", text: "💬 Buen trabajo. Cierra con profesionalidad y genera confianza." }
+],
+options: [
+{ text: "Perfecto. Le aviso en cuanto termine la revisión. Gracias por su confianza.", score: "correct" },
+{ text: "Ok, ahora me pongo. Ya le digo algo.", score: "partial" },
+{ text: "Sí, sí, tranquilo que esto está hecho.", score: "incorrect" }
+]
+}
+];
+
+const feedback = {
+correct: { icon: "✓", label: "Correcta", color: "correct" },
+partial: { icon: "~", label: "Parcial", color: "partial" },
+incorrect: { icon: "✗", label: "Incorrecta", color: "incorrect" }
+};
+
+const explanations = [
+"Presentarse de forma profesional genera confianza desde el primer momento.",
+"Hacer preguntas específicas ayuda a diagnosticar correctamente el problema.",
+"Comunicar medidas de seguridad demuestra profesionalidad y protege a todos.",
+"Dar un rango de precio orientativo gestiona expectativas sin comprometerse.",
+"Cerrar con agradecimiento refuerza la relación profesional con el cliente."
+];
+
+let currentTurn = 0;
+let answers = [];
+let selectedOption = -1;
+
+const chatContainer = document.getElementById('chat-container');
+const chatOptions = document.getElementById('chat-options');
+const progressBar = document.getElementById('progress-bar');
+const turnBadge = document.getElementById('turn-badge');
+const helper = document.getElementById('helper');
+const scene = document.getElementById('scene');
+
+function addMessage(from, text, isUser = false) {
+const msg = document.createElement('div');
+msg.className = 'chat-message ' + (isUser ? 'chat-message-user' : 'chat-message-other');
+if (!isUser) {
+const avatar = avatars[from];
+msg.innerHTML = `
+<img class="chat-avatar" src="${avatar.img}" alt="${avatar.name}">
+<div class="chat-bubble">
+<div class="chat-name">${avatar.name}</div>
+<div class="chat-text">${text}</div>
+</div>
+`;
+} else {
+msg.innerHTML = `<div class="chat-bubble chat-bubble-user"><div class="chat-text">${text}</div></div>`;
+}
+chatContainer.appendChild(msg);
+chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function renderTurn() {
+const turn = turns[currentTurn];
+turn.messages.forEach(m => addMessage(m.from, m.text));
+renderOptions(turn.options);
+updateProgress();
+ensureFits();
+}
+
+function renderOptions(options) {
+selectedOption = -1;
+chatOptions.innerHTML = options.map((opt, i) => 
+`<button class="btn-option" onclick="selectOption(${i})">${opt.text}</button>`
+).join('');
+}
+
+function selectOption(i) {
+selectedOption = i;
+const buttons = chatOptions.querySelectorAll('.btn-option');
+buttons.forEach((b, j) => b.classList.toggle('selected', j === i));
+setTimeout(() => confirmSelection(), 300);
+}
+
+function confirmSelection() {
+if (selectedOption < 0) return;
+const turn = turns[currentTurn];
+const chosen = turn.options[selectedOption];
+answers.push({ 
+question: turn.messages[0].text.substring(0, 40) + "...",
+response: chosen.text,
+score: chosen.score,
+explanation: explanations[currentTurn]
+});
+addMessage(null, chosen.text, true);
+chatOptions.innerHTML = '';
+currentTurn++;
+if (currentTurn < turns.length) {
+setTimeout(() => renderTurn(), 600);
+} else {
+setTimeout(() => showResults(), 500);
+}
+}
+
+function updateProgress() {
+const pct = (currentTurn / turns.length) * 100;
+progressBar.style.width = pct + '%';
+turnBadge.textContent = (currentTurn + 1) + '/' + turns.length;
+}
+
+function showResults() {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+const correctCount = answers.filter(a => a.score === 'correct').length;
+const partialCount = answers.filter(a => a.score === 'partial').length;
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Visita completada!</div>
+<div class="results-score">${correctCount}/${turns.length}</div>
+<div class="results-subtitle">Respuestas correctas${partialCount > 0 ? ` (${partialCount} parciales)` : ''}</div>
+</div>
+<div class="results-list">
+${answers.map((a, i) => `
+<div class="result-item ${a.score === 'correct' ? 'correct' : a.score === 'partial' ? '' : 'incorrect'}">
+<div class="result-question">Turno ${i + 1}: ${feedback[a.score].label}</div>
+<div class="result-answer">${a.response.substring(0, 50)}...</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> La confianza del cliente se gana en los primeros 2 minutos. Preséntate bien, escucha activamente y comunica siempre las medidas de seguridad.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>
+`;
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+}
+}
+
+window.addEventListener('load', () => { renderTurn(); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
