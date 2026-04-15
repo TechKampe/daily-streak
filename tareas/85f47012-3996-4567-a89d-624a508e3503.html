@@ -1,0 +1,227 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o Realidad? ⚡ Seguridad Eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o Realidad? ⚡</div>
+<div class="subtitle">Seguridad Eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-area"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">¿Verdadero o Falso? Elige tu respuesta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Primer día de prácticas ⚡</div>
+<div class="modal-body">El encargado te pone a prueba: ¿sabes distinguir los hechos de los mitos peligrosos sobre electricidad?</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements = [
+{
+text: "La baja tensión (230V) no es peligrosa porque es la que usamos en casa.",
+answer: false,
+explanation: "FALSO. 230V puede ser mortal. La mayoría de accidentes eléctricos domésticos ocurren con esta tensión."
+},
+{
+text: "Antes de trabajar en una instalación, siempre hay que verificar la ausencia de tensión.",
+answer: true,
+explanation: "VERDADERO. Es el primer paso obligatorio. Nunca confíes solo en que el interruptor está bajado."
+},
+{
+text: "Si un compañero está electrocutándose, debo apartarlo rápidamente con las manos.",
+answer: false,
+explanation: "FALSO. Nunca toques directamente a alguien electrocutado. Corta la corriente o usa material aislante."
+},
+{
+text: "Los guantes aislantes son obligatorios para trabajos en tensión.",
+answer: true,
+explanation: "VERDADERO. Los EPIs aislantes son obligatorios por normativa para cualquier trabajo con riesgo eléctrico."
+},
+{
+text: "La madera seca es un buen aislante, así que puedo usarla para protegerme.",
+answer: false,
+explanation: "FALSO. La madera puede contener humedad o impurezas que la hagan conductora. Usa solo EPIs homologados."
+},
+{
+text: "Los cuadros eléctricos deben estar siempre señalizados con el símbolo de riesgo eléctrico.",
+answer: true,
+explanation: "VERDADERO. La señalización es obligatoria según el REBT para advertir del peligro."
+},
+{
+text: "Si no hay chispas, significa que no hay corriente en el circuito.",
+answer: false,
+explanation: "FALSO. La ausencia de chispas no garantiza nada. Solo un comprobador de tensión es fiable."
+}
+];
+
+let currentIndex = 0;
+let score = 0;
+let answers = [];
+let canAnswer = true;
+
+const scene = document.getElementById('scene');
+const statementArea = document.getElementById('statement-area');
+const options = document.getElementById('options');
+const progress = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const modal = document.getElementById('modal');
+
+function startGame() {
+    modal.classList.remove('active');
+    render();
+}
+
+function render() {
+    if (currentIndex >= statements.length) {
+        showResults();
+        return;
+    }
+    
+    canAnswer = true;
+    const stmt = statements[currentIndex];
+    
+    progress.style.width = ((currentIndex) / statements.length * 100) + '%';
+    counter.textContent = (currentIndex + 1) + '/' + statements.length;
+    
+    statementArea.innerHTML = `<div class="statement-text">${stmt.text}</div>`;
+    
+    options.innerHTML = `
+        <button class="btn-option" id="btn-true" onclick="selectAnswer(true)">✓ Verdadero</button>
+        <button class="btn-option" id="btn-false" onclick="selectAnswer(false)">✗ Falso</button>
+    `;
+    
+    ensureFits();
+}
+
+function selectAnswer(userAnswer) {
+    if (!canAnswer) return;
+    canAnswer = false;
+    
+    const stmt = statements[currentIndex];
+    const isCorrect = userAnswer === stmt.answer;
+    
+    if (isCorrect) score++;
+    
+    answers.push({
+        text: stmt.text,
+        userAnswer: userAnswer,
+        correctAnswer: stmt.answer,
+        isCorrect: isCorrect,
+        explanation: stmt.explanation
+    });
+    
+    const btnTrue = document.getElementById('btn-true');
+    const btnFalse = document.getElementById('btn-false');
+    
+    if (userAnswer === true) {
+        btnTrue.classList.add(isCorrect ? 'correct' : 'incorrect');
+    } else {
+        btnFalse.classList.add(isCorrect ? 'correct' : 'incorrect');
+    }
+    
+    setTimeout(() => {
+        currentIndex++;
+        render();
+    }, 1000);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        
+        const percentage = Math.round((score / statements.length) * 100);
+        let message = '';
+        if (percentage >= 85) message = '¡Excelente! Conoces bien la seguridad eléctrica.';
+        else if (percentage >= 60) message = 'Buen trabajo, pero repasa algunos conceptos.';
+        else message = 'Necesitas repasar las normas de seguridad.';
+        
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">¡Prueba completada!</div>
+                    <div class="results-score">${score}/${statements.length}</div>
+                    <div class="results-subtitle">${message}</div>
+                </div>
+                
+                <div class="results-list">
+                    ${answers.map((a, i) => `
+                        <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${i + 1}. ${a.text}</div>
+                            <div class="result-answer">
+                                Tu respuesta: ${a.userAnswer ? 'Verdadero' : 'Falso'} ${a.isCorrect ? '✓' : '✗'}
+                                ${!a.isCorrect ? `<br>Correcta: ${a.correctAnswer ? 'Verdadero' : 'Falso'}` : ''}
+                            </div>
+                            <div class="result-explanation">${a.explanation}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="results-tip">
+                    <strong>💡 Consejo práctico:</strong> Antes de tocar cualquier conductor, usa SIEMPRE un comprobador de tensión homologado. Las 5 reglas de oro empiezan por verificar la ausencia de tensión.
+                </div>
+                
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+            action: 'TASK_COMPLETED'
+        }));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', () => {
+    modal.classList.add('active');
+    ensureFits();
+});
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
