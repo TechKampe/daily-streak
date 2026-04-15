@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Swipe Seguro: ¿Riesgo o Relax? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Swipe Seguro</div>
+<div class="subtitle">¿Riesgo o Relax?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="card">
+<div class="card-content" id="card-text"></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o pulsa para responder</div>
+<div class="tinder-buttons">
+<button class="btn-option" id="btn-incorrect" onclick="handleAnswer(false)">❌ Incorrecto</button>
+<button class="btn-option" id="btn-correct" onclick="handleAnswer(true)">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 Primer día en el taller</div>
+<div class="modal-body">El encargado te pone a prueba. Desliza derecha si es SEGURO, izquierda si es PELIGROSO.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Desconectar la corriente antes de tocar un enchufe",safe:true,exp:"Siempre corta la corriente antes de manipular instalaciones eléctricas."},
+{text:"Usar herramientas con mango metálico cerca de cables",safe:false,exp:"El metal conduce electricidad. Usa herramientas con mango aislante."},
+{text:"Avisar al supervisor si ves un cable pelado",safe:true,exp:"Reportar peligros evita accidentes. Nunca lo ignores."},
+{text:"Trabajar con las manos mojadas",safe:false,exp:"El agua conduce electricidad. Sécate siempre antes de trabajar."},
+{text:"Comprobar ausencia de tensión con un buscapolos",safe:true,exp:"Verificar que no hay corriente es obligatorio antes de intervenir."},
+{text:"Dejar bebidas sobre la mesa de trabajo",safe:false,exp:"Los líquidos pueden derramarse y causar cortocircuitos o electrocución."}
+];
+let idx=0,answers=[],startX=0,startY=0,isDragging=false;
+const scene=document.getElementById('scene'),card=document.getElementById('card'),cardText=document.getElementById('card-text'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal'),container=document.getElementById('tinder-container');
+
+function startGame(){modal.classList.remove('active');renderCard();}
+
+function renderCard(){
+if(idx>=cards.length){showResults();return}
+cardText.textContent=cards[idx].text;
+prog.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+card.classList.remove('swipe-left','swipe-right');
+ensureFits();
+}
+
+function handleAnswer(isCorrect){
+const c=cards[idx];
+const userSafe=isCorrect;
+const correct=userSafe===c.safe;
+answers.push({text:c.text,userSafe,actualSafe:c.safe,correct,exp:c.exp});
+animateSwipe(isCorrect);
+}
+
+function animateSwipe(right){
+const dir=right?1:-1;
+card.style.transform=`translateX(${dir*300}px) rotate(${dir*30}deg)`;
+card.style.opacity='0';
+setTimeout(()=>{idx++;renderCard();},300);
+}
+
+card.addEventListener('touchstart',e=>{
+isDragging=true;
+startX=e.touches[0].clientX;
+startY=e.touches[0].clientY;
+},{passive:true});
+
+card.addEventListener('touchmove',e=>{
+if(!isDragging)return;
+const x=e.touches[0].clientX-startX;
+const rot=x*0.1;
+card.style.transform=`translateX(${x}px) rotate(${rot}deg)`;
+card.style.opacity=Math.max(0.5,1-Math.abs(x)/300);
+},{passive:true});
+
+card.addEventListener('touchend',e=>{
+if(!isDragging)return;
+isDragging=false;
+const x=e.changedTouches[0].clientX-startX;
+if(Math.abs(x)>80){
+handleAnswer(x>0);
+}else{
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+}
+});
+
+card.addEventListener('mousedown',e=>{
+isDragging=true;
+startX=e.clientX;
+});
+
+document.addEventListener('mousemove',e=>{
+if(!isDragging)return;
+const x=e.clientX-startX;
+const rot=x*0.1;
+card.style.transform=`translateX(${x}px) rotate(${rot}deg)`;
+card.style.opacity=Math.max(0.5,1-Math.abs(x)/300);
+});
+
+document.addEventListener('mouseup',e=>{
+if(!isDragging)return;
+isDragging=false;
+const x=e.clientX-startX;
+if(Math.abs(x)>80){
+handleAnswer(x>0);
+}else{
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+}
+});
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔌 ¡Prueba completada!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.correct?'✓ Acertaste':'✗ Fallaste'} - Es ${a.actualSafe?'SEGURO':'PELIGROSO'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-message">
+<p>La prevención empieza por los pequeños gestos. ¡Sigue así!</p>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;padding:16px;perspective:1000px;}
+.tinder-card{background:#fff;border:3px solid #00E6BC;border-radius:16px;padding:24px;width:100%;max-width:300px;min-height:150px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.1rem;font-weight:500;transition:transform 0.3s ease,opacity 0.3s ease;cursor:grab;user-select:none;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
+.tinder-card:active{cursor:grabbing;}
+.card-content{line-height:1.4;}
+.tinder-buttons{display:flex;gap:12px;width:100%;justify-content:center;}
+.tinder-buttons .btn-option{flex:1;max-width:150px;}
+.results-message{text-align:center;padding:16px;font-size:1rem;color:#333;}
+</style>
+</body>
+</html>
