@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas para el curro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Pelar un cable de 2.5mm² para conectar un enchufe",opts:["Pelacables","Alicates universales","Tijeras"],ans:0,tools:{pelacables:"Corte limpio sin dañar hilos",alicates:"Pueden cortar hilos internos",tijeras:"No controlan profundidad de corte"}},
+{task:"Apretar tornillos en un cuadro eléctrico",opts:["Destornillador buscapolos","Destornillador plano","Llave inglesa"],ans:1,tools:{buscapolos:"Solo detecta tensión, no aprieta bien",plano:"Ajuste preciso en tornillos de cuadro",inglesa:"Para tuercas, no tornillos"}},
+{task:"Cortar un tubo de cobre de 15mm",opts:["Cortatubos","Sierra de mano","Alicates de corte"],ans:0,tools:{cortatubos:"Corte limpio y perpendicular",sierra:"Deja rebabas y corte irregular",alicates:"Deforman el tubo"}},
+{task:"Medir si hay corriente en un enchufe",opts:["Multímetro","Destornillador plano","Buscapolos"],ans:2,tools:{multimetro:"Sirve, pero el buscapolos es más rápido",plano:"No detecta corriente",buscapolos:"Comprobación rápida de fase"}},
+{task:"Sellar la junta entre bañera y pared",opts:["Silicona + pistola","Cinta aislante","Masilla de fontanero"],ans:0,tools:{silicona:"Flexible, impermeable y duradera",cinta:"No es impermeable ni duradera",masilla:"Para roscas, no juntas visibles"}},
+{task:"Fijar un taco de 8mm en pared de ladrillo",opts:["Taladro percutor","Destornillador eléctrico","Martillo"],ans:0,tools:{taladro:"Perfora ladrillo con broca de widia",destornillador:"No perfora materiales duros",martillo:"Rompe el ladrillo sin control"}}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx];
+const correct=i===t.ans;
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===t.ans&&!correct)b.classList.add('correct');
+});
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correctTool:t.opts[t.ans],correct,tools:t.tools});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+let consejos=new Set();
+answers.forEach(a=>{Object.keys(a.tools).forEach(k=>consejos.add(k))});
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔧 ¡Reto completado!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Elegiste: '+a.user}</div>
+${!a.correct?`<div class="result-explanation">Correcta: ${a.correctTool}</div>`:''}
+<div class="result-explanation">${Object.values(a.tools).join('. ')}.</div>
+</div>`).join('')}
+</div>
+<div class="results-header">
+<div class="results-subtitle">💡 Consejos prácticos</div>
+</div>
+<div class="results-list">
+<div class="result-item">
+<div class="result-explanation">• Pelacables: para cables sin dañar hilos.<br>• Buscapolos: comprobación rápida de fase.<br>• Cortatubos: cortes limpios en cobre.<br>• Silicona: juntas visibles y húmedas.<br>• Taladro percutor: materiales duros.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
