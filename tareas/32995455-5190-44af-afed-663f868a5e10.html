@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">Seguridad eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-area"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">¿Es verdadero o falso? Elige tu respuesta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const statements = [
+{text:"Los cables finos no pueden matarte porque llevan poca corriente.",correct:false,exp:"Mito peligroso. La corriente que mata depende de la tensión y la resistencia del cuerpo, no del grosor del cable."},
+{text:"Siempre hay que cortar la corriente antes de manipular una instalación.",correct:true,exp:"Realidad. Es la primera regla de las 5 reglas de oro: desconectar la fuente de alimentación."},
+{text:"Con guantes de trabajo normales estás protegido de descargas.",correct:false,exp:"Mito. Solo los guantes dieléctricos homologados protegen contra descargas eléctricas."},
+{text:"230V pueden causar la muerte de una persona.",correct:true,exp:"Realidad. La tensión doméstica de 230V es potencialmente mortal según las condiciones."},
+{text:"Si un compañero toca un cable con tensión, debes apartarlo con las manos.",correct:false,exp:"Mito peligroso. Debes cortar la corriente o usar material aislante para separarlo."},
+{text:"Antes de trabajar hay que verificar ausencia de tensión con un detector.",correct:true,exp:"Realidad. Es parte de las 5 reglas de oro y obligatorio antes de cualquier intervención."},
+{text:"La madera seca es un buen aislante y puedes usarla sin riesgo.",correct:false,exp:"Mito. La madera puede conducir electricidad si tiene humedad. Usa solo material homologado."}
+];
+
+let currentIdx = 0, score = 0, answers = [], canAnswer = true;
+const scene = document.getElementById('scene');
+const statementArea = document.getElementById('statement-area');
+const optionsArea = document.getElementById('options');
+const progressBar = document.getElementById('progress-bar');
+const counter = document.getElementById('counter');
+
+function render() {
+if (currentIdx >= statements.length) { showResults(); return; }
+canAnswer = true;
+const stmt = statements[currentIdx];
+progressBar.style.width = ((currentIdx) / statements.length * 100) + '%';
+counter.textContent = (currentIdx + 1) + '/' + statements.length;
+statementArea.innerHTML = `<div class="statement-text">${stmt.text}</div>`;
+optionsArea.innerHTML = `
+<button class="btn-option" id="btn-true" onclick="answer(true)">Verdadero</button>
+<button class="btn-option" id="btn-false" onclick="answer(false)">Falso</button>
+`;
+ensureFits();
+}
+
+function answer(userAnswer) {
+if (!canAnswer) return;
+canAnswer = false;
+const stmt = statements[currentIdx];
+const isCorrect = userAnswer === stmt.correct;
+if (isCorrect) score++;
+answers.push({
+text: stmt.text,
+userAnswer: userAnswer,
+correctAnswer: stmt.correct,
+isCorrect: isCorrect,
+exp: stmt.exp
+});
+const btnTrue = document.getElementById('btn-true');
+const btnFalse = document.getElementById('btn-false');
+if (userAnswer === true) {
+btnTrue.classList.add(isCorrect ? 'correct' : 'incorrect');
+} else {
+btnFalse.classList.add(isCorrect ? 'correct' : 'incorrect');
+}
+setTimeout(() => {
+currentIdx++;
+render();
+}, 1000);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a => `
+<div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAnswer ? 'Verdadero' : 'Falso'} ${a.isCorrect ? '✓' : '✗'}</div>
+<div class="result-answer">Correcto: ${a.correctAnswer ? 'Verdadero' : 'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="tip-box">
+<strong>💡 Consejo práctico:</strong> Siempre verifica la ausencia de tensión con un detector homologado antes de tocar cualquier conductor, aunque creas que está desconectado.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>
+`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale', scale);
+}
+}
+
+window.addEventListener('load', () => { render(); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+
+render();
+</script>
+</body>
+</html>
