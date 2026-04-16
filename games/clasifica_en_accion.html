@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Clasifica en Acción — Kämpe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ===================== RESET & BASE ===================== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            font-family: 'Baloo 2', cursive;
+            background: #0B214A;
+            color: #fff;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* ===================== SCREENS ===================== */
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* ===================== SPLASH ===================== */
+        #splash {
+            background: linear-gradient(160deg, #0B214A 0%, #132d5e 50%, #0B214A 100%);
+            gap: 24px;
+            padding: 32px;
+            text-align: center;
+        }
+        .splash-logo {
+            width: 160px;
+            height: auto;
+            filter: drop-shadow(0 4px 12px rgba(0,230,188,0.3));
+        }
+        .splash-title {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1.1;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .splash-title span {
+            color: #00E6BC;
+        }
+        .splash-trades {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 8px 0;
+        }
+        .splash-trade {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+        .splash-trade-icon {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+        }
+        .trade-elec { background: rgba(255,255,171,0.15); }
+        .trade-font { background: rgba(0,230,188,0.15); }
+        .trade-clima { background: rgba(4,255,180,0.15); }
+
+        /* ===================== FORM ===================== */
+        #form-screen {
+            background: linear-gradient(160deg, #0B214A 0%, #132d5e 50%, #0B214A 100%);
+            gap: 16px;
+            padding: 32px;
+        }
+        .form-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .form-group {
+            width: 100%;
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-family: 'Baloo 2', cursive;
+            font-size: 1rem;
+            font-weight: 500;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group input::placeholder {
+            color: rgba(255,255,255,0.35);
+        }
+        .form-group input:focus {
+            border-color: #00E6BC;
+        }
+
+        /* ===================== GAMEPLAY ===================== */
+        #gameplay {
+            background: #0B214A;
+            justify-content: flex-start;
+        }
+
+        /* HUD */
+        .hud {
+            width: 100%;
+            padding: 12px 20px;
+            padding-top: calc(12px + env(safe-area-inset-top));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        .hud-score {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        .hud-combo {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #00E6BC;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .hud-combo.visible { opacity: 1; }
+        .hud-lives {
+            display: flex;
+            gap: 6px;
+        }
+        .hud-heart {
+            font-size: 1.3rem;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        .hud-heart.lost {
+            opacity: 0.2;
+            transform: scale(0.7);
+        }
+
+        /* Game area */
+        .game-area {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Drop columns */
+        .columns {
+            position: absolute;
+            bottom: 0;
+            left: 0; right: 0;
+            height: 20%;
+            min-height: 100px;
+            display: flex;
+            z-index: 5;
+        }
+        .column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            border-top: 3px solid;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .column-elec {
+            border-color: #FFFFAB;
+            background: rgba(255,255,171,0.08);
+        }
+        .column-font {
+            border-color: #00E6BC;
+            background: rgba(0,230,188,0.08);
+        }
+        .column-clima {
+            border-color: #04FFB4;
+            background: rgba(4,255,180,0.08);
+        }
+        .column.highlight {
+            transform: scale(1.02);
+        }
+        .column-elec.highlight { background: rgba(255,255,171,0.2); }
+        .column-font.highlight { background: rgba(0,230,188,0.2); }
+        .column-clima.highlight { background: rgba(4,255,180,0.2); }
+
+        .column-icon {
+            font-size: 1.6rem;
+        }
+        .column-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .column-elec .column-label { color: #FFFFAB; }
+        .column-font .column-label { color: #00E6BC; }
+        .column-clima .column-label { color: #04FFB4; }
+
+        /* Falling pieces — bubble style */
+        .piece {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            cursor: grab;
+            touch-action: none;
+            z-index: 20;
+        }
+        .piece:active { cursor: grabbing; }
+        .piece.dragging {
+            z-index: 100;
+            transform: scale(1.12);
+        }
+        .piece-bubble {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 70%);
+            border: 2px solid rgba(255,255,255,0.25);
+            position: relative;
+        }
+        .piece-icon {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            pointer-events: none;
+        }
+        .piece-name {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.1;
+            max-width: 80px;
+            opacity: 0.85;
+            pointer-events: none;
+        }
+
+        /* Particle canvas */
+        #particle-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 60;
+        }
+
+        /* ===================== RESULTS ===================== */
+        #results {
+            background: linear-gradient(160deg, #0B214A 0%, #132d5e 50%, #0B214A 100%);
+            gap: 16px;
+            padding: 24px;
+            padding-top: calc(24px + env(safe-area-inset-top));
+            overflow-y: auto;
+            justify-content: flex-start;
+        }
+        .results-header {
+            text-align: center;
+            margin-top: 12px;
+        }
+        .results-score {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #00E6BC;
+        }
+        .results-msg {
+            font-size: 1.1rem;
+            font-weight: 600;
+            opacity: 0.9;
+            text-align: center;
+            max-width: 300px;
+        }
+
+        /* Recruitment */
+        .results-recruit {
+            background: rgba(0,230,188,0.1);
+            border: 1px solid rgba(0,230,188,0.25);
+            border-radius: 16px;
+            padding: 16px 20px;
+            text-align: center;
+            max-width: 340px;
+            width: 100%;
+        }
+        .results-recruit p {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+        .results-recruit strong {
+            color: #00E6BC;
+        }
+
+        /* Ranking */
+        .ranking {
+            width: 100%;
+            max-width: 340px;
+        }
+        .ranking-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .ranking-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .ranking-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            font-size: 0.85rem;
+        }
+        .ranking-row.current {
+            background: rgba(0,230,188,0.15);
+            border: 1px solid rgba(0,230,188,0.3);
+        }
+        .ranking-row.podium { background: rgba(255,255,171,0.1); }
+        .ranking-pos {
+            font-weight: 800;
+            width: 24px;
+            text-align: center;
+        }
+        .ranking-name { flex: 1; font-weight: 600; }
+        .ranking-pts { font-weight: 700; color: #00E6BC; }
+
+        .results-podium-msg {
+            font-size: 0.85rem;
+            text-align: center;
+            opacity: 0.8;
+            font-weight: 600;
+            max-width: 300px;
+        }
+
+        /* ===================== BUTTONS ===================== */
+        .btn {
+            padding: 14px 36px;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Baloo 2', cursive;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            text-decoration: none;
+            text-align: center;
+        }
+        .btn:active { transform: scale(0.96); }
+
+        .btn-primary {
+            background: #00E6BC;
+            color: #0B214A;
+            box-shadow: 0 4px 16px rgba(0,230,188,0.3);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .btn-lime {
+            background: #04FFB4;
+            color: #0B214A;
+            box-shadow: 0 4px 16px rgba(4,255,180,0.3);
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-sm {
+            padding: 10px 24px;
+            font-size: 0.95rem;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 340px;
+        }
+        .btn-row .btn { flex: 1; }
+
+        /* ===================== FEEDBACK EFFECTS ===================== */
+        .feedback-correct {
+            position: absolute;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #00E6BC;
+            pointer-events: none;
+            animation: floatUp 0.7s ease forwards;
+            z-index: 50;
+        }
+        .feedback-wrong {
+            position: absolute;
+            font-size: 1.5rem;
+            pointer-events: none;
+            animation: floatUp 0.7s ease forwards;
+            z-index: 50;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+        }
+        @keyframes shakeX {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        /* ===================== RESPONSIVE ===================== */
+        @media (min-width: 768px) {
+            .splash-title { font-size: 2.6rem; }
+            .piece-bubble { width: 84px; height: 84px; }
+            .piece-icon { width: 52px; height: 52px; }
+            .piece-name { font-size: 0.75rem; }
+            .column-icon { font-size: 2rem; }
+            .column-label { font-size: 0.8rem; }
+            .hud-score { font-size: 1.5rem; }
+        }
+        @media (min-width: 1200px) {
+            .piece-bubble { width: 96px; height: 96px; }
+            .piece-icon { width: 60px; height: 60px; }
+            .piece-name { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== SPLASH ==================== -->
+    <div id="splash" class="screen active">
+        <img src="../assets/kampe_logo_blanco.png" alt="Kämpe" class="splash-logo">
+        <h1 class="splash-title">CLASIFICA<br>EN <span>ACCIÓN</span></h1>
+        <div class="splash-trades">
+            <div class="splash-trade">
+                <div class="splash-trade-icon trade-elec">⚡</div>
+                Electricidad
+            </div>
+            <div class="splash-trade">
+                <div class="splash-trade-icon trade-font">🔧</div>
+                Fontanería
+            </div>
+            <div class="splash-trade">
+                <div class="splash-trade-icon trade-clima">❄️</div>
+                Climatización
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="showScreen('form-screen')">JUGAR</button>
+    </div>
+
+    <!-- ==================== FORM ==================== -->
+    <div id="form-screen" class="screen">
+        <h2 class="form-title">Regístrate para jugar</h2>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="input-email" placeholder="tu@email.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+            <label>Teléfono</label>
+            <input type="tel" id="input-phone" placeholder="600 123 456" autocomplete="tel">
+        </div>
+        <div class="form-group">
+            <label>Nickname (para el ranking)</label>
+            <input type="text" id="input-nick" placeholder="Tu nombre" maxlength="12" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" id="btn-start" disabled onclick="startGame()">EMPEZAR</button>
+    </div>
+
+    <!-- ==================== GAMEPLAY ==================== -->
+    <div id="gameplay" class="screen">
+        <div class="hud">
+            <div class="hud-score" id="hud-score">0</div>
+            <div class="hud-combo" id="hud-combo">x2</div>
+            <div class="hud-lives" id="hud-lives">
+                <span class="hud-heart">❤️</span>
+                <span class="hud-heart">❤️</span>
+                <span class="hud-heart">❤️</span>
+            </div>
+        </div>
+        <div class="game-area" id="game-area">
+            <canvas id="particle-canvas"></canvas>
+            <div class="columns">
+                <div class="column column-elec" data-trade="electricidad">
+                    <span class="column-icon">⚡</span>
+                    <span class="column-label">Electricidad</span>
+                </div>
+                <div class="column column-font" data-trade="fontaneria">
+                    <span class="column-icon">🔧</span>
+                    <span class="column-label">Fontanería</span>
+                </div>
+                <div class="column column-clima" data-trade="climatizacion">
+                    <span class="column-icon">❄️</span>
+                    <span class="column-label">Climatización</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== RESULTS ==================== -->
+    <div id="results" class="screen">
+        <div class="results-header">
+            <div class="results-score" id="results-score">0</div>
+            <div>puntos</div>
+        </div>
+        <p class="results-msg" id="results-msg"></p>
+        <div class="results-recruit">
+            <p>Los oficios tienen futuro:<br><strong>alta demanda, buen salario y estabilidad.</strong></p>
+            <p>Especialízate con <strong>Kämpe</strong>. De cero a profesional.</p>
+        </div>
+        <a href="https://kampe.es" target="_blank" class="btn btn-lime btn-sm">MÁS INFORMACIÓN</a>
+        <div class="ranking" id="ranking-container">
+            <div class="ranking-title">🏆 Ranking</div>
+            <div class="ranking-list" id="ranking-list"></div>
+        </div>
+        <p class="results-podium-msg" id="podium-msg"></p>
+        <button class="btn btn-primary btn-sm" style="width:100%;max-width:340px" onclick="restartGame()">JUGAR DE NUEVO</button>
+    </div>
+
+    <script>
+    /* ================================================================
+       CLASIFICA EN ACCIÓN — Game Engine
+       ================================================================ */
+
+    // ===================== STATE =====================
+    const state = {
+        screen: 'splash',
+        player: { email: '', phone: '', nick: '' },
+        score: 0,
+        lives: 3,
+        combo: 0,
+        multiplier: 1,
+        gameRunning: false,
+        spawnInterval: null,
+        animFrame: null,
+        pieces: [],
+        spawnDelay: 2500,
+        elapsedPieces: 0
+    };
+
+    // ===================== SCREEN NAV =====================
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        state.screen = id;
+    }
+
+    // ===================== FORM VALIDATION =====================
+    const inputEmail = document.getElementById('input-email');
+    const inputPhone = document.getElementById('input-phone');
+    const inputNick  = document.getElementById('input-nick');
+    const btnStart   = document.getElementById('btn-start');
+
+    function validateForm() {
+        const valid = inputEmail.value.includes('@') &&
+                      inputPhone.value.trim().length >= 6 &&
+                      inputNick.value.trim().length >= 1;
+        btnStart.disabled = !valid;
+    }
+    [inputEmail, inputPhone, inputNick].forEach(el => {
+        el.addEventListener('input', validateForm);
+    });
+
+    // ===================== START GAME =====================
+    function startGame() {
+        state.player.email = inputEmail.value.trim();
+        state.player.phone = inputPhone.value.trim();
+        state.player.nick  = inputNick.value.trim();
+
+        state.score = 0;
+        state.lives = 3;
+        state.combo = 0;
+        state.multiplier = 1;
+        state.spawnDelay = 2500;
+        state.elapsedPieces = 0;
+        state.pieces = [];
+
+        updateHUD();
+        clearPieces();
+        showScreen('gameplay');
+
+        state.gameRunning = true;
+        scheduleSpawn();
+        gameLoop();
+    }
+
+    function restartGame() {
+        state.score = 0;
+        state.lives = 3;
+        state.combo = 0;
+        state.multiplier = 1;
+        state.spawnDelay = 2500;
+        state.elapsedPieces = 0;
+        state.pieces = [];
+
+        updateHUD();
+        clearPieces();
+        showScreen('gameplay');
+
+        state.gameRunning = true;
+        scheduleSpawn();
+        gameLoop();
+    }
+
+    // ===================== HUD =====================
+    function updateHUD() {
+        document.getElementById('hud-score').textContent = state.score;
+
+        const hearts = document.querySelectorAll('.hud-heart');
+        hearts.forEach((h, i) => {
+            h.classList.toggle('lost', i >= state.lives);
+        });
+
+        const comboEl = document.getElementById('hud-combo');
+        if (state.multiplier > 1) {
+            comboEl.textContent = `x${state.multiplier}`;
+            comboEl.classList.add('visible');
+        } else {
+            comboEl.classList.remove('visible');
+        }
+    }
+
+    // ===================== PIECES DATA =====================
+    const PIECES = [
+        // ⚡ Electricidad — assets from almacen_dombyto, salva_herramientas, alerta_obra
+        { name: 'Manguera', img: 'https://res.cloudinary.com/kampe/image/upload/v1771521699/kampe/game_assets/s1d1/material_manguera_electrica.png', trade: 'electricidad' },
+        { name: 'Cable', img: 'https://res.cloudinary.com/kampe/image/upload/v1771521688/kampe/game_assets/s1d1/material_cable_unipolar.png', trade: 'electricidad' },
+        { name: 'Magneto', img: 'https://res.cloudinary.com/kampe/image/upload/v1771521697/kampe/game_assets/s1d1/material_magnetotermico.png', trade: 'electricidad' },
+        { name: 'Diferencial', img: 'https://res.cloudinary.com/kampe/image/upload/v1771521692/kampe/game_assets/s1d1/material_diferencial.png', trade: 'electricidad' },
+        { name: 'Enchufe', img: 'https://res.cloudinary.com/kampe/image/upload/v1771521693/kampe/game_assets/s1d1/material_enchufe.png', trade: 'electricidad' },
+        { name: 'Interruptor', img: 'https://res.cloudinary.com/kampe/image/upload/v1771521695/kampe/game_assets/s1d1/material_interruptor.png', trade: 'electricidad' },
+        { name: 'Caja empalme', img: 'https://res.cloudinary.com/kampe/image/upload/v1771521689/kampe/game_assets/s1d1/material_caja_empalme.png', trade: 'electricidad' },
+        { name: 'Tubo corrugado', img: 'https://res.cloudinary.com/kampe/image/upload/v1771521700/kampe/game_assets/s1d1/material_tubo_corrugado.png', trade: 'electricidad' },
+        { name: 'Canaleta', img: 'https://res.cloudinary.com/kampe/image/upload/v1771521691/kampe/game_assets/s1d1/material_canaleta.png', trade: 'electricidad' },
+        { name: 'Multímetro', img: 'https://res.cloudinary.com/kampe/image/upload/v1772096588/tool_multimetro_icau2f.png', trade: 'electricidad' },
+        // 🔧 Fontanería — assets from carga_la_furgo
+        { name: 'Llave corte', img: 'https://res.cloudinary.com/kampe/image/upload/v1773226591/pieza_llave_corte_g1umsd.png', trade: 'fontaneria' },
+        { name: 'Sifón', img: 'https://res.cloudinary.com/kampe/image/upload/v1773226591/pieza_sifon_to2yin.png', trade: 'fontaneria' },
+        { name: 'Latiguillo', img: 'https://res.cloudinary.com/kampe/image/upload/v1773226590/pieza_latiguillo_fegyog.png', trade: 'fontaneria' },
+        { name: 'Junta', img: 'https://res.cloudinary.com/kampe/image/upload/v1773226590/pieza_junta_ayu1vl.png', trade: 'fontaneria' },
+        { name: 'Teflón', img: 'https://res.cloudinary.com/kampe/image/upload/v1773226595/pieza_teflon_rrs4zz.png', trade: 'fontaneria' },
+        { name: 'Racor', img: 'https://res.cloudinary.com/kampe/image/upload/v1773226591/pieza_racor_miarvl.png', trade: 'fontaneria' },
+        { name: 'Codo', img: 'https://res.cloudinary.com/kampe/image/upload/v1773226590/pieza_codo_aifa8s.png', trade: 'fontaneria' },
+        { name: 'Reducción', img: 'https://res.cloudinary.com/kampe/image/upload/v1773226591/pieza_reduccion_psk3cu.png', trade: 'fontaneria' },
+        // ❄️ Climatización — assets from torneo_mtg
+        { name: 'Compresor', img: 'https://res.cloudinary.com/kampe/image/upload/v1773675473/card_compresor_anufur.png', trade: 'climatizacion' },
+        { name: 'Evaporador', img: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_evaporador_aioivc.png', trade: 'climatizacion' },
+        { name: 'Condensador', img: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_condensador_ihp9uo.png', trade: 'climatizacion' },
+        { name: 'Ventilador int.', img: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_ventilador_interior_ed6asq.png', trade: 'climatizacion' },
+        { name: 'Ventilador ext.', img: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_ventilador_exterior_yhp7uu.png', trade: 'climatizacion' },
+        { name: 'Tubería', img: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_tuberia_adw4m6.png', trade: 'climatizacion' },
+        { name: 'Filtro', img: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_filtro_djokew.png', trade: 'climatizacion' },
+        { name: 'Drenaje', img: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_drenaje_olqzwv.png', trade: 'climatizacion' },
+        { name: 'Placa', img: 'https://res.cloudinary.com/kampe/image/upload/v1773675472/card_placa_dzjesb.png', trade: 'climatizacion' },
+    ];
+
+    // ===================== PRELOAD IMAGES =====================
+    (function preloadImages() {
+        PIECES.forEach(p => { const i = new Image(); i.src = p.img; });
+    })();
+
+    // ===================== SPAWN =====================
+    const gameArea = document.getElementById('game-area');
+
+    function spawnPiece() {
+        if (!state.gameRunning) return;
+
+        const data = PIECES[Math.floor(Math.random() * PIECES.length)];
+        const areaW = gameArea.offsetWidth;
+        const pieceW = 70;
+        const x = Math.random() * (areaW - pieceW - 20) + 10;
+
+        const el = document.createElement('div');
+        el.className = 'piece';
+        el.innerHTML = `<div class="piece-bubble"><img class="piece-icon" src="${data.img}" alt="${data.name}" draggable="false"></div><span class="piece-name">${data.name}</span>`;
+        el.style.left = x + 'px';
+        el.style.top = '-90px';
+
+        const piece = {
+            el, data,
+            x, y: -90,
+            speed: 1.2 + (state.elapsedPieces * 0.02),
+            dragging: false,
+            dragOffX: 0, dragOffY: 0,
+            settled: false
+        };
+
+        // Touch events
+        el.addEventListener('touchstart', e => onDragStart(e, piece), { passive: false });
+        el.addEventListener('mousedown',  e => onDragStart(e, piece));
+
+        gameArea.appendChild(el);
+        state.pieces.push(piece);
+        state.elapsedPieces++;
+
+        // Increase speed
+        if (state.spawnDelay > 800) {
+            state.spawnDelay = Math.max(800, 2500 - state.elapsedPieces * 40);
+            clearInterval(state.spawnInterval);
+            state.spawnInterval = setInterval(spawnPiece, state.spawnDelay);
+        }
+    }
+
+    function scheduleSpawn() {
+        clearInterval(state.spawnInterval);
+        state.spawnInterval = setInterval(spawnPiece, state.spawnDelay);
+        spawnPiece();
+    }
+
+    // ===================== DRAG =====================
+    function getClientPos(e) {
+        if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        return { x: e.clientX, y: e.clientY };
+    }
+
+    function onDragStart(e, piece) {
+        if (piece.settled) return;
+        e.preventDefault();
+        const pos = getClientPos(e);
+        const rect = piece.el.getBoundingClientRect();
+        piece.dragging = true;
+        piece.dragOffX = pos.x - rect.left;
+        piece.dragOffY = pos.y - rect.top;
+        piece.el.classList.add('dragging');
+
+        const onMove = ev => {
+            ev.preventDefault();
+            const p = getClientPos(ev);
+            const areaRect = gameArea.getBoundingClientRect();
+            piece.x = p.x - areaRect.left - piece.dragOffX;
+            piece.y = p.y - areaRect.top - piece.dragOffY;
+            piece.el.style.left = piece.x + 'px';
+            piece.el.style.top  = piece.y + 'px';
+            highlightColumn(p.x, p.y);
+        };
+
+        const onEnd = ev => {
+            piece.dragging = false;
+            piece.el.classList.remove('dragging');
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('touchend', onEnd);
+            document.removeEventListener('mouseup', onEnd);
+            clearHighlights();
+
+            const p = getClientPos(ev.changedTouches ? ev.changedTouches[0] ? ev : { changedTouches: [ev] } : ev);
+            let pos;
+            if (ev.changedTouches && ev.changedTouches.length) {
+                pos = { x: ev.changedTouches[0].clientX, y: ev.changedTouches[0].clientY };
+            } else {
+                pos = { x: ev.clientX, y: ev.clientY };
+            }
+            checkDrop(piece, pos);
+        };
+
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('touchend', onEnd);
+        document.addEventListener('mouseup', onEnd);
+    }
+
+    // ===================== DROP CHECK =====================
+    function checkDrop(piece, pos) {
+        const columns = document.querySelectorAll('.column');
+        let dropped = false;
+
+        columns.forEach(col => {
+            const rect = col.getBoundingClientRect();
+            if (pos.x >= rect.left && pos.x <= rect.right && pos.y >= rect.top && pos.y <= rect.bottom) {
+                dropped = true;
+                const colTrade = col.dataset.trade;
+
+                if (colTrade === piece.data.trade) {
+                    onCorrectDrop(piece, col);
+                } else {
+                    onWrongDrop(piece, col);
+                }
+            }
+        });
+
+        if (!dropped) {
+            // Piece continues falling
+        }
+    }
+
+    function onCorrectDrop(piece, col) {
+        piece.settled = true;
+        state.combo++;
+        state.multiplier = Math.min(4, 1 + Math.floor(state.combo / 3));
+        const pts = 100 * state.multiplier;
+        state.score += pts;
+        updateHUD();
+
+        // Bubble burst with particles
+        const rect = piece.el.getBoundingClientRect();
+        const areaRect = gameArea.getBoundingClientRect();
+        const cx = rect.left - areaRect.left + rect.width / 2;
+        const cy = rect.top - areaRect.top + rect.height / 2;
+        particleBurst(cx, cy, true);
+
+        showFeedback(piece.el, `+${pts}`, 'correct');
+        burstRemove(piece);
+    }
+
+    function onWrongDrop(piece, col) {
+        piece.settled = true;
+        state.lives--;
+        state.combo = 0;
+        state.multiplier = 1;
+        updateHUD();
+
+        const rect = piece.el.getBoundingClientRect();
+        const areaRect = gameArea.getBoundingClientRect();
+        particleBurst(rect.left - areaRect.left + rect.width / 2, rect.top - areaRect.top + rect.height / 2, false);
+
+        showFeedback(piece.el, '✖', 'wrong');
+        col.style.animation = 'shakeX 0.4s ease';
+        setTimeout(() => col.style.animation = '', 400);
+        burstRemove(piece);
+
+        if (state.lives <= 0) gameOver();
+    }
+
+    function onMissedPiece(piece) {
+        if (piece.settled || piece.dragging) return;
+        piece.settled = true;
+        state.score = Math.max(0, state.score - 50);
+        state.combo = 0;
+        state.multiplier = 1;
+        updateHUD();
+        fadeRemove(piece);
+    }
+
+    // ===================== COLUMN HIGHLIGHT =====================
+    function highlightColumn(cx, cy) {
+        const columns = document.querySelectorAll('.column');
+        columns.forEach(col => {
+            const rect = col.getBoundingClientRect();
+            if (cx >= rect.left && cx <= rect.right && cy >= rect.top - 40) {
+                col.classList.add('highlight');
+            } else {
+                col.classList.remove('highlight');
+            }
+        });
+    }
+
+    function clearHighlights() {
+        document.querySelectorAll('.column').forEach(c => c.classList.remove('highlight'));
+    }
+
+    // ===================== FEEDBACK =====================
+    function showFeedback(refEl, text, type) {
+        const fb = document.createElement('div');
+        fb.className = type === 'correct' ? 'feedback-correct' : 'feedback-wrong';
+        fb.textContent = text;
+        fb.style.left = refEl.style.left;
+        fb.style.top  = refEl.style.top;
+        gameArea.appendChild(fb);
+        setTimeout(() => fb.remove(), 700);
+    }
+
+    // ===================== PARTICLE SYSTEM =====================
+    const pCanvas = document.getElementById('particle-canvas');
+    const pCtx = pCanvas.getContext('2d');
+    let particles = [];
+    let particleRaf = null;
+
+    function resizeParticleCanvas() {
+        pCanvas.width = gameArea.offsetWidth;
+        pCanvas.height = gameArea.offsetHeight;
+    }
+    resizeParticleCanvas();
+    window.addEventListener('resize', resizeParticleCanvas);
+
+    function particleBurst(x, y, isCorrect) {
+        const colors = isCorrect
+            ? ['#04FFB4', '#00E6BC', '#FFFFAB', '#C5FFDF']
+            : ['#E74C3C', '#FF7675', '#FFFFAB'];
+        const count = isCorrect ? 24 : 12;
+        for (let i = 0; i < count; i++) {
+            const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.5;
+            const speed = isCorrect ? 3 + Math.random() * 4 : 2 + Math.random() * 2.5;
+            particles.push({
+                x, y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                r: isCorrect ? 3 + Math.random() * 3 : 2.5 + Math.random() * 2,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                alpha: 1,
+                decay: 0.025 + Math.random() * 0.02,
+            });
+        }
+        if (!particleRaf) particleLoop();
+    }
+
+    function particleLoop() {
+        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+        particles = particles.filter(p => p.alpha > 0.02);
+        particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.12;
+            p.alpha -= p.decay;
+            pCtx.globalAlpha = Math.max(0, p.alpha);
+            pCtx.beginPath();
+            pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            pCtx.fillStyle = p.color;
+            pCtx.fill();
+        });
+        pCtx.globalAlpha = 1;
+        particleRaf = particles.length ? requestAnimationFrame(particleLoop) : null;
+    }
+
+    // ===================== GAME LOOP =====================
+    function gameLoop() {
+        if (!state.gameRunning) return;
+
+        const areaH = gameArea.offsetHeight;
+        const colH = areaH * 0.2;
+        const floorY = areaH - colH - 36; // disappear AT the column border, not behind it
+
+        for (let i = state.pieces.length - 1; i >= 0; i--) {
+            const p = state.pieces[i];
+            if (p.settled || p.dragging) continue;
+
+            p.y += p.speed;
+            p.el.style.top = p.y + 'px';
+
+            if (p.y >= floorY) {
+                onMissedPiece(p);
+            }
+        }
+
+        state.animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    // ===================== PIECE CLEANUP =====================
+    function burstRemove(piece) {
+        piece.el.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+        piece.el.style.transform = 'scale(1.3)';
+        piece.el.style.opacity = '0';
+        setTimeout(() => {
+            piece.el.remove();
+            const idx = state.pieces.indexOf(piece);
+            if (idx > -1) state.pieces.splice(idx, 1);
+        }, 200);
+    }
+
+    function fadeRemove(piece) {
+        piece.el.style.transition = 'opacity 0.3s, transform 0.3s';
+        piece.el.style.opacity = '0';
+        piece.el.style.transform = 'scale(0.4)';
+        setTimeout(() => {
+            piece.el.remove();
+            const idx = state.pieces.indexOf(piece);
+            if (idx > -1) state.pieces.splice(idx, 1);
+        }, 250);
+    }
+
+    function clearPieces() {
+        state.pieces.forEach(p => p.el.remove());
+        state.pieces = [];
+        document.querySelectorAll('.feedback-correct, .feedback-wrong').forEach(f => f.remove());
+    }
+
+    // ===================== GAME OVER =====================
+    function gameOver() {
+        state.gameRunning = false;
+        clearInterval(state.spawnInterval);
+        cancelAnimationFrame(state.animFrame);
+
+        setTimeout(() => {
+            clearPieces();
+            saveScore();
+            showResults();
+        }, 600);
+    }
+
+    // ===================== RANKING =====================
+    function getRanking() {
+        try {
+            return JSON.parse(localStorage.getItem('clasifica_en_accion_ranking') || '[]');
+        } catch { return []; }
+    }
+
+    function saveScore() {
+        const ranking = getRanking();
+        ranking.push({
+            nick: state.player.nick,
+            email: state.player.email,
+            phone: state.player.phone,
+            score: state.score,
+            date: new Date().toISOString()
+        });
+        ranking.sort((a, b) => b.score - a.score);
+        localStorage.setItem('clasifica_en_accion_ranking', JSON.stringify(ranking.slice(0, 100)));
+    }
+
+    // ===================== RESULTS =====================
+    function showResults() {
+        const scoreEl = document.getElementById('results-score');
+        const msgEl   = document.getElementById('results-msg');
+        const listEl  = document.getElementById('ranking-list');
+        const podiumEl = document.getElementById('podium-msg');
+
+        scoreEl.textContent = state.score;
+
+        if (state.score >= 2000)      msgEl.textContent = '¡Increíble! Tienes ojo para los oficios. Esto es lo tuyo.';
+        else if (state.score >= 800)  msgEl.textContent = '¡Nada mal! Con un poco de práctica serías un crack.';
+        else                          msgEl.textContent = '¡Buen intento! Los oficios se aprenden, y tú puedes.';
+
+        const ranking = getRanking();
+        const playerIdx = ranking.findIndex(r => r.nick === state.player.nick && r.score === state.score);
+
+        listEl.innerHTML = '';
+        ranking.slice(0, 10).forEach((entry, i) => {
+            const row = document.createElement('div');
+            row.className = 'ranking-row';
+            if (i === playerIdx) row.classList.add('current');
+            if (i < 3) row.classList.add('podium');
+
+            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
+            row.innerHTML = `
+                <span class="ranking-pos">${medal}</span>
+                <span class="ranking-name">${entry.nick}</span>
+                <span class="ranking-pts">${entry.score}</span>
+            `;
+            listEl.appendChild(row);
+        });
+
+        if (playerIdx >= 0 && playerIdx < 3) {
+            podiumEl.textContent = '🎉 ¡Estás en el podium! Entras en el sorteo.';
+        } else {
+            podiumEl.textContent = '¡Juega de nuevo para subir al podium y entrar en el sorteo!';
+        }
+
+        showScreen('results');
+    }
+
+    // ===================== NOTIFY RN =====================
+    function notifyRN(action) {
+        try {
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ action }));
+            }
+        } catch(e) {}
+    }
+    </script>
+</body>
+</html>
