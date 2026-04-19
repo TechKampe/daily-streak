@@ -6,8 +6,8 @@
   <title>KampRIS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=19">
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
   <div id="wrapper">
@@ -34,6 +34,17 @@
 
       <!-- PLAYFIELD -->
       <div id="playfield">
+        <!-- Cartoon sky + ground backdrop (decorative, purely visual) -->
+        <div id="sky-backdrop" aria-hidden="true">
+          <div class="sun"></div>
+          <div class="cloud cloud-1"></div>
+          <div class="cloud cloud-2"></div>
+          <div class="cloud cloud-3"></div>
+          <div class="sparkle sparkle-1"></div>
+          <div class="sparkle sparkle-2"></div>
+          <div class="sparkle sparkle-3"></div>
+          <div class="sparkle sparkle-4"></div>
+        </div>
         <div id="lane-tints">
           <div class="lane-tint" data-lane="0"></div>
           <div class="lane-tint" data-lane="1"></div>
@@ -102,6 +113,168 @@
 
   </div>
 
-  <script src="game.js?v=19"></script>
+    <!-- Tweaks panel (shown only when Tweaks toggle is on) -->
+    <div id="tweaks-panel" hidden>
+      <div class="tweaks-head">
+        <span>Tweaks</span>
+        <button id="tweaks-close" aria-label="Close">✕</button>
+      </div>
+      <div class="tweaks-body">
+        <div class="tweaks-row">
+          <label>Preset</label>
+          <div class="tweaks-presets">
+            <button data-preset="brand">Brand</button>
+            <button data-preset="sunset">Sunset</button>
+            <button data-preset="mint">Mint</button>
+            <button data-preset="candy">Candy</button>
+          </div>
+        </div>
+        <div class="tweaks-row">
+          <label for="tw-elec">Electricidad</label>
+          <input id="tw-elec" type="color">
+        </div>
+        <div class="tweaks-row">
+          <label for="tw-font">Fontanería</label>
+          <input id="tw-font" type="color">
+        </div>
+        <div class="tweaks-row">
+          <label for="tw-clim">Climatización</label>
+          <input id="tw-clim" type="color">
+        </div>
+        <div class="tweaks-row">
+          <label for="tw-ink">Ink / Outline</label>
+          <input id="tw-ink" type="color">
+        </div>
+        <div class="tweaks-row">
+          <label for="tw-sky-top">Sky top</label>
+          <input id="tw-sky-top" type="color">
+        </div>
+        <div class="tweaks-row">
+          <label for="tw-sky-bot">Sky bottom</label>
+          <input id="tw-sky-bot" type="color">
+        </div>
+        <div class="tweaks-row">
+          <label for="tw-accent">Score accent</label>
+          <input id="tw-accent" type="color">
+        </div>
+      </div>
+    </div>
+
+  <script>
+  (function(){
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "catElec": "#F3CC00",
+      "catFont": "#09CAAB",
+      "catClim": "#fb4646",
+      "ink": "#012250",
+      "skyTop": "#7fe4d1",
+      "skyBot": "#c5f3e9",
+      "accent": "#0ec70a"
+    }/*EDITMODE-END*/;
+
+    const PRESETS = {
+      brand:  { catElec:"#F3CC00", catFont:"#09CAAB", catClim:"#FA476A", ink:"#012250", skyTop:"#7fe4d1", skyBot:"#c5f3e9", accent:"#FA476A" },
+      sunset: { catElec:"#F3CC00", catFont:"#FA476A", catClim:"#9B4DCA", ink:"#2D0A4E", skyTop:"#FFB088", skyBot:"#FFD9A8", accent:"#F3CC00" },
+      mint:   { catElec:"#F3CC00", catFont:"#09CAAB", catClim:"#008E77", ink:"#012250", skyTop:"#B8F3E3", skyBot:"#E8FAF2", accent:"#09CAAB" },
+      candy:  { catElec:"#FFE066", catFont:"#4FC3F7", catClim:"#FA476A", ink:"#1E1B4B", skyTop:"#FFD6EC", skyBot:"#FFF0F7", accent:"#FA476A" }
+    };
+
+    // Shade helper: lighten/darken hex
+    function shade(hex, amt){
+      const h = hex.replace('#','');
+      let r = parseInt(h.substr(0,2),16), g = parseInt(h.substr(2,2),16), b = parseInt(h.substr(4,2),16);
+      r = Math.max(0,Math.min(255, r + Math.round(255*amt)));
+      g = Math.max(0,Math.min(255, g + Math.round(255*amt)));
+      b = Math.max(0,Math.min(255, b + Math.round(255*amt)));
+      return '#' + [r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');
+    }
+
+    function applyPalette(p){
+      const root = document.documentElement.style;
+      root.setProperty('--brand-yellow', p.catElec);
+      root.setProperty('--brand-teal',   p.catFont);
+      root.setProperty('--brand-coral',  p.catClim);
+      root.setProperty('--brand-navy',   p.ink);
+      root.setProperty('--ink', p.ink);
+      root.setProperty('--cat-elec', p.catElec);
+      root.setProperty('--cat-elec-dk', shade(p.catElec, -0.18));
+      root.setProperty('--cat-font', p.catFont);
+      root.setProperty('--cat-font-dk', shade(p.catFont, -0.18));
+      root.setProperty('--cat-clim', p.catClim);
+      root.setProperty('--cat-clim-dk', shade(p.catClim, -0.18));
+      root.setProperty('--sun', p.catElec);
+      root.setProperty('--sun-glow', shade(p.catElec, 0.22));
+      root.setProperty('--sun-dark', shade(p.catElec, -0.20));
+      root.setProperty('--coral', p.catClim);
+      root.setProperty('--coral-dark', shade(p.catClim, -0.18));
+      root.setProperty('--pink', p.catClim);
+      root.setProperty('--grass', p.catFont);
+      root.setProperty('--grass-dark', shade(p.catFont, -0.18));
+      root.setProperty('--teal', p.catFont);
+      root.setProperty('--sky-top', p.skyTop);
+      root.setProperty('--sky-bot', p.skyBot);
+      root.setProperty('--ink-soft', shade(p.ink, 0.12));
+    }
+
+    let current = Object.assign({}, TWEAK_DEFAULTS);
+    applyPalette(current);
+
+    // Edit-mode host protocol
+    const panel = document.getElementById('tweaks-panel');
+    const closeBtn = document.getElementById('tweaks-close');
+    const inputs = {
+      catElec: document.getElementById('tw-elec'),
+      catFont: document.getElementById('tw-font'),
+      catClim: document.getElementById('tw-clim'),
+      ink:     document.getElementById('tw-ink'),
+      skyTop:  document.getElementById('tw-sky-top'),
+      skyBot:  document.getElementById('tw-sky-bot'),
+      accent:  document.getElementById('tw-accent')
+    };
+
+    function syncInputs(){
+      Object.keys(inputs).forEach(k => { if (inputs[k]) inputs[k].value = current[k]; });
+    }
+    syncInputs();
+
+    function commit(partial){
+      Object.assign(current, partial);
+      applyPalette(current);
+      try {
+        window.parent.postMessage({type:'__edit_mode_set_keys', edits: partial}, '*');
+      } catch(e) {}
+    }
+
+    Object.keys(inputs).forEach(k => {
+      const el = inputs[k];
+      if (!el) return;
+      el.addEventListener('input', () => commit({ [k]: el.value }));
+    });
+
+    document.querySelectorAll('.tweaks-presets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = PRESETS[btn.dataset.preset];
+        if (!p) return;
+        commit(p);
+        syncInputs();
+      });
+    });
+
+    closeBtn.addEventListener('click', () => {
+      try { window.parent.postMessage({type:'__deactivate_edit_mode_request'}, '*'); } catch(e){}
+      panel.hidden = true;
+    });
+
+    // Register listener first, THEN announce availability
+    window.addEventListener('message', (e) => {
+      const d = e.data || {};
+      if (d.type === '__activate_edit_mode')   panel.hidden = false;
+      if (d.type === '__deactivate_edit_mode') panel.hidden = true;
+    });
+    window.parent.postMessage({type:'__edit_mode_available'}, '*');
+  })();
+  </script>
+
+  <script src="game.js?v=21"></script>
 </body>
 </html>

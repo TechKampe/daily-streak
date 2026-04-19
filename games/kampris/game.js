@@ -15,7 +15,6 @@
   // Cloudinary asset base + per-file public ID map (PNG delivery, auto format/quality)
   const CDN_BASE = 'https://res.cloudinary.com/kampe/image/upload/f_auto,q_auto/';
   const ASSET_MAP = {
-    bg_playfield:         'bg_playfield_gmvm0b.jpg',
     game_title:           'game_title_vgld8d.png',
     icon_electricidad:    'icon_electricidad_s2ymmv.png',
     icon_fontaneria:      'icon_fontaneria_r4tgdy.png',
@@ -1064,7 +1063,6 @@
   // ─────────────── Preload assets ───────────────
 
   const ASSETS_TO_PRELOAD = [
-    ASSET_URL('bg_playfield'),
     ASSET_URL('game_title'),
     ASSET_URL('icon_electricidad'),
     ASSET_URL('icon_fontaneria'),
