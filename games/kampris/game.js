@@ -84,10 +84,16 @@
 
   const $ = (sel) => document.querySelector(sel);
   const intro       = $('#intro');
+  const registerEl  = $('#register');
   const play        = $('#play');
   const results     = $('#results');
   const btnStart    = $('#btn-start');
   const btnReplay   = $('#btn-replay');
+  const btnRegister = $('#btn-register');
+  const registerForm = $('#register-form');
+  const regEmail    = $('#reg-email');
+  const regPhone    = $('#reg-phone');
+  const regNick     = $('#reg-nick');
   const hudScore    = $('#hud-score');
   const playfield   = $('#playfield');
   const fallZone   = $('#fall-zone');
@@ -221,8 +227,191 @@
   // ─────────────── Screen management ───────────────
 
   function showScreen(id) {
-    [intro, play, results].forEach(s => s.classList.remove('active'));
+    [intro, registerEl, play, results].forEach(s => s.classList.remove('active'));
     document.querySelector(`#${id}`).classList.add('active');
+    if (id === 'intro') startLeaderboardCycle();
+    else stopLeaderboardCycle();
+  }
+
+  // ─────────────── Intro leaderboard cycle ───────────────
+
+  const LEADERBOARD_URL = 'https://hook.eu2.make.com/ec7xlp6lmqqg0kglw21fl5qvpfnkryd2?limit=10';
+  const LB_IDLE_MS = 2000;         // wait before showing leaderboard
+  const LB_SCROLL_PX_PER_SEC = 45; // vertical scroll speed
+
+  let lbData = null;
+  let lbTimers = [];
+  let lbAnimFrame = null;
+
+  function fetchLeaderboard() {
+    return fetch(LEADERBOARD_URL, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : [])
+      .catch(() => []);
+  }
+
+  function renderLeaderboardRows(rows) {
+    const track = document.querySelector('#intro-leaderboard .lb-track');
+    if (!track) return;
+    track.innerHTML = '';
+    rows.forEach((r, i) => {
+      const el = document.createElement('div');
+      el.className = `lb-row lb-rank-${i + 1}`;
+      const nick = (r && r.nickname ? String(r.nickname) : '—').slice(0, 18);
+      const score = (r && typeof r.score === 'number') ? r.score.toLocaleString('es-ES') : (r && r.score != null ? String(r.score) : '0');
+      el.innerHTML = `<span class="lb-rank">#${i + 1}</span><span class="lb-nick">${escapeHtml(nick)}</span><span class="lb-score">${escapeHtml(score)}</span>`;
+      track.appendChild(el);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function clearLbTimers() {
+    lbTimers.forEach(t => clearTimeout(t));
+    lbTimers = [];
+    if (lbAnimFrame) { cancelAnimationFrame(lbAnimFrame); lbAnimFrame = null; }
+  }
+
+  function stopLeaderboardCycle() {
+    clearLbTimers();
+    intro.classList.remove('leaderboard-on');
+    unfreezeIntroAnimations();
+    const viewport = document.querySelector('#intro-leaderboard .lb-viewport');
+    if (viewport) viewport.scrollTop = 0;
+  }
+
+  function freezeIntroAnimations() {
+    // Capture current keyframe-produced transform and set it inline so the
+    // subsequent animation:none cancellation doesn't snap the element.
+    const titleEl = intro.querySelector('.intro-title');
+    const btn     = btnStart;
+    [titleEl, btn].forEach(el => {
+      if (!el) return;
+      const cs = getComputedStyle(el);
+      const current = cs.transform && cs.transform !== 'none' ? cs.transform : '';
+      if (current) el.style.transform = current;
+    });
+  }
+
+  function unfreezeIntroAnimations() {
+    const titleEl = intro.querySelector('.intro-title');
+    const btn     = btnStart;
+    [titleEl, btn].forEach(el => {
+      if (!el) return;
+      el.style.transform = '';
+    });
+  }
+
+  function measureLeaderboardShifts() {
+    // Compute translate distances so:
+    //  - Title shifts up so its top is ~32px from viewport top
+    //  - Tagline translates fully off-screen (above), so it "disappears"
+    //  - Button docks just above the ribbon with an 18px gap
+    //  - Leaderboard slides up from below into the center area
+    const titleEl   = intro.querySelector('.intro-title');
+    const taglineEl = intro.querySelector('.intro-tagline');
+    const ribbonEl  = intro.querySelector('#intro-ribbon');
+    if (!titleEl || !taglineEl || !btnStart) return;
+
+    const viewportH = intro.clientHeight;
+    const ribbonH   = ribbonEl ? ribbonEl.offsetHeight : 0;
+    const introRect = intro.getBoundingClientRect();
+
+    const titleRect   = titleEl.getBoundingClientRect();
+    const taglineRect = taglineEl.getBoundingClientRect();
+    const btnRect     = btnStart.getBoundingClientRect();
+
+    const titleTop   = titleRect.top   - introRect.top;
+    const taglineTop = taglineRect.top - introRect.top;
+    const btnTop     = btnRect.top     - introRect.top;
+
+    // Title: bring its top to ~28px from top of intro
+    const titleShift = Math.round(28 - titleTop);
+
+    // Tagline: push it fully above the viewport (top edge above 0 - its height)
+    const taglineShift = Math.round(-(taglineTop + taglineRect.height + 20));
+
+    // Button: dock above ribbon (18px gap) so its bottom sits at viewportH - ribbonH - 18
+    const targetBtnTop = viewportH - ribbonH - 18 - btnRect.height;
+    const btnShift = Math.round(targetBtnTop - btnTop);
+
+    // Leaderboard fills the space between the *shifted* title bottom and the
+    // *shifted* button top, with 18px gaps on each side.
+    const titleBottomShifted = titleTop + titleShift + titleRect.height;
+    const lbTop    = Math.round(titleBottomShifted + 18);
+    const lbBottom = Math.round(viewportH - targetBtnTop + 18);
+
+    intro.style.setProperty('--lb-title-shift', `${titleShift}px`);
+    intro.style.setProperty('--lb-tagline-shift', `${taglineShift}px`);
+    intro.style.setProperty('--lb-button-shift', `${btnShift}px`);
+    intro.style.setProperty('--lb-top', `${lbTop}px`);
+    intro.style.setProperty('--lb-bottom', `${lbBottom}px`);
+  }
+
+  function startLeaderboardCycle() {
+    stopLeaderboardCycle();
+    const run = () => {
+      // Idle 2s in default state
+      lbTimers.push(setTimeout(async () => {
+        if (!lbData) lbData = await fetchLeaderboard();
+        if (!intro.classList.contains('active')) return;
+        if (!Array.isArray(lbData) || lbData.length === 0) {
+          // No data yet → try again next cycle
+          lbTimers.push(setTimeout(run, 4000));
+          return;
+        }
+        renderLeaderboardRows(lbData.slice(0, 10));
+        measureLeaderboardShifts();
+        // Freeze the current keyframe-animation state so transitions can
+        // interpolate smoothly from current transform to the target.
+        freezeIntroAnimations();
+        // Next frame: flip the class so the transition fires from a stable base.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => intro.classList.add('leaderboard-on'));
+        });
+
+        // Let slide-in finish, wait an extra 1s so the user can read the
+        // first rows, then auto-scroll via scrollTop (so manual touch/wheel
+        // scroll continues to work naturally).
+        lbTimers.push(setTimeout(() => {
+          const track = document.querySelector('#intro-leaderboard .lb-track');
+          const viewport = document.querySelector('#intro-leaderboard .lb-viewport');
+          if (!track || !viewport) return;
+          viewport.scrollTop = 0;
+          const distance = Math.max(0, track.offsetHeight - viewport.clientHeight);
+          const duration = distance > 0 ? (distance / LB_SCROLL_PX_PER_SEC) * 1000 : 0;
+          const start = performance.now();
+
+          const finish = () => {
+            // Hold leaderboard visible for 5s at the end, then restart cycle
+            lbTimers.push(setTimeout(() => {
+              intro.classList.remove('leaderboard-on');
+              // Wait for exit transition to finish, then restore idle animations
+              lbTimers.push(setTimeout(() => {
+                unfreezeIntroAnimations();
+                viewport.scrollTop = 0;
+                run();
+              }, 700));
+            }, 5000));
+          };
+
+          if (distance === 0) { finish(); return; }
+
+          function step(now) {
+            const t = Math.min(1, (now - start) / duration);
+            viewport.scrollTop = distance * t;
+            if (t < 1 && intro.classList.contains('active')) {
+              lbAnimFrame = requestAnimationFrame(step);
+            } else {
+              finish();
+            }
+          }
+          lbAnimFrame = requestAnimationFrame(step);
+        }, 3000));
+      }, LB_IDLE_MS));
+    };
+    run();
   }
 
   // ─────────────── Tutorial overlays ───────────────
@@ -506,11 +695,12 @@
       landed: false,
     };
 
-    // Tutorial step 2: first piece — freeze and point at the correct lane.
+    // Tutorial step 2: first piece — let it enter the scene briefly, then
+    // freeze and point at the correct lane so the name chip is visible.
     if (!state.tut_firstPieceShown) {
       state.tut_firstPieceShown = true;
       const laneIdx = LANES.indexOf(picked.category);
-      showTutorialFirstPiece(laneIdx);
+      setTimeout(() => showTutorialFirstPiece(laneIdx), 200);
     }
 
     // Schedule next spawn once this one lands (handled in tick after landing)
@@ -952,6 +1142,9 @@
     const isNewRecord = state.score > prev;
     if (isNewRecord) localStorage.setItem('kampris_record', String(state.score));
 
+    sendScoreWebhook();
+    try { localStorage.removeItem('kampris_player'); } catch (_) {}
+
     // counter-up score
     animateCounter(resultsScore, 0, state.score, 1200, (v) => `${fmtScore(v)} pts`);
     if (isNewRecord) {
@@ -964,6 +1157,34 @@
     resultsStats.textContent = `Líneas: ${state.linesCleared} · Combo máx: ${state.maxCombo}`;
 
     showScreen('results');
+  }
+
+  // ─────────────── Webhook ───────────────
+
+  const WEBHOOK_URL = 'https://hook.eu2.make.com/yx6bwnq6sbygslk6s1tla6416gaj4dq4';
+
+  function sendScoreWebhook() {
+    // Debug-skip sessions never submit a score.
+    if (state.skippedRegister) return;
+    let player = null;
+    try { player = JSON.parse(localStorage.getItem('kampris_player') || 'null'); } catch (_) {}
+    if (!player) return;
+
+    const payload = {
+      email: player.email || null,
+      phone: player.phone || null,
+      nickname: player.nickname || null,
+      score: state.score,
+    };
+
+    try {
+      fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => {});
+    } catch (_) {}
   }
 
   function animateCounter(el, from, to, dur, fmt) {
@@ -1048,13 +1269,125 @@
 
   btnStart.addEventListener('click', () => {
     vibrate('light');
-    startGame();
+    prefillRegister();
+    showScreen('register');
+    setTimeout(() => { try { regEmail.focus(); } catch (_) {} }, 50);
   });
+
+  const btnRegisterClose = document.querySelector('#register-close');
+  if (btnRegisterClose) {
+    btnRegisterClose.addEventListener('click', () => {
+      vibrate('light');
+      lbData = null;
+      showScreen('intro');
+    });
+  }
+
+  function prefillRegister() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('kampris_player') || 'null'); } catch (_) {}
+    if (saved) {
+      regEmail.value = saved.email || '';
+      regPhone.value = saved.phone || '';
+      regNick.value  = saved.nickname || '';
+    }
+    [regEmail, regPhone, regNick].forEach(inp => setFieldError(inp, ''));
+  }
   btnReplay.addEventListener('click', () => {
     vibrate('light');
     resetGame();
+    lbData = null;
     showScreen('intro');
   });
+
+  // ─────────────── Register form ───────────────
+
+  // Basic, pragmatic validators. Phone: 9-digit Spanish mobile/landline (no prefix).
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const PHONE_RE = /^[6-9]\d{8}$/;
+  // Lightweight ES/EN profanity list — expandable
+  const PROFANITY = [
+    'puta','puto','mierda','joder','polla','gilipollas','cabron','cabrón','zorra',
+    'coño','cono','maricon','maricón','pendejo','culero','chingar','chinga','pinche',
+    'fuck','shit','bitch','asshole','dick','cunt','bastard','nigger','nigga','slut','whore','retard'
+  ];
+  function hasProfanity(str) {
+    const s = str.toLowerCase().replace(/[^a-záéíóúñü]/g, '');
+    return PROFANITY.some(bad => s.includes(bad));
+  }
+
+  function setFieldError(input, msg) {
+    const field = input.closest('.reg-field');
+    const errEl = registerEl.querySelector(`.reg-error[data-for="${input.id}"]`);
+    if (msg) {
+      field.classList.add('has-error');
+      if (errEl) errEl.textContent = msg;
+    } else {
+      field.classList.remove('has-error');
+      if (errEl) errEl.textContent = '';
+    }
+  }
+
+  function validateRegister() {
+    let ok = true;
+    let firstInvalid = null;
+
+    const email = regEmail.value.trim();
+    if (!email) { setFieldError(regEmail, 'Escribe tu email'); ok = false; firstInvalid = firstInvalid || regEmail; }
+    else if (!EMAIL_RE.test(email)) { setFieldError(regEmail, 'Email no válido'); ok = false; firstInvalid = firstInvalid || regEmail; }
+    else setFieldError(regEmail, '');
+
+    const phoneRaw = regPhone.value.replace(/\D/g, '');
+    if (!phoneRaw) { setFieldError(regPhone, 'Escribe tu teléfono'); ok = false; firstInvalid = firstInvalid || regPhone; }
+    else if (!PHONE_RE.test(phoneRaw)) { setFieldError(regPhone, '9 dígitos, sin prefijo'); ok = false; firstInvalid = firstInvalid || regPhone; }
+    else setFieldError(regPhone, '');
+
+    const nick = regNick.value.trim();
+    if (!nick) { setFieldError(regNick, 'Elige un nickname'); ok = false; firstInvalid = firstInvalid || regNick; }
+    else if (nick.length < 2) { setFieldError(regNick, 'Mínimo 2 caracteres'); ok = false; firstInvalid = firstInvalid || regNick; }
+    else if (hasProfanity(nick)) { setFieldError(regNick, 'Elige otro nickname'); ok = false; firstInvalid = firstInvalid || regNick; }
+    else setFieldError(regNick, '');
+
+    if (firstInvalid) { try { firstInvalid.focus(); } catch (_) {} }
+    return ok ? { email, phone: phoneRaw, nickname: nick } : null;
+  }
+
+  // Clear per-field error as the user types again
+  [regEmail, regPhone, regNick].forEach(inp => {
+    inp.addEventListener('input', () => setFieldError(inp, ''));
+  });
+
+  registerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = validateRegister();
+    if (!data) { vibrate('error'); return; }
+    try { localStorage.setItem('kampris_player', JSON.stringify({ ...data, ts: Date.now() })); } catch (_) {}
+    state.skippedRegister = false;
+    vibrate('light');
+    startGame();
+  });
+
+  // 10-click rapid tap on VAMOS bypasses validation (debug)
+  let vamosClicks = 0;
+  let vamosTimer = null;
+  btnRegister.addEventListener('click', (e) => {
+    vamosClicks += 1;
+    if (vamosTimer) clearTimeout(vamosTimer);
+    if (vamosClicks >= 10) {
+      e.preventDefault();
+      e.stopPropagation();
+      vamosClicks = 0;
+      // Make sure no stale player data survives into a skipped session —
+      // otherwise the game-over webhook would still submit a score against
+      // a previous player's identity.
+      try { localStorage.removeItem('kampris_player'); } catch (_) {}
+      state.skippedRegister = true;
+      vibrate('success');
+      startGame();
+      return;
+    }
+    vamosTimer = setTimeout(() => { vamosClicks = 0; }, 600);
+  }, true);
 
   // Initial state
   resetGame();

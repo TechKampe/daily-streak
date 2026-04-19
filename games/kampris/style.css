@@ -402,6 +402,266 @@ html, body {
   -webkit-user-drag: none;
 }
 
+/* ─────────────── Intro leaderboard ─────────────── */
+
+/* Intro is a flex column by default. We keep it flex, but animate each
+   child's translateY by a JS-measured distance so they physically move
+   into their target positions. Leaderboard is absolutely positioned
+   and slides up from below the viewport. */
+.intro-title,
+.intro-tagline,
+#btn-start {
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+#intro-leaderboard {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  /* Top and bottom set by JS (--lb-top / --lb-bottom) to fill the gap
+     between the shifted title and the docked button. */
+  top: var(--lb-top, 140px);
+  bottom: var(--lb-bottom, 170px);
+  width: min(320px, 82%);
+  background: var(--cream, #fff7e4);
+  border: 5px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 0 8px 0 var(--ink), 0 14px 28px rgba(0,0,0,0.18);
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  /* Start fully off-screen (below), then translate up into position */
+  transform: translate(-50%, calc(100vh + 40px));
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.lb-title {
+  font-family: 'Lilita One', sans-serif;
+  font-size: 22px;
+  color: var(--brand-navy, #012250);
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.lb-viewport {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
+  /* Short top + bottom soft fades so content doesn't hard-clip at the edges.
+     Top fade is intentionally short (4%) to stay clear of the first row. */
+  mask-image: linear-gradient(180deg, transparent 0, #000 4%, #000 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 4%, #000 92%, transparent 100%);
+  scrollbar-width: none;
+}
+.lb-viewport::-webkit-scrollbar { display: none; }
+
+.lb-track {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--ink);
+  box-shadow: inset 0 3px 0 rgba(0,0,0,0.05);
+}
+.lb-row .lb-rank {
+  font-family: 'Lilita One', sans-serif;
+  color: var(--brand-navy, #012250);
+  text-align: center;
+}
+.lb-row.lb-rank-1 .lb-rank { color: #D4A600; }
+.lb-row.lb-rank-2 .lb-rank { color: #8A8A8A; }
+.lb-row.lb-rank-3 .lb-rank { color: #A8601E; }
+.lb-row .lb-nick {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb-row .lb-score {
+  font-family: 'Lilita One', sans-serif;
+  color: var(--brand-teal, #09CAAB);
+  letter-spacing: 0.5px;
+}
+
+/* State: leaderboard visible.
+   Shift amounts measured in JS via getBoundingClientRect and applied as CSS vars.
+   We disable the idle keyframe animations (introBob, btnPulse) because they own
+   the transform property — otherwise our translateY would be overridden.
+   Force a 650ms transition here to override .btn-primary's 90ms press transition. */
+#intro.leaderboard-on .intro-title {
+  animation: none !important;
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transform: translateY(var(--lb-title-shift, 0)) !important;
+}
+#intro.leaderboard-on .intro-tagline {
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transform: translateY(var(--lb-tagline-shift, 0)) rotate(-2deg) !important;
+}
+#intro.leaderboard-on #btn-start {
+  animation: none !important;
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transform: translateY(var(--lb-button-shift, 0)) !important;
+}
+#intro.leaderboard-on #intro-leaderboard {
+  transform: translate(-50%, 0);
+}
+
+/* ─────────────── Register screen ─────────────── */
+
+#register {
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+  background:
+    radial-gradient(ellipse at 50% 15%, var(--sun-glow) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 85%, rgba(250, 71, 106, 0.35) 0%, transparent 40%),
+    radial-gradient(ellipse at 10% 75%, rgba(250, 71, 106, 0.25) 0%, transparent 35%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bot) 55%, #ffd5dc 100%);
+  overflow-y: auto;
+}
+
+#register-panel {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 360px;
+  background: var(--cream, #fffaf0);
+  border: 5px solid var(--ink);
+  border-radius: 24px;
+  padding: 22px 20px 20px;
+  box-shadow: 0 8px 0 var(--ink), 0 16px 30px rgba(0,0,0,0.18);
+}
+
+#register-close {
+  position: absolute;
+  top: -18px;
+  right: -18px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 4px solid var(--ink);
+  border-radius: 50%;
+  background: var(--brand-coral, #FA476A);
+  color: #fff;
+  font-family: 'Lilita One', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  transition: transform 90ms ease-out, box-shadow 90ms ease-out;
+}
+#register-close:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.register-title {
+  font-family: 'Lilita One', sans-serif;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--brand-navy, #012250);
+  margin: 0 0 6px;
+  letter-spacing: 0.5px;
+}
+
+.register-sub {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  text-align: center;
+  color: var(--ink);
+  opacity: 0.75;
+  margin: 0 0 18px;
+}
+
+#register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.reg-label {
+  font-family: 'Lilita One', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+  color: var(--brand-navy, #012250);
+  text-transform: uppercase;
+}
+
+.reg-field input {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--ink);
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+  box-shadow: inset 0 3px 0 rgba(0,0,0,0.06);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.reg-field input::placeholder {
+  color: rgba(1, 34, 80, 0.35);
+  font-weight: 500;
+}
+.reg-field input:focus {
+  border-color: var(--brand-teal, #09CAAB);
+  box-shadow: 0 0 0 3px rgba(9, 202, 171, 0.25), inset 0 3px 0 rgba(0,0,0,0.06);
+}
+.reg-field.has-error input {
+  border-color: var(--brand-coral, #FA476A);
+  box-shadow: 0 0 0 3px rgba(250, 71, 106, 0.25), inset 0 3px 0 rgba(0,0,0,0.06);
+}
+
+.reg-error {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--brand-coral, #FA476A);
+  min-height: 14px;
+  line-height: 1.1;
+}
+
+#btn-register {
+  margin-top: 8px;
+  align-self: center;
+  width: 100%;
+}
+
 /* ─────────────── HUD ─────────────── */
 
 #hud {
@@ -526,13 +786,19 @@ html, body {
     linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bot) 55%, #fff7e4 100%);
 }
 
-/* Cartoon sky backdrop: sun + clouds + sparkles behind everything */
+/* Cartoon sky backdrop: sun + clouds + sparkles behind everything.
+   Purely decorative — every descendant is transparent to pointer events and
+   visually softened so the falling items and playfield read as foreground. */
+#sky-backdrop,
+#sky-backdrop * {
+  pointer-events: none !important;
+}
 #sky-backdrop {
   position: absolute;
   inset: 0;
-  pointer-events: none;
   z-index: 0;
   overflow: hidden;
+  opacity: 0.35;
 }
 #sky-backdrop .sun {
   position: absolute;
@@ -569,10 +835,6 @@ html, body {
     inset 0 4px 0 rgba(255,255,255,0.8);
   opacity: 0.95;
 }
-/* Hide clouds while tutorial dim is active so they don't look like dark blobs */
-#tutorial:not(.hidden) ~ #sky-backdrop .cloud,
-#playfield:has(#tutorial:not(.hidden)) #sky-backdrop .cloud { display: none; }
-
 #sky-backdrop .cloud::before,
 #sky-backdrop .cloud::after {
   content: '';
