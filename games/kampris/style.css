@@ -72,6 +72,54 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ─────────────── Orientation lock ─────────────── */
+
+#rotate-warning {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--brand-navy);
+  z-index: 9999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 32px;
+  text-align: center;
+  color: var(--cream);
+  font-family: 'Fredoka', 'Baloo 2', system-ui, sans-serif;
+}
+#rotate-warning .rotate-icon {
+  font-size: 96px;
+  line-height: 1;
+  color: var(--brand-teal);
+  animation: rotateSpin 2s ease-in-out infinite;
+  text-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+}
+@keyframes rotateSpin {
+  0%, 100% { transform: rotate(-25deg); }
+  50%      { transform: rotate(25deg); }
+}
+#rotate-warning .rotate-text {
+  font-family: 'Lilita One', sans-serif;
+  font-size: 32px;
+  letter-spacing: 1px;
+  color: var(--cream);
+  text-shadow: var(--outline);
+}
+#rotate-warning .rotate-sub {
+  font-size: 17px;
+  color: var(--sky-top);
+  opacity: 0.85;
+}
+
+/* Show warning when viewport is wider than tall (landscape).
+   Only applies on coarse-pointer devices (touch) — desktop with narrow
+   window stays unaffected. */
+@media (orientation: landscape) and (pointer: coarse) {
+  #rotate-warning { display: flex; }
+}
+
 html, body {
   width: 100%;
   height: 100vh;      /* fallback for browsers without dvh */
@@ -87,15 +135,22 @@ html, body {
 
 #wrapper {
   position: relative;
-  width: 100%;
+  width: 100%;          /* fills viewport — no max-width cap */
   height: 100%;
-  max-width: var(--playfield-max-width);
   margin: 0 auto;
   background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bot) 45%, #fff7e4 100%);
   overflow: hidden;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 0 0 4px var(--ink) inset;
+}
+
+/* The "play column" is 430px (or viewport width, whichever is smaller),
+   centered in the wrapper. Lane headers, stacks, fall-zone, falling items
+   and tutorial annotations all live inside this column. Sky/sun/clouds
+   live outside it so they span full width. */
+#playfield {
+  --play-width: min(var(--playfield-max-width), 100%);
 }
 
 /* ─────────────── Screens ─────────────── */
@@ -512,10 +567,16 @@ html, body {
   50%      { transform: scale(1.2) rotate(180deg); opacity: 1;   }
 }
 
-/* Per-lane subtle vertical tint — sits behind the grid, 3 equal columns */
+/* Per-lane subtle vertical tint — sits behind the grid, 3 equal columns,
+   aligned to the play-column (not the full viewport) so the tint columns
+   line up exactly with the lanes inside. */
 #lane-tints {
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--play-width);
   display: flex;
   pointer-events: none;
   z-index: 1;
@@ -549,8 +610,9 @@ html, body {
 #fall-zone {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--play-width);
   bottom: calc(var(--lane-header-height) + 4px);
   pointer-events: none;
   z-index: 30;
@@ -561,8 +623,9 @@ html, body {
 #lane-headers {
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--play-width);
   display: flex;
   height: var(--lane-header-height);
   border-top: 4px solid var(--ink);
