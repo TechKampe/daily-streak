@@ -231,6 +231,24 @@
     document.querySelector(`#${id}`).classList.add('active');
     if (id === 'intro') startLeaderboardCycle();
     else stopLeaderboardCycle();
+    if (id === 'register') {
+      // Clear form on every show — tradeshow context means every session is a
+      // new player. Run repeatedly on the next frames to beat browser autofill
+      // (which can repopulate inputs after our sync clear).
+      clearRegisterForm();
+      requestAnimationFrame(() => {
+        clearRegisterForm();
+        setTimeout(clearRegisterForm, 50);
+        setTimeout(clearRegisterForm, 200);
+      });
+    }
+  }
+
+  function clearRegisterForm() {
+    if (regEmail) regEmail.value = '';
+    if (regPhone) regPhone.value = '';
+    if (regNick)  regNick.value  = '';
+    [regEmail, regPhone, regNick].forEach(inp => { if (inp) setFieldError(inp, ''); });
   }
 
   // ─────────────── Intro leaderboard cycle ───────────────
@@ -1269,7 +1287,6 @@
 
   btnStart.addEventListener('click', () => {
     vibrate('light');
-    prefillRegister();
     showScreen('register');
     setTimeout(() => { try { regEmail.focus(); } catch (_) {} }, 50);
   });
@@ -1284,14 +1301,15 @@
   }
 
   function prefillRegister() {
-    let saved = null;
-    try { saved = JSON.parse(localStorage.getItem('kampris_player') || 'null'); } catch (_) {}
-    if (saved) {
-      regEmail.value = saved.email || '';
-      regPhone.value = saved.phone || '';
-      regNick.value  = saved.nickname || '';
-    }
+    // Tradeshow context: every register-form entry is a fresh player, so
+    // clear the inputs and any leftover error state. Also wipe localStorage
+    // so the webhook can't accidentally submit under a previous player's
+    // identity if they skip or crash out before the form submits.
+    regEmail.value = '';
+    regPhone.value = '';
+    regNick.value  = '';
     [regEmail, regPhone, regNick].forEach(inp => setFieldError(inp, ''));
+    try { localStorage.removeItem('kampris_player'); } catch (_) {}
   }
   btnReplay.addEventListener('click', () => {
     vibrate('light');
