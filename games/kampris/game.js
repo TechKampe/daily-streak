@@ -37,9 +37,7 @@
   };
   const ASSET_URL = (key) => CDN_BASE + ASSET_MAP[key];
   const ITEM_URL  = (key) => ASSET_URL('item_' + key);
-  const SWIPE_THRESHOLD = 45;         // min horizontal travel (px) to register as a swipe
-  const SWIPE_DOMINANCE = 1.4;         // horizontal travel must beat vertical by this factor
-  const SWIPE_MAX_DURATION = 600;      // ms — slow drags are ignored (they're probably drifts)
+  const SWIPE_DOMINANCE = 1.25;        // on release: vertical must beat horizontal by this factor to count as hard-drop
 
   const WRONG_DECAY_MIN_MS = 1200;     // at tier 10, wrong pieces fade fast
   const WRONG_DECAY_MAX_MS = 2500;     // at tier 1, wrong pieces linger
@@ -105,8 +103,6 @@
   const countdown   = $('#countdown');
   const countdownNumber = $('#countdown-number');
   const resultsScore = $('#results-score');
-  const resultsRecord = $('#results-record');
-  const resultsStats  = $('#results-stats');
   const shatterStage  = $('#shatter-stage');
 
   // ─────────────── State ───────────────
@@ -232,22 +228,25 @@
     if (id === 'intro') startLeaderboardCycle();
     else stopLeaderboardCycle();
     if (id === 'register') {
-      // Clear form on every show — tradeshow context means every session is a
-      // new player. Run repeatedly on the next frames to beat browser autofill
-      // (which can repopulate inputs after our sync clear).
-      clearRegisterForm();
+      // Repopulate from sessionStorage (persists across games within this
+      // browser tab, cleared on page refresh). Run repeatedly on the next
+      // frames to override browser autofill, which can repopulate inputs
+      // with stale suggestions after our sync set.
+      applyRegisterState();
       requestAnimationFrame(() => {
-        clearRegisterForm();
-        setTimeout(clearRegisterForm, 50);
-        setTimeout(clearRegisterForm, 200);
+        applyRegisterState();
+        setTimeout(applyRegisterState, 50);
+        setTimeout(applyRegisterState, 200);
       });
     }
   }
 
-  function clearRegisterForm() {
-    if (regEmail) regEmail.value = '';
-    if (regPhone) regPhone.value = '';
-    if (regNick)  regNick.value  = '';
+  function applyRegisterState() {
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem('kampris_player') || 'null'); } catch (_) {}
+    if (regEmail) regEmail.value = saved && saved.email    ? saved.email    : '';
+    if (regPhone) regPhone.value = saved && saved.phone    ? saved.phone    : '';
+    if (regNick)  regNick.value  = saved && saved.nickname ? saved.nickname : '';
     [regEmail, regPhone, regNick].forEach(inp => { if (inp) setFieldError(inp, ''); });
   }
 
@@ -372,7 +371,11 @@
     const run = () => {
       // Idle 2s in default state
       lbTimers.push(setTimeout(async () => {
-        if (!lbData) lbData = await fetchLeaderboard();
+        // Always fetch fresh data every cycle — the scoreboard changes
+        // continuously at the booth. If the fetch fails, fall back to the
+        // last known good data so the attract loop doesn't stall.
+        const fresh = await fetchLeaderboard();
+        if (Array.isArray(fresh) && fresh.length > 0) lbData = fresh;
         if (!intro.classList.contains('active')) return;
         if (!Array.isArray(lbData) || lbData.length === 0) {
           // No data yet → try again next cycle
@@ -488,7 +491,7 @@
 
     const dir = laneIdx === 0 ? '←' : (laneIdx === 2 ? '→' : null);
     const text = dir
-      ? `Desliza ${dir} para llevar la pieza aquí`
+      ? `Desliza ${dir} en cualquier sitio para llevar la pieza aquí`
       : `Déjala caer recta, esta pieza ya está en su carril`;
 
     // The arrow sits at the lane header center; the text+arrow group is
@@ -1155,24 +1158,14 @@
   }
 
   function showResults() {
-    // record
+    // Still track the local high-score in localStorage for future use,
+    // even though nothing on the results screen surfaces it right now.
     const prev = parseInt(localStorage.getItem('kampris_record') || '0', 10);
-    const isNewRecord = state.score > prev;
-    if (isNewRecord) localStorage.setItem('kampris_record', String(state.score));
+    if (state.score > prev) localStorage.setItem('kampris_record', String(state.score));
 
     sendScoreWebhook();
-    try { localStorage.removeItem('kampris_player'); } catch (_) {}
 
-    // counter-up score
     animateCounter(resultsScore, 0, state.score, 1200, (v) => `${fmtScore(v)} pts`);
-    if (isNewRecord) {
-      resultsRecord.textContent = '¡NUEVO RÉCORD!';
-      resultsRecord.classList.add('new-record');
-    } else {
-      resultsRecord.textContent = `Récord: ${fmtScore(prev)} pts`;
-      resultsRecord.classList.remove('new-record');
-    }
-    resultsStats.textContent = `Líneas: ${state.linesCleared} · Combo máx: ${state.maxCombo}`;
 
     showScreen('results');
   }
@@ -1185,7 +1178,7 @@
     // Debug-skip sessions never submit a score.
     if (state.skippedRegister) return;
     let player = null;
-    try { player = JSON.parse(localStorage.getItem('kampris_player') || 'null'); } catch (_) {}
+    try { player = JSON.parse(sessionStorage.getItem('kampris_player') || 'null'); } catch (_) {}
     if (!player) return;
 
     const payload = {
@@ -1218,47 +1211,70 @@
   }
 
   // ─────────────── Input handling ───────────────
+  //
+  // Swipe is processed LIVE during touchmove (not on release): as soon as the
+  // finger has traveled 1× lane width horizontally, the piece shifts one lane
+  // and the baseline is reset so the player can chain lane changes by keep-
+  // dragging. This feels much more responsive than waiting for touchend.
+  //
+  // Hard-drop (downward swipe) is still evaluated on release — it only makes
+  // sense as a committed gesture, not a live one.
 
-  let touchStart = null;
+  const SWIPE_HYSTERESIS = 0.5; // fraction of a lane width before lane change fires
+  const HARD_DROP_MIN_DY = 60;   // px — release dy required for hard-drop
+
+  let touchStart = null;      // absolute touch start for hard-drop evaluation on release
+  let gestureConsumed = false; // true once a swipe fires — user must release to swipe again
+
+  function laneWidth() {
+    return fallZone.clientWidth / 3;
+  }
 
   function onTouchStart(e) {
     if (!state.running) return;
     const t = e.touches ? e.touches[0] : e;
     touchStart = { x: t.clientX, y: t.clientY, time: performance.now() };
+    gestureConsumed = false;
   }
+
   function onTouchMove(e) {
     if (!touchStart || !state.running) return;
     e.preventDefault();
+    if (gestureConsumed) return; // one lane change per press
+    const t = e.touches ? e.touches[0] : e;
+    const ci = state.currentItem;
+    if (!ci || ci.landed) return;
+
+    const threshold = laneWidth() * SWIPE_HYSTERESIS;
+    const dx = t.clientX - touchStart.x;
+
+    if (dx <= -threshold && ci.targetLane > 0) {
+      setItemLane(ci.targetLane - 1);
+      gestureConsumed = true;
+    } else if (dx >= threshold && ci.targetLane < 2) {
+      setItemLane(ci.targetLane + 1);
+      gestureConsumed = true;
+    }
   }
+
   function onTouchEnd(e) {
     if (!touchStart || !state.running) { touchStart = null; return; }
     const t = e.changedTouches ? e.changedTouches[0] : e;
     const dx = t.clientX - touchStart.x;
     const dy = t.clientY - touchStart.y;
-    const dur = performance.now() - touchStart.time;
     touchStart = null;
+    const wasConsumed = gestureConsumed;
+    gestureConsumed = false;
 
-    // Too slow → probably a drift, not an intentional swipe
-    if (dur > SWIPE_MAX_DURATION) return;
+    // Only evaluate hard-drop if we didn't already change lanes in this press
+    if (wasConsumed) return;
 
     const absX = Math.abs(dx), absY = Math.abs(dy);
 
     // Downward hard-drop: strong vertical dominance + downward direction
-    if (dy >= SWIPE_THRESHOLD && absY > absX * SWIPE_DOMINANCE) {
+    if (dy >= HARD_DROP_MIN_DY && absY > absX * SWIPE_DOMINANCE) {
       hardDrop();
-      return;
     }
-
-    // Horizontal swipe: require dominance over vertical, and enough travel
-    if (absX < SWIPE_THRESHOLD) return;
-    if (absX < absY * SWIPE_DOMINANCE) return;
-
-    // Single-step lane change relative to current lane
-    const ci = state.currentItem;
-    if (!ci || ci.landed) return;
-    const dir = dx < 0 ? -1 : 1;
-    const next = clamp(ci.targetLane + dir, 0, 2);
-    if (next !== ci.targetLane) setItemLane(next);
   }
 
   function hardDrop() {
@@ -1300,17 +1316,6 @@
     });
   }
 
-  function prefillRegister() {
-    // Tradeshow context: every register-form entry is a fresh player, so
-    // clear the inputs and any leftover error state. Also wipe localStorage
-    // so the webhook can't accidentally submit under a previous player's
-    // identity if they skip or crash out before the form submits.
-    regEmail.value = '';
-    regPhone.value = '';
-    regNick.value  = '';
-    [regEmail, regPhone, regNick].forEach(inp => setFieldError(inp, ''));
-    try { localStorage.removeItem('kampris_player'); } catch (_) {}
-  }
   btnReplay.addEventListener('click', () => {
     vibrate('light');
     resetGame();
@@ -1379,7 +1384,7 @@
     e.preventDefault();
     const data = validateRegister();
     if (!data) { vibrate('error'); return; }
-    try { localStorage.setItem('kampris_player', JSON.stringify({ ...data, ts: Date.now() })); } catch (_) {}
+    try { sessionStorage.setItem('kampris_player', JSON.stringify({ ...data, ts: Date.now() })); } catch (_) {}
     state.skippedRegister = false;
     vibrate('light');
     startGame();
@@ -1398,7 +1403,7 @@
       // Make sure no stale player data survives into a skipped session —
       // otherwise the game-over webhook would still submit a score against
       // a previous player's identity.
-      try { localStorage.removeItem('kampris_player'); } catch (_) {}
+      try { sessionStorage.removeItem('kampris_player'); } catch (_) {}
       state.skippedRegister = true;
       vibrate('success');
       startGame();
