@@ -717,15 +717,13 @@
     el.dataset.category = picked.category;
     el.dataset.key = picked.key;
     if (isMystery) el.dataset.mystery = 'true';
-    // The name chip is only shown before the mystery mechanic is unlocked.
-    // Once the first blank piece has appeared, we drop the chip from every
-    // future spawn — otherwise it would give away the answer.
-    if (!state.tut_firstMysteryShown) {
-      const chip = document.createElement('div');
-      chip.className = 'name-chip';
-      chip.textContent = picked.label;
-      el.appendChild(chip);
-    }
+    // Name chip is always shown — the item label helps the player match the
+    // sprite to a category. On mystery pieces the chip uses a neutral color
+    // (no category tint) so it doesn't reveal the answer.
+    const chip = document.createElement('div');
+    chip.className = 'name-chip';
+    chip.textContent = picked.label;
+    el.appendChild(chip);
     const img = document.createElement('img');
     img.src = ITEM_URL(picked.key);
     img.alt = picked.label;
