@@ -176,8 +176,9 @@ html, body {
 
 #intro {
   align-items: center;
-  justify-content: center;
-  gap: 28px;
+  justify-content: flex-start;
+  padding: 32px 0 0;
+  gap: 16px;
   background:
     radial-gradient(ellipse at 50% 15%, var(--sun-glow) 0%, transparent 45%),
     radial-gradient(ellipse at 85% 85%, rgba(250, 71, 106, 0.35) 0%, transparent 40%),
@@ -239,6 +240,22 @@ html, body {
 
 /* Grass silhouette removed — sky + flares fill the whole screen */
 
+/* Wrapper occupies the band between the top of the intro (below safe-area)
+   and the top edge of the docked panel, and vertically centers the title
+   inside it — same pattern as #btn-start-wrap below the panel. */
+#intro-title-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: env(safe-area-inset-top, 0);
+  height: var(--panel-top, 160px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 .intro-title {
   position: relative;
   z-index: 2;
@@ -248,8 +265,8 @@ html, body {
   display: block;
   filter:
     drop-shadow(0 0 0 var(--ink))
-    drop-shadow(4px 5px 0 var(--ink))
-    drop-shadow(0 10px 0 rgba(26, 16, 51, 0.35));
+    drop-shadow(2px 2px 0 var(--ink))
+    drop-shadow(0 4px 0 rgba(26, 16, 51, 0.3));
   user-select: none;
   -webkit-user-drag: none;
   pointer-events: none;
@@ -258,21 +275,6 @@ html, body {
 @keyframes introBob {
   0%, 100% { transform: translateY(0) rotate(-1deg); }
   50%      { transform: translateY(-8px) rotate(1deg); }
-}
-
-.intro-tagline {
-  position: relative;
-  z-index: 2;
-  font-family: 'Lilita One', 'Fredoka', sans-serif;
-  font-weight: 400;
-  font-size: 22px;
-  color: rgb(251, 190, 70);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  /* Anti-aliased single-shape stroke — no speckled edges from 8 stacked shadows. */
-  -webkit-text-stroke: 4px var(--ink);
-  paint-order: stroke fill;
-  transform: rotate(-2deg);
 }
 
 /* Chunky 3D press-down button */
@@ -315,12 +317,72 @@ html, body {
   animation: none;
 }
 .btn-primary:disabled {
-  opacity: 0.7;
+  /* During the brief preload window we only want to block clicks — keep
+     the button looking fully enabled so the page doesn't flicker. Other
+     disabled states (if any ever added) can opt back into a visual cue
+     via a modifier class. */
   cursor: default;
   pointer-events: none;
-  animation: none;
-  filter: saturate(0.5);
 }
+
+/* Teal variant for secondary CTAs */
+.btn-primary.btn-secondary-teal {
+  background: var(--brand-teal, #09CAAB);
+  background-image: linear-gradient(180deg, #3be0c8 0%, var(--brand-teal, #09CAAB) 50%, #067d6a 100%);
+  font-size: 22px;
+  padding: 14px 28px;
+  animation: none;
+  letter-spacing: 1px;
+  -webkit-text-stroke: 3px var(--ink);
+}
+
+/* Ghost / subtle variant — cream panel, navy text, no text stroke, no shadow */
+.btn-primary.btn-ghost,
+#results-buttons .btn-primary.btn-ghost {
+  background: transparent;
+  background-image: none;
+  color: var(--brand-navy, #012250);
+  border: 3px solid var(--brand-navy, #012250);
+  box-shadow: 0 3px 0 var(--brand-navy, #012250);
+  font-size: 16px;
+  padding: 12px 18px;
+  animation: none;
+  letter-spacing: 0.5px;
+  -webkit-text-stroke: 0 !important;
+  text-shadow: none !important;
+  text-transform: none;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  paint-order: normal;
+}
+.btn-primary.btn-ghost:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--brand-navy, #012250);
+}
+
+#results-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 22px;
+  width: 100%;
+  max-width: 260px;
+  margin-top: 16px;
+}
+#results-buttons .btn-primary {
+  margin-top: 0;
+  width: 100%;
+  /* Shrink default btn-primary sizing so long labels like REINTENTAR fit
+     inside a 260px column without clipping. */
+  font-size: 22px;
+  padding: 14px 20px;
+  letter-spacing: 0.8px;
+  -webkit-text-stroke: 3px var(--ink);
+}
+
+/* Preload bar is hidden — the CARGANDO state on the button itself is the
+   only loading affordance. The button enable/disable logic still runs. */
+#preload-progress { display: none !important; }
 
 #preload-progress {
   position: relative;
@@ -356,7 +418,7 @@ html, body {
   right: 0;
   bottom: env(safe-area-inset-bottom, 0);
   z-index: 3;
-  padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0));
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0));
   background: var(--brand-navy);
   border-top: 4px solid var(--ink);
   box-shadow:
@@ -366,10 +428,13 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap: clamp(6px, 2vw, 14px);
+  flex-wrap: nowrap;
   pointer-events: none;
 }
+
+/* Ribbon text and logo size scale with viewport width via clamp() above,
+   so we don't need discrete media-query breakpoints for them. */
 
 /* Diagonal stripes texture matching the HUD */
 #intro-ribbon::before {
@@ -391,8 +456,11 @@ html, body {
   z-index: 1;
   font-family: 'Lilita One', sans-serif;
   font-weight: 400;
-  font-size: 18px;
-  letter-spacing: 1px;
+  /* Scale font size with viewport width so the ribbon always fits on one
+     line without relying on discrete media-query breakpoints.
+     Floor 9px, ~3.5vw, cap 18px. */
+  font-size: clamp(9px, 3.5vw, 18px);
+  letter-spacing: 0.3px;
   color: var(--cream);
   text-shadow: 2px 2px 0 rgba(0,0,0,0.35);
   text-transform: uppercase;
@@ -402,7 +470,8 @@ html, body {
 #intro-ribbon .ribbon-logo {
   position: relative;
   z-index: 1;
-  height: 36px;
+  /* Scale with viewport too — floor 16px, ~5vw, cap 36px */
+  height: clamp(16px, 5vw, 36px);
   width: auto;
   display: block;
   filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.35));
@@ -412,39 +481,169 @@ html, body {
 
 /* ─────────────── Intro leaderboard ─────────────── */
 
-/* Intro is a flex column by default. We keep it flex, but animate each
-   child's translateY by a JS-measured distance so they physically move
-   into their target positions. Leaderboard is absolutely positioned
-   and slides up from below the viewport. */
-.intro-title,
-.intro-tagline,
-#btn-start {
-  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
+/* Panel is permanently docked in the intro — no slide-in animation.
+   Centered vertically in the available space between title and button,
+   with a fixed height so content is never lost in empty space. */
+#intro {
+  /* Shared sizing vars consumed by the panel and the button wrapper so
+     both stay in sync across media-query breakpoints. */
+  --panel-top: 160px;
+  --panel-bottom: calc(env(safe-area-inset-bottom, 0) + 220px);
+  --ribbon-height: 80px;
 }
 
 #intro-leaderboard {
   position: absolute;
   z-index: 2;
   left: 50%;
-  /* Top and bottom set by JS (--lb-top / --lb-bottom) to fill the gap
-     between the shifted title and the docked button. */
-  top: var(--lb-top, 140px);
-  bottom: var(--lb-bottom, 170px);
+  /* Fills the gap between the title and the docked button on any height.
+     Default is generous on tablets/kiosks; short viewports compress below. */
+  top: var(--panel-top);
+  bottom: var(--panel-bottom);
+  max-height: 460px;
+  transform: translateX(-50%);
   width: min(320px, 82%);
   background: var(--cream, #fff7e4);
   border: 5px solid var(--ink);
   border-radius: 20px;
   box-shadow: 0 8px 0 var(--ink), 0 14px 28px rgba(0,0,0,0.18);
   padding: 14px 14px 12px;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+/* Short viewports (phones): tighter spacing so the panel doesn't collide
+   with the docked button. Both the panel and the button wrapper read from
+   --panel-bottom / --panel-top, so updating these keeps both in sync. */
+@media (max-height: 800px) {
+  #intro {
+    --panel-top: 130px;
+    --panel-bottom: calc(env(safe-area-inset-bottom, 0) + 190px);
+    --ribbon-height: 66px;
+  }
+}
+
+/* Extra-short viewports (iPhone SE ~667px) — even tighter. */
+@media (max-height: 700px) {
+  #intro {
+    --panel-top: 110px;
+    --panel-bottom: calc(env(safe-area-inset-bottom, 0) + 170px);
+    --ribbon-height: 58px;
+  }
+}
+
+/* Docked button — spans the entire space between the panel's bottom and
+   the ribbon's top, and centers the button vertically inside. This makes
+   the button auto-adapt to any viewport height without needing discrete
+   media-queries for its vertical offset.
+   Anchored between two CSS custom properties that mirror the panel's
+   `bottom` and the ribbon's `height`, so updates stay in sync. */
+#btn-start-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* Top of wrapper = bottom edge of panel (panel uses `bottom: var(--panel-bottom)`,
+     so its top-of-bottom-edge sits at `100% - var(--panel-bottom)` from the top —
+     which from the bottom is just --panel-bottom). */
+  bottom: var(--ribbon-height, 56px);
+  top: auto;
+  height: calc(var(--panel-bottom, 220px) - var(--ribbon-height, 56px));
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+#btn-start-wrap #btn-start {
+  margin-top: 0;
+  pointer-events: auto;
+}
+
+/* Each view (ranking / promo) fills the panel and crossfades in/out. */
+.lb-view {
+  position: absolute;
+  inset: 14px 14px 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  pointer-events: none;
-  /* Start fully off-screen (below), then translate up into position */
-  transform: translate(-50%, calc(100vh + 40px));
-  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+.lb-view[hidden] { display: none; }
+.lb-view.lb-fade-out { opacity: 0; }
+
+/* ── Promo view ── */
+.lb-view-promo {
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 12px;
+}
+.promo-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--brand-coral, #FA476A);
+  color: #fff;
+  font-family: 'Lilita One', sans-serif;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  padding: 5px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 3px 0 var(--ink);
+  transform: rotate(6deg);
+}
+.promo-eyebrow {
+  font-family: 'Lilita One', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--brand-coral, #FA476A);
+  margin-top: 4px;
+}
+.promo-headline {
+  font-family: 'Lilita One', sans-serif;
+  font-size: 22px;
+  line-height: 1.05;
+  color: var(--brand-navy, #012250);
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+.promo-headline .promo-highlight {
+  color: var(--brand-teal, #09CAAB);
+}
+.promo-body {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink);
+  margin: 6px 6px 0;
+}
+.promo-chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  padding: 0 4px;
+}
+.promo-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  padding: 10px 4px;
+  box-shadow: 0 3px 0 var(--ink);
+}
+.promo-chip-label {
+  font-family: 'Lilita One', sans-serif;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--brand-navy, #012250);
+  line-height: 1.15;
 }
 
 .lb-title {
@@ -511,28 +710,6 @@ html, body {
 }
 
 /* State: leaderboard visible.
-   Shift amounts measured in JS via getBoundingClientRect and applied as CSS vars.
-   We disable the idle keyframe animations (introBob, btnPulse) because they own
-   the transform property — otherwise our translateY would be overridden.
-   Force a 650ms transition here to override .btn-primary's 90ms press transition. */
-#intro.leaderboard-on .intro-title {
-  animation: none !important;
-  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1) !important;
-  transform: translateY(var(--lb-title-shift, 0)) !important;
-}
-#intro.leaderboard-on .intro-tagline {
-  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1) !important;
-  transform: translateY(var(--lb-tagline-shift, 0)) rotate(-2deg) !important;
-}
-#intro.leaderboard-on #btn-start {
-  animation: none !important;
-  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1) !important;
-  transform: translateY(var(--lb-button-shift, 0)) !important;
-}
-#intro.leaderboard-on #intro-leaderboard {
-  transform: translate(-50%, 0);
-}
-
 /* ─────────────── Register screen ─────────────── */
 
 #register {
@@ -590,34 +767,34 @@ html, body {
 .register-title {
   font-family: 'Lilita One', sans-serif;
   font-weight: 400;
-  font-size: 26px;
-  line-height: 1.1;
+  font-size: 24px;
+  line-height: 1.05;
   text-align: center;
   color: var(--brand-navy, #012250);
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   letter-spacing: 0.5px;
 }
 
 .register-sub {
   font-family: 'Fredoka', sans-serif;
   font-weight: 500;
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
   color: var(--ink);
   opacity: 0.75;
-  margin: 0 0 18px;
+  margin: 0 0 12px;
 }
 
 #register-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 
 .reg-field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 3px;
 }
 
 .reg-label {
@@ -636,7 +813,7 @@ html, body {
   background: #fff;
   border: 3px solid var(--ink);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   outline: none;
   box-shadow: inset 0 3px 0 rgba(0,0,0,0.06);
   -webkit-appearance: none;
@@ -660,12 +837,49 @@ html, body {
   font-weight: 600;
   font-size: 12px;
   color: var(--brand-coral, #FA476A);
-  min-height: 14px;
+  min-height: 0;
   line-height: 1.1;
+}
+.reg-error:empty { display: none; }
+
+.reg-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 2px;
+  padding: 8px 10px;
+  background: rgba(1, 34, 80, 0.04);
+  border: 2px solid rgba(1, 34, 80, 0.12);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.reg-consent.has-error {
+  border-color: var(--brand-coral, #FA476A);
+  background: rgba(250, 71, 106, 0.08);
+}
+.reg-consent input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--brand-teal, #09CAAB);
+  cursor: pointer;
+}
+.reg-consent-text {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.reg-consent-text a {
+  color: var(--brand-teal, #09CAAB);
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 #btn-register {
-  margin-top: 8px;
+  margin-top: 4px;
   align-self: center;
   width: 100%;
 }
@@ -1178,6 +1392,13 @@ html, body {
 .falling-item[data-category="electricidad"] .name-chip { --chip-bg: #fff07a; }
 .falling-item[data-category="fontaneria"]   .name-chip { --chip-bg: #7ef0dc; }
 .falling-item[data-category="climatizacion"] .name-chip { --chip-bg: #ff8a9e; }
+
+/* Mystery piece — no category tint. Neutral cream tile and neutral chip
+   so the player must identify the item by its sprite alone. */
+.falling-item.mystery {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, var(--cream) 55%, #e8dcc0 100%) !important;
+}
+.falling-item.mystery .name-chip { --chip-bg: var(--cream, #fff7e4) !important; }
 /* Tail: outer Ink border */
 .falling-item .name-chip::before {
   content: '';
@@ -1238,7 +1459,26 @@ html, body {
 .stacked-item[data-category="climatizacion"] {
   background: radial-gradient(circle at 35% 30%, #ff8a9e 0%, var(--cat-clim) 55%, var(--cat-clim-dk) 100%);
 }
+
+/* A stacked item that was landed "blank" (mystery). The ::after overlay
+   covers the category gradient with a neutral cream wash; once .revealing
+   is removed, the overlay fades out over 450ms and the category color is
+   revealed. (The .stacked-item's own `position: absolute` above already
+   makes it a containing block for the ::after, no extra rule needed.) */
+.stacked-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, var(--cream) 55%, #e8dcc0 100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 450ms ease-out;
+}
+.stacked-item.revealing::after { opacity: 1; }
 .stacked-item img {
+  position: relative;
+  z-index: 1;
   width: 78%;
   height: 78%;
   object-fit: contain;
@@ -1704,12 +1944,20 @@ html, body {
   60%  { transform: scale(1.15) rotate(4deg);  opacity: 1; }
   100% { transform: scale(1)    rotate(-3deg); opacity: 1; }
 }
+#results-score .pts-suffix {
+  font-size: 0.42em;
+  margin-left: 0.18em;
+  vertical-align: 0.55em;
+  letter-spacing: 1px;
+}
+
 #results-score {
   font-family: 'Lilita One', sans-serif;
   font-weight: 400;
   font-size: 80px;
   color: var(--sun);
   line-height: 1;
+  white-space: nowrap;
   text-shadow:
     -4px -4px 0 var(--ink),
      4px -4px 0 var(--ink),
@@ -1769,10 +2017,11 @@ html, body {
   margin-top: 8px;
   background-image: linear-gradient(180deg, #ff8a9e 0%, var(--coral) 50%, var(--coral-dark) 100%);
   animation: replayPulse 1.4s ease-in-out infinite;
+  text-align: center;
 }
 @keyframes replayPulse {
-  0%, 100% { transform: scale(1)    rotate(-1deg); }
-  50%      { transform: scale(1.06) rotate(1deg); }
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
 }
 
 /* ─────────────── Shatter physics bodies ─────────────── */

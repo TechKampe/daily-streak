@@ -15,7 +15,7 @@
   // Cloudinary asset base + per-file public ID map (PNG delivery, auto format/quality)
   const CDN_BASE = 'https://res.cloudinary.com/kampe/image/upload/f_auto,q_auto/';
   const ASSET_MAP = {
-    game_title:           'game_title_vgld8d.png',
+    game_title:           'kampetris_mp7rya.png',
     icon_electricidad:    'icon_electricidad_s2ymmv.png',
     icon_fontaneria:      'icon_fontaneria_r4tgdy.png',
     icon_climatizacion:   'icon_climatizacion_cmgom2.png',
@@ -92,6 +92,7 @@
   const regEmail    = $('#reg-email');
   const regPhone    = $('#reg-phone');
   const regNick     = $('#reg-nick');
+  const regConsent  = $('#reg-consent');
   const hudScore    = $('#hud-score');
   const playfield   = $('#playfield');
   const fallZone   = $('#fall-zone');
@@ -128,7 +129,12 @@
     // Tutorial flags — reset every game
     tut_firstPieceShown: false,
     tut_firstWrongShown: false,
+    tut_firstMysteryShown: false,
     tut_forceFirstElectricidad: false,
+    // Mystery (no-tint) piece tracking — activates once every item in the
+    // pool has spawned at least once; frequency ramps with tier.
+    seenKeys: new Set(),
+    mysteryActive: false,
   };
 
   // ─────────────── Utilities ───────────────
@@ -247,7 +253,10 @@
     if (regEmail) regEmail.value = saved && saved.email    ? saved.email    : '';
     if (regPhone) regPhone.value = saved && saved.phone    ? saved.phone    : '';
     if (regNick)  regNick.value  = saved && saved.nickname ? saved.nickname : '';
+    // Consent is NOT persisted — user must tick each time they enter the form
+    if (regConsent) regConsent.checked = false;
     [regEmail, regPhone, regNick].forEach(inp => { if (inp) setFieldError(inp, ''); });
+    if (regConsent) setFieldError(regConsent, '');
   }
 
   // ─────────────── Intro leaderboard cycle ───────────────
@@ -290,147 +299,99 @@
     if (lbAnimFrame) { cancelAnimationFrame(lbAnimFrame); lbAnimFrame = null; }
   }
 
+  function swapPanelView(view) {
+    // Crossfade between .lb-view-ranking and .lb-view-promo inside the panel.
+    const current = document.querySelector('#intro-leaderboard .lb-view:not([hidden])');
+    const next    = document.querySelector(`#intro-leaderboard .lb-view[data-view="${view}"]`);
+    if (!next || current === next) return;
+    if (current) {
+      current.classList.add('lb-fade-out');
+      setTimeout(() => {
+        current.hidden = true;
+        current.classList.remove('lb-fade-out');
+        next.hidden = false;
+        next.classList.add('lb-fade-out');
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => next.classList.remove('lb-fade-out'));
+        });
+      }, 350);
+    } else {
+      next.hidden = false;
+    }
+  }
+
   function stopLeaderboardCycle() {
     clearLbTimers();
-    intro.classList.remove('leaderboard-on');
-    unfreezeIntroAnimations();
     const viewport = document.querySelector('#intro-leaderboard .lb-viewport');
     if (viewport) viewport.scrollTop = 0;
-  }
-
-  function freezeIntroAnimations() {
-    // Capture current keyframe-produced transform and set it inline so the
-    // subsequent animation:none cancellation doesn't snap the element.
-    const titleEl = intro.querySelector('.intro-title');
-    const btn     = btnStart;
-    [titleEl, btn].forEach(el => {
-      if (!el) return;
-      const cs = getComputedStyle(el);
-      const current = cs.transform && cs.transform !== 'none' ? cs.transform : '';
-      if (current) el.style.transform = current;
-    });
-  }
-
-  function unfreezeIntroAnimations() {
-    const titleEl = intro.querySelector('.intro-title');
-    const btn     = btnStart;
-    [titleEl, btn].forEach(el => {
-      if (!el) return;
-      el.style.transform = '';
-    });
-  }
-
-  function measureLeaderboardShifts() {
-    // Compute translate distances so:
-    //  - Title shifts up so its top is ~32px from viewport top
-    //  - Tagline translates fully off-screen (above), so it "disappears"
-    //  - Button docks just above the ribbon with an 18px gap
-    //  - Leaderboard slides up from below into the center area
-    const titleEl   = intro.querySelector('.intro-title');
-    const taglineEl = intro.querySelector('.intro-tagline');
-    const ribbonEl  = intro.querySelector('#intro-ribbon');
-    if (!titleEl || !taglineEl || !btnStart) return;
-
-    const viewportH = intro.clientHeight;
-    const ribbonH   = ribbonEl ? ribbonEl.offsetHeight : 0;
-    const introRect = intro.getBoundingClientRect();
-
-    const titleRect   = titleEl.getBoundingClientRect();
-    const taglineRect = taglineEl.getBoundingClientRect();
-    const btnRect     = btnStart.getBoundingClientRect();
-
-    const titleTop   = titleRect.top   - introRect.top;
-    const taglineTop = taglineRect.top - introRect.top;
-    const btnTop     = btnRect.top     - introRect.top;
-
-    // Title: bring its top to ~28px from top of intro
-    const titleShift = Math.round(28 - titleTop);
-
-    // Tagline: push it fully above the viewport (top edge above 0 - its height)
-    const taglineShift = Math.round(-(taglineTop + taglineRect.height + 20));
-
-    // Button: dock above ribbon (18px gap) so its bottom sits at viewportH - ribbonH - 18
-    const targetBtnTop = viewportH - ribbonH - 18 - btnRect.height;
-    const btnShift = Math.round(targetBtnTop - btnTop);
-
-    // Leaderboard fills the space between the *shifted* title bottom and the
-    // *shifted* button top, with 18px gaps on each side.
-    const titleBottomShifted = titleTop + titleShift + titleRect.height;
-    const lbTop    = Math.round(titleBottomShifted + 18);
-    const lbBottom = Math.round(viewportH - targetBtnTop + 18);
-
-    intro.style.setProperty('--lb-title-shift', `${titleShift}px`);
-    intro.style.setProperty('--lb-tagline-shift', `${taglineShift}px`);
-    intro.style.setProperty('--lb-button-shift', `${btnShift}px`);
-    intro.style.setProperty('--lb-top', `${lbTop}px`);
-    intro.style.setProperty('--lb-bottom', `${lbBottom}px`);
+    // Reset to ranking view so the next entry starts there
+    const rankView  = document.querySelector('#intro-leaderboard .lb-view[data-view="ranking"]');
+    const promoView = document.querySelector('#intro-leaderboard .lb-view[data-view="promo"]');
+    if (rankView)  { rankView.hidden  = false; rankView.classList.remove('lb-fade-out'); }
+    if (promoView) { promoView.hidden = true;  promoView.classList.remove('lb-fade-out'); }
   }
 
   function startLeaderboardCycle() {
     stopLeaderboardCycle();
-    const run = () => {
-      // Idle 2s in default state
-      lbTimers.push(setTimeout(async () => {
-        // Always fetch fresh data every cycle — the scoreboard changes
-        // continuously at the booth. If the fetch fails, fall back to the
-        // last known good data so the attract loop doesn't stall.
-        const fresh = await fetchLeaderboard();
-        if (Array.isArray(fresh) && fresh.length > 0) lbData = fresh;
-        if (!intro.classList.contains('active')) return;
-        if (!Array.isArray(lbData) || lbData.length === 0) {
-          // No data yet → try again next cycle
-          lbTimers.push(setTimeout(run, 4000));
-          return;
-        }
+    const run = async () => {
+      const viewport = document.querySelector('#intro-leaderboard .lb-viewport');
+      if (!viewport) return;
+
+      // Always fetch fresh data at the start of each cycle.
+      const fresh = await fetchLeaderboard();
+      if (Array.isArray(fresh) && fresh.length > 0) lbData = fresh;
+      if (!intro.classList.contains('active')) return;
+
+      if (Array.isArray(lbData) && lbData.length > 0) {
         renderLeaderboardRows(lbData.slice(0, 10));
-        measureLeaderboardShifts();
-        // Freeze the current keyframe-animation state so transitions can
-        // interpolate smoothly from current transform to the target.
-        freezeIntroAnimations();
-        // Next frame: flip the class so the transition fires from a stable base.
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => intro.classList.add('leaderboard-on'));
-        });
+      }
+      swapPanelView('ranking');
 
-        // Let slide-in finish, wait an extra 1s so the user can read the
-        // first rows, then auto-scroll via scrollTop (so manual touch/wheel
-        // scroll continues to work naturally).
-        lbTimers.push(setTimeout(() => {
-          const track = document.querySelector('#intro-leaderboard .lb-track');
-          const viewport = document.querySelector('#intro-leaderboard .lb-viewport');
-          if (!track || !viewport) return;
-          viewport.scrollTop = 0;
-          const distance = Math.max(0, track.offsetHeight - viewport.clientHeight);
-          const duration = distance > 0 ? (distance / LB_SCROLL_PX_PER_SEC) * 1000 : 0;
-          const start = performance.now();
+      // scrollTop must be set AFTER the ranking view is actually visible in
+      // the DOM — setting it while the element is display:none (promo view
+      // active, ranking hidden) is a no-op in most browsers, which would
+      // leave the scroll position wherever it was when ranking was last hidden.
+      // Two rAFs guarantee the browser has laid out the now-visible view.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { viewport.scrollTop = 0; });
+      });
 
-          const finish = () => {
-            // Hold leaderboard visible for 5s at the end, then restart cycle
+      // Brief pause so the user sees the top rows before the auto-scroll
+      lbTimers.push(setTimeout(() => {
+        const track = viewport.querySelector('.lb-track');
+        if (!track) return;
+        // Belt-and-suspenders: reset again right before we start auto-scrolling
+        viewport.scrollTop = 0;
+        const distance = Math.max(0, track.offsetHeight - viewport.clientHeight);
+        const duration = distance > 0 ? (distance / LB_SCROLL_PX_PER_SEC) * 1000 : 0;
+        const start = performance.now();
+
+        const afterScroll = () => {
+          // Hold ranking briefly, then swap to promo, hold, then back to
+          // ranking with fresh data → restart cycle.
+          const rankingHoldMs = 3500;
+          const promoHoldMs   = 6000;
+          lbTimers.push(setTimeout(() => {
+            swapPanelView('promo');
             lbTimers.push(setTimeout(() => {
-              intro.classList.remove('leaderboard-on');
-              // Wait for exit transition to finish, then restore idle animations
-              lbTimers.push(setTimeout(() => {
-                unfreezeIntroAnimations();
-                viewport.scrollTop = 0;
-                run();
-              }, 700));
-            }, 5000));
-          };
+              run();
+            }, promoHoldMs));
+          }, rankingHoldMs));
+        };
 
-          if (distance === 0) { finish(); return; }
+        if (distance === 0) { afterScroll(); return; }
 
-          function step(now) {
-            const t = Math.min(1, (now - start) / duration);
-            viewport.scrollTop = distance * t;
-            if (t < 1 && intro.classList.contains('active')) {
-              lbAnimFrame = requestAnimationFrame(step);
-            } else {
-              finish();
-            }
+        function step(now) {
+          const t = Math.min(1, (now - start) / duration);
+          viewport.scrollTop = distance * t;
+          if (t < 1 && intro.classList.contains('active')) {
+            lbAnimFrame = requestAnimationFrame(step);
+          } else {
+            afterScroll();
           }
-          lbAnimFrame = requestAnimationFrame(step);
-        }, 3000));
-      }, LB_IDLE_MS));
+        }
+        lbAnimFrame = requestAnimationFrame(step);
+      }, 1200));
     };
     run();
   }
@@ -491,7 +452,7 @@
 
     const dir = laneIdx === 0 ? '←' : (laneIdx === 2 ? '→' : null);
     const text = dir
-      ? `Desliza ${dir} en cualquier sitio para llevar la pieza aquí`
+      ? `Desliza ${dir} en cualquier sitio para llevar la pieza aquí. Arrastra hacia abajo para aparcarla`
       : `Déjala caer recta, esta pieza ya está en su carril`;
 
     // The arrow sits at the lane header center; the text+arrow group is
@@ -561,6 +522,48 @@
     });
   }
 
+  function showTutorialFirstMystery() {
+    // Freeze the game on the first untinted (mystery) piece and explain it
+    state.paused = true;
+    tutAnnosEl.innerHTML = '';
+    const ci = state.currentItem;
+    if (!ci || !ci.el) {
+      // Shouldn't happen, but bail gracefully
+      state.paused = false;
+      return;
+    }
+    const pfRect = playfield.getBoundingClientRect();
+    const er = ci.el.getBoundingClientRect();
+    const cx = er.left - pfRect.left + er.width / 2;
+    const cy = er.top  - pfRect.top  + er.height / 2;
+
+    // Highlight circle centered on the mystery piece.
+    // The .anno base translates itself -50% on X but not Y, so we manually
+    // offset top by half the circle height to achieve a true center.
+    const circleSize = 110;
+    const circleWrap = document.createElement('div');
+    circleWrap.className = 'anno';
+    circleWrap.style.left = `${cx}px`;
+    circleWrap.style.top  = `${cy - circleSize / 2}px`;
+    circleWrap.innerHTML = `<div class="anno-circle anno-circle-mystery"></div>`;
+    tutAnnosEl.appendChild(circleWrap);
+
+    // Message: place above unless too close to top
+    const msgAbove = (cy - circleSize / 2 - 140) > 60;
+    const msg = document.createElement('div');
+    msg.className = 'anno';
+    msg.style.left = `${pfRect.width / 2}px`;
+    msg.style.top  = msgAbove ? `${cy - circleSize / 2 - 140}px` : `${cy + circleSize / 2 + 30}px`;
+    msg.innerHTML = `
+      <div class="anno-text" style="max-width: 300px;">
+        ¡Ojo! Esta pieza no revela su categoría. Fíjate en el icono para decidir.
+      </div>
+    `;
+    tutAnnosEl.appendChild(msg);
+
+    openTutorial(() => { state.paused = false; });
+  }
+
   function findLaneOf(entry) {
     for (let i = 0; i < 3; i++) {
       if (state.stacks[i].includes(entry)) return i;
@@ -621,7 +624,12 @@
     state.lastPicks = [];
     state.tut_firstPieceShown = false;
     state.tut_firstWrongShown = false;
+    state.tut_firstMysteryShown = false;
     state.tut_forceFirstElectricidad = true;
+    state.seenKeys = new Set();
+    state.mysteryActive = false;
+    state.piecesSpawned = 0;
+    state.piecesSinceUnlock = 0;
     hideTutorial();
 
     // clear DOM — preserve fall-zone structure (#lanes-stacks lives inside it)
@@ -682,14 +690,42 @@
 
   function spawnItem() {
     const picked = pickItem();
+
+    // Mystery (no-tint) pieces only start appearing AFTER every item in the
+    // pool has been shown at least once in its tinted form with its name.
+    // Once unlocked, the probability ramps with piece-count so the game
+    // turns fully blank within ~10 pieces.
+    let isMystery = false;
+    const mysteryUnlocked = state.seenKeys.size >= ITEM_POOL.length;
+    if (mysteryUnlocked && state.tut_firstPieceShown) {
+      state.piecesSinceUnlock = (state.piecesSinceUnlock || 0) + 1;
+      const ramp = clamp(state.piecesSinceUnlock / 9, 0, 1); // 0 → 1 over 9 pieces
+      isMystery = Math.random() < ramp;
+      // First real mystery fires the tutorial — bias toward it being
+      // mystery on the first eligible spawn so the mechanic is taught soon.
+      if (!state.tut_firstMysteryShown) {
+        isMystery = true;
+      }
+    }
+
+    // Only count tinted spawns toward "seen" — mystery pieces don't reveal
+    // the category/name, so they can't be part of the teaching phase.
+    if (!isMystery) state.seenKeys.add(picked.key);
+
     const el = document.createElement('div');
-    el.className = 'falling-item spawn-in';
+    el.className = 'falling-item spawn-in' + (isMystery ? ' mystery' : '');
     el.dataset.category = picked.category;
     el.dataset.key = picked.key;
-    const chip = document.createElement('div');
-    chip.className = 'name-chip';
-    chip.textContent = picked.label;
-    el.appendChild(chip);
+    if (isMystery) el.dataset.mystery = 'true';
+    // The name chip is only shown before the mystery mechanic is unlocked.
+    // Once the first blank piece has appeared, we drop the chip from every
+    // future spawn — otherwise it would give away the answer.
+    if (!state.tut_firstMysteryShown) {
+      const chip = document.createElement('div');
+      chip.className = 'name-chip';
+      chip.textContent = picked.label;
+      el.appendChild(chip);
+    }
     const img = document.createElement('img');
     img.src = ITEM_URL(picked.key);
     img.alt = picked.label;
@@ -706,6 +742,7 @@
     state.currentItem = {
       el,
       item: picked,
+      mystery: isMystery,
       x: centerX - ITEM_SIZE / 2,
       y: startY,
       targetLane: 1,   // default: falls straight to center lane
@@ -722,6 +759,10 @@
       state.tut_firstPieceShown = true;
       const laneIdx = LANES.indexOf(picked.category);
       setTimeout(() => showTutorialFirstPiece(laneIdx), 200);
+    } else if (isMystery && !state.tut_firstMysteryShown) {
+      // Tutorial step 4: first mystery piece — freeze and explain
+      state.tut_firstMysteryShown = true;
+      setTimeout(() => showTutorialFirstMystery(), 200);
     }
 
     // Schedule next spawn once this one lands (handled in tick after landing)
@@ -812,9 +853,11 @@
   }
 
   function correctLanding(ci) {
-    // Add to stack
+    // Add to stack. If the falling piece was untinted (mystery), the stacked
+    // tile starts with the same neutral look and then fades into its real
+    // category color — "revealing" where the piece belonged.
     const stackedEl = document.createElement('div');
-    stackedEl.className = 'stacked-item';
+    stackedEl.className = 'stacked-item' + (ci.mystery ? ' revealing' : '');
     stackedEl.dataset.category = ci.item.category;
     stackedEl.dataset.key = ci.item.key;
     const img = document.createElement('img');
@@ -824,6 +867,11 @@
     stackedEl.appendChild(img);
     stackedEl.style.bottom = `${state.stacks[ci.targetLane].length * ITEM_SIZE}px`;
     laneStacks[ci.targetLane].appendChild(stackedEl);
+
+    // If the piece was mystery, reveal the category color after a short beat.
+    if (ci.mystery) {
+      setTimeout(() => stackedEl.classList.remove('revealing'), 200);
+    }
 
     state.stacks[ci.targetLane].push({
       el: stackedEl,
@@ -1165,7 +1213,7 @@
 
     sendScoreWebhook();
 
-    animateCounter(resultsScore, 0, state.score, 1200, (v) => `${fmtScore(v)} pts`);
+    animateCounter(resultsScore, 0, state.score, 1200, (v) => `${fmtScore(v)}<span class="pts-suffix">pts</span>`, true);
 
     showScreen('results');
   }
@@ -1198,13 +1246,14 @@
     } catch (_) {}
   }
 
-  function animateCounter(el, from, to, dur, fmt) {
+  function animateCounter(el, from, to, dur, fmt, asHtml) {
     const start = performance.now();
     function step(now) {
       const t = clamp((now - start) / dur, 0, 1);
       const eased = 1 - Math.pow(1 - t, 3);
       const v = Math.round(from + (to - from) * eased);
-      el.textContent = fmt(v);
+      if (asHtml) el.innerHTML = fmt(v);
+      else el.textContent = fmt(v);
       if (t < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
@@ -1323,6 +1372,34 @@
     showScreen('intro');
   });
 
+  // External link opener — tries RN WebView host first, falls back to window.open
+  function openExternal(url) {
+    if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
+      try {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'OPEN_URL', url }));
+        return;
+      } catch (_) {}
+    }
+    try { window.open(url, '_blank', 'noopener,noreferrer'); } catch (_) {
+      window.location.href = url;
+    }
+  }
+
+  const btnKampeInfo = document.querySelector('#btn-kampe-info');
+  if (btnKampeInfo) {
+    btnKampeInfo.addEventListener('click', () => {
+      vibrate('light');
+      openExternal('https://kampe.pro/zonafp');
+    });
+  }
+  const btnMoreGames = document.querySelector('#btn-more-games');
+  if (btnMoreGames) {
+    btnMoreGames.addEventListener('click', () => {
+      vibrate('light');
+      openExternal('https://kampe.pro/juegos');
+    });
+  }
+
   // ─────────────── Register form ───────────────
 
   // Basic, pragmatic validators. Phone: 9-digit Spanish mobile/landline (no prefix).
@@ -1340,13 +1417,13 @@
   }
 
   function setFieldError(input, msg) {
-    const field = input.closest('.reg-field');
+    const field = input.closest('.reg-field') || input.closest('.reg-consent');
     const errEl = registerEl.querySelector(`.reg-error[data-for="${input.id}"]`);
     if (msg) {
-      field.classList.add('has-error');
+      if (field) field.classList.add('has-error');
       if (errEl) errEl.textContent = msg;
     } else {
-      field.classList.remove('has-error');
+      if (field) field.classList.remove('has-error');
       if (errEl) errEl.textContent = '';
     }
   }
@@ -1371,6 +1448,14 @@
     else if (hasProfanity(nick)) { setFieldError(regNick, 'Elige otro nickname'); ok = false; firstInvalid = firstInvalid || regNick; }
     else setFieldError(regNick, '');
 
+    if (regConsent && !regConsent.checked) {
+      setFieldError(regConsent, 'Debes aceptar para continuar');
+      ok = false;
+      firstInvalid = firstInvalid || regConsent;
+    } else if (regConsent) {
+      setFieldError(regConsent, '');
+    }
+
     if (firstInvalid) { try { firstInvalid.focus(); } catch (_) {} }
     return ok ? { email, phone: phoneRaw, nickname: nick } : null;
   }
@@ -1379,6 +1464,16 @@
   [regEmail, regPhone, regNick].forEach(inp => {
     inp.addEventListener('input', () => setFieldError(inp, ''));
   });
+  if (regConsent) {
+    regConsent.addEventListener('change', () => setFieldError(regConsent, ''));
+  }
+  const privacyLink = document.querySelector('#reg-privacy-link');
+  if (privacyLink) {
+    privacyLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      openExternal(privacyLink.href);
+    });
+  }
 
   registerForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -1437,7 +1532,6 @@
       if (fill) fill.style.width = `${Math.round((loaded / total) * 100)}%`;
       if (loaded >= total) {
         btnStart.disabled = false;
-        btnStart.textContent = 'EMPEZAR';
         if (progress) setTimeout(() => progress.classList.add('done'), 250);
       }
     };
