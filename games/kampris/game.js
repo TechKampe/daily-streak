@@ -1387,14 +1387,14 @@
   if (btnKampeInfo) {
     btnKampeInfo.addEventListener('click', () => {
       vibrate('light');
-      openExternal('https://kampe.pro/zonafp');
+      openExternal('https://kampe.pro/zona-fp');
     });
   }
   const btnMoreGames = document.querySelector('#btn-more-games');
   if (btnMoreGames) {
     btnMoreGames.addEventListener('click', () => {
       vibrate('light');
-      openExternal('https://kampe.pro/juegos');
+      openExternal('https://kampe.pro/zona-fp/minijuegos');
     });
   }
 
