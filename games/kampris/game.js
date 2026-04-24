@@ -135,7 +135,21 @@
     // pool has spawned at least once; frequency ramps with tier.
     seenKeys: new Set(),
     mysteryActive: false,
+    // Demo / attract-mode state — when true, the game plays itself and no
+    // score is ever submitted. Entered after idle on the intro screen.
+    demoMode: false,
+    skippedRegister: false,
   };
+
+  // Demo mode config
+  const DEMO_IDLE_MS      = 30000; // intro idle before demo kicks in
+  const DEMO_DURATION_MS  = 30000; // demo run length
+  const DEMO_START_TIER   = 5;     // enter at mid-tier so the game looks spicy
+  const DEMO_ACCURACY_TINTED  = 0.85; // chance the AI picks the correct lane on a tinted piece
+  const DEMO_ACCURACY_MYSTERY = 0.55; // chance the AI picks correctly on a mystery piece
+  const DEMO_DECISION_RATIO   = 0.45; // when the piece has fallen this fraction of the way, commit
+  let   demoIdleTimer   = null;
+  let   demoDurationTimer = null;
 
   // ─────────────── Utilities ───────────────
 
@@ -231,8 +245,13 @@
   function showScreen(id) {
     [intro, registerEl, play, results].forEach(s => s.classList.remove('active'));
     document.querySelector(`#${id}`).classList.add('active');
-    if (id === 'intro') startLeaderboardCycle();
-    else stopLeaderboardCycle();
+    if (id === 'intro') {
+      startLeaderboardCycle();
+      armDemoIdleTimer();
+    } else {
+      stopLeaderboardCycle();
+      clearDemoIdleTimer();
+    }
     if (id === 'register') {
       // Repopulate from sessionStorage (persists across games within this
       // browser tab, cleared on page refresh). Run repeatedly on the next
@@ -330,6 +349,134 @@
     if (rankView)  { rankView.hidden  = false; rankView.classList.remove('lb-fade-out'); }
     if (promoView) { promoView.hidden = true;  promoView.classList.remove('lb-fade-out'); }
   }
+
+  // ─────────────── Demo (attract) mode ───────────────
+
+  function clearDemoIdleTimer() {
+    if (demoIdleTimer) { clearTimeout(demoIdleTimer); demoIdleTimer = null; }
+  }
+
+  function armDemoIdleTimer() {
+    clearDemoIdleTimer();
+    demoIdleTimer = setTimeout(() => {
+      if (intro.classList.contains('active')) startDemo();
+    }, DEMO_IDLE_MS);
+  }
+
+  // Called on every tap/click anywhere on the intro screen — resets idle
+  // timer (and NOOP if the timer isn't armed).
+  function onIntroInteraction() {
+    if (intro.classList.contains('active')) armDemoIdleTimer();
+  }
+  // Anywhere on the intro: pointerdown resets the idle clock. Uses capture
+  // so it fires regardless of which child absorbs the event.
+  ['pointerdown', 'touchstart', 'click'].forEach(ev => {
+    intro.addEventListener(ev, onIntroInteraction, { capture: true, passive: true });
+  });
+
+  function startDemo() {
+    state.demoMode = true;
+    // Make sure the game-over webhook never fires during a demo.
+    state.skippedRegister = true;
+    clearDemoIdleTimer();
+    withDissolve(() => {
+      // Skip every tutorial — demo shouldn't freeze on overlays.
+      state.tut_firstPieceShown   = true;
+      state.tut_firstWrongShown   = true;
+      state.tut_firstMysteryShown = true;
+      state.tut_forceFirstElectricidad = false;
+      resetGame();
+      // Restore the flags that resetGame left intact
+      state.tut_firstPieceShown   = true;
+      state.tut_firstWrongShown   = true;
+      state.tut_firstMysteryShown = true;
+      state.tut_forceFirstElectricidad = false;
+      // Start mid-tier for a spicy demo
+      state.tier = DEMO_START_TIER;
+      state.maxTier = DEMO_START_TIER;
+      showScreen('play');
+      play.classList.add('demo-on');
+      mountDemoBanners();
+      // Skip the intro-to-gameplay tutorials + countdown, go straight to ticking
+      state.running = true;
+      state.spawnCooldown = 300;
+      state.lastFrameTime = performance.now();
+      state.rafId = requestAnimationFrame(tick);
+      // Auto-exit after DEMO_DURATION_MS
+      if (demoDurationTimer) clearTimeout(demoDurationTimer);
+      demoDurationTimer = setTimeout(exitDemo, DEMO_DURATION_MS);
+    });
+  }
+
+  function exitDemo() {
+    if (!state.demoMode) return;
+    state.demoMode = false;
+    state.skippedRegister = false;
+    if (demoDurationTimer) { clearTimeout(demoDurationTimer); demoDurationTimer = null; }
+    if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+    state.running = false;
+    withDissolve(() => {
+      play.classList.remove('demo-on');
+      unmountDemoBanners();
+      // Remove any shatter bodies still animating on the playfield so they
+      // don't bleed into the next session if we exit mid-game-over.
+      playfield.querySelectorAll('.shatter-body').forEach(el => el.remove());
+      resetGame();
+      showScreen('intro');
+    });
+  }
+
+  // Full-screen navy fade used around demo enter/exit. `midpointCb` runs
+  // at peak opacity, so any screen swap inside it happens while the user
+  // can't see anything — no visible jank.
+  function withDissolve(midpointCb) {
+    let overlay = document.querySelector('#demo-dissolve');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'demo-dissolve';
+      document.body.appendChild(overlay);
+    }
+    // Force reflow so the fade-in transition fires even if the overlay was
+    // just appended.
+    // eslint-disable-next-line no-unused-expressions
+    overlay.offsetWidth;
+    overlay.classList.add('visible');
+    setTimeout(() => {
+      try { midpointCb(); } catch (_) {}
+      // Fade back out
+      setTimeout(() => {
+        overlay.classList.remove('visible');
+        setTimeout(() => {
+          if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }, 350);
+      }, 50);
+    }, 350);
+  }
+
+  function mountDemoBanners() {
+    if (document.querySelector('#demo-banner-top')) return;
+    const top = document.createElement('div');
+    top.id = 'demo-banner-top';
+    top.textContent = 'MODO DEMO';
+    play.appendChild(top);
+    const bot = document.createElement('div');
+    bot.id = 'demo-banner-bottom';
+    bot.textContent = 'TOCA PARA JUGAR';
+    play.appendChild(bot);
+  }
+
+  function unmountDemoBanners() {
+    const top = document.querySelector('#demo-banner-top');
+    const bot = document.querySelector('#demo-banner-bottom');
+    if (top) top.remove();
+    if (bot) bot.remove();
+  }
+
+  // While in demo, any tap on the gameplay screen exits the demo and goes
+  // back to intro (same as confirmed in the brief).
+  ['pointerdown', 'touchstart', 'click'].forEach(ev => {
+    play.addEventListener(ev, () => { if (state.demoMode) exitDemo(); }, { capture: true, passive: true });
+  });
 
   function startLeaderboardCycle() {
     stopLeaderboardCycle();
@@ -630,6 +777,8 @@
     state.mysteryActive = false;
     state.piecesSpawned = 0;
     state.piecesSinceUnlock = 0;
+    // Note: state.demoMode and state.skippedRegister are NOT reset here —
+    // they're managed by startDemo()/exitDemo() and the register/skip flow.
     hideTutorial();
 
     // clear DOM — preserve fall-zone structure (#lanes-stacks lives inside it)
@@ -777,6 +926,29 @@
     ci.transitionStartTime = performance.now();
   }
 
+  function demoTryDecide() {
+    const ci = state.currentItem;
+    if (!ci || ci.landed || ci.demoDecided) return;
+    // Wait until the piece has fallen DEMO_DECISION_RATIO of the way so
+    // the AI's swipe is visible to the audience (not an instant teleport).
+    const landY = landingYForLane(ci.targetLane);
+    if (landY <= 0) return;
+    if (ci.y < landY * DEMO_DECISION_RATIO) return;
+
+    const correctLane = LANES.indexOf(ci.item.category);
+    const accuracy = ci.mystery ? DEMO_ACCURACY_MYSTERY : DEMO_ACCURACY_TINTED;
+    let target;
+    if (Math.random() < accuracy) {
+      target = correctLane;
+    } else {
+      // Pick a wrong lane deliberately
+      const wrongs = [0, 1, 2].filter(i => i !== correctLane);
+      target = wrongs[Math.floor(Math.random() * wrongs.length)];
+    }
+    if (target !== ci.targetLane) setItemLane(target);
+    ci.demoDecided = true;
+  }
+
   // ─────────────── Main tick ───────────────
 
   function tick(now) {
@@ -804,6 +976,7 @@
       }
     } else {
       updateFallingItem(dt, now);
+      if (state.demoMode) demoTryDecide();
     }
 
     state.rafId = requestAnimationFrame(tick);
@@ -1163,7 +1336,7 @@
   function triggerGameOver() {
     state.running = false;
     cancelAnimationFrame(state.rafId);
-    vibrate('heavy', [0, 200, 100, 400]);
+    if (!state.demoMode) vibrate('heavy', [0, 200, 100, 400]);
 
     // Convert all stacked items to shatter bodies
     const fieldRect = playfield.getBoundingClientRect();
@@ -1189,7 +1362,11 @@
 
     shake('heavy');
 
-    setTimeout(() => showResults(), 1800);
+    // Demo runs exit short-circuit to keep the attract loop tight —
+    // a brief shatter beat (800ms) is enough to feel like a game ending
+    // before the demo returns to intro.
+    const delay = state.demoMode ? 800 : 1800;
+    setTimeout(() => showResults(), delay);
   }
 
   function animateShatterBody(el) {
@@ -1204,6 +1381,9 @@
   }
 
   function showResults() {
+    // Demo runs never reach the results screen — they bounce back to intro.
+    if (state.demoMode) { exitDemo(); return; }
+
     // Still track the local high-score in localStorage for future use,
     // even though nothing on the results screen surfaces it right now.
     const prev = parseInt(localStorage.getItem('kampris_record') || '0', 10);
