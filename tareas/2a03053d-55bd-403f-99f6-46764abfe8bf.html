@@ -1,0 +1,108 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: Herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta adecuada</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Apretar un tornillo con cabeza en cruz",opts:["Destornillador plano","Destornillador de estrella ✦","Llave Allen"],ans:1,correct:"Destornillador de estrella",why:"El plano resbala en cruces; Allen es para hexagonales."},
+{task:"Cortar un cable eléctrico de 2.5mm²",opts:["Alicates universales","Alicates de corte ✂","Pelacables"],ans:1,correct:"Alicates de corte",why:"Los universales dañan el filo; pelacables solo pela, no corta."},
+{task:"Medir el ancho de un mueble",opts:["Flexómetro 📏","Nivel de burbuja","Escuadra"],ans:0,correct:"Flexómetro",why:"El nivel mide horizontalidad; la escuadra mide ángulos."},
+{task:"Pelar el aislante de un cable",opts:["Alicates de corte","Alicates universales","Pelacables"],ans:2,correct:"Pelacables",why:"Los alicates pueden dañar el cobre; pelacables es preciso."},
+{task:"Aflojar una tuerca hexagonal",opts:["Llave inglesa 🔧","Destornillador plano","Alicates universales"],ans:0,correct:"Llave inglesa",why:"Destornillador no agarra tuercas; alicates redondean aristas."},
+{task:"Comprobar si una balda está horizontal",opts:["Flexómetro","Escuadra","Nivel de burbuja"],ans:2,correct:"Nivel de burbuja",why:"Flexómetro mide longitud; escuadra mide ángulos de 90°."}
+];
+let idx=0,score=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+locked=false;
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" data-idx="${i}">${o}</button>`).join('');
+optsEl.querySelectorAll('.btn-option').forEach(btn=>{
+btn.addEventListener('click',()=>select(parseInt(btn.dataset.idx)));
+});
+ensureFits();
+}
+
+function select(i){
+if(locked)return;
+locked=true;
+const t=tasks[idx];
+const correct=i===t.ans;
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correct:t.correct,isCorrect:correct,why:t.why});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((btn,j)=>{
+if(j===i){
+btn.classList.add(correct?'correct':'incorrect');
+btn.innerHTML=(correct?'✓ ':'✗ ')+t.opts[j];
+}
+});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const tips=`<div class="result-item"><div class="result-question">💡 Consejos prácticos</div><div class="result-explanation">• Destornillador: plano para ranura, estrella para cruz, Allen para hexagonal hueco.<br>• Alicates de corte para seccionar; pelacables para retirar aislante sin dañar.<br>• Flexómetro mide distancias; nivel comprueba horizontal/vertical; escuadra verifica 90°.<br>• Llave inglesa ajustable para tuercas variadas; fija para medidas exactas.</div></div>`;
+scene.innerHTML=`<div class="results-scroll"><div class="results-header"><div class="results-title">¡Completado!</div><div class="results-score">${score}/${tasks.length}</div><div class="results-subtitle">Herramientas correctas</div></div><div class="results-list">${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}"><div class="result-question">${a.task}</div><div class="result-answer">${a.isCorrect?'✓ '+a.correct:'✗ Elegiste: '+a.user+' → Correcta: '+a.correct}</div><div class="result-explanation">${a.why}</div></div>`).join('')}${tips}</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
