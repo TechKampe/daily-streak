@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Conceptos Eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 16px;width:100%;box-sizing:border-box}
+.memory-card{height:70px;width:100%;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.2s ease;user-select:none;-webkit-user-select:none;box-sizing:border-box;text-align:center;padding:4px}
+.memory-card.covered{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.memory-card.revealed{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;font-weight:500;line-height:1.2}
+.memory-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;font-weight:500;line-height:1.2}
+.memory-card.shake{animation:shake 0.5s ease}
+.memory-card.pop{animation:pop 0.2s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats-row{display:flex;justify-content:space-between;padding:8px 16px;font-size:14px;color:#0B214A}
+.stats-row span{font-family:'Baloo 2',cursive}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta los Conceptos</div>
+<div class="subtitle">Encuentra las 4 parejas eléctricas</div>
+</div>
+</div>
+<div class="stats-row">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="main">
+<div class="memory-board" id="board"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca dos cartas para emparejarlas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,a:"Voltio",b:"Tensión",exp:"El Voltio (V) es la unidad de medida de la tensión eléctrica."},
+{id:2,a:"Amperio",b:"Intensidad",exp:"El Amperio (A) mide la intensidad de corriente eléctrica."},
+{id:3,a:"Diferencial",b:"Protección personas",exp:"El diferencial protege a las personas de contactos eléctricos."},
+{id:4,a:"Fase",b:"Cable activo",exp:"La fase es el cable activo que transporta la corriente."}
+];
+let cards=[],firstCard=null,secondCard=null,locked=false,attempts=0,matched=0,maxAttempts=10,gameHistory=[];
+const board=document.getElementById('board'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs'),scene=document.getElementById('scene');
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+function initGame(){
+cards=[];
+pairs.forEach(p=>{cards.push({pairId:p.id,text:p.a,exp:p.exp});cards.push({pairId:p.id,text:p.b,exp:p.exp})});
+shuffle(cards);
+renderBoard();
+}
+
+function renderBoard(){
+board.innerHTML='';
+cards.forEach((c,i)=>{
+const el=document.createElement('div');
+el.className='memory-card covered';
+el.dataset.index=i;
+el.textContent='?';
+el.onclick=()=>handleClick(i,el);
+board.appendChild(el);
+});
+ensureFits();
+}
+
+function handleClick(index,el){
+if(locked)return;
+if(el.classList.contains('matched'))return;
+if(el.classList.contains('revealed'))return;
+if(firstCard&&firstCard.index===index)return;
+revealCard(index,el);
+if(!firstCard){firstCard={index,el,card:cards[index]}}
+else{
+secondCard={index,el,card:cards[index]};
+attempts++;
+attemptsEl.textContent=`Intento ${attempts}/10`;
+checkMatch();
+}
+}
+
+function revealCard(index,el){
+const card=cards[index];
+el.classList.remove('covered');
+el.classList.add('revealed','pop');
+el.textContent=card.text;
+}
+
+function coverCard(el){
+el.classList.remove('revealed','shake');
+el.classList.add('covered');
+el.textContent='?';
+}
+
+function checkMatch(){
+locked=true;
+const isMatch=firstCard.card.pairId===secondCard.card.pairId;
+if(isMatch){
+firstCard.el.classList.remove('revealed');
+firstCard.el.classList.add('matched');
+secondCard.el.classList.remove('revealed');
+secondCard.el.classList.add('matched');
+matched++;
+pairsEl.textContent=`${matched}/4 parejas`;
+gameHistory.push({pair:pairs.find(p=>p.id===firstCard.card.pairId),found:true,attempt:attempts});
+resetTurn();
+if(matched===4)endGame(true);
+else if(attempts>=maxAttempts)endGame(false);
+}else{
+firstCard.el.classList.add('shake');
+secondCard.el.classList.add('shake');
+setTimeout(()=>{
+coverCard(firstCard.el);
+coverCard(secondCard.el);
+resetTurn();
+if(attempts>=maxAttempts)endGame(false);
+},2000);
+}
+}
+
+function resetTurn(){firstCard=null;secondCard=null;locked=false}
+
+function endGame(won){
+locked=true;
+const foundIds=gameHistory.map(h=>h.pair.id);
+const missing=pairs.filter(p=>!foundIds.includes(p.id));
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${won?'¡Excelente trabajo!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/4</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${won?'<div class="result-item correct"><div class="result-question">🎉 ¡Encontraste todas las parejas!</div></div>':''}
+${gameHistory.map(h=>`
+<div class="result-item correct">
+<div class="result-question">✓ ${h.pair.a} — ${h.pair.b}</div>
+<div class="result-explanation">${h.pair.exp}</div>
+</div>
+`).join('')}
+${missing.map(p=>`
+<div class="result-item incorrect">
+<div class="result-question">✗ ${p.a} — ${p.b}</div>
+<div class="result-explanation">${p.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{initGame();ensureFits()});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
