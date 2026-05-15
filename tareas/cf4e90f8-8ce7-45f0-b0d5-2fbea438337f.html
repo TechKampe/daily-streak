@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🧠 Conecta los EPIs con su Protección - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;width:100%;max-width:400px;margin:0 auto;}
+.memory-card{height:70px;width:100%;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;box-sizing:border-box;transition:transform 0.2s ease,background 0.3s ease;font-family:'Baloo 2',sans-serif;}
+.memory-card.covered{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700;}
+.memory-card.revealed{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;font-weight:500;line-height:1.2;}
+.memory-card.matched{background:#d4edda;border:2px solid #28a745;color:#28a745;font-size:12px;font-weight:500;}
+.memory-card.shake{animation:shake 0.5s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.memory-card.pop{animation:pop 0.2s ease;}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats-row{display:flex;justify-content:center;gap:16px;font-size:14px;color:#0B214A;font-family:'Baloo 2',sans-serif;margin-bottom:8px;}
+.stats-row span{background:rgba(255,255,255,0.9);padding:4px 12px;border-radius:12px;font-weight:500;}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🧠 EPIs y Protección</div>
+<div class="subtitle">Empareja cada EPI con su función</div>
+</div>
+</div>
+<div class="main">
+<div class="stats-row">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="memory-board" id="board"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca dos cartas para encontrar parejas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,a:"Casco",b:"Protección craneal"},
+{id:2,a:"Guantes",b:"Protección manos"},
+{id:3,a:"Gafas",b:"Protección ocular"},
+{id:4,a:"Tapones",b:"Protección auditiva"}
+];
+const explanations={
+1:"El casco protege la cabeza de impactos y caída de objetos. Obligatorio en toda obra.",
+2:"Los guantes evitan cortes, quemaduras y contacto con sustancias peligrosas.",
+3:"Las gafas protegen los ojos de partículas, salpicaduras y radiación.",
+4:"Los tapones reducen el ruido y previenen daños auditivos permanentes."
+};
+let cards=[],firstCard=null,secondCard=null,locked=false,attempts=0,matched=0;
+const maxAttempts=10,totalPairs=4;
+const board=document.getElementById('board'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.a,type:'a'});
+cards.push({pairId:p.id,text:p.b,type:'b'});
+});
+shuffle(cards);
+render();
+}
+
+function shuffle(arr){
+for(let i=arr.length-1;i>0;i--){
+const j=Math.floor(Math.random()*(i+1));
+[arr[i],arr[j]]=[arr[j],arr[i]];
+}
+}
+
+function render(){
+board.innerHTML='';
+cards.forEach((c,i)=>{
+const div=document.createElement('div');
+div.className='memory-card covered';
+div.textContent='?';
+div.dataset.index=i;
+div.onclick=()=>handleClick(i,div);
+board.appendChild(div);
+});
+updateStats();
+ensureFits();
+}
+
+function handleClick(index,el){
+if(locked)return;
+if(el.classList.contains('matched'))return;
+if(el.classList.contains('revealed'))return;
+revealCard(el,index);
+if(!firstCard){
+firstCard={el,index,card:cards[index]};
+}else{
+secondCard={el,index,card:cards[index]};
+attempts++;
+updateStats();
+checkMatch();
+}
+}
+
+function revealCard(el,index){
+const card=cards[index];
+el.classList.remove('covered');
+el.classList.add('revealed','pop');
+el.textContent=card.text;
+}
+
+function coverCard(el){
+el.classList.remove('revealed','pop');
+el.classList.add('covered');
+el.textContent='?';
+}
+
+function checkMatch(){
+locked=true;
+const isMatch=firstCard.card.pairId===secondCard.card.pairId&&firstCard.card.type!==secondCard.card.type;
+if(isMatch){
+firstCard.el.classList.remove('revealed');
+firstCard.el.classList.add('matched');
+secondCard.el.classList.remove('revealed');
+secondCard.el.classList.add('matched');
+matched++;
+updateStats();
+resetSelection();
+if(matched===totalPairs){
+setTimeout(showResults,600);
+}
+}else{
+firstCard.el.classList.add('shake');
+secondCard.el.classList.add('shake');
+setTimeout(()=>{
+coverCard(firstCard.el);
+coverCard(secondCard.el);
+firstCard.el.classList.remove('shake');
+secondCard.el.classList.remove('shake');
+resetSelection();
+if(attempts>=maxAttempts){
+setTimeout(showResults,300);
+}
+},2000);
+}
+}
+
+function resetSelection(){
+firstCard=null;
+secondCard=null;
+locked=false;
+}
+
+function updateStats(){
+attemptsEl.textContent=`Intento ${attempts}/${maxAttempts}`;
+pairsEl.textContent=`${matched}/${totalPairs} parejas`;
+}
+
+function showResults(){
+const won=matched===totalPairs;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const matchedIds=[];
+document.querySelectorAll('.memory-card.matched').forEach(el=>{
+const idx=parseInt(el.dataset.index);
+const pId=cards[idx].pairId;
+if(!matchedIds.includes(pId))matchedIds.push(pId);
+});
+let html=`<div class="results-scroll"><div class="results-header">
+<div class="results-title">${won?'¡Excelente!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/${totalPairs}</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div><div class="results-list">`;
+pairs.forEach(p=>{
+const found=matchedIds.includes(p.id);
+html+=`<div class="result-item ${found?'correct':'incorrect'}">
+<div class="result-question">${p.a} ↔ ${p.b}</div>
+<div class="result-answer">${found?'✓ Emparejado':'✗ No encontrado'}</div>
+<div class="result-explanation">${explanations[p.id]}</div>
+</div>`;
+});
+html+=`</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+scene.innerHTML=html;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+init();
+</script>
+</body>
+</html>
