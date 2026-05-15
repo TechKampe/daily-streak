@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 🔧</div>
+<div class="subtitle">Rellena el hueco con la opción correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="cloze-text"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la palabra que completa la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{sentence:"Para detectar fugas de gas refrigerante uso el ___.",answer:"detector de fugas",options:["detector de fugas","manómetro","termómetro"],explanation:"El manómetro mide presión y el termómetro temperatura; ninguno detecta escapes de gas."},
+{sentence:"El tubo de cobre se corta con ___.",answer:"cortatubos",options:["cortatubos","sierra de calar","tijera"],explanation:"La sierra de calar es para madera y la tijera no corta metal; el cortatubos da un corte limpio."},
+{sentence:"Para medir la presión del circuito uso el ___.",answer:"manómetro",options:["manómetro","multímetro"],explanation:"El multímetro mide magnitudes eléctricas, no presión de fluidos."},
+{sentence:"Antes de manipular refrigerante debo ponerme ___.",answer:"guantes criogénicos",options:["guantes criogénicos","guantes de látex","gafas de sol"],explanation:"Los guantes de látex no protegen del frío extremo y las gafas de sol no son EPI adecuado."},
+{sentence:"La unidad exterior del split se llama ___.",answer:"condensadora",options:["condensadora","evaporadora","difusor"],explanation:"La evaporadora está dentro y el difusor es solo la rejilla de salida de aire."},
+{sentence:"Para unir tubos de cobre uso soldadura con ___.",answer:"varilla de plata",options:["varilla de plata","estaño común","pegamento PVC"],explanation:"El estaño común no resiste altas presiones y el pegamento PVC es para plástico."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),clozeText=document.getElementById('cloze-text');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+clozeText.innerHTML=d.sentence.replace('___','<u>___</u>');
+optsEl.innerHTML=d.options.map(o=>`<button class="btn-option" onclick="selectOption('${o.replace(/'/g,"\\'")}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(choice){
+const d=data[idx];
+const correct=choice===d.answer;
+answers.push({sentence:d.sentence,answer:d.answer,user:choice,correct,explanation:d.explanation,options:d.options});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===d.answer)b.classList.add('correct');
+else if(b.textContent===choice&&!correct)b.classList.add('incorrect');
+});
+clozeText.innerHTML=d.sentence.replace('___',`<u>${d.answer}</u>`);
+setTimeout(()=>{idx++;render();},700);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.answer+'</strong>')}</div>
+<div class="result-answer">Tu respuesta: ${a.user} ${a.correct?'✓':'✗'}</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar la terminología técnica te permite comunicarte con claridad en obra y evitar errores costosos.</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
