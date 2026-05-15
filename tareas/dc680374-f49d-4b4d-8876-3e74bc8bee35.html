@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obra en Acción - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneText">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔍 Supervisor Novato</div>
+<div class="modal-body">Revisa 5 situaciones en obra. En cada una, detecta el error o mala práctica tocando el ítem incorrecto.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{text:"Un compañero conecta una regleta a otra regleta para alimentar la radial.",items:["Radial homologada","Regleta en cadena","Cable en buen estado","Zona ventilada"],error:1,exp:"Encadenar regletas sobrecarga el circuito y causa incendios. Usa base múltiple con protección."},
+{text:"El peón mezcla cemento rápido junto al andamio sin protección.",items:["Cemento rápido","Andamio estable","Sin gafas de seguridad","Cubo limpio"],error:2,exp:"El cemite salpica y es corrosivo. Siempre usa gafas y guantes al mezclar."},
+{text:"En el pasillo hay una amoladora, cables y un cubo de escombros.",items:["Cables recogidos","Cubo de escombros","Herramientas en zona de paso","Pasillo iluminado"],error:2,exp:"Dejar herramientas en zonas de paso causa tropiezos y accidentes graves."},
+{text:"Un oficial sube al tejado con una escalera que tiene un peldaño roto.",items:["Casco puesto","Escalera con peldaño roto","Arnés disponible","Tejado seco"],error:1,exp:"Una escalera dañada puede colapsar. Revisa siempre antes de usar."},
+{text:"Se está picando una pared sin señalizar la zona ni poner vallas.",items:["Martillo adecuado","Gafas puestas","Zona sin señalizar","Guantes de obra"],error:2,exp:"Sin señalización, otros trabajadores pueden entrar y sufrir impactos de escombros."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sceneText=document.getElementById('sceneText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add('selected');if(j===s.error)b.classList.add(j===i?'correct':'incorrect');});
+answers.push({scene:s.text,chosen:s.items[i],correct:s.items[s.error],isCorrect:i===s.error,exp:s.exp});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Revisión Completa</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}</div>
+<div class="result-answer">${a.isCorrect?'✓ '+a.chosen:'✗ Elegiste: '+a.chosen}</div>
+${!a.isCorrect?`<div class="result-answer">Error real: ${a.correct}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo Final</div>
+<div class="result-explanation">La atención al detalle salva vidas. Antes de empezar, revisa herramientas, señaliza zonas y usa siempre tu EPI.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
