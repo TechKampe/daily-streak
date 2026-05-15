@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Tu primer día en el taller - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+mentor:{name:"Carlos (Mentor)",img:"https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png"},
+companero:{name:"Luis (Compañero)",img:"https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png"},
+cliente:{name:"Sra. Martínez",img:"https://techkampe.github.io/daily-streak/assets/Avatar 4_low.png"}
+};
+
+const turns=[
+{
+messages:[
+{from:"mentor",text:"¡Buenos días! Tú debes ser el nuevo aprendiz. Soy Carlos, tu mentor. ¿Cómo te llamas?"}
+],
+options:[
+{text:"Buenos días, Carlos. Soy [nombre], encantado de conocerle.",score:2,reaction:"¡Genial! Me gusta tu actitud profesional."},
+{text:"Hola, soy el nuevo. ¿Qué tengo que hacer?",score:1,reaction:"Vale, directo al grano... Bueno, empecemos."},
+{text:"Ey, qué pasa. Aquí estoy.",score:0,reaction:"Mmm... Aquí nos tratamos con respeto, ¿de acuerdo?"}
+]
+},
+{
+messages:[
+{from:"mentor",text:"Antes de empezar, ¿traes algo para tomar notas? Es importante apuntar lo que aprendas."}
+],
+options:[
+{text:"Sí, traigo libreta y boli. ¿Hay algo que deba anotar ya?",score:2,reaction:"¡Perfecto! Eso demuestra que vienes preparado."},
+{text:"No, pero lo recordaré todo de memoria.",score:0,reaction:"Mala idea... En este oficio los detalles importan."},
+{text:"No traigo, pero puedo usar el móvil.",score:1,reaction:"Bueno, algo es algo. Pero una libreta es mejor."}
+]
+},
+{
+messages:[
+{from:"companero",text:"¡Ey, bienvenido! Soy Luis, llevo 2 años aquí. Si necesitas algo, pregunta sin miedo."}
+],
+options:[
+{text:"Gracias Luis, lo tendré en cuenta. ¿Algún consejo?",score:2,reaction:"¡Claro! Pregunta siempre antes de tocar algo."},
+{text:"Vale, gracias.",score:1,reaction:"De nada. Ya verás que esto mola."},
+{text:"Tranqui, yo me apaño solo.",score:0,reaction:"Como quieras... pero aquí trabajamos en equipo."}
+]
+},
+{
+messages:[
+{from:"cliente",text:"¡Hola! Tengo una urgencia, mi aire acondicionado no enfría y hace un ruido raro."}
+],
+options:[
+{text:"Buenos días. Entiendo su urgencia. ¿Podría describirme el ruido?",score:2,reaction:"Gracias por escucharme. Es como un zumbido fuerte."},
+{text:"Eso suena mal. Espere que llamo a mi jefe.",score:1,reaction:"Vale, pero al menos apunta lo que te digo."},
+{text:"Pues no sé, yo soy nuevo aquí.",score:0,reaction:"Vaya... ¿No hay nadie más que me atienda?"}
+]
+},
+{
+messages:[
+{from:"mentor",text:"Bien hecho escuchando al cliente. Ahora necesito que me ayudes con las herramientas. ¿Sabes cuál es el manómetro?"}
+],
+options:[
+{text:"No estoy seguro. ¿Puede enseñármelo para aprenderlo?",score:2,reaction:"¡Así se hace! Preguntar es de
+
+ sabios."},
+{text:"Creo que sí, ¿es el que mide presión?",score:1,reaction:"Correcto, pero si dudas, mejor pregunta."},
+{text:"Ni idea, no me han enseñado eso.",score:0,reaction:"Por eso estás aquí, para aprender. Pon actitud."}
+]
+}
+];
+
+let currentTurn=0,chatHistory=[],userAnswers=[];
+const scene=document.getElementById('scene');
+
+function render(){
+if(currentTurn===0&&chatHistory.length===0){renderIntro();return}
+if(currentTurn>=turns.length){showResults();return}
+renderChat();
+}
+
+function renderIntro(){
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Tu primer día en el taller</div>
+<div class="modal-body">Es tu primer día como aprendiz de climatización. Interactúa con tu mentor, compañeros y clientes.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>`;
+}
+
+function startGame(){
+document.getElementById('modal').classList.remove('active');
+renderChat();
+}
+
+function renderChat(){
+const turn=turns[currentTurn];
+const progress=((currentTurn+1)/turns.length*100);
+
+let chatHTML=chatHistory.map(msg=>{
+if(msg.isUser){
+return `<div class="chat-bubble chat-user"><div class="chat-text">${msg.text}</div></div>`;
+}else{
+const av=avatars[msg.from];
+return `<div class="chat-bubble chat-npc">
+<img class="chat-avatar" src="${av.img}" alt="${av.name}">
+<div class="chat-content">
+<div class="chat-name">${av.name}</div>
+<div class="chat-text">${msg.text}</div>
+</div>
+</div>`;
+}
+}).join('');
+
+turn.messages.forEach(m=>{
+const av=avatars[m.from];
+chatHTML+=`<div class="chat-bubble chat-npc">
+<img class="chat-avatar" src="${av.img}" alt="${av.name}">
+<div class="chat-content">
+<div class="chat-name">${av.name}</div>
+<div class="chat-text">${m.text}</div>
+</div>
+</div>`;
+});
+
+const optionsHTML=turn.options.map((o,i)=>
+`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`
+).join('');
+
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Tu primer día en el taller</div>
+<div class="subtitle">Elige tu respuesta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i style="width:${progress}%"></i></div></div>
+<span class="badge">${currentTurn+1}/${turns.length}</span>
+</div>
+</div>
+<div class="chat-area" id="chatArea">${chatHTML}</div>
+<div class="options-area">${optionsHTML}</div>`;
+
+const chatArea=document.getElementById('chatArea');
+chatArea.scrollTop=chatArea.scrollHeight;
+ensureFits();
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const option=turn.options[idx];
+
+turn.messages.forEach(m=>{
+chatHistory.push({from:m.from,text:m.text,isUser:false});
+});
+
+chatHistory.push({text:option.text,isUser:true});
+
+const reactorFrom=turn.messages[turn.messages.length-1].from;
+chatHistory.push({from:reactorFrom,text:option.reaction,isUser:false});
+
+userAnswers.push({
+question:turn.messages[0].text,
+answer:option.text,
+score:option.score,
+maxScore:2
+});
+
+currentTurn++;
+render();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+
+const totalScore=userAnswers.reduce((a,b)=>a+b.score,0);
+const maxScore=userAnswers.length*2;
+const percentage=Math.round(totalScore/maxScore*100);
+
+let feedback="";
+if(percentage>=80)feedback="¡Excelente! Has demostrado gran profesionalidad.";
+else if(percentage>=50)feedback="Buen trabajo, pero hay margen de mejora.";
+else feedback="Necesitas practicar más la comunicación profesional.";
+
+const explanations={
+2:"✓ Respuesta profesional y empática.",
+1:"◐ Aceptable, pero podría ser mejor.",
+0:"✗ Esta actitud puede dar mala impresión."
+};
+
+const resultsHTML=userAnswers.map((a,i)=>`
+<div class="result-item ${a.score===2?'correct':a.score===1?'':'incorrect'}">
+<div class="result-question">Turno ${i+1}</div>
+<div class="result-answer">${a.answer}</div>
+<div class="result-explanation">${explanations[a.score]}</div>
+</div>`).join('');
+
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${totalScore}/${maxScore}</div>
+<div class="results-subtitle">${feedback}</div>
+</div>
+<div class="results-list">${resultsHTML}</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">En tu primer día, saluda con educación, toma notas y pregunta sin miedo. Estos gestos construyen confianza con el equipo y los clientes.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+
+const style=document.createElement('style');
+style.textContent=`
+.chat-area{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;}
+.chat-bubble{display:flex;gap:8px;max-width:90%;}
+.chat-npc{align-self:flex-start;}
+.chat-user{align-self:flex-end;background:#222;color:#fff;padding:10px 14px;border-radius:16px 16px 4px 16px;}
+.chat-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.chat-content{background:#f0f0f0;padding:8px 12px;border-radius:4px 16px 16px 16px;}
+.chat-name{font-weight:700;font-size:12px;color:#666;margin-bottom:2px;}
+.chat-text{font-size:14px;line-height:1.3;}
+.chat-user .chat-text{color:#fff;}
+.options-area{padding:8px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.options-area .btn-option{text-align:left;font-size:13px;padding:10px 12px;line-height:1.3;}
+`;
+document.head.appendChild(style);
+
+render();
+</script>
+</body>
+</html>
