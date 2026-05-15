@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Fijar un enchufe a la pared",opts:["Destornillador","Alicates","Metro"],icons:["🪛","","📏"],ans:0,exp:"El destornillador aprieta los tornillos. Los alicates no sirven para atornillar y el metro solo mide."},
+{task:"Cortar un tubo de PVC",opts:["Sierra","Pelacables","Llave inglesa"],icons:["🪚","","🔧"],ans:0,exp:"La sierra corta materiales sólidos. El pelacables es para cables y la llave inglesa para tuercas."},
+{task:"Comprobar si una pared está recta",opts:["Nivel","Destornillador","Alicates"],icons:["","🪛",""],ans:0,exp:"El nivel detecta inclinaciones. Las otras herramientas no miden horizontalidad."},
+{task:"Pelar un cable eléctrico",opts:["Alicates","Pelacables","Sierra"],icons:["","","🪚"],ans:1,exp:"El pelacables retira el aislante sin dañar el cobre. Los alicates aplastan el cable."},
+{task:"Medir el ancho de una ventana",opts:["Metro","Nivel","Llave inglesa"],icons:["📏","","🔧"],ans:0,exp:"El metro mide distancias. El nivel comprueba inclinación y la llave aprieta tuercas."},
+{task:"Apretar una tuerca de grifo",opts:["Llave inglesa","Destornillador","Pelacables"],icons:["🔧","🪛",""],ans:0,exp:"La llave inglesa ajusta tuercas de distintos tamaños. El destornillador es para tornillos."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${t.icons[i]?t.icons[i]+' ':''}${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx];
+const correct=i===t.ans;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===t.ans&&!correct)b.classList.add('correct');
+});
+if(correct)score++;
+answers.push({task:t.task,userAns:t.opts[i],correctAns:t.opts[t.ans],correct,exp:t.exp,allOpts:t.opts,icons:t.icons});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const toolTips={
+"Destornillador":"Úsalo para apretar o aflojar tornillos de cabeza plana o estrella.",
+"Sierra":"Ideal para cortar madera, PVC o metal fino.",
+"Nivel":"Comprueba si superficies están horizontales o verticales.",
+"Pelacables":"Retira el aislante de cables sin dañar el conductor.",
+"Alicates":"Sujetan, doblan o cortan alambre y materiales finos.",
+"Llave inglesa":"Ajusta tuercas y tornillos de distintos tamaños.",
+"Metro":"Mide distancias con precisión."
+};
+const usedTools=[...new Set(answers.flatMap(a=>a.allOpts))];
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Jornada completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctAns:'✗ Elegiste: '+a.userAns+' → Correcta: '+a.correctAns}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-header" style="margin-top:16px;">
+<div class="results-subtitle">Consejos prácticos</div>
+</div>
+<div class="results-list">
+${usedTools.map(t=>`<div class="result-item">
+<div class="result-question">${t}</div>
+<div class="result-explanation">${toolTips[t]||''}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
