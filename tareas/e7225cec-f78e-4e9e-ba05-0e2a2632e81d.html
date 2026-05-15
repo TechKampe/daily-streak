@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Primero lo primero: Ordena como un pro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{title:"Trabajar en altura",steps:["Revisar estado del arnés","Anclar línea de vida","Subir a la altura","Realizar el trabajo","Descender de forma segura"],tip:"Siempre revisa tu EPI antes de subir. Un arnés dañado no te protegerá."},
+{title:"Atención a cliente en domicilio",steps:["Llamar antes de la visita","Identificarse al llegar","Explicar el trabajo a realizar","Ejecutar la tarea","Limpiar la zona de trabajo"],tip:"La profesionalidad empieza con la comunicación. Avisa siempre antes de llegar."},
+{title:"Usar herramienta eléctrica nueva",steps:["Leer el manual de uso","Revisar estado de la herramienta","Conectar a la corriente","Probar en vacío","Usar en el trabajo"],tip:"Nunca uses una herramienta sin probarla primero en vacío."}
+];
+let currentChallenge=0,userOrder=[],draggedIdx=null,score=0,results=[];
+const scene=document.getElementById('scene');
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function renderChallenge(){
+const ch=challenges[currentChallenge];
+userOrder=shuffle([...Array(ch.steps.length).keys()]);
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena como un pro</div>
+<div class="subtitle">${ch.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(currentChallenge/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main"><div class="cards" id="cards"></div></div>
+<div class="footer">
+<div class="helper">Ordena los pasos con ↑↓ o arrastrando</div>
+<button class="cta" id="cta">Confirmar orden</button>
+</div>`;
+renderCards();
+document.getElementById('cta').onclick=checkOrder;
+ensureFits();
+}
+
+function renderCards(){
+const ch=challenges[currentChallenge];
+const container=document.getElementById('cards');
+container.innerHTML=userOrder.map((stepIdx,pos)=>`
+<div class="card" data-pos="${pos}" draggable="true">
+<span class="card-num">${pos+1}</span>
+<span class="card-text">${ch.steps[stepIdx]}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveUp(${pos})">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveDown(${pos})">↓</button>
+</div>
+</div>`).join('');
+container.querySelectorAll('.card').forEach(card=>{
+card.addEventListener('dragstart',onDragStart);
+card.addEventListener('dragover',onDragOver);
+card.addEventListener('drop',onDrop);
+card.addEventListener('dragend',onDragEnd);
+card.addEventListener('touchstart',onTouchStart,{passive:false});
+card.addEventListener('touchmove',onTouchMove,{passive:false});
+card.addEventListener('touchend',onTouchEnd);
+});
+}
+
+function moveUp(pos){if(pos>0){[userOrder[pos],userOrder[pos-1]]=[userOrder[pos-1],userOrder[pos]];renderCards();animateCard(pos-1);}}
+function moveDown(pos){if(pos<userOrder.length-1){[userOrder[pos],userOrder[pos+1]]=[userOrder[pos+1],userOrder[pos]];renderCards();animateCard(pos+1);}}
+
+function animateCard(pos){
+const card=document.querySelector(`[data-pos="${pos}"]`);
+if(card){card.style.transform='scale(1.03)';setTimeout(()=>card.style.transform='',150);}
+}
+
+function onDragStart(e){draggedIdx=parseInt(e.target.closest('.card').dataset.pos);e.target.closest('.card').classList.add('dragging');}
+function onDragOver(e){e.preventDefault();}
+function onDrop(e){
+e.preventDefault();
+const targetPos=parseInt(e.target.closest('.card').dataset.pos);
+if(draggedIdx!==null&&draggedIdx!==targetPos){
+const item=userOrder.splice(draggedIdx,1)[0];
+userOrder.splice(targetPos,0,item);
+renderCards();
+}
+}
+function onDragEnd(e){e.target.classList.remove('dragging');draggedIdx=null;}
+
+let touchStartY=0,touchCard=null,touchIdx=null;
+function onTouchStart(e){
+touchCard=e.target.closest('.card');
+if(!touchCard)return;
+touchIdx=parseInt(touchCard.dataset.pos);
+touchStartY=e.touches[0].clientY;
+touchCard.classList.add('dragging');
+}
+function onTouchMove(e){
+if(!touchCard)return;
+e.preventDefault();
+const touch=e.touches[0];
+const cards=document.querySelectorAll('.card');
+cards.forEach((card,i)=>{
+const rect=card.getBoundingClientRect();
+if(touch.clientY>rect.top&&touch.clientY<rect.bottom&&i!==touchIdx){
+const item=userOrder.splice(touchIdx,1)[0];
+userOrder.splice(i,0,item);
+touchIdx=i;
+renderCards();
+document.querySelector(`[data-pos="${i}"]`).classList.add('dragging');
+touchCard=document.querySelector(`[data-pos="${i}"]`);
+}
+});
+}
+function onTouchEnd(){if(touchCard)touchCard.classList.remove('dragging');touchCard=null;touchIdx=null;}
+
+function checkOrder(){
+const ch=challenges[currentChallenge];
+const correctOrder=[...Array(ch.steps.length).keys()];
+const isCorrect=userOrder.every((v,i)=>v===correctOrder[i]);
+if(isCorrect)score++;
+results.push({
+title:ch.title,
+correct:isCorrect,
+userSteps:userOrder.map(i=>ch.steps[i]),
+correctSteps:ch.steps,
+tip:ch.tip
+});
+showFeedback(isCorrect,ch);
+}
+
+function showFeedback(isCorrect,ch){
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena como un pro</div>
+<div class="subtitle">${ch.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${((currentChallenge+1)/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main">
+<div class="result-item ${isCorrect?'correct':'incorrect'}">
+<div class="result-question">${isCorrect?'✅ ¡Orden correcto!':'❌ Orden incorrecto'}</div>
+${!isCorrect?`<div class="result-answer"><strong>Tu orden:</strong><br>${userOrder.map((i,p)=>`${p+1}. ${ch.steps[i]}`).join('<br>')}</div>`:''}
+<div class="result-explanation"><strong>${isCorrect?'Secuencia:':'✅ Orden correcto:'}</strong><br>${ch.steps.map((s,i)=>`${i+1}. ${s}`).join('<br>')}</div>
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo</div>
+<div class="result-explanation">${ch.tip}</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" id="nextBtn">${currentChallenge<challenges.length-1?'Siguiente reto':'Ver resultados'}</button>
+</div>`;
+document.getElementById('nextBtn').onclick=()=>{
+currentChallenge++;
+if(currentChallenge<challenges.length)renderChallenge();
+else showResults();
+};
+ensureFits();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${challenges.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${results.map(r=>`
+<div class="result-item ${r.correct?'correct':'incorrect'}">
+<div class="result-question">${r.title}</div>
+<div class="result-answer">${r.correct?'✓ Orden correcto':'✗ Orden incorrecto'}</div>
+<div class="result-explanation">💡 ${r.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{renderChallenge();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
