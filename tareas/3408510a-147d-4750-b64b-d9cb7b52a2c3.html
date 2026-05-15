@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 ¿Herramienta o EPI? Clasifica sin fallo - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 ¿Herramienta o EPI?</div>
+<div class="subtitle">Clasifica cada elemento en su categoría</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/9</span>
+</div>
+</div>
+<div class="main">
+<div class="item-display" id="itemDisplay"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Primer día en el almacén. ¡Ordena el material!</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const items=[
+{name:"Guantes de nitrilo",cat:"EPI",exp:"Protegen las manos de químicos y suciedad. Son EPI básico."},
+{name:"Destornillador",cat:"Herramienta",exp:"Herramienta manual para apretar o aflojar tornillos."},
+{name:"Cinta aislante",cat:"Fungible",exp:"Material de un solo uso para aislar empalmes eléctricos."},
+{name:"Casco",cat:"EPI",exp:"Protege la cabeza de impactos. EPI obligatorio en obra."},
+{name:"Taladro",cat:"Herramienta",exp:"Herramienta eléctrica para perforar materiales."},
+{name:"Mascarilla FFP2",cat:"EPI",exp:"Protege las vías respiratorias del polvo y partículas."},
+{name:"Bridas",cat:"Fungible",exp:"Sujeciones desechables para organizar cables."},
+{name:"Gafas de seguridad",cat:"EPI",exp:"Protegen los ojos de proyecciones. EPI imprescindible."},
+{name:"Nivel de burbuja",cat:"Herramienta",exp:"Herramienta de medición para comprobar horizontalidad."}
+];
+const categories=["Herramienta","EPI","Fungible"];
+let idx=0,answers=[],animating=false;
+const scene=document.getElementById('scene'),itemDisplay=document.getElementById('itemDisplay'),catsEl=document.getElementById('categories'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper');
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+prog.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+itemDisplay.innerHTML=`<div class="item-name">${item.name}</div>`;
+itemDisplay.querySelector('.item-name').classList.add('item-enter');
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCat('${c}')">${c}</button>`).join('');
+helper.textContent=idx===0?'Toca la categoría correcta':'¿Dónde va este elemento?';
+ensureFits();
+}
+
+function selectCat(cat){
+if(animating)return;
+animating=true;
+const item=items[idx];
+const correct=cat===item.cat;
+answers.push({name:item.name,user:cat,correct,correctCat:item.cat,exp:item.exp});
+const btns=catsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+if(b.textContent===cat){
+b.classList.add(correct?'correct':'incorrect');
+b.classList.add('drop-anim');
+}
+if(b.textContent===item.cat&&!correct){
+setTimeout(()=>b.classList.add('correct'),300);
+}
+});
+const itemEl=itemDisplay.querySelector('.item-name');
+itemEl.classList.add(correct?'item-correct':'item-incorrect');
+setTimeout(()=>{
+idx++;
+animating=false;
+render();
+},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Almacén ordenado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctCat:'✗ Dijiste '+a.user+' → Era '+a.correctCat}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Antes de cada jornada, separa mentalmente: lo que te protege (EPI), lo que usas (herramientas) y lo que gastas (fungible). Así trabajas seguro y eficiente.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+<style>
+.item-display{display:flex;justify-content:center;align-items:center;flex:1;padding:24px 16px;min-height:120px;}
+.item-name{font-family:'Baloo 2',sans-serif;font-size:1.75rem;font-weight:700;color:var(--ink);text-align:center;padding:16px 24px;background:var(--surface);border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.08);transition:transform 0.3s,opacity 0.3s;}
+.item-enter{animation:itemIn 0.4s ease-out;}
+@keyframes itemIn{from{opacity:0;transform:translateY(-20px) scale(0.9);}to{opacity:1;transform:translateY(0) scale(1);}}
+.item-correct{animation:itemOk 0.5s ease-out;background:var(--ok)!important;color:#fff!important;}
+.item-incorrect{animation:itemErr 0.5s ease-out;background:var(--err)!important;color:#fff!important;}
+@keyframes itemOk{0%{transform:scale(1);}50%{transform:scale(1.1);}100%{transform:scale(1);}}
+@keyframes itemErr{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-8px);}40%,80%{transform:translateX(8px);}}
+.drop-anim{animation:dropIn 0.3s ease-out;}
+@keyframes dropIn{0%{transform:scale(1);}50%{transform:scale(1.08);}100%{transform:scale(1);}}
+#categories{display:flex;flex-direction:column;gap:12px;padding:0 16px;}
+.results-tip{background:var(--surface);border-radius:12px;padding:16px;margin:16px;font-size:0.95rem;line-height:1.5;color:var(--ink);}
+.results-tip strong{color:var(--brand);}
+</style>
+</body>
+</html>
