@@ -1,0 +1,114 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obras Sin Sorpresas - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneText">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const scenes=[
+{text:"El compañero prepara mortero en el patio.",items:["Cubo de agua","Paleta de albañil","Gafas de sol normales","Cemento cola"],error:2,correct:"Gafas de protección homologadas",exp:"Las gafas normales no protegen de salpicaduras. Usa siempre EPI homologado."},
+{text:"Un operario mezcla cemento en la hormigonera.",items:["Botas de seguridad","Casco puesto","Manos sin guantes","Ropa de trabajo"],error:2,correct:"Guantes de protección",exp:"El cemite es corrosivo. Sin guantes causa quemaduras químicas en la piel."},
+{text:"Zona de paso hacia el almacén de materiales.",items:["Señalización visible","Cables sueltos en el suelo","Iluminación correcta","Casco obligatorio"],error:1,correct:"Cables recogidos o canalizados",exp:"Cables sueltos causan tropiezos y caídas. Deben estar canalizados o elevados."},
+{text:"Almacén de pinturas y disolventes.",items:["Ventilación adecuada","Extintores cerca","Botes junto al radiador","Etiquetas visibles"],error:2,correct:"Alejados de fuentes de calor",exp:"Pinturas y disolventes son inflamables. El calor puede provocar incendios."},
+{text:"Operario sube al andamio del segundo piso.",items:["Casco con barbuquejo","Arnés enganchado","Sin revisar anclajes","Calzado antideslizante"],error:2,correct:"Revisar anclajes antes de subir",exp:"Andamios mal anclados pueden colapsar. Siempre verifica antes de usarlos."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sceneText=document.getElementById('sceneText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper');
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+prog.style.width=((idx)/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+helper.textContent="Toca el elemento con el error";
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(j===s.error?'correct':'incorrect');if(j===s.error&&j!==i)b.classList.add('correct');});
+answers.push({scene:s.text,chosen:s.items[i],correctItem:s.items[s.error],correctAlt:s.correct,exp:s.exp,wasCorrect:i===s.error});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.wasCorrect).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Revisión completada</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.wasCorrect?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene.substring(0,40)}...</div>
+<div class="result-answer">${a.wasCorrect?'✓ Detectaste: '+a.chosen:'✗ Elegiste: '+a.chosen}</div>
+${!a.wasCorrect?`<div class="result-answer">Error real: ${a.correctItem}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo PRL</div>
+<div class="result-explanation">La atención al detalle salva vidas. Antes de actuar, observa. Un segundo de revisión evita accidentes graves.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',render);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
