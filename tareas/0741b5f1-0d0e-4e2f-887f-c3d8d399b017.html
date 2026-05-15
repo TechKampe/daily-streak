@@ -1,0 +1,303 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Primero lo primero: Ordena y conquista - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y conquista</div>
+<div class="subtitle" id="subtitle">Ordena los pasos correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">Reto 1/3</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+<div class="footer">
+<div class="helper" id="helper">Usa ↑↓ o arrastra para reordenar</div>
+<button class="cta" id="cta">Confirmar orden</button>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">👷 ¡Bienvenido, técnico!</div>
+<div class="modal-body">Tu supervisor evaluará si conoces los protocolos. Ordena cada secuencia de pasos correctamente.</div>
+<div class="modal-actions">
+<button class="cta" onclick="closeModal()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const challenges = [
+{
+title: "Bloqueo/Etiquetado (LOTO)",
+steps: [
+{id:1, text:"Cortar suministro eléctrico"},
+{id:2, text:"Verificar ausencia de tensión"},
+{id:3, text:"Bloquear y etiquetar el equipo"},
+{id:4, text:"Realizar el trabajo"},
+{id:5, text:"Rearmar el sistema"}
+],
+correctOrder: [1,2,3,4,5],
+tip: "Nunca trabajes sin verificar ausencia de tensión con un detector homologado."
+},
+{
+title: "Atender fuga de agua",
+steps: [
+{id:1, text:"Cerrar llave de paso general"},
+{id:2, text:"Vaciar la tubería afectada"},
+{id:3, text:"Localizar el punto de fuga"},
+{id:4, text:"Reparar o sustituir la pieza"},
+{id:5, text:"Abrir llave y comprobar"}
+],
+correctOrder: [1,2,3,4,5],
+tip: "Siempre cierra el suministro antes de manipular cualquier instalación de agua."
+},
+{
+title: "Conectar equipo eléctrico nuevo",
+steps: [
+{id:1, text:"Verificar que el circuito está sin tensión"},
+{id:2, text:"Revisar especificaciones del equipo"},
+{id:3, text:"Conectar cables según esquema"},
+{id:4, text:"Asegurar conexiones y aislar"},
+{id:5, text:"Restaurar tensión y probar"}
+],
+correctOrder: [1,2,3,4,5],
+tip: "Revisa siempre las especificaciones antes de conectar para evitar sobrecargas."
+}
+];
+
+let currentChallenge = 0;
+let userAnswers = [];
+let draggedItem = null;
+let currentOrder = [];
+
+const scene = document.getElementById('scene');
+const main = document.getElementById('main');
+const cta = document.getElementById('cta');
+const subtitle = document.getElementById('subtitle');
+const progress = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const helper = document.getElementById('helper');
+const modal = document.getElementById('modal');
+
+function closeModal() {
+    modal.classList.remove('active');
+    renderChallenge();
+}
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function renderChallenge() {
+    if (currentChallenge >= challenges.length) {
+        showResults();
+        return;
+    }
+    const ch = challenges[currentChallenge];
+    currentOrder = shuffle(ch.steps);
+    subtitle.textContent = ch.title;
+    progress.style.width = ((currentChallenge) / challenges.length * 100) + '%';
+    counter.textContent = `Reto ${currentChallenge + 1}/${challenges.length}`;
+    helper.textContent = "Usa ↑↓ o arrastra para reordenar";
+    cta.textContent = "Confirmar orden";
+    cta.onclick = confirmOrder;
+    renderCards();
+    ensureFits();
+}
+
+function renderCards() {
+    main.innerHTML = `<div class="cards-container" id="cards">${currentOrder.map((step, i) => `
+        <div class="card" data-idx="${i}" draggable="true">
+            <span class="card-num">${i + 1}</span>
+            <span class="card-text">${step.text}</span>
+            <div class="card-controls">
+                <button class="btn-ghost" aria-label="Subir" onclick="moveUp(${i})">↑</button>
+                <button class="btn-ghost" aria-label="Bajar" onclick="moveDown(${i})">↓</button>
+            </div>
+        </div>
+    `).join('')}</div>`;
+    setupDragDrop();
+}
+
+function moveUp(idx) {
+    if (idx <= 0) return;
+    [currentOrder[idx], currentOrder[idx - 1]] = [currentOrder[idx - 1], currentOrder[idx]];
+    animateSwap(idx, idx - 1);
+}
+
+function moveDown(idx) {
+    if (idx >= currentOrder.length - 1) return;
+    [currentOrder[idx], currentOrder[idx + 1]] = [currentOrder[idx + 1], currentOrder[idx]];
+    animateSwap(idx, idx + 1);
+}
+
+function animateSwap(from, to) {
+    const cards = document.querySelectorAll('.card');
+    cards[from].classList.add('dragging');
+    cards[to].classList.add('dragging');
+    setTimeout(() => {
+        renderCards();
+    }, 150);
+}
+
+function setupDragDrop() {
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('drop', handleDrop);
+        card.addEventListener('touchstart', handleTouchStart, {passive: false});
+        card.addEventListener('touchmove', handleTouchMove, {passive: false});
+        card.addEventListener('touchend', handleTouchEnd);
+    });
+}
+
+function handleDragStart(e) {
+    draggedItem = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd() {
+    this.classList.remove('dragging');
+    draggedItem = null;
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    if (draggedItem === this) return;
+    const fromIdx = parseInt(draggedItem.dataset.idx);
+    const toIdx = parseInt(this.dataset.idx);
+    const item = currentOrder.splice(fromIdx, 1)[0];
+    currentOrder.splice(toIdx, 0, item);
+    renderCards();
+}
+
+let touchStartY = 0;
+let touchCard = null;
+
+function handleTouchStart(e) {
+    touchCard = this;
+    touchStartY = e.touches[0].clientY;
+    this.classList.add('dragging');
+}
+
+function handleTouchMove(e) {
+    e.preventDefault();
+}
+
+function handleTouchEnd(e) {
+    if (!touchCard) return;
+    touchCard.classList.remove('dragging');
+    const touchEndY = e.changedTouches[0].clientY;
+    const diff = touchEndY - touchStartY;
+    const idx = parseInt(touchCard.dataset.idx);
+    if (Math.abs(diff) > 30) {
+        if (diff < 0) moveUp(idx);
+        else moveDown(idx);
+    }
+    touchCard = null;
+}
+
+function confirmOrder() {
+    const ch = challenges[currentChallenge];
+    const userOrder = currentOrder.map(s => s.id);
+    const isCorrect = JSON.stringify(userOrder) === JSON.stringify(ch.correctOrder);
+    userAnswers.push({
+        title: ch.title,
+        userOrder: currentOrder.map(s => s.text),
+        correctOrder: ch.correctOrder.map(id => ch.steps.find(s => s.id === id).text),
+        isCorrect,
+        tip: ch.tip
+    });
+    currentChallenge++;
+    renderChallenge();
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        const correctCount = userAnswers.filter(a => a.isCorrect).length;
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">¡Evaluación completada!</div>
+                    <div class="results-score">${correctCount}/${userAnswers.length}</div>
+                    <div class="results-subtitle">Secuencias correctas</div>
+                </div>
+                <div class="results-list">
+                    ${userAnswers.map((a, i) => `
+                        <div class="result-item ${a.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${a.isCorrect ? '✅' : '❌'} ${a.title}</div>
+                            ${a.isCorrect ? `
+                                <div class="result-answer">✓ Orden correcto</div>
+                                <div class="result-explanation">${a.correctOrder.map((s, j) => `${j + 1}. ${s}`).join('<br>')}</div>
+                            ` : `
+                                <div class="result-answer">Tu orden:</div>
+                                <div class="result-explanation">${a.userOrder.map((s, j) => `${j + 1}. ${s}`).join('<br>')}</div>
+                                <div class="result-answer" style="margin-top:8px">✅ Orden correcto:</div>
+                                <div class="result-explanation">${a.correctOrder.map((s, j) => `${j + 1}. ${s}`).join('<br>')}</div>
+                            `}
+                            <div class="result-explanation" style="margin-top:8px;font-weight:600">💡 ${a.tip}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({action: 'TASK_COMPLETED'}));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', () => { modal.classList.add('active'); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
