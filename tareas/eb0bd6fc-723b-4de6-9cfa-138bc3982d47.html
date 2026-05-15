@@ -1,0 +1,235 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Herramienta o EPI? 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Herramienta o EPI? 🔧</div>
+<div class="subtitle" id="instruction">Clasifica cada elemento</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/8</span>
+</div>
+</div>
+<div class="main">
+<div class="item-display" id="itemDisplay"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">📦 Organiza el almacén</div>
+<div class="modal-body">Es tu primer día. Clasifica el material en Herramientas o EPIs (Equipos de Protección).</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const items = [
+{ name: "Destornillador", category: "Herramienta", exp: "El destornillador es una herramienta manual para apretar o aflojar tornillos." },
+{ name: "Casco", category: "EPI", exp: "El casco protege la cabeza de golpes e impactos, es un EPI obligatorio." },
+{ name: "Alicates", category: "Herramienta", exp: "Los alicates son herramientas para sujetar, doblar o cortar cables." },
+{ name: "Guantes aislantes", category: "EPI", exp: "Los guantes aislantes protegen de descargas eléctricas, son EPI esencial." },
+{ name: "Multímetro", category: "Herramienta", exp: "El multímetro mide tensión, corriente y resistencia eléctrica." },
+{ name: "Gafas de protección", category: "EPI", exp: "Las gafas protegen los ojos de partículas y chispas." },
+{ name: "Pelacables", category: "Herramienta", exp: "El pelacables retira el aislamiento de los conductores eléctricos." },
+{ name: "Botas de seguridad", category: "EPI", exp: "Las botas protegen los pies de golpes, cortes y descargas." }
+];
+
+let currentIndex = 0;
+let answers = [];
+let score = 0;
+let isAnimating = false;
+
+const scene = document.getElementById('scene');
+const itemDisplay = document.getElementById('itemDisplay');
+const categories = document.getElementById('categories');
+const progress = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const modal = document.getElementById('modal');
+
+function startGame() {
+    modal.classList.remove('active');
+    renderItem();
+}
+
+function renderItem() {
+    if (currentIndex >= items.length) {
+        showResults();
+        return;
+    }
+
+    const item = items[currentIndex];
+    progress.style.width = (currentIndex / items.length * 100) + '%';
+    counter.textContent = (currentIndex + 1) + '/' + items.length;
+
+    itemDisplay.innerHTML = `<div class="current-item">${item.name}</div>`;
+    
+    categories.innerHTML = `
+        <button class="btn-option" onclick="selectCategory('Herramienta')">🔧 Herramienta</button>
+        <button class="btn-option" onclick="selectCategory('EPI')">🦺 EPI</button>
+    `;
+
+    ensureFits();
+}
+
+function selectCategory(selected) {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    const item = items[currentIndex];
+    const isCorrect = selected === item.category;
+    
+    if (isCorrect) score++;
+    
+    answers.push({
+        name: item.name,
+        correct: isCorrect,
+        userAnswer: selected,
+        correctAnswer: item.category,
+        exp: item.exp
+    });
+
+    const buttons = categories.querySelectorAll('.btn-option');
+    buttons.forEach(btn => {
+        if (btn.textContent.includes(selected)) {
+            btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+        }
+        if (btn.textContent.includes(item.category) && !isCorrect) {
+            btn.classList.add('correct');
+        }
+    });
+
+    const itemEl = itemDisplay.querySelector('.current-item');
+    itemEl.classList.add(isCorrect ? 'drop-correct' : 'drop-incorrect');
+
+    setTimeout(() => {
+        currentIndex++;
+        isAnimating = false;
+        renderItem();
+    }, 600);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+
+        const herramientas = answers.filter(a => a.correctAnswer === 'Herramienta');
+        const epis = answers.filter(a => a.correctAnswer === 'EPI');
+
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">¡Almacén organizado!</div>
+                    <div class="results-score">${score}/${items.length}</div>
+                    <div class="results-subtitle">Clasificaciones correctas</div>
+                </div>
+                <div class="results-list">
+                    ${answers.map(a => `
+                        <div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${a.name}</div>
+                            <div class="result-answer">${a.correct ? '✓ ' + a.correctAnswer : '✗ Dijiste ' + a.userAnswer + ' → Era ' + a.correctAnswer}</div>
+                            <div class="result-explanation">${a.exp}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="results-tip">
+                    <strong>💡 Consejo:</strong> Antes de empezar cualquier trabajo, separa mentalmente qué te protege (EPI) y qué usas para trabajar (Herramienta).
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+            action: 'TASK_COMPLETED'
+        }));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+
+<style>
+.current-item {
+    font-family: 'Baloo 2', cursive;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: center;
+    padding: 2rem 1rem;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.current-item.drop-correct {
+    animation: dropCorrect 0.5s ease forwards;
+}
+.current-item.drop-incorrect {
+    animation: dropIncorrect 0.5s ease forwards;
+}
+@keyframes dropCorrect {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); }
+    100% { transform: translateY(20px) scale(0.9); opacity: 0; }
+}
+@keyframes dropIncorrect {
+    0% { transform: scale(1); opacity: 1; }
+    25% { transform: translateX(-10px); }
+    50% { transform: translateX(10px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateY(20px) scale(0.9); opacity: 0; }
+}
+.results-tip {
+    background: var(--glass);
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+.item-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+}
+</style>
+</body>
+</html>
