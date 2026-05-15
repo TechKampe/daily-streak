@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Swipe Seguro: ¿Riesgo o OK? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Swipe Seguro</div>
+<div class="subtitle" id="subtitle">¿Riesgo o práctica segura?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="swipe-container" id="swipe-container">
+<div class="swipe-card" id="swipe-card">
+<div class="swipe-card-content" id="card-content"></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o pulsa para responder</div>
+<div class="swipe-buttons" id="swipe-buttons">
+<button class="btn-option" id="btn-incorrect">❌ Incorrecto</button>
+<button class="btn-option" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 Primer día en obra</div>
+<div class="modal-body">Identifica qué prácticas son seguras (→) y cuáles son peligrosas (←). ¡Desliza las cartas!</div>
+<div class="modal-actions">
+<button class="cta" id="start-btn">Comenzar</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Comprobar ausencia de tensión antes de tocar cables",safe:true,exp:"Siempre verifica con un detector antes de manipular. Es obligatorio por normativa PRL."},
+{text:"Usar escalera metálica cerca del cuadro eléctrico",safe:false,exp:"Las escaleras metálicas conducen electricidad. Usa escaleras de fibra o madera."},
+{text:"Llevar guantes aislantes para trabajar en cajas",safe:true,exp:"Los guantes aislantes protegen de descargas. Son EPI básico del electricista."},
+{text:"Dejar cables pelados sin proteger mientras vas a por material",safe:false,exp:"Nunca dejes cables expuestos. Alguien podría tocarlos o provocar un cortocircuito."},
+{text:"Desconectar el diferencial antes de intervenir",safe:true,exp:"Cortar la alimentación es el primer paso. Así evitas accidentes por contacto."},
+{text:"Trabajar con las manos mojadas en instalación eléctrica",safe:false,exp:"El agua es conductora. Sécate siempre las manos antes de tocar cualquier conexión."}
+];
+let idx=0,answers=[],startX=0,startY=0,isDragging=false,cardEl,container;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),cardContent=document.getElementById('card-content'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect');
+
+document.getElementById('start-btn').onclick=()=>{modal.classList.remove('active');renderCard();};
+modal.classList.add('active');
+
+btnCorrect.onclick=()=>handleAnswer(true);
+btnIncorrect.onclick=()=>handleAnswer(false);
+
+function renderCard(){
+if(idx>=cards.length){showResults();return;}
+const c=cards[idx];
+prog.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+cardContent.textContent=c.text;
+cardEl=document.getElementById('swipe-card');
+container=document.getElementById('swipe-container');
+cardEl.style.transform='';
+cardEl.style.opacity='1';
+cardEl.classList.remove('swiping-left','swiping-right');
+setupSwipe();
+ensureFits();
+}
+
+function setupSwipe(){
+cardEl.onmousedown=cardEl.ontouchstart=e=>{
+isDragging=true;
+const touch=e.touches?e.touches[0]:e;
+startX=touch.clientX;
+startY=touch.clientY;
+cardEl.style.transition='none';
+};
+document.onmousemove=document.ontouchmove=e=>{
+if(!isDragging)return;
+const touch=e.touches?e.touches[0]:e;
+const dx=touch.clientX-startX;
+const dy=touch.clientY-startY;
+const rotate=dx*0.1;
+cardEl.style.transform=`translate(${dx}px,${dy}px) rotate(${rotate}deg)`;
+if(dx>50)cardEl.classList.add('swiping-right');
+else cardEl.classList.remove('swiping-right');
+if(dx<-50)cardEl.classList.add('swiping-left');
+else cardEl.classList.remove('swiping-left');
+};
+document.onmouseup=document.ontouchend=e=>{
+if(!isDragging)return;
+isDragging=false;
+cardEl.style.transition='transform 0.3s ease, opacity 0.3s ease';
+const rect=cardEl.getBoundingClientRect();
+const center=container.getBoundingClientRect().width/2;
+const cardCenter=rect.left+rect.width/2-container.getBoundingClientRect().left;
+const dx=cardCenter-center;
+if(dx>80){animateOut('right');handleAnswer(true);}
+else if(dx<-80){animateOut('left');handleAnswer(false);}
+else{cardEl.style.transform='';cardEl.classList.remove('swiping-left','swiping-right');}
+};
+}
+
+function animateOut(dir){
+const x=dir==='right'?400:-400;
+cardEl.style.transform=`translate(${x}px,0) rotate(${x*0.1}deg)`;
+cardEl.style.opacity='0';
+}
+
+function handleAnswer(userSafe){
+const c=cards[idx];
+const correct=userSafe===c.safe;
+answers.push({q:c.text,correct,userSafe,actualSafe:c.safe,exp:c.exp});
+idx++;
+setTimeout(()=>renderCard(),350);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Inspección completada!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Situaciones identificadas correctamente</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">${a.correct?'✓ Acertaste':'✗ Fallaste'}: Era ${a.actualSafe?'SEGURO ✅':'PELIGROSO ❌'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-message">
+<p>🛡️ La seguridad es la base del oficio. Cada día, antes de empezar, haz esta revisión mental. ¡Tu bienestar es lo primero!</p>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.swipe-container{display:flex;justify-content:center;align-items:center;flex:1;padding:16px;touch-action:none;}
+.swipe-card{background:#fff;border:3px solid #00E6BC;border-radius:16px;padding:24px;width:100%;max-width:300px;min-height:180px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.1rem;font-weight:500;cursor:grab;user-select:none;transition:transform 0.3s ease,opacity 0.3s ease;}
+.swipe-card.swiping-right{border-color:#00E6BC;box-shadow:0 0 20px rgba(0,230,188,0.5);}
+.swipe-card.swiping-left{border-color:#FF6B6B;box-shadow:0 0 20px rgba(255,107,107,0.5);}
+.swipe-card-content{line-height:1.4;}
+.swipe-buttons{display:flex;gap:12px;width:100%;margin-top:8px;}
+.swipe-buttons .btn-option{flex:1;font-size:0.95rem;padding:12px 8px;}
+.results-message{padding:16px;text-align:center;font-size:0.95rem;color:#333;background:linear-gradient(135deg,rgba(0,230,188,0.1),rgba(255,107,107,0.1));border-radius:12px;margin:16px;}
+.results-message p{margin:0;}
+</style>
+</body>
+</html>
