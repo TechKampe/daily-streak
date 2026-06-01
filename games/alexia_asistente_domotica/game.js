@@ -20,22 +20,29 @@ function vibrate(level, pattern) {
 }
 
 /* ─── Catálogo de piezas ─── */
+const CDN = 'https://res.cloudinary.com/kampe/image/upload';
 const TILES = {
-  voz:            { type: 'entrada', emoji: '🔊', label: 'Comando de voz' },
-  sonda:          { type: 'entrada', emoji: '💧', label: 'Sonda inundación' },
-  luz:            { type: 'entrada', emoji: '☀️', label: 'Sensor de luz' },
-  viento:         { type: 'entrada', emoji: '🌬️', label: 'Anemómetro' },
-  pir:            { type: 'entrada', emoji: '🚶', label: 'Detector PIR' },
-  pulsador:       { type: 'entrada', emoji: '🔘', label: 'Pulsador' },
-  rele:           { type: 'control', emoji: '⚙️', label: 'Relé' },
-  inversor:       { type: 'control', emoji: '🔁', label: 'Inversor c/encl.' },
-  doble_sin:      { type: 'control', emoji: '⚠️', label: 'Doble s/encl.' },
-  lampara:        { type: 'salida',  emoji: '💡', label: 'Lámpara' },
-  electrovalvula: { type: 'salida',  emoji: '🚰', label: 'Electroválvula' },
-  motor:          { type: 'salida',  emoji: '🪟', label: 'Motor persiana' },
-  enchufe:        { type: 'salida',  emoji: '🔌', label: 'Enchufe/estufa' },
+  voz:            { type: 'entrada', emoji: '🔊', label: 'Comando de voz',   img: `${CDN}/v1780320796/tile_voz_mohjl3.png` },
+  sonda:          { type: 'entrada', emoji: '💧', label: 'Sonda inundación', img: `${CDN}/v1780320796/tile_sonda_s86tuz.png` },
+  luz:            { type: 'entrada', emoji: '☀️', label: 'Sensor de luz',    img: `${CDN}/v1780320798/tile_luz_lmp32z.png` },
+  viento:         { type: 'entrada', emoji: '🌬️', label: 'Anemómetro',       img: `${CDN}/v1780320796/tile_viento_dxthux.png` },
+  pir:            { type: 'entrada', emoji: '🚶', label: 'Detector PIR',     img: `${CDN}/v1780320797/tile_pir_g9qiss.png` },
+  pulsador:       { type: 'entrada', emoji: '🔘', label: 'Pulsador',         img: `${CDN}/v1780320797/tile_pulsador_dx55cv.png` },
+  rele:           { type: 'control', emoji: '⚙️', label: 'Relé',             img: `${CDN}/v1780320797/tile_rele_el5mej.png` },
+  inversor:       { type: 'control', emoji: '🔁', label: 'Inversor c/encl.', img: `${CDN}/v1780320799/tile_inversor_ata5jz.png` },
+  doble_sin:      { type: 'control', emoji: '⚠️', label: 'Doble s/encl.',    img: `${CDN}/v1780320800/tile_doble_sin_km4zfg.png` },
+  lampara:        { type: 'salida',  emoji: '💡', label: 'Lámpara',          img: `${CDN}/v1780320798/tile_lampara_hve8o9.png` },
+  electrovalvula: { type: 'salida',  emoji: '🚰', label: 'Electroválvula',   img: `${CDN}/v1780320799/tile_electrovalvula_co9rh1.png` },
+  motor:          { type: 'salida',  emoji: '🪟', label: 'Motor persiana',   img: `${CDN}/v1780320797/tile_motor_rlfyp5.png` },
+  enchufe:        { type: 'salida',  emoji: '🔌', label: 'Enchufe/estufa',   img: `${CDN}/v1780320799/tile_enchufe_bla0yy.png` },
 };
 const label = id => TILES[id] ? TILES[id].label : '—';
+
+// Icono de pieza: <img> de Cloudinary con fallback a emoji si falla la carga
+function tileIcon(t) {
+  if (t.img) return `<img class="t-img" src="${t.img}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"><span class="t-emoji" style="display:none">${t.emoji}</span>`;
+  return `<span class="t-emoji">${t.emoji}</span>`;
+}
 
 /* ─── Casas ─── */
 const CASAS = [
@@ -143,7 +150,7 @@ function renderReels(casa) {
       el.className = 'tile';
       el.dataset.type = type;
       el.dataset.id = id;
-      el.innerHTML = `<span class="t-emoji">${t.emoji}</span><span class="t-label">${t.label}</span>`;
+      el.innerHTML = `${tileIcon(t)}<span class="t-label">${t.label}</span>`;
       el.addEventListener('pointerdown', e => onTilePointerDown(e, id, type));
       track.appendChild(el);
     });
@@ -198,7 +205,7 @@ function placeTile(type, id, silent) {
   const slot = $('slot-' + type);
   slot.classList.add('filled');
   const t = TILES[id];
-  slot.querySelector('.slot-content').innerHTML = `<span class="t-emoji">${t.emoji}</span> ${t.label}`;
+  slot.querySelector('.slot-content').innerHTML = `${tileIcon(t)}<span>${t.label}</span>`;
   const reelTile = document.querySelector(`.tile[data-id="${id}"]`);
   if (reelTile) reelTile.classList.add('placed');
   if (!silent) vibrate('success');
@@ -282,7 +289,7 @@ function onPointerMove(e) {
       const t = TILES[drag.id];
       const g = document.createElement('div');
       g.className = 'drag-ghost';
-      g.innerHTML = `<span class="t-emoji">${t.emoji}</span><span class="t-label">${t.label}</span>`;
+      g.innerHTML = `${tileIcon(t)}<span class="t-label">${t.label}</span>`;
       document.body.appendChild(g);
       drag.ghost = g;
       highlightSlots(drag.type, true);
