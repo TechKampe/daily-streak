@@ -205,6 +205,7 @@ function nextBeat(){
   clearBeats();
   const beat = S.beatQueue.shift();
   if(!beat){ sensorValidated(); return; }
+  setChar('pablo','happy');   // vuelve a estado neutro al empezar cada paso
   S.curStepNo = S.beatTotal - S.beatQueue.length;   // 1-based
   const s=SENSORS[S.idx];
   const tut = (!S.tutorialDone && S.idx===0);
@@ -228,8 +229,7 @@ function renderLocate(s, tut){
   let html=`<div class="step-tag">${stepLabel('¿Dónde va?')}</div>`;
   html+=`<div class="locate-title">Elige dónde se instala este sensor</div><div class="zone-grid">`;
   zones.forEach(z=>{
-    const hint = (tut && z===s.locate.correct) ? ' hint' : '';
-    html+=`<button class="zone${hint}" data-z="${z}">${ZONE_LABELS[z]}</button>`;
+    html+=`<button class="zone" data-z="${z}">${ZONE_LABELS[z]}</button>`;
   });
   html+=`</div>`;
   box.innerHTML=html;
@@ -283,7 +283,7 @@ function renderWire(s, tut){
   });
   html+=`</div><button class="confirm-btn" id="confirm-order">Confirmar orden</button>`;
   box.innerHTML=html;
-  if(tut) say('El orden no se improvisa: primero alimentación, luego COM, al final el contacto. Arrastra las filas y confirma.',4400);
+  if(tut) say('El orden no se improvisa. Arrastra las filas para ordenarlas y pulsa Confirmar. Piensa qué se conecta primero por seguridad.',4400);
   setupReorder();
   $('confirm-order').onclick=()=>confirmOrder(s);
 }
@@ -437,7 +437,6 @@ function renderRead(s, tut){
 function bindRead(s, tut){
   const wrap=document.querySelector('#beat-read .read-cards');
   wrap.querySelectorAll('.rcard').forEach(b=>{
-    if(tut && b.dataset.r===s.read) b.classList.add('hint');
     b.onclick=()=>{
       if(S.busy) return;
       if(b.dataset.r===s.read){
