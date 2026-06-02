@@ -31,15 +31,26 @@ html.results,html.results body{overflow-y:auto;}
 #wrapper{
   position:relative;
   max-width:430px;margin:0 auto;
-  min-height:100%;
+  height:100%;                 /* ocupa toda la altura del viewport */
   padding-top:var(--safe-top);
   padding-bottom:var(--safe-bottom);
 }
+/* en gameplay el wrapper es un contenedor flex de altura completa */
+html.gameplay #wrapper{display:flex;flex-direction:column;}
+html.results  #wrapper{min-height:100%;height:auto;}
 
 /* ===================== Pantallas ===================== */
 .screen{display:none;}
 .screen.active{display:block;}
-#play{touch-action:none;}   /* el drag con pointer events no debe disparar scroll */
+
+/* #play ocupa toda la altura y reparte: HUD arriba · contenido que crece · gremlin/burbuja absolutos abajo */
+#play.active{display:flex;flex-direction:column;height:100%;touch-action:none;}
+#play-main{
+  flex:1 1 auto;min-height:0;
+  display:flex;flex-direction:column;
+  justify-content:space-between;   /* reparte el espacio vertical sobrante */
+  padding-bottom:96px;             /* reserva la franja del gremlin (abajo-der) */
+}
 
 /* ===================== Intro ===================== */
 #intro{position:relative;min-height:100vh;padding:24px 20px;text-align:center;}
@@ -72,12 +83,11 @@ html.results,html.results body{overflow-y:auto;}
 }
 .cta:active{transform:scale(.95);}
 
-/* ===================== HUD ===================== */
+/* ===================== HUD (arriba del todo) ===================== */
 #hud{
-  position:relative;z-index:100;
+  position:relative;z-index:100;flex:0 0 auto;
   display:flex;align-items:center;justify-content:space-between;
-  padding:12px 66px 12px 16px;     /* 66px right para botón cierre RN */
-  margin-top:var(--safe-top);
+  padding:10px 66px 8px 16px;     /* 66px right para botón cierre RN */
 }
 .hud-lives{font-size:18px;letter-spacing:2px;color:var(--rojo);}
 .hud-level{font-size:15px;font-weight:700;color:var(--turq);}
@@ -113,7 +123,7 @@ html.results,html.results body{overflow-y:auto;}
 .rail-label{cursor:pointer;text-decoration:underline dotted;}
 
 /* ===================== Peldaño ladder ===================== */
-.ladder{position:relative;z-index:10;height:140px;margin:8px 12px;}
+.ladder{position:relative;z-index:10;height:clamp(120px,20vh,180px);margin:8px 12px;}
 .ladder-rails{position:absolute;inset:0;z-index:10;}
 .rail-label{position:absolute;top:2px;font-size:10px;color:var(--mint);font-weight:600;}
 .rail-l1{left:8px;}
@@ -173,21 +183,20 @@ html.results,html.results body{overflow-y:auto;}
 .run-btn:disabled{background:#2A3A5A;color:#67789A;cursor:not-allowed;}
 .run-btn:not(:disabled):active{transform:scale(.94);}
 
-/* ===================== Gremlin (siempre visible, compacto) ===================== */
-.gremlin-dock{
-  position:fixed;z-index:85;
-  bottom:calc(6px + var(--safe-bottom));right:8px;left:8px;
-  display:flex;flex-direction:column-reverse;align-items:flex-end;gap:6px;
-  pointer-events:none;
-}
+/* ===================== Gremlin (abajo-derecha, siempre visible) ===================== */
 .play-avatar{
-  width:88px;height:auto;opacity:.98;align-self:flex-end;
+  position:fixed;z-index:85;pointer-events:none;
+  right:6px;bottom:calc(2px + var(--safe-bottom));
+  width:clamp(70px, 22vw, 100px);height:auto;opacity:.98;
   filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));
 }
+/* Burbuja abajo-IZQUIERDA, nunca tapa el botón ni al gremlin */
 .play-bubble{
-  max-width:min(78vw,300px);font-size:13px;padding:10px 13px;
-  border-radius:14px 14px 4px 14px;   /* "cola" hacia el gremlin (abajo-der) */
-  box-shadow:0 3px 10px rgba(0,0,0,.35);
+  position:fixed;z-index:90;
+  left:8px;bottom:calc(8px + var(--safe-bottom));
+  max-width:min(60vw,230px);font-size:12.5px;padding:9px 12px;
+  border-radius:14px 14px 14px 4px;   /* cola hacia abajo-izquierda */
+  box-shadow:0 3px 10px rgba(0,0,0,.4);
 }
 
 /* ===================== Pulso de corriente ===================== */
