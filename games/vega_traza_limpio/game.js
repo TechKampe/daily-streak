@@ -44,8 +44,8 @@ const LEVELS=[
     brief:'Dibuja la ruta con el dedo. Luego abrirás la curva de la esquina.' },
   { puesto:'Despacho', canal:ART.canal_canaleta, origin:[0.82,0.16], dest:[0.20,0.72], bands:[[0.42,0.30,0.16,0.34]],
     brief:'Traza esquivando la línea eléctrica. Luego ajustas las curvas.' },
-  { puesto:'Office', canal:ART.canal_tubo, origin:[0.18,0.16], dest:[0.82,0.16], bands:[[0.40,0.22,0.20,0.28]],
-    brief:'Rodea la línea eléctrica con el dedo y luego abre las curvas.' },
+  { puesto:'Office', canal:ART.canal_tubo, origin:[0.18,0.16], dest:[0.82,0.68], bands:[[0.30,0.16,0.16,0.56]],
+    brief:'La línea eléctrica baja por el centro. Rodéala para llegar a la roseta.' },
   { puesto:'Open space', canal:ART.canal_bandeja, origin:[0.18,0.16], dest:[0.82,0.74], bands:[[0.00,0.34,0.30,0.09],[0.70,0.54,0.30,0.09]],
     brief:'Serpentea entre las dos líneas con el dedo. Luego ajusta cada curva.' },
   { puesto:'Rack final', canal:ART.canal_canaleta, origin:[0.82,0.16], dest:[0.18,0.78], bands:[[0.30,0.30,0.45,0.07],[0.30,0.62,0.45,0.07]],
@@ -156,8 +156,10 @@ function pruneCorners(nodes){
 }
 
 /* colisión segmento-franja */
-function segHitsPower(a,b){ const m=CFG.EXCL_HALO,N=24; for(let i=0;i<=N;i++){ const t=i/N,p=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]; if(bandsPx.some(bd=>p[0]>=bd.x-m&&p[0]<=bd.x+bd.w+m&&p[1]>=bd.y-m&&p[1]<=bd.y+bd.h+m))return true; } return false; }
+function segHitsPower(a,b){ const m=CFG.EXCL_HALO; const N=Math.max(24, Math.ceil(dist(a,b)/6)); for(let i=0;i<=N;i++){ const t=i/N,p=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]; if(bandsPx.some(bd=>p[0]>=bd.x-m&&p[0]<=bd.x+bd.w+m&&p[1]>=bd.y-m&&p[1]<=bd.y+bd.h+m))return true; } return false; }
 function rawHitsPower(){ for(let i=1;i<S.raw.length;i++) if(segHitsPower(S.raw[i-1],S.raw[i])) return true; return false; }
+/* valida la ruta simplificada final (los tramos rectos entre nodos) */
+function nodesHitPower(){ for(let i=1;i<S.nodes.length;i++) if(segHitsPower(S.nodes[i-1],S.nodes[i])) return true; return false; }
 
 /* radio efectivo y colisión por curva */
 function effRadius(i){ const A=S.nodes[i],P=S.nodes[i+1],B=S.nodes[i+2]; return Math.min(S.radii[i],Math.min(dist(P,A),dist(P,B))*0.5); }
@@ -206,6 +208,9 @@ function drawEnd(p){
   // fusiona esquinas demasiado juntas (no cabría abrir el radio)
   simplified = pruneCorners(simplified);
   S.nodes = simplified;
+  // CLAVE: validar la RUTA FINAL simplificada — al recortar curvas, un tramo
+  // recto puede acabar cruzando la franja aunque el trazo crudo la rodease.
+  if(nodesHitPower()){ S.nodes=[]; failEdu('E_ROUTE_POWER'); return; }
   vibrate('success');
   startCurvePhase();
 }
