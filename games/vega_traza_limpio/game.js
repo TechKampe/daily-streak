@@ -15,9 +15,11 @@ const CFG = {
   DIAM_PX: 11, MULT_MIN: 4, MULT_PRO: 8, RADIO_MAX_PX: 130,
   CABLE_W: 11, HANDLE_R: 18, SNAP_TOL: 30,
   EXCL_HALO: 26,
-  RDP_EPS: 22,        // tolerancia de simplificación (px) -> detecta giros reales
+  RDP_EPS: 34,        // tolerancia de simplificación (px) -> solo giros marcados = curva
   MIN_PT_DIST: 4,     // distancia mínima entre puntos del trazo
   START_MOVE: 12,     // movimiento mínimo desde el rack para empezar a contar
+  MIN_CORNER_GAP: 95, // separación mínima entre esquinas (para que quepa abrir el radio)
+  MIN_END_GAP: 80,    // separación mínima de una esquina al rack/roseta
 };
 CFG.RADIO_MIN_PX = CFG.MULT_MIN*CFG.DIAM_PX; // 44
 CFG.RADIO_PRO_PX = CFG.MULT_PRO*CFG.DIAM_PX; // 88
@@ -77,6 +79,7 @@ $('toHowto').onclick=()=>show('howto');
 $('toPlay').onclick=()=>{ show('play'); startGame(); };
 $('replay').onclick=()=>{ resetGame(); show('play'); startGame(); };
 $('eduOk').onclick=()=>{ $('eduOverlay').classList.remove('show'); if(S.phase===PHASE.DRAW) restartDraw(); };
+$('redoBtn').onclick=()=>{ if(!$('eduOverlay').classList.contains('show')) restartDraw(); };
 
 /* ============ háptica ============ */
 function vibrate(level,pattern){ if(!window.ReactNativeWebView){ if(navigator.vibrate&&pattern)navigator.vibrate(pattern); else if(navigator.vibrate)navigator.vibrate(level==='error'?200:30); return; } const msg={action:'VIBRATE',level}; if(pattern)msg.pattern=pattern; window.ReactNativeWebView.postMessage(JSON.stringify(msg)); }
@@ -90,6 +93,7 @@ function measureWall(){ const r=wall.getBoundingClientRect(); WALLW=r.width; WAL
 
 function loadLevel(i){
   S.level=i; S.phase=PHASE.DRAW; S.dragIdx=-1; S.drawing=false; S.raw=[]; S.cornerFailed={};
+  $('redoBtn').hidden=true;
   const L=LEVELS[i];
   requestAnimationFrame(()=>{
     measureWall();
@@ -103,7 +107,7 @@ function loadLevel(i){
   $('hudPts').textContent=`${S.points} pts`; markParty();
   sayBubble(L.brief,'happy',3500);
 }
-function restartDraw(){ S.raw=[]; S.drawing=false; S.nodes=[]; redraw(); setHint('Pon el dedo en el rack y traza hasta la roseta'); }
+function restartDraw(){ S.phase=PHASE.DRAW; S.raw=[]; S.drawing=false; S.nodes=[]; S.radii=[]; S.fixed=[]; S.starGot=[]; S.cornerFailed={}; S.dragIdx=-1; $('redoBtn').hidden=true; $('originHalo').style.display='block'; redraw(); setHint('Pon el dedo en el rack y traza hasta la roseta'); sayBubble('Vuelve a trazar la ruta con el dedo.','happy',2500); }
 
 function placeNodesArt(){
   const rack=$('rack'),roseta=$('roseta'),oh=$('originHalo'),dh=$('destHalo');
@@ -131,6 +135,25 @@ function rdp(points, eps){
   return [a,b];
 }
 function segPointDist(p,a,b){ const ab=sub(b,a), L2=(ab[0]**2+ab[1]**2)||1; let t=((p[0]-a[0])*ab[0]+(p[1]-a[1])*ab[1])/L2; t=Math.max(0,Math.min(1,t)); const proj=add(a,mul(ab,t)); return dist(p,proj); }
+
+/* elimina esquinas demasiado juntas entre sí o pegadas a rack/roseta:
+   esas curvas no tendrían espacio para abrir el radio. Conserva extremos. */
+function pruneCorners(nodes){
+  if(nodes.length<=2) return nodes;
+  let pts=nodes.slice();
+  let changed=true;
+  while(changed && pts.length>2){
+    changed=false;
+    for(let i=1;i<pts.length-1;i++){
+      const prev=pts[i-1], cur=pts[i], next=pts[i+1];
+      const gapPrev=dist(cur,prev), gapNext=dist(cur,next);
+      const nearEnd = (i===1 && gapPrev<CFG.MIN_END_GAP) || (i===pts.length-2 && gapNext<CFG.MIN_END_GAP);
+      const tooClose = gapPrev<CFG.MIN_CORNER_GAP || gapNext<CFG.MIN_CORNER_GAP;
+      if(nearEnd || tooClose){ pts.splice(i,1); changed=true; break; }
+    }
+  }
+  return pts;
+}
 
 /* colisión segmento-franja */
 function segHitsPower(a,b){ const m=CFG.EXCL_HALO,N=24; for(let i=0;i<=N;i++){ const t=i/N,p=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]; if(bandsPx.some(bd=>p[0]>=bd.x-m&&p[0]<=bd.x+bd.w+m&&p[1]>=bd.y-m&&p[1]<=bd.y+bd.h+m))return true; } return false; }
@@ -178,9 +201,10 @@ function drawEnd(p){
   if(rawHitsPower()){ failEdu('E_ROUTE_POWER'); return; }
   // cerrar el trazo en la roseta y simplificar
   S.raw.push(destPx.slice());
-  const simplified = rdp(S.raw, CFG.RDP_EPS);
-  // garantizar extremos exactos
+  let simplified = rdp(S.raw, CFG.RDP_EPS);
   simplified[0]=originPx.slice(); simplified[simplified.length-1]=destPx.slice();
+  // fusiona esquinas demasiado juntas (no cabría abrir el radio)
+  simplified = pruneCorners(simplified);
   S.nodes = simplified;
   vibrate('success');
   startCurvePhase();
@@ -194,6 +218,7 @@ function startCurvePhase(){
   S.radii=new Array(corners).fill(CFG.RADIO_MIN_PX*0.6); // empieza cerrado
   S.fixed=new Array(corners).fill(false); S.starGot=new Array(corners).fill(false);
   S.curCorner=0; redraw(); focusCorner();
+  $('redoBtn').hidden=false; // permite descartar y volver a trazar
 }
 function focusCorner(){ const i=S.curCorner,t=S.nodes.length-2; sayBubble(`Curva ${i+1} de ${t}: arrástrala para abrirla y suelta.`,'happy',2600); updateCurvePill(); }
 function updateCurvePill(){ const i=S.curCorner,t=S.nodes.length-2,m=multOf(i); setHint(`Curva ${i+1}/${t} · Radio ${m.toFixed(1)}×Ø · arrastra y suelta`); }
@@ -232,6 +257,7 @@ function pointerUp(x,y){
 /* ============ fin nivel ============ */
 function succeedLevel(){
   S.phase=PHASE.CURVE;
+  $('redoBtn').hidden=true;
   const pts=samplePath();
   ctx.clearRect(0,0,WALLW,WALLH); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=CFG.CABLE_W; ctx.strokeStyle='#04FFB4';
   ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]); ctx.stroke();
