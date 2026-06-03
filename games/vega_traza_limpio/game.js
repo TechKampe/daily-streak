@@ -152,16 +152,16 @@ function loadLevel(i){
     originPx=[L.origin[0]*WALLW, L.origin[1]*WALLH];
     destPx  =[L.dest[0]*WALLW,   L.dest[1]*WALLH];
     bandsPx=L.bands.map(b=>({x:b[0]*WALLW,y:b[1]*WALLH,w:b[2]*WALLW,h:b[3]*WALLH}));
-    // fase trazado empieza solo con el origen puesto
+    // fase trazado empieza solo con el origen puesto (el cable ya "sale" del rack)
     S.nodes=[originPx.slice()];
     S.radii=[]; S.fixed=[]; S.starGot=[];
     placeBands(); placeCanal(L.canal); placeNodesArt(); placeAvatarSide(L.dest[0]);
-    redraw();
+    redraw(); updateRouteHint();
   });
 
   $('hudPts').textContent=`${S.points} pts`;
   markParty();
-  sayBubble(L.brief,'happy',4000);
+  sayBubble(L.brief,'happy',3500);
   setMode('route');
 }
 
@@ -244,15 +244,23 @@ function redraw(){
   ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=CFG.CABLE_W;
 
   if(S.phase===PHASE.ROUTE){
-    // polilínea de rectas (turquesa); el segmento al cursor se ve "pendiente"
+    // polilínea de rectas (turquesa) — el cable ya sale del rack
     if(S.nodes.length>=2){
       ctx.beginPath(); ctx.moveTo(S.nodes[0][0],S.nodes[0][1]);
       for(let i=1;i<S.nodes.length;i++) ctx.lineTo(S.nodes[i][0],S.nodes[i][1]);
       ctx.strokeStyle = routeHitsPower() ? '#E74C3C' : '#00E6BC'; ctx.stroke();
     }
-    // puntos colocados
+    // "antena" punteada del último nodo hacia el siguiente objetivo (guía visual)
+    if(!S.routeClosed){
+      const last=S.nodes[S.nodes.length-1];
+      ctx.setLineDash([5,8]); ctx.lineWidth=3; ctx.strokeStyle='rgba(197,255,223,.5)';
+      ctx.beginPath(); ctx.moveTo(last[0],last[1]); ctx.lineTo(destPx[0],destPx[1]); ctx.stroke();
+      ctx.setLineDash([]); ctx.lineWidth=CFG.CABLE_W;
+    }
+    // puntos colocados (codos)
     for(let i=1;i<S.nodes.length;i++){ const P=S.nodes[i];
-      ctx.beginPath(); ctx.arc(P[0],P[1],7,0,Math.PI*2); ctx.fillStyle='#04FFB4'; ctx.fill(); }
+      ctx.beginPath(); ctx.arc(P[0],P[1],8,0,Math.PI*2); ctx.fillStyle='#04FFB4'; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle='#0B214A'; ctx.stroke(); ctx.lineWidth=CFG.CABLE_W; }
   } else {
     // FASE RADII: cable con redondeos; sin color de validación (neutro)
     const pts=samplePath();
@@ -278,33 +286,36 @@ function redraw(){
   }
 }
 
-/* ============ FASE 1: trazado ============ */
+/* ============ FASE 1: trazado guiado ============ */
 function onTapRoute(p){
-  // ¿cierra en la roseta?
-  if(dist(p,destPx)<=CFG.SNAP_TOL){
-    // cerrar: añade dest como último nodo
-    S.nodes.push(destPx.slice());
-    S.routeClosed=true;
-    redraw(); updateRouteHint();
-    vibrate('light');
+  if(S.routeClosed) return;
+  const need=LEVELS[S.level].nCorners;
+  const placed=S.nodes.length-1; // codos ya puestos
+
+  // si ya están todos los codos -> el siguiente toque debe cerrar en la roseta
+  if(placed>=need){
+    if(dist(p,destPx)<=CFG.SNAP_TOL+10){
+      S.nodes.push(destPx.slice());
+      S.routeClosed=true; redraw(); vibrate('success');
+      // PASO AUTOMÁTICO a la fase de radios (sin botón)
+      if(routeHitsPower()){ updateRouteHint(); failEdu('E_ROUTE_POWER'); return; }
+      setTimeout(startRadiiPhase, 350);
+    } else {
+      flashHint('Ahora toca la ROSETA para cerrar');
+    }
     return;
   }
-  if(S.routeClosed) return; // ya cerrada
-  // límite de esquinas sugerido (permitimos +1 de margen)
-  const placed=S.nodes.length-1; // sin contar origin
-  const maxCorners=LEVELS[S.level].nCorners+1;
-  if(placed>=maxCorners){ flashHint('Demasiados codos — toca la roseta para cerrar'); return; }
+
+  // aún faltan codos -> este toque coloca un codo
   S.nodes.push(p);
-  redraw(); updateRouteHint(); vibrate('light');
+  redraw(); vibrate('light'); updateRouteHint();
 }
 function updateRouteHint(){
-  if(S.routeClosed){
-    if(routeHitsPower()) setHint('La ruta cruza la luz — replantéala','bad');
-    else setHint('Ruta lista — pulsa "A las curvas"','ok');
-  } else {
-    const need=LEVELS[S.level].nCorners, have=S.nodes.length-1;
-    setHint(`Toca los codos (${have}/${need}) y cierra en la roseta`);
-  }
+  const need=LEVELS[S.level].nCorners, placed=S.nodes.length-1;
+  if(S.routeClosed){ setHint('Ruta lista','ok'); return; }
+  if(need===0){ setHint('Lleva el cable hasta la ROSETA y toca','ok'); return; }
+  if(placed<need){ setHint(`Fija el codo ${placed+1} de ${need}`); }
+  else { setHint('Ahora lleva el cable a la ROSETA y toca','ok'); }
 }
 
 /* ============ FASE 2: radios ============ */
@@ -323,14 +334,15 @@ function startRadiiPhase(){
   redraw();
 }
 function focusCorner(){
-  const i=S.curCorner;
-  sayBubble(`Curva ${i+1} de ${S.nodes.length-2}: ajusta el radio y fíjalo.`,'happy',2500);
+  const i=S.curCorner, total=S.nodes.length-2;
+  sayBubble(`Codo ${i+1} de ${total}: abre la curva y suelta para fijar.`,'happy',2600);
   updateRadiiPill();
 }
 function updateRadiiPill(){
-  const i=S.curCorner;
+  const i=S.curCorner, total=S.nodes.length-2;
   const m=multOf(i);
-  setHint(`Radio: ${m.toFixed(1)}×Ø  ·  arrastra y pulsa Fijar`); // SIN color (no revela si es ok)
+  // muestra N×Ø EN VIVO, SIN color (no revela si es correcto hasta soltar)
+  setHint(`Codo ${i+1}/${total} · Radio ${m.toFixed(1)}×Ø · arrastra y suelta`);
 }
 
 /* ============ input ============ */
@@ -340,9 +352,10 @@ function pointerDown(x,y){
   if($('eduOverlay').classList.contains('show')) return;
   const p=localXY(x,y);
   if(S.phase===PHASE.ROUTE){ onTapRoute(p); }
-  else { // RADII: agarrar el handle del corner actual
-    const i=S.curCorner, P=S.nodes[i+1];
-    if(P && !S.fixed[i] && dist(p,P)<=CFG.SNAP_TOL+8){ S.dragIdx=i; vibrate('light'); }
+  else { // RADII: agarrar el codo más cercano (re-tocable para reajustar)
+    let best=-1, bd=CFG.SNAP_TOL+10;
+    for(let i=0;i<S.nodes.length-2;i++){ const d=dist(p,S.nodes[i+1]); if(d<bd){ bd=d; best=i; } }
+    if(best>=0){ S.dragIdx=best; S.curCorner=best; updateRadiiPill(); vibrate('light'); }
   }
 }
 function pointerMove(x,y){
@@ -355,46 +368,37 @@ function pointerMove(x,y){
   S.radii[i]=Math.max(0,Math.min(CFG.RADIO_MAX_PX, depth*0.9));
   updateRadiiPill(); redraw();
 }
-function pointerUp(){ S.dragIdx=-1; }
-
-/* ============ botón de acción (cambia según fase) ============ */
-function onActionBtn(){
-  if($('eduOverlay').classList.contains('show')) return;
-  if(S.phase===PHASE.ROUTE){
-    if(!S.routeClosed){ flashHint('Cierra la ruta tocando la roseta'); return; }
-    if(routeHitsPower()){ failEdu('E_ROUTE_POWER'); return; }
-    startRadiiPhase();
-  } else {
-    // fijar el radio del corner actual
-    fixCurrentCorner();
+function pointerUp(){
+  if(S.phase===PHASE.RADII && S.dragIdx>=0){
+    const i=S.dragIdx; S.dragIdx=-1;
+    // al soltar, si movió el radio por encima de 0, intenta fijar este codo
+    if(S.radii[i] > 4){ fixCorner(i); return; }
   }
+  S.dragIdx=-1;
 }
-function fixCurrentCorner(){
-  const i=S.curCorner;
+
+/* fijar un codo concreto al soltar el dedo (sin botón) */
+function fixCorner(i){
   const m=multOf(i);
-  const tooTight = m < CFG.MULT_MIN;
-  const hitsPow = cornerHitsPower(i);
+  if(m < CFG.MULT_MIN){ markCornerFailed(i); failEdu('E_RADIO_TIGHT'); return; }
+  if(cornerHitsPower(i)){ markCornerFailed(i); failEdu('E_RADIO_POWER'); return; }
 
-  if(tooTight){ failEdu('E_RADIO_TIGHT'); return; }
-  if(hitsPow){ failEdu('E_RADIO_POWER'); return; }
-
-  // correcto. Estrella si llegó a >=8×Ø y nunca falló este corner.
+  // correcto. Estrella si >=8×Ø y nunca falló este codo.
   S.fixed[i]=true;
-  const failedBefore = S.cornerFailed && S.cornerFailed[i]===true;
+  const failedBefore = S.cornerFailed[i]===true;
   S.starGot[i] = (m >= CFG.MULT_PRO) && !failedBefore;
   vibrate('success');
   redraw();
 
+  // avanzar al primer codo sin fijar
   const corners=S.nodes.length-2;
-  if(i+1<corners){ S.curCorner++; focusCorner(); redraw(); }
+  const next = S.fixed.findIndex(f=>!f);
+  if(next>=0){ S.curCorner=next; focusCorner(); redraw(); }
   else { succeedLevel(); }
 }
 
-/* registra fallo por corner (para quitar estrella) */
-function markCornerFailed(){
-  if(!S.cornerFailed) S.cornerFailed={};
-  S.cornerFailed[S.curCorner]=true;
-}
+/* registra fallo por codo (para quitar estrella) */
+function markCornerFailed(i){ S.cornerFailed[i]=true; }
 
 function failEdu(code){
   markCornerFailed();
@@ -442,12 +446,9 @@ function drawBridas(pts){
       ctx.beginPath(); ctx.moveTo(pts[i][0]-nx*8,pts[i][1]-ny*8); ctx.lineTo(pts[i][0]+nx*8,pts[i][1]+ny*8); ctx.stroke(); } }
 }
 
-/* ============ modos UI (botón de acción) ============ */
+/* ============ modos UI (sin botones — flujo guiado) ============ */
 function setMode(mode){
-  const btn=$('tendBtn');
-  if(mode==='route'){ btn.textContent='A las curvas →'; btn.style.display=''; }
-  else if(mode==='radii'){ btn.textContent='Fijar radio ✓'; btn.style.display=''; }
-  else { btn.style.display='none'; }
+  const btn=$('tendBtn'); if(btn) btn.style.display='none'; // sin botones en ninguna fase
 }
 let hintTimer=null;
 function flashHint(txt){ setHint(txt,'bad'); clearTimeout(hintTimer); hintTimer=setTimeout(()=>{ if(S.phase===PHASE.ROUTE) updateRouteHint(); else updateRadiiPill(); },1600); }
@@ -490,7 +491,6 @@ function finish(){
 }
 
 /* ============ listeners ============ */
-$('tendBtn') && ($('tendBtn').onclick=onActionBtn);
 canvas.addEventListener('touchstart',e=>{ e.preventDefault(); const t=e.changedTouches[0]; S.touchId=t.identifier; pointerDown(t.clientX,t.clientY); },{passive:false});
 canvas.addEventListener('touchmove',e=>{ e.preventDefault(); for(const t of e.changedTouches){ if(t.identifier===S.touchId){ pointerMove(t.clientX,t.clientY); break; } } },{passive:false});
 canvas.addEventListener('touchend',e=>{ e.preventDefault(); pointerUp(); },{passive:false});
