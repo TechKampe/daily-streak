@@ -12,17 +12,22 @@
    ============================================================ */
 
 const CFG = {
-  DIAM_PX: 11, MULT_MIN: 4, MULT_PRO: 8, RADIO_MAX_PX: 130,
+  DIAM_PX: 11,
+  MULT_MIN: 4,   // norma TIA-568: mínimo 4×Ø (por debajo = curva ahogada)
+  MULT_PRO: 8,   // buena práctica: 8×Ø (objetivo "pro" -> estrella)
+  MULT_MAX: 12,  // por encima = curva exagerada (desperdicia espacio, queda fea)
+  RADIO_MAX_PX: 200, // tope de arrastre (deja pasarse del rango válido a propósito)
   CABLE_W: 11, HANDLE_R: 18, SNAP_TOL: 30,
   EXCL_HALO: 26,
   RDP_EPS: 34,        // tolerancia de simplificación (px) -> solo giros marcados = curva
   MIN_PT_DIST: 4,     // distancia mínima entre puntos del trazo
   START_MOVE: 12,     // movimiento mínimo desde el rack para empezar a contar
-  MIN_CORNER_GAP: 95, // separación mínima entre esquinas (para que quepa abrir el radio)
-  MIN_END_GAP: 80,    // separación mínima de una esquina al rack/roseta
+  MIN_CORNER_GAP: 110,// separación mínima entre esquinas (para que quepa abrir hasta 8×Ø)
+  MIN_END_GAP: 95,    // separación mínima de una esquina al rack/roseta
 };
-CFG.RADIO_MIN_PX = CFG.MULT_MIN*CFG.DIAM_PX; // 44
-CFG.RADIO_PRO_PX = CFG.MULT_PRO*CFG.DIAM_PX; // 88
+CFG.RADIO_MIN_PX = CFG.MULT_MIN*CFG.DIAM_PX; // 44 (4×)
+CFG.RADIO_PRO_PX = CFG.MULT_PRO*CFG.DIAM_PX; // 88 (8×)
+CFG.RADIO_MAXOK_PX = CFG.MULT_MAX*CFG.DIAM_PX; // 132 (12× tope válido)
 
 const RECORD_KEY = 'vega_traza_limpio_record';
 const CDN='https://res.cloudinary.com/kampe/image/upload/';
@@ -38,24 +43,25 @@ const ART={
 };
 
 const LEVELS=[
-  { puesto:'Recepción', canal:null, origin:[0.18,0.18], dest:[0.82,0.64], bands:[],
+  { puesto:'Recepción', canal:null, origin:[0.18,0.16], dest:[0.82,0.62], bands:[],
     brief:'Traza el cable con el dedo, del rack a la roseta. Sin soltar.' },
-  { puesto:'Sala de reuniones', canal:ART.canal_bandeja, origin:[0.18,0.16], dest:[0.80,0.72], bands:[],
+  { puesto:'Sala de reuniones', canal:ART.canal_bandeja, origin:[0.18,0.16], dest:[0.80,0.66], bands:[],
     brief:'Dibuja la ruta con el dedo. Luego abrirás la curva de la esquina.' },
-  { puesto:'Despacho', canal:ART.canal_canaleta, origin:[0.82,0.16], dest:[0.20,0.72], bands:[[0.42,0.30,0.16,0.34]],
+  { puesto:'Despacho', canal:ART.canal_canaleta, origin:[0.82,0.16], dest:[0.20,0.66], bands:[[0.42,0.28,0.16,0.30]],
     brief:'Traza esquivando la línea eléctrica. Luego ajustas las curvas.' },
-  { puesto:'Office', canal:ART.canal_tubo, origin:[0.18,0.16], dest:[0.82,0.68], bands:[[0.30,0.16,0.16,0.56]],
+  { puesto:'Office', canal:ART.canal_tubo, origin:[0.18,0.16], dest:[0.82,0.64], bands:[[0.30,0.16,0.16,0.50]],
     brief:'La línea eléctrica baja por el centro. Rodéala para llegar a la roseta.' },
-  { puesto:'Open space', canal:ART.canal_bandeja, origin:[0.18,0.16], dest:[0.82,0.74], bands:[[0.00,0.34,0.30,0.09],[0.70,0.54,0.30,0.09]],
+  { puesto:'Open space', canal:ART.canal_bandeja, origin:[0.18,0.16], dest:[0.82,0.66], bands:[[0.00,0.32,0.30,0.08],[0.70,0.50,0.30,0.08]],
     brief:'Serpentea entre las dos líneas con el dedo. Luego ajusta cada curva.' },
-  { puesto:'Rack final', canal:ART.canal_canaleta, origin:[0.82,0.16], dest:[0.18,0.78], bands:[[0.30,0.30,0.45,0.07],[0.30,0.62,0.45,0.07]],
+  { puesto:'Rack final', canal:ART.canal_canaleta, origin:[0.82,0.16], dest:[0.18,0.66], bands:[[0.30,0.28,0.45,0.06],[0.30,0.52,0.45,0.06]],
     brief:'El último: traza entre las dos líneas y borda las curvas. 🎂' },
 ];
 
 const EDU={
   E_ROUTE_POWER:{t:'La ruta cruza la luz',what:'Tu trazo pasa sobre la línea eléctrica.',why:'Datos y potencia juntos = interferencia y errores.',rule:'Separación mínima 30 cm.',todo:'Vuelve a trazar rodeando la franja roja.'},
   E_ROUTE_INCOMPLETE:{t:'No llegaste a la roseta',what:'Soltaste el dedo antes de la roseta.',why:'Un cable a medias no conecta, y empalmar es chapuza.',rule:'El cable va de extremo a extremo.',todo:'Traza sin soltar hasta tocar la roseta.'},
-  E_RADIO_TIGHT:{t:'Curva demasiado cerrada',what:'Esa curva quedó por debajo del mínimo.',why:'Un radio cerrado deforma los pares: +1‑3 dB, tumba el 10 Gbps.',rule:'Mínimo TIA‑568: 4×Ø. Pro: 8×Ø.',todo:'Arrastra la esquina para abrir más esa curva.'},
+  E_RADIO_TIGHT:{t:'Curva demasiado cerrada',what:'Esa curva quedó por debajo del mínimo.',why:'Un radio cerrado deforma los pares: +1‑3 dB, tumba el 10 Gbps.',rule:'Mínimo TIA‑568: 4×Ø. Objetivo pro: 8×Ø.',todo:'Arrastra la esquina para abrir un poco más esa curva.'},
+  E_RADIO_WIDE:{t:'Curva exagerada',what:'Abriste la curva demasiado.',why:'Un radio enorme desperdicia espacio y cable, y deja la instalación poco prolija.',rule:'Apunta a unos 8×Ø — ni cerrada ni pasada (máx ~12×Ø).',todo:'Cierra un poco esa curva hacia 8×Ø.'},
   E_RADIO_POWER:{t:'La curva roza la luz',what:'Al abrir el radio, la curva invade la línea.',why:'Acercarse a la potencia mete interferencia.',rule:'30 cm también en las curvas.',todo:'Reduce un poco esa curva o re-traza la ruta.'},
 };
 const WIN={rot:['¡Limpio! Así da gusto.','Ese radio es de catálogo. 👌','Un puesto menos para la fiesta.'],final:'¡Y FUERA! Red entera, limpia. Cojo la chaqueta y me piro. 🎉'};
@@ -161,9 +167,15 @@ function rawHitsPower(){ for(let i=1;i<S.raw.length;i++) if(segHitsPower(S.raw[i
 /* valida la ruta simplificada final (los tramos rectos entre nodos) */
 function nodesHitPower(){ for(let i=1;i<S.nodes.length;i++) if(segHitsPower(S.nodes[i-1],S.nodes[i])) return true; return false; }
 
-/* radio efectivo y colisión por curva */
-function effRadius(i){ const A=S.nodes[i],P=S.nodes[i+1],B=S.nodes[i+2]; return Math.min(S.radii[i],Math.min(dist(P,A),dist(P,B))*0.5); }
-function multOf(i){ return effRadius(i)/CFG.DIAM_PX; }
+/* radio efectivo y colisión por curva.
+   geomCap = máximo que cabe geométricamente (la mitad del segmento más corto).
+   - effRadius (para DIBUJAR): recortado a geomCap para que el arco no se rompa.
+   - multRaw (para VALIDAR): el radio que el jugador realmente arrastró, en ×Ø,
+     SIN recortar -> permite quedarse corto Y pasarse del rango válido. */
+function geomCap(i){ const A=S.nodes[i],P=S.nodes[i+1],B=S.nodes[i+2]; return Math.min(dist(P,A),dist(P,B))*0.5; }
+function effRadius(i){ return Math.min(S.radii[i], geomCap(i)); }
+function multOf(i){ return effRadius(i)/CFG.DIAM_PX; }       // lo que se ve dibujado
+function multRaw(i){ return S.radii[i]/CFG.DIAM_PX; }        // lo que el jugador eligió (puede pasarse)
 function cornerArcPts(i){ const A=S.nodes[i],P=S.nodes[i+1],B=S.nodes[i+2],r=effRadius(i); const dA=norm(sub(A,P)),dB=norm(sub(B,P)); const t1=add(P,mul(dA,r)),t2=add(P,mul(dB,r)),out=[t1]; for(let s=1;s<=14;s++){const t=s/14,mt=1-t;out.push([mt*mt*t1[0]+2*mt*t*P[0]+t*t*t2[0],mt*mt*t1[1]+2*mt*t*P[1]+t*t*t2[1]]);} return out; }
 function cornerHitsPower(i){ const m=CFG.EXCL_HALO; return cornerArcPts(i).some(p=>bandsPx.some(b=>p[0]>=b.x-m&&p[0]<=b.x+b.w+m&&p[1]>=b.y-m&&p[1]<=b.y+b.h+m)); }
 
@@ -225,14 +237,25 @@ function startCurvePhase(){
   S.curCorner=0; redraw(); focusCorner();
   $('redoBtn').hidden=false; // permite descartar y volver a trazar
 }
-function focusCorner(){ const i=S.curCorner,t=S.nodes.length-2; sayBubble(`Curva ${i+1} de ${t}: arrástrala para abrirla y suelta.`,'happy',2600); updateCurvePill(); }
-function updateCurvePill(){ const i=S.curCorner,t=S.nodes.length-2,m=multOf(i); setHint(`Curva ${i+1}/${t} · Radio ${m.toFixed(1)}×Ø · arrastra y suelta`); }
+function focusCorner(){ const i=S.curCorner,t=S.nodes.length-2; sayBubble(`Curva ${i+1} de ${t}: ni cerrada ni exagerada. Busca 8×Ø.`,'happy',2800); updateCurvePill(); }
+function updateCurvePill(){
+  const i=S.curCorner,t=S.nodes.length-2,m=multRaw(i);
+  // muestra el radio real en ×Ø, SIN revelar ✅/❌ (solo el número y el objetivo)
+  setHint(`Curva ${i+1}/${t} · Radio ${m.toFixed(1)}×Ø  (objetivo 8×Ø)`);
+}
 
 function fixCorner(i){
-  const m=multOf(i);
-  if(m<CFG.MULT_MIN){ S.cornerFailed[i]=true; failEdu('E_RADIO_TIGHT'); return; }
+  const m=multRaw(i);                         // valor REAL arrastrado (puede pasarse)
+  // demasiado cerrada
+  if(m < CFG.MULT_MIN){ S.cornerFailed[i]=true; failEdu('E_RADIO_TIGHT'); return; }
+  // demasiado abierta (exagerada)
+  if(m > CFG.MULT_MAX){ S.cornerFailed[i]=true; failEdu('E_RADIO_WIDE'); return; }
+  // la curva roza la potencia
   if(cornerHitsPower(i)){ S.cornerFailed[i]=true; failEdu('E_RADIO_POWER'); return; }
-  S.fixed[i]=true; S.starGot[i]=(m>=CFG.MULT_PRO)&&(S.cornerFailed[i]!==true); vibrate('success'); redraw();
+  // correcta. Estrella si está en zona PRO (8×–12×) y nunca falló este codo.
+  S.fixed[i]=true;
+  S.starGot[i] = (m>=CFG.MULT_PRO && m<=CFG.MULT_MAX) && (S.cornerFailed[i]!==true);
+  vibrate('success'); redraw();
   const next=S.fixed.findIndex(f=>!f);
   if(next>=0){ S.curCorner=next; focusCorner(); redraw(); } else succeedLevel();
 }
