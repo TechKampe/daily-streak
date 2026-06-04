@@ -718,6 +718,7 @@ function dropEquipo(e,zone){
   if(zone==='red'){
     S.saiLoad += e.load;
     if(e.absurd){ vibrate('heavy',[0,150,80,150]); saiSatHint(e); }
+    else if(e.id==='pc'){ vibrate('light'); pcSaiHint(); }
     else { vibrate('light'); }
   } else {
     vibrate('light');
@@ -733,14 +734,15 @@ function dropEquipo(e,zone){
     setTimeout(nextGroup, 650); }
 }
 /* Hints de fase 3 — Vega no aparece aquí: se muestran como toast (píldora) */
-function hintToast(text, ms){
+function hintToast(text, ms, neutral){
   const p=document.getElementById('pill'); const prev=p.textContent;
-  p.textContent=text; p.classList.add('pill-warn');
+  p.textContent=text; if(!neutral) p.classList.add('pill-warn');
   clearTimeout(hintToast._t);
   hintToast._t=setTimeout(()=>{ p.classList.remove('pill-warn'); p.textContent=prev; }, ms||2600);
 }
 function critHint(e){ hintToast('Ojo: '+e.name+' es crítico → mejor a la roja (SAI).', 2600); }
 function saiSatHint(e){ hintToast(e.name+' al SAI no: lo satura y deja sin respaldo lo importante.', 2800); }
+function pcSaiHint(){ hintToast('Vale, pero lo ideal es un SAI pequeño por puesto, no cargar el de la red.', 3000, true); }
 function updateSai(){
   const fill=document.getElementById('saiFill'), label=document.getElementById('saiLabel');
   if(!fill) return;
@@ -770,7 +772,8 @@ function runBlackout(){
   S.critSaved=0; let absurdInRed=0;
   EQUIPOS.forEach(e=>{
     const z=S.assign[e.id];
-    const correct = e.crit ? (z==='red') : (z==='white');
+    // PC: válido en ambas tomas. Crítico→roja, resto no-crítico→blanca.
+    const correct = (e.id==='pc') ? true : (e.crit ? (z==='red') : (z==='white'));
     if(correct) addScore(CFG.PTS_POWER);
     if(e.absurd && z==='red') absurdInRed++;
   });
@@ -799,9 +802,9 @@ function runBlackout(){
       cls='bad'; icon='✗'; statusText='sin luz · debía ir al SAI';
     } else if(saturated && z==='red'){
       cls='warn'; icon='⚠'; statusText='cayó por sobrecarga';
-    } else if(!e.crit && z==='red'){
-      // no-crítico ocupando el SAI: gasta respaldo que necesita lo importante
-      cls='bad'; icon='✗'; statusText='no necesita SAI · iba en la blanca';
+    } else if(e.id==='pc' && z==='red'){
+      // PC en el SAI: válido, pero lo ideal es un SAI propio del puesto
+      cls='ok'; icon='✓'; statusText='sigue activo · mejor un SAI propio';
     } else if(decisionOK && alive){
       cls='ok'; icon='✓'; statusText='protegido · sigue activo';
     } else if(decisionOK && !alive){
