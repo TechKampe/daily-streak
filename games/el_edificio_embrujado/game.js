@@ -188,7 +188,7 @@ let hitCount = 0;           // para semilla determinista de partículas
 function show(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $(screenId).classList.add('active');
-  document.documentElement.className = (screenId === 'results') ? 'results' : 'gameplay';
+  document.documentElement.className = 'gameplay';   // todas las pantallas sin scroll
 }
 
 /* ── Score ── */
@@ -241,17 +241,22 @@ function renderFloor(idx) {
   penumbra.style.opacity = '1';
   penumbra.style.webkitMaskImage = '';
 
-  // pintar tramos
+  // pintar tramos — escala 1.2x manteniendo el centro (hitbox usa seg.x/y/w/h ya escalados)
   scene.innerHTML = '';
   floor.segments.forEach(seg => {
+    if (!seg._scaled) {
+      const f = 1.2;
+      const cx = seg.x + seg.w / 2, cy = seg.y + seg.h / 2;
+      seg.w = seg.w * f; seg.h = seg.h * f;
+      seg.x = cx - seg.w / 2; seg.y = cy - seg.h / 2;
+      seg._scaled = true;
+    }
     const el = document.createElement('div');
     const url = seg.img ? SEG_IMG[seg.img] : '';
     if (url) {
-      // asset real disponible
       el.className = 'segment seg-img';
       el.style.backgroundImage = 'url("' + url + '")';
     } else {
-      // fallback: render por variante CSS
       el.className = 'segment seg-' + (seg.variant || seg.defect || 'ok');
     }
     el.dataset.id = seg.id;
@@ -260,7 +265,7 @@ function renderFloor(idx) {
     el.style.width = seg.w + '%';
     el.style.height = seg.h + '%';
     el.innerHTML = '<span class="seg-label">' + seg.label + '</span>';
-    el.classList.add('hidden-seg');     // oculto hasta revelar
+    el.classList.add('hidden-seg');
     scene.appendChild(el);
   });
 
@@ -502,10 +507,8 @@ function chooseVerdict(seg) {
     addScore(pts);
     emitParticles(stage.clientWidth / 2, stage.clientHeight / 2, 24);
     vibrate('success', [0, 60, 40, 120]);
-    say(MSG.verdictOk[S.floorIdx], 'celebrating', null);
-    setAvatar('celebrating');
     S.results.push({ floorName: floor.name, correct: true, culpritLabel: DEFECT_LABELS[floor.culprit] });
-    advanceFloor(true);
+    showSolved();
   } else {
     // incorrecto
     S.verdictAttempts++;
@@ -515,29 +518,40 @@ function chooseVerdict(seg) {
     else say(MSG.verdictWrong, 'worried', 3000);
 
     if (S.verdictAttempts >= 2) {
-      // agotó intentos → marca como fallado y avanza
+      // agotó intentos → marca como fallado y avanza por el overlay
       S.results.push({ floorName: floor.name, correct: false, culpritLabel: DEFECT_LABELS[floor.culprit] });
-      setTimeout(() => advanceFloor(false), 200);
+      const last = (S.floorIdx === FLOORS.length - 1);
+      $('verdictPanel').classList.remove('show');
+      $('solvedAvatar').src = AVATAR.worried;
+      $('solvedText').textContent = 'El culpable era: ' + DEFECT_LABELS[floor.culprit] + '. ' + MSG.verdictOk[S.floorIdx];
+      $('solvedBtn').textContent = last ? 'Cerrar el caso →' : 'Siguiente planta →';
+      $('solvedBtn').onclick = () => {
+        $('solvedOverlay').classList.remove('show');
+        $('solvedAvatar').src = AVATAR.celebrating;   // restaurar para el próximo acierto
+        if (last) { showResults(); return; }
+        S.floorIdx++;
+        transitionTo(S.floorIdx);
+      };
+      $('solvedOverlay').classList.add('show');
+      if (S.floorIdx === 0) S.tutorialDone = true;
     }
   }
 }
 
-function advanceFloor(won) {
-  // botón "Siguiente planta" / "Cerrar el caso" en el panel
-  const opts = $('verdictOptions');
-  opts.innerHTML = '';
-  const b = document.createElement('button');
-  b.className = 'verdict-opt';
+function showSolved() {
+  // ocultar la pregunta del veredicto; mostrar Gabriel opaco + explicación + botón
+  $('verdictPanel').classList.remove('show');
+  bubble.classList.remove('show');
   const last = (S.floorIdx === FLOORS.length - 1);
-  b.textContent = last ? 'Cerrar el caso →' : 'Siguiente planta →';
-  b.addEventListener('click', () => {
-    $('verdictPanel').classList.remove('show');
+  $('solvedText').textContent = MSG.verdictOk[S.floorIdx];
+  $('solvedBtn').textContent = last ? 'Cerrar el caso →' : 'Siguiente planta →';
+  $('solvedBtn').onclick = () => {
+    $('solvedOverlay').classList.remove('show');
     if (last) { showResults(); return; }
     S.floorIdx++;
     transitionTo(S.floorIdx);
-  });
-  opts.appendChild(b);
-  $('verdictPanel').classList.add('show');
+  };
+  $('solvedOverlay').classList.add('show');
   if (S.floorIdx === 0) S.tutorialDone = true;
 }
 
@@ -641,11 +655,13 @@ function pick(arr) { return arr[Math.floor(arr.length * ((hitCount * 0.618) % 1)
 
 /* ════════════════ Resultados ════════════════ */
 function showResults() {
-  const max = 1150;
-  const pct = S.score / max;
+  // El tier se basa en VEREDICTOS acertados (mide la comprensión),
+  // no en puntos absolutos (marcar defectos con tap es bonus opcional).
+  const correct = S.results.filter(r => r.correct).length;
+  const total = S.results.length || FLOORS.length;
   let tier, title, msg, state;
-  if (S.score >= 920) { tier = 'high'; title = 'Caso cerrado: no había fantasmas'; msg = MSG.resultHigh; state = 'celebrating'; }
-  else if (S.score >= 690) { tier = 'mid'; title = 'Edificio diagnosticado'; msg = MSG.resultMid; state = 'happy'; }
+  if (correct === total) { tier = 'high'; title = 'Caso cerrado: no había fantasmas'; msg = MSG.resultHigh; state = 'celebrating'; }
+  else if (correct >= Math.ceil(total / 2)) { tier = 'mid'; title = 'Edificio diagnosticado'; msg = MSG.resultMid; state = 'happy'; }
   else { tier = 'low'; title = 'El fantasma se te ha escapado'; msg = MSG.resultLow; state = 'worried'; }
 
   $('resultsAvatar').src = AVATAR[state] || AVATAR.happy;
@@ -675,7 +691,7 @@ function showResults() {
     sum.appendChild(row);
   });
 
-  if (S.score >= TASK_THRESHOLD) fireTaskCompleted();
+  if (correct >= Math.ceil(total / 2)) fireTaskCompleted();
   if (tier === 'high') setTimeout(() => emitParticlesResults(), 300);
 
   show('results');
