@@ -147,12 +147,12 @@ const SEG_IMG = {
   roseta_ok:          'https://res.cloudinary.com/kampe/image/upload/v1780664659/Roseta_ok_akkifa.png',
   roseta_destrenzado: 'https://res.cloudinary.com/kampe/image/upload/v1780664659/roseta_destrenzado_zfxkma.png',
   latiguillo_ok:      'https://res.cloudinary.com/kampe/image/upload/v1780665376/latiguillo_ok_w72m82.png',
-  latiguillo_gastado: 'https://res.cloudinary.com/kampe/image/upload/v1780665383/latiguillo_gastado_xhxzt7.png',
+  latiguillo_gastado: 'https://res.cloudinary.com/kampe/image/upload/v1780908087/latiguillo_gastado_xhxzt7.png',
   latiguillo_rojo:    'https://res.cloudinary.com/kampe/image/upload/v1780665376/latiguillo_rojo_yzpe2d.png',
   switch_ok:          'https://res.cloudinary.com/kampe/image/upload/v1780586184/el_switch_akzha4.png',
   panel_ok:           'https://res.cloudinary.com/kampe/image/upload/v1780585737/el_patchpanel_v8qvgg.png',
   cable_aplastado:    'https://res.cloudinary.com/kampe/image/upload/v1780665829/cable_aplastado_nnwuc4.png',
-  cable_potencia:     'https://res.cloudinary.com/kampe/image/upload/v1780665835/cable_potencia_yofvbd.png',
+  cable_potencia:     'https://res.cloudinary.com/kampe/image/upload/v1780908100/cable_potencia_yofvbd.png',
   cable_madeja:       'https://res.cloudinary.com/kampe/image/upload/v1780665828/cable_madeja_mvjz5k.png',
   curva_cerrada:      'https://res.cloudinary.com/kampe/image/upload/v1780665829/curva_cerrada_yxjbne.png',
   cable_ok:           'https://res.cloudinary.com/kampe/image/upload/v1780666041/cable_ok_l5cyc3.png',
@@ -270,7 +270,6 @@ function renderFloor(idx) {
   });
 
   setAvatar('happy');
-  $('playAvatar').style.opacity = '0.35';
 
   // hint de deslizar (se oculta al primer arrastre)
   $('swipeHint').classList.remove('hide');
@@ -659,14 +658,13 @@ function showResults() {
   // no en puntos absolutos (marcar defectos con tap es bonus opcional).
   const correct = S.results.filter(r => r.correct).length;
   const total = S.results.length || FLOORS.length;
-  let tier, title, msg, state;
-  if (correct === total) { tier = 'high'; title = 'Caso cerrado: no había fantasmas'; msg = MSG.resultHigh; state = 'celebrating'; }
-  else if (correct >= Math.ceil(total / 2)) { tier = 'mid'; title = 'Edificio diagnosticado'; msg = MSG.resultMid; state = 'happy'; }
-  else { tier = 'low'; title = 'El fantasma se te ha escapado'; msg = MSG.resultLow; state = 'worried'; }
+  let tier, title, state;
+  if (correct === total) { tier = 'high'; title = 'Caso cerrado: no había fantasmas'; state = 'celebrating'; }
+  else if (correct >= Math.ceil(total / 2)) { tier = 'mid'; title = 'Edificio diagnosticado'; state = 'happy'; }
+  else { tier = 'low'; title = 'El fantasma se te ha escapado'; state = 'worried'; }
 
   $('resultsAvatar').src = AVATAR[state] || AVATAR.happy;
   $('resultsTitle').textContent = title;
-  $('resultsMsg').textContent = msg;
 
   // conteo animado
   const scoreEl = $('resultsScore');
