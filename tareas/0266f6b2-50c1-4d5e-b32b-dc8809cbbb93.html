@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 El Cliente Difícil: Tú Decides - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+mentor:"https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png",
+cliente:"https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png"
+};
+const turns=[
+{
+messages:[
+{from:"cliente",name:"Cliente",text:"¡Por fin llegas! Ya es la segunda vez que llamo por lo mismo. ¿Es que no saben hacer su trabajo?"},
+{from:"mentor",name:"Mentor 💬",text:"Respira hondo. La primera impresión cuenta mucho."}
+],
+options:[
+{text:"Disculpe las molestias. Entiendo su frustración.",correct:2,feedback:"Perfecto: empatía + disculpa sin excusas."},
+{text:"Bueno, yo no vine la otra vez...",correct:1,feedback:"Te pones a la defensiva. Eso escala el conflicto."},
+{text:"Si no le gusta, llame a otro.",correct:0,feedback:"Respuesta agresiva. Pierdes al cliente."}
+]
+},
+{
+messages:[
+{from:"cliente",name:"Cliente",text:"¡La fuga sigue igual! Pagué y no sirvió de nada."}
+],
+options:[
+{text:"Voy a revisarlo a fondo. ¿Puede indicarme dónde está la fuga?",correct:2,feedback:"Genial: ofreces solución y pides info sin juzgar."},
+{text:"A ver, ¿quién vino antes? Seguro lo hizo mal.",correct:1,feedback:"Culpar a otros no ayuda; el cliente solo quiere solución."},
+{text:"Eso no es mi problema.",correct:0,feedback:"Falta total de responsabilidad profesional."}
+]
+},
+{
+messages:[
+{from:"cliente",name:"Cliente",text:"Está debajo del fregadero. Mira, yo no entiendo de tuberías, pero esto no puede ser tan difícil."},
+{from:"mentor",name:"Mentor 💬",text:"Evita tecnicismos. Explica con sencillez."}
+],
+options:[
+{text:"Déjeme revisar con calma y le explico lo que encuentre.",correct:2,feedback:"Transmite profesionalidad y calma al cliente."},
+{text:"Es más complicado de lo que parece, ¿eh?",correct:1,feedback:"Suena condescendiente; puede molestar más."},
+{text:"Si fuera fácil, lo haría usted.",correct:0,feedback:"Respuesta sarcástica que rompe la confianza."}
+]
+},
+{
+messages:[
+{from:"cliente",name:"Cliente",text:"¿Y esto cuánto va a costar? No quiero sorpresas."}
+],
+options:[
+{text:"Le doy un presupuesto claro antes de empezar.",correct:2,feedback:"Transparencia genera confianza."},
+{text:"Depende de lo que encuentre, ya veremos.",correct:1,feedback:"Ambiguo; el cliente necesita certezas."},
+{text:"Lo que cueste. Usted paga o lo dejo así.",correct:0,feedback:"Amenaza que destruye la relación."}
+]
+},
+{
+messages:[
+{from:"cliente",name:"Cliente",text:"Vale... espero que esta vez quede bien."},
+{from:"mentor",name:"Mentor 💬",text:"Cierra con compromiso y deja buena impresión."}
+],
+options:[
+{text:"Haré todo lo posible. Si tiene dudas, aquí estoy.",correct:2,feedback:"Cierre empático y profesional."},
+{text:"Eso espero yo también.",correct:1,feedback:"Neutro pero poco comprometido."},
+{text:"Ya veremos, no prometo nada.",correct:0,feedback:"Deja al cliente inseguro y desconfiado."}
+]
+}
+];
+let idx=0,history=[],answers=[];
+const scene=document.getElementById('scene');
+
+function render(){
+if(idx>=turns.length){showResults();return;}
+const t=turns[idx];
+let html=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 El Cliente Difícil</div>
+<div class="subtitle">Elige tu respuesta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(idx/turns.length)*100}%"></i></div></div>
+<span class="badge">${idx+1}/${turns.length}</span>
+</div>
+</div>
+<div class="chat-container">
+<div class="chat-history" id="chatHistory">`;
+history.forEach(m=>{
+html+=`<div class="chat-bubble ${m.from}"><img src="${avatars[m.from]||avatars.mentor}" class="chat-avatar"><div class="chat-content"><span class="chat-name">${m.name}</span><span class="chat-text">${m.text}</span></div></div>`;
+});
+t.messages.forEach(m=>{
+html+=`<div class="chat-bubble ${m.from}"><img src="${avatars[m.from]}" class="chat-avatar"><div class="chat-content"><span class="chat-name">${m.name}</span><span class="chat-text">${m.text}</span></div></div>`;
+});
+html+=`</div></div>
+<div class="footer chat-footer">
+<div class="chat-options" id="chatOptions">`;
+t.options.forEach((o,i)=>{
+html+=`<button class="btn-option" onclick="choose(${i})">${o.text}</button>`;
+});
+html+=`</div></div>`;
+scene.innerHTML=html;
+const ch=document.getElementById('chatHistory');
+ch.scrollTop=ch.scrollHeight;
+ensureFits();
+}
+
+function choose(i){
+const t=turns[idx];
+const opt=t.options[i];
+t.messages.forEach(m=>history.push(m));
+history.push({from:"player",name:"Tú",text:opt.text});
+answers.push({q:`Turno ${idx+1}`,user:opt.text,correct:opt.correct,feedback:opt.feedback});
+idx++;
+render();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.reduce((a,b)=>a+b.correct,0);
+const max=answers.length*2;
+let items=answers.map(a=>`<div class="result-item ${a.correct===2?'correct':a.correct===1?'':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">${a.correct===2?'✓ Óptimo':a.correct===1?'⚠ Mejorable':'✗ Evitar'}: ${a.user}</div>
+<div class="result-explanation">${a.feedback}</div>
+</div>`).join('');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Conversación completada!</div>
+<div class="results-score">${score}/${max}</div>
+<div class="results-subtitle">Puntos de comunicación</div>
+</div>
+<div class="results-list">${items}</div>
+<div class="results-tip"><strong>💡 Consejo:</strong> Un cliente difícil bien gestionado puede convertirse en tu mejor recomendación. Escucha, empatiza y ofrece soluciones claras.</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',render);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+
+const style=document.createElement('style');
+style.textContent=`
+.chat-container{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;padding:0 16px;}
+.chat-history{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:10px 0;-webkit-overflow-scrolling:touch;}
+.chat-bubble{display:flex;gap:8px;align-items:flex-start;max-width:85%;}
+.chat-bubble.cliente,.chat-bubble.mentor{align-self:flex-start;}
+.chat-bubble.player{align-self:flex-end;flex-direction:row-reverse;}
+.chat-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.chat-bubble.player .chat-avatar{display:none;}
+.chat-content{background:var(--surface);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;}
+.chat-bubble.player .chat-content{background:#222;color:#fff;}
+.chat-bubble.mentor .chat-content{background:var(--accent);color:#fff;}
+.chat-name{font-size:11px;font-weight:700;opacity:0.7;}
+.chat-text{font-size:14px;line-height:1.3;}
+.chat-footer{flex-direction:column;gap:8px;padding:12px 16px;background:var(--bg);}
+.chat-options{display:flex;flex-direction:column;gap:8px;width:100%;}
+.chat-options .btn-option{width:100%;text-align:left;font-size:13px;padding:10px 14px;white-space:normal;line-height:1.3;}
+.results-tip{background:var(--surface);border-radius:12px;padding:12px 16px;margin:16px;font-size:14px;line-height:1.4;}
+`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
