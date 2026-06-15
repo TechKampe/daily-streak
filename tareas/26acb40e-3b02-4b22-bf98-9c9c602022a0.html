@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obra en Acción - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneText">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const scenes=[
+{text:"Miguel sube al andamio a primera hora",items:["Casco puesto","Guantes de trabajo","Arnés enganchado","Zapatillas deportivas"],error:3,exp:"Las zapatillas deportivas no protegen. Se requiere calzado de seguridad con puntera reforzada."},
+{text:"Almacén de pinturas y disolventes",items:["Ventilación adecuada","Extintor visible","Cerillas en estante","Señalización correcta"],error:2,exp:"Las cerillas son fuente de ignición. Nunca deben estar cerca de productos inflamables."},
+{text:"Conexión eléctrica provisional en obra",items:["Diferencial instalado","Toma de tierra","Cable pelado visible","Cinta aislante disponible"],error:2,exp:"Un cable pelado expuesto es riesgo de electrocución. Debe repararse inmediatamente."},
+{text:"Pedro corta azulejos con radial",items:["Gafas de protección","Protector de disco","Guantes anticorte","Trabajando sin mascarilla"],error:3,exp:"Cortar azulejos genera polvo de sílice. La mascarilla FFP2 es obligatoria."},
+{text:"Zona de excavación en la entrada",items:["Vallas de seguridad","Señalización nocturna","Casco del operario","Zanja sin entibar"],error:3,exp:"Una zanja sin entibación puede derrumbarse. El entibado es obligatorio a partir de 1,20m."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sceneText=document.getElementById('sceneText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper');
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+helper.textContent='Toca el elemento con el error';
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>b.disabled=true);
+btns[i].classList.add('selected');
+const correct=i===s.error;
+answers.push({scene:s.text,chosen:s.items[i],correctItem:s.items[s.error],correct,exp:s.exp});
+setTimeout(()=>{
+btns[i].classList.add(correct?'correct':'incorrect');
+if(!correct)btns[s.error].classList.add('correct');
+setTimeout(()=>{idx++;render();},800);
+},300);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Inspección completada</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene}</div>
+<div class="result-answer">${a.correct?'✓ Detectaste: '+a.chosen:'✗ Elegiste: '+a.chosen+' → Error real: '+a.correctItem}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Las inspecciones visuales rutinarias son tu primera línea de defensa. Dedica 5 minutos al inicio de cada jornada a revisar EPIs, herramientas y zonas de trabajo.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
