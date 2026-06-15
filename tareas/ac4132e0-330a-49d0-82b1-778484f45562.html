@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Qué va en cada caja? 📦 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Qué va en cada caja? 📦</div>
+<div class="subtitle" id="item-display">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar"></i></div>
+</div>
+<span class="badge" id="counter">1/9</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para este material</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">📦 Almacén de suministros</div>
+<div class="modal-body">Es tu primer día. Ordena los materiales en sus cajas antes de que llegue el cliente. ¡Toca la categoría correcta!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<script>
+const items=[
+{name:"Interruptor diferencial",cat:"Protección",exp:"Protege contra fugas de corriente a tierra."},
+{name:"Cable unipolar 2.5mm²",cat:"Cableado",exp:"Cable básico para instalaciones interiores."},
+{name:"Clema de empalme",cat:"Conexión",exp:"Une cables de forma segura y desmontable."},
+{name:"Magnetotérmico 16A",cat:"Protección",exp:"Protege contra sobrecargas y cortocircuitos."},
+{name:"Tubo corrugado PVC",cat:"Cableado",exp:"Protege y canaliza cables en instalaciones."},
+{name:"Regleta de conexión",cat:"Conexión",exp:"Permite conectar múltiples cables en un punto."},
+{name:"Fusible cerámico",cat:"Protección",exp:"Se funde ante sobreintensidad protegiendo el circuito."},
+{name:"Caja de derivación",cat:"Conexión",exp:"Aloja empalmes y derivaciones de cables."},
+{name:"Manguera flexible 3G1.5",cat:"Cableado",exp:"Cable multiconductor para conexiones móviles."}
+];
+const categories=["Protección","Cableado","Conexión"];
+let idx=0,answers=[],animating=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),itemEl=document.getElementById('item-display'),catsEl=document.getElementById('categories'),progBar=document.getElementById('progress-bar'),counterEl=document.getElementById('counter');
+
+modal.classList.add('active');
+
+function startGame(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+itemEl.textContent=item.name;
+progBar.style.width=((idx)/items.length*100)+'%';
+counterEl.textContent=(idx+1)+'/'+items.length;
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCat('${c}')">${c}</button>`).join('');
+ensureFits();
+}
+
+function selectCat(cat){
+if(animating)return;
+animating=true;
+const item=items[idx];
+const correct=cat===item.cat;
+const btns=catsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+if(b.textContent===cat){
+b.classList.add(correct?'correct':'incorrect');
+b.style.transform='scale(1.05)';
+}
+b.disabled=true;
+});
+answers.push({name:item.name,chosen:cat,correct:item.cat,ok:correct,exp:item.exp});
+setTimeout(()=>{
+idx++;
+animating=false;
+render();
+},400);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.ok).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Almacén ordenado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Materiales clasificados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.ok?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.ok?'✓ '+a.correct:'✗ '+a.chosen+' → '+a.correct}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> En obra, agrupa mentalmente: lo que protege (cuadro), lo que conduce (canalizaciones) y lo que conecta (cajas). Así encontrarás todo más rápido.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
