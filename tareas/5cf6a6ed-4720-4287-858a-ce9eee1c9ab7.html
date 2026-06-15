@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Paso a Paso: Domina el Protocolo - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{title:"Cuadro eléctrico",steps:["Cortar suministro eléctrico","Verificar ausencia de tensión","Señalizar zona de trabajo","Realizar la intervención","Rearmar el sistema"],tip:"Nunca trabajes sin verificar ausencia de tensión con detector homologado."},
+{title:"Escalera de mano",steps:["Inspeccionar estado de la escalera","Posicionar en superficie estable","Asegurar ángulo de apoyo (75°)","Mantener 3 puntos de contacto","Ascender de forma controlada"],tip:"Revisa siempre los peldaños y bisagras antes de subir."},
+{title:"Reclamación de cliente",steps:["Escuchar sin interrumpir","Confirmar que entendiste","Proponer solución concreta","Ejecutar la acción acordada","Cerrar y agradecer"],tip:"Un cliente escuchado es un cliente que vuelve."}
+];
+let currentChallenge=0,userOrders=[],score=0,dragIdx=null;
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function renderChallenge(){
+const c=challenges[currentChallenge];
+const shuffled=shuffle(c.steps);
+const scene=document.getElementById('scene');
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Paso a Paso</div>
+<div class="subtitle">${c.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(currentChallenge/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main">
+<div class="cards-list" id="cardsList">
+${shuffled.map((s,i)=>`<div class="card" data-id="${i}" draggable="true"><span class="card-num">${i+1}</span><span class="card-text">${s}</span><div class="card-controls"><button class="btn-ghost" aria-label="Subir" onclick="moveCard(${i},-1)">↑</button><button class="btn-ghost" aria-label="Bajar" onclick="moveCard(${i},1)">↓</button></div></div>`).join('')}
+</div>
+</div>
+<div class="footer">
+<div class="helper">Ordena los pasos del procedimiento</div>
+<button class="cta" id="confirmBtn" onclick="confirmOrder()">Confirmar orden</button>
+</div>`;
+setupDragDrop();
+ensureFits();
+}
+
+function getCards(){return Array.from(document.querySelectorAll('.card'));}
+function updateNumbers(){getCards().forEach((c,i)=>c.querySelector('.card-num').textContent=i+1);}
+
+function moveCard(idx,dir){
+const list=document.getElementById('cardsList');
+const cards=getCards();
+const newIdx=idx+dir;
+if(newIdx<0||newIdx>=cards.length)return;
+const card=cards[idx];
+card.style.transform=`translateY(${dir*10}px)`;
+setTimeout(()=>{
+card.style.transform='';
+if(dir===-1)list.insertBefore(card,cards[newIdx]);
+else list.insertBefore(cards[newIdx],card);
+updateNumbers();
+},100);
+}
+
+function setupDragDrop(){
+const list=document.getElementById('cardsList');
+let dragEl=null;
+list.addEventListener('dragstart',e=>{
+if(!e.target.classList.contains('card'))return;
+dragEl=e.target;
+dragEl.classList.add('dragging');
+e.dataTransfer.effectAllowed='move';
+});
+list.addEventListener('dragend',e=>{
+if(dragEl)dragEl.classList.remove('dragging');
+dragEl=null;
+updateNumbers();
+});
+list.addEventListener('dragover',e=>{
+e.preventDefault();
+const afterEl=getDragAfterElement(list,e.clientY);
+if(afterEl==null)list.appendChild(dragEl);
+else list.insertBefore(dragEl,afterEl);
+});
+list.addEventListener('touchstart',e=>{
+const card=e.target.closest('.card');
+if(!card||e.target.closest('.btn-ghost'))return;
+dragEl=card;
+dragEl.classList.add('dragging');
+},{passive:true});
+list.addEventListener('touchmove',e=>{
+if(!dragEl)return;
+e.preventDefault();
+const touch=e.touches[0];
+const afterEl=getDragAfterElement(list,touch.clientY);
+if(afterEl==null)list.appendChild(dragEl);
+else list.insertBefore(dragEl,afterEl);
+},{passive:false});
+list.addEventListener('touchend',()=>{
+if(dragEl)dragEl.classList.remove('dragging');
+dragEl=null;
+updateNumbers();
+});
+}
+
+function getDragAfterElement(container,y){
+const els=[...container.querySelectorAll('.card:not(.dragging)')];
+return els.reduce((closest,child)=>{
+const box=child.getBoundingClientRect();
+const offset=y-box.top-box.height/2;
+if(offset<0&&offset>closest.offset)return{offset,element:child};
+return closest;
+},{offset:Number.NEGATIVE_INFINITY}).element;
+}
+
+function confirmOrder(){
+const cards=getCards();
+const userOrder=cards.map(c=>c.querySelector('.card-text').textContent);
+const correct=challenges[currentChallenge].steps;
+const isCorrect=JSON.stringify(userOrder)===JSON.stringify(correct);
+if(isCorrect)score++;
+userOrders.push({userOrder,correct,isCorrect,title:challenges[currentChallenge].title,tip:challenges[currentChallenge].tip});
+showFeedback();
+}
+
+function showFeedback(){
+const result=userOrders[userOrders.length-1];
+const scene=document.getElementById('scene');
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Paso a Paso</div>
+<div class="subtitle">${result.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${((currentChallenge+1)/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main">
+<div class="feedback-box">
+<div class="feedback-title ${result.isCorrect?'correct':'incorrect'}">${result.isCorrect?'✅ ¡Orden correcto!':'❌ Orden incorrecto'}</div>
+${!result.isCorrect?`<div class="feedback-section"><strong>Tu orden:</strong>${result.userOrder.map((s,i)=>`<div class="feedback-step">${i+1}. ${s}</div>`).join('')}</div>`:''}
+<div class="feedback-section"><strong>${result.isCorrect?'Secuencia:':'✅ Orden correcto:'}</strong>${result.correct.map((s,i)=>`<div class="feedback-step ok">${i+1}. ${s}</div>`).join('')}</div>
+<div class="feedback-tip">💡 ${result.tip}</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="nextChallenge()">${currentChallenge<challenges.length-1?'Siguiente reto':'Ver resultados'}</button>
+</div>`;
+ensureFits();
+}
+
+function nextChallenge(){
+currentChallenge++;
+if(currentChallenge>=challenges.length)showResults();
+else renderChallenge();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+const scene=document.getElementById('scene');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${challenges.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${userOrders.map((r,i)=>`
+<div class="result-item ${r.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${r.title}</div>
+<div class="result-answer">${r.isCorrect?'✓ Ordenado correctamente':'✗ Orden incorrecto'}</div>
+${!r.isCorrect?`<div class="result-explanation"><strong>Tu orden:</strong> ${r.userOrder.map((s,j)=>`${j+1}.${s.substring(0,20)}...`).join(' ')}</div>`:''}
+<div class="result-explanation"><strong>Correcto:</strong> ${r.correct.map((s,j)=>`${j+1}.${s.substring(0,20)}...`).join(' ')}</div>
+<div class="result-explanation">💡 ${r.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function showIntro(){
+const scene=document.getElementById('scene');
+scene.innerHTML=`
+<div class="modal-backdrop active" id="introModal">
+<div class="modal">
+<div class="modal-title">🔧 Paso a Paso</div>
+<div class="modal-body">Eres el nuevo técnico de mantenimiento. Ordena los pasos de cada procedimiento usando ↑↓ o arrastrando.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>`;
+}
+
+function startGame(){
+document.getElementById('introModal').classList.remove('active');
+renderChallenge();
+}
+
+window.addEventListener('load',()=>{showIntro();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
