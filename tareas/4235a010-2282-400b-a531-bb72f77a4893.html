@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Herramienta o EPI? 🛠️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Herramienta o EPI? 🛠️</div>
+<div class="subtitle">Clasifica cada ítem correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div id="item-display"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para cada ítem</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const items=[
+{name:"Guantes de nitrilo",category:"EPI",exp:"Protegen las manos de sustancias químicas y biológicas."},
+{name:"Destornillador",category:"Herramienta",exp:"Sirve para apretar o aflojar tornillos."},
+{name:"Gafas de seguridad",category:"EPI",exp:"Protegen los ojos de proyecciones y salpicaduras."},
+{name:"Llave inglesa",category:"Herramienta",exp:"Se usa para apretar tuercas de distintos tamaños."},
+{name:"Casco",category:"EPI",exp:"Protege la cabeza de impactos y caída de objetos."},
+{name:"Taladro",category:"Herramienta",exp:"Herramienta eléctrica para perforar materiales."},
+{name:"Mascarilla FFP2",category:"EPI",exp:"Filtra partículas y protege las vías respiratorias."},
+{name:"Flexómetro",category:"Herramienta",exp:"Cinta métrica para medir longitudes."},
+{name:"Arnés anticaídas",category:"EPI",exp:"Evita caídas en trabajos en altura según PRL."},
+{name:"Alicates",category:"Herramienta",exp:"Sirven para sujetar, cortar o doblar materiales."}
+];
+const categories=["EPI","Herramienta"];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),itemDisplay=document.getElementById('item-display'),catsEl=document.getElementById('categories'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+prog.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+itemDisplay.innerHTML=`<div class="results-title" style="font-size:1.5rem;margin:1.5rem 0">${item.name}</div>`;
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCategory('${c}')">${c}</button>`).join('');
+ensureFits();
+}
+
+function selectCategory(cat){
+const item=items[idx];
+const correct=cat===item.category;
+const btns=catsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===item.category)b.classList.add('correct');
+if(b.textContent===cat&&!correct)b.classList.add('incorrect');
+});
+answers.push({name:item.name,userCat:cat,correctCat:item.category,correct,exp:item.exp});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Almacén organizado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctCat:'✗ Dijiste '+a.userCat+' → '+a.correctCat}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Antes de empezar cualquier trabajo, separa mentalmente lo que te protege (EPIs) de lo que usas para trabajar (herramientas). Así nunca olvidarás tu equipo de seguridad.</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
