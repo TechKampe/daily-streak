@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Seguridad o Riesgo? Clasifica como un Pro 🛡️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguridad o Riesgo? 🛡️</div>
+<div class="subtitle" id="subtitle">Clasifica cada situación</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div id="item-display"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primer día en obra 🏗️</div>
+<div class="modal-body">El encargado te pide identificar prácticas seguras y peligrosas. Clasifica cada situación en SEGURO, RIESGO o MALA PRÁCTICA.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const items = [
+{text: "Usar casco en zona de carga", cat: "SEGURO", exp: "El casco protege de caída de objetos. Obligatorio en zonas de riesgo."},
+{text: "Dejar cables sueltos en el suelo", cat: "RIESGO", exp: "Cables sueltos provocan tropiezos y caídas graves."},
+{text: "Revisar andamio antes de subir", cat: "SEGURO", exp: "Verificar estabilidad previene accidentes por colapso."},
+{text: "Usar el móvil en zona de maquinaria", cat: "MALA PRÁCTICA", exp: "Las distracciones cerca de máquinas causan accidentes graves."},
+{text: "Llevar gafas de protección al cortar", cat: "SEGURO", exp: "Las gafas protegen de partículas y esquirlas."},
+{text: "Subir a escalera sin asegurarla", cat: "RIESGO", exp: "Escalera sin fijar puede resbalar y causar caídas."},
+{text: "Dejar herramientas tiradas en paso", cat: "MALA PRÁCTICA", exp: "El desorden causa tropiezos y pérdida de tiempo."},
+{text: "Señalizar zona de trabajo", cat: "SEGURO", exp: "La señalización avisa del peligro a otros trabajadores."},
+{text: "Levantar carga pesada con la espalda", cat: "RIESGO", exp: "Cargar mal provoca lesiones lumbares graves."},
+{text: "Ignorar señales de advertencia", cat: "MALA PRÁCTICA", exp: "Las señales existen para prevenir accidentes. Siempre respétalas."}
+];
+
+const categories = ["SEGURO", "RIESGO", "MALA PRÁCTICA"];
+let idx = 0, answers = [], animating = false;
+const scene = document.getElementById('scene');
+const itemDisplay = document.getElementById('item-display');
+const catsEl = document.getElementById('categories');
+const prog = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const subtitle = document.getElementById('subtitle');
+const modal = document.getElementById('modal');
+
+function startGame() {
+    modal.classList.remove('active');
+    render();
+}
+
+function render() {
+    if (idx >= items.length) { showResults(); return; }
+    animating = false;
+    const item = items[idx];
+    prog.style.width = (idx / items.length * 100) + '%';
+    counter.textContent = (idx + 1) + '/' + items.length;
+    subtitle.textContent = 'Clasifica esta situación';
+    
+    itemDisplay.innerHTML = `<div class="results-title" style="font-size:1.3rem;text-align:center;padding:1rem 0">${item.text}</div>`;
+    
+    catsEl.innerHTML = categories.map(c => 
+        `<button class="btn-option" onclick="classify('${c}')">${c}</button>`
+    ).join('');
+    
+    ensureFits();
+}
+
+function classify(cat) {
+    if (animating) return;
+    animating = true;
+    const item = items[idx];
+    const correct = cat === item.cat;
+    
+    const btns = catsEl.querySelectorAll('.btn-option');
+    btns.forEach(b => {
+        if (b.textContent === cat) {
+            b.classList.add(correct ? 'correct' : 'incorrect');
+        }
+        if (b.textContent === item.cat && !correct) {
+            b.classList.add('correct');
+        }
+    });
+    
+    answers.push({
+        text: item.text,
+        userCat: cat,
+        correctCat: item.cat,
+        correct: correct,
+        exp: item.exp
+    });
+    
+    setTimeout(() => {
+        idx++;
+        render();
+    }, 600);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        
+        const score = answers.filter(a => a.correct).length;
+        
+        scene.innerHTML = `
+        <div class="results-scroll">
+            <div class="results-header">
+                <div class="results-title">¡Clasificación completada!</div>
+                <div class="results-score">${score}/${items.length}</div>
+                <div class="results-subtitle">Aciertos</div>
+            </div>
+            <div class="results-list">
+                ${answers.map(a => `
+                <div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+                    <div class="result-question">${a.text}</div>
+                    <div class="result-answer">${a.correct ? '✓' : '✗'} ${a.correctCat}</div>
+                    <div class="result-explanation">${a.exp}</div>
+                </div>
+                `).join('')}
+            </div>
+            <div class="result-item">
+                <div class="result-question">💡 Consejo Pro</div>
+                <div class="result-explanation">Al llegar a cualquier obra, haz un "escaneo mental": mira suelo, altura y entorno. Identifica cables, huecos y zonas de carga antes de empezar.</div>
+            </div>
+            <div class="footer">
+                <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+            </div>
+        </div>`;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({action: 'TASK_COMPLETED'}));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
