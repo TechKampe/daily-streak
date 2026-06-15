@@ -1,0 +1,233 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🗣️ Tu primera llamada con el cliente - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🗣️ Tu primera llamada</div>
+<div class="subtitle" id="subtitle">Gestiona la llamada con el cliente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">Intro</span>
+</div>
+</div>
+<div class="main">
+<div class="chat-container" id="chat-container"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Lee la conversación y elige tu respuesta</div>
+<div class="options-container" id="options-container"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+mentor:{name:"Carlos (Mentor)",img:"https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png"},
+cliente:{name:"Sr. García (Cliente)",img:"https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png"}
+};
+
+const turns=[
+{
+messages:[
+{from:"mentor",text:"¡Ey! Tienes una llamada entrante. Es un cliente con urgencia. Yo estoy liado, ¿puedes atenderle tú?"},
+{from:"cliente",text:"¡Hola! ¿Es el servicio técnico? ¡Tengo una emergencia con mi calentador!"}
+],
+options:[
+{text:"Buenos días, soy técnico de Kämpe. ¿En qué puedo ayudarle?",score:2,reaction:"Perfecto, tono profesional. 👍"},
+{text:"Sí, dígame, ¿qué le pasa?",score:1,reaction:"Correcto pero podrías presentarte mejor."},
+{text:"¿Qué? ¿Quién es?",score:0,reaction:"Eso suena poco profesional... 😬"}
+]
+},
+{
+messages:[
+{from:"cliente",text:"¡El calentador no enciende y tengo agua fría! Necesito que vengan YA, tengo niños en casa."}
+],
+options:[
+{text:"Entiendo la urgencia. ¿Puede indicarme la marca y si ve alguna luz o error?",score:2,reaction:"Muy bien, preguntas de diagnóstico. 💪"},
+{text:"Vale, tranquilo. ¿Qué calentador tiene?",score:1,reaction:"Bien, pero podrías mostrar más empatía."},
+{text:"Pues habrá que ver qué tiene, no sé cuándo podemos ir.",score:0,reaction:"Eso genera desconfianza... 😕"}
+]
+},
+{
+messages:[
+{from:"cliente",text:"Es un Junkers, tiene como 8 años. No veo ninguna luz encendida, nada de nada."},
+{from:"mentor",text:"(Por mensaje) Pregúntale si ha revisado el gas y el piloto 👀"}
+],
+options:[
+{text:"¿Ha comprobado si llega gas? ¿Y si el piloto está encendido?",score:2,reaction:"Excelente, sigues el protocolo. ✅"},
+{text:"Mmm, puede ser el termostato. Tendríamos que verlo.",score:1,reaction:"Posible, pero faltan datos básicos."},
+{text:"Con 8 años igual toca cambiarlo entero.",score:0,reaction:"¡No asustes al cliente sin ver! 😰"}
+]
+},
+{
+messages:[
+{from:"cliente",text:"¡Ay, es verdad! Creo que ayer cortaron el gas en el edificio por obras... Pero ya debería haber vuelto, ¿no?"}
+],
+options:[
+{text:"Puede que haya aire en la tubería. Pruebe a purgar abriendo otro punto de gas.",score:2,reaction:"¡Buen consejo remoto! Muy profesional. 🎯"},
+{text:"Debería llamar a su compañía de gas primero.",score:1,reaction:"Correcto, pero podrías guiarle más."},
+{text:"No sé, eso no es cosa nuestra, es del gas.",score:0,reaction:"Perdemos al cliente así... 😞"}
+]
+},
+{
+messages:[
+{from:"cliente",text:"¡Funciona! ¡Era eso! Muchas gracias, ¿cómo os llamo si vuelve a pasar?"}
+],
+options:[
+{text:"Me alegro. Guarde este número. Si recurre, llámenos y agendamos visita. ¡Buen día!",score:2,reaction:"Cierre perfecto y profesional. 🌟"},
+{text:"Vale, genial. Ya sabe, aquí estamos.",score:1,reaction:"Bien, pero podrías dar más info de contacto."},
+{text:"Pues nada, adiós.",score:0,reaction:"Muy frío, no fidelizas. 😕"}
+]
+}
+];
+
+let currentTurn=-1,chatHistory=[],answers=[];
+const scene=document.getElementById('scene'),chatContainer=document.getElementById('chat-container'),optionsContainer=document.getElementById('options-container'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle'),helper=document.getElementById('helper');
+
+function addMessage(from,text,isUser=false){
+chatHistory.push({from,text,isUser});
+renderChat();
+}
+
+function renderChat(){
+chatContainer.innerHTML=chatHistory.map(m=>{
+if(m.isUser){
+return `<div class="chat-bubble user"><div class="bubble-content user-bubble">${m.text}</div></div>`;
+}else{
+const av=avatars[m.from];
+return `<div class="chat-bubble npc"><img class="bubble-avatar" src="${av.img}" alt="${av.name}"><div class="bubble-info"><div class="bubble-name">${av.name}</div><div class="bubble-content">${m.text}</div></div></div>`;
+}
+}).join('');
+chatContainer.scrollTop=chatContainer.scrollHeight;
+}
+
+function renderOptions(opts){
+optionsContainer.innerHTML=opts.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join('');
+}
+
+function clearOptions(){
+optionsContainer.innerHTML='';
+}
+
+function selectOption(i){
+const turn=turns[currentTurn];
+const opt=turn.options[i];
+answers.push({turn:currentTurn+1,text:opt.text,score:opt.score,reaction:opt.reaction,maxScore:2});
+addMessage('user',opt.text,true);
+clearOptions();
+helper.textContent=opt.reaction;
+setTimeout(()=>{
+nextTurn();
+},1200);
+}
+
+function nextTurn(){
+currentTurn++;
+if(currentTurn>=turns.length){
+showResults();
+return;
+}
+const turn=turns[currentTurn];
+progress.style.width=((currentTurn+1)/turns.length*100)+'%';
+counter.textContent=`${currentTurn+1}/${turns.length}`;
+subtitle.textContent=`Turno ${currentTurn+1}: Elige tu respuesta`;
+helper.textContent='Selecciona cómo responder';
+turn.messages.forEach(m=>addMessage(m.from,m.text));
+setTimeout(()=>{
+renderOptions(turn.options);
+ensureFits();
+},400);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const totalScore=answers.reduce((a,b)=>a+b.score,0);
+const maxScore=answers.length*2;
+const pct=Math.round(totalScore/maxScore*100);
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">📞 ¡Llamada completada!</div>
+<div class="results-score">${totalScore}/${maxScore} puntos</div>
+<div class="results-subtitle">${pct>=80?'¡Excelente comunicación!':pct>=50?'Buen intento, puedes mejorar':'Necesitas practicar más'}</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.score===2?'correct':a.score===1?'':'incorrect'}">
+<div class="result-question">Turno ${a.turn}</div>
+<div class="result-answer">${a.score===2?'✓ Óptimo':a.score===1?'◐ Parcial':'✗ Mejorable'}: ${a.text.substring(0,40)}...</div>
+<div class="result-explanation">${a.reaction}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo práctico:</strong> Prepara un guion básico para llamadas: saludo profesional, preguntas de diagnóstico (marca, síntomas, últimos cambios) y cierre con datos de contacto. ¡La confianza se construye desde el primer "hola"!
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+function init(){
+addMessage('mentor','¡Ey! Tu primera llamada real. Recuerda: tono profesional, escucha activa y no prometas lo que no puedas cumplir. ¡Tú puedes! 💪');
+helper.textContent='Pulsa "Empezar" cuando estés listo';
+optionsContainer.innerHTML='<button class="cta" onclick="startGame()">Empezar llamada</button>';
+}
+
+function startGame(){
+nextTurn();
+}
+
+window.addEventListener('load',()=>{ensureFits();init();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.chat-container{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;}
+.chat-bubble{display:flex;gap:8px;max-width:90%;}
+.chat-bubble.npc{align-self:flex-start;}
+.chat-bubble.user{align-self:flex-end;}
+.bubble-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.bubble-info{display:flex;flex-direction:column;gap:2px;}
+.bubble-name{font-size:11px;font-weight:700;color:var(--ink-soft,#666);}
+.bubble-content{background:var(--card-bg,#fff);padding:10px 12px;border-radius:16px;font-size:14px;line-height:1.4;box-shadow:0 1px 2px rgba(0,0,0,0.08);}
+.user-bubble{background:var(--brand,#6C5CE7);color:#000 !important;border-bottom-right-radius:4px;}
+.npc .bubble-content{border-bottom-left-radius:4px;}
+.options-container{display:flex;flex-direction:column;gap:8px;width:100%;}
+.options-container .btn-option{font-size:13px;padding:12px;text-align:left;line-height:1.3;}
+.results-tip{background:var(--card-bg,#fff);padding:12px;border-radius:12px;font-size:13px;line-height:1.5;margin:8px 0;}
+.results-tip strong{color:var(--brand,#6C5CE7);}
+.main{display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;}
+</style>
+</body>
+</html>
