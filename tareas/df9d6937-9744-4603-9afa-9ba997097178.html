@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tu primera satisfacción del cliente 🗣️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 4_low.png" alt="" loading="lazy">
+<script>
+const avatars = {
+mentor: {name:'Carlos (Mentor)',img:'https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png'},
+cliente: {name:'Sr. García (Cliente)',img:'https://techkampe.github.io/daily-streak/assets/Avatar 4_low.png'}
+};
+
+const turns = [
+{
+messages: [
+{from:'cliente',text:'Oye, acabo de probar el enchufe del salón y no funciona. ¿Qué ha pasado?'},
+{from:'mentor',text:'💬 Tranquilo, respira. Escucha primero al cliente.'}
+],
+options: [
+{text:'Eso es imposible, lo he revisado todo.',type:'incorrect',reaction:'El cliente frunce el ceño, molesto.'},
+{text:'Vaya, déjeme comprobarlo ahora mismo.',type:'correct',reaction:'El cliente asiente, más calmado.'},
+{text:'Seguro que es cosa del cuadro eléctrico.',type:'partial',reaction:'El cliente duda, no muy convencido.'}
+]
+},
+{
+messages: [
+{from:'cliente',text:'Es que necesito ese enchufe para la tele. ¿Cuánto vas a tardar?'}
+],
+options: [
+{text:'No sé, depende de lo que encuentre.',type:'partial',reaction:'El cliente suspira con impaciencia.'},
+{text:'Máximo 10 minutos. Lo soluciono ya.',type:'correct',reaction:'El cliente relaja el gesto.'},
+{text:'Pues tendrá que esperar lo que haga falta.',type:'incorrect',reaction:'El cliente se cruza de brazos, enfadado.'}
+]
+},
+{
+messages: [
+{from:'mentor',text:'💬 Explícale qué pudo pasar, genera confianza.'},
+{from:'cliente',text:'¿Pero por qué ha fallado si acabas de instalarlo?'}
+],
+options: [
+{text:'A veces pasa, estas cosas fallan.',type:'incorrect',reaction:'El cliente niega con la cabeza.'},
+{text:'Puede ser una conexión floja. Lo reviso y le explico.',type:'correct',reaction:'El cliente asiente interesado.'},
+{text:'No tengo ni idea, la verdad.',type:'incorrect',reaction:'El cliente pierde la confianza.'}
+]
+},
+{
+messages: [
+{from:'cliente',text:'Vale, ¿y esto me va a costar algo extra?'}
+],
+options: [
+{text:'Claro, es trabajo adicional.',type:'incorrect',reaction:'El cliente se molesta visiblemente.'},
+{text:'No, es parte del servicio. Lo dejo perfecto.',type:'correct',reaction:'El cliente sonríe aliviado.'},
+{text:'Depende de lo que encuentre.',type:'partial',reaction:'El cliente se muestra desconfiado.'}
+]
+},
+{
+messages: [
+{from:'mentor',text:'💬 Cierra bien: garantía y profesionalidad.'},
+{from:'cliente',text:'Bueno, espero que no vuelva a pasar...'}
+],
+options: [
+{text:'Si pasa algo, me llama y vengo gratis.',type:'correct',reaction:'El cliente estrecha tu mano, satisfecho.'},
+{text:'No debería, pero nunca se sabe.',type:'partial',reaction:'El cliente asiente sin mucho convencimiento.'},
+{text:'Eso ya no es mi problema.',type:'incorrect',reaction:'El cliente se queda muy decepcionado.'}
+]
+}
+];
+
+let currentTurn = 0, chatHistory = [], answers = [], score = 0;
+const scene = document.getElementById('scene');
+
+function render() {
+if (currentTurn >= turns.length) { showResults(); return; }
+const turn = turns[currentTurn];
+let html = `
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Tu primera satisfacción del cliente 🗣️</div>
+<div class="subtitle">Gestiona la queja con profesionalidad</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(currentTurn/turns.length)*100}%"></i></div></div>
+<span class="badge">${currentTurn+1}/${turns.length}</span>
+</div>
+</div>
+<div class="chat-container">
+<div class="chat-history" id="chatHistory">`;
+chatHistory.forEach(msg => {
+html += renderMessage(msg.from, msg.text, msg.isUser);
+});
+turn.messages.forEach(msg => {
+html += renderMessage(msg.from, msg.text, false);
+});
+html += `</div></div>
+<div class="chat-options" id="chatOptions">`;
+turn.options.forEach((opt, i) => {
+html += `<button class="btn-option" onclick="selectOption(${i})">${opt.text}</button>`;
+});
+html += `</div>
+<div class="footer"><div class="helper">Elige tu respuesta</div></div>`;
+scene.innerHTML = html;
+const historyEl = document.getElementById('chatHistory');
+historyEl.scrollTop = historyEl.scrollHeight;
+ensureFits();
+}
+
+function renderMessage(from, text, isUser) {
+if (isUser) {
+return `<div class="chat-bubble user"><div class="bubble-text">${text}</div></div>`;
+}
+const avatar = avatars[from];
+const isMentor = from === 'mentor';
+return `<div class="chat-bubble ${isMentor ? 'mentor' : 'other'}">
+<img class="bubble-avatar" src="${avatar.img}" alt="${avatar.name}">
+<div class="bubble-content">
+<div class="bubble-name">${avatar.name}</div>
+<div class="bubble-text">${text}</div>
+</div>
+</div>`;
+}
+
+function selectOption(idx) {
+const turn = turns[currentTurn];
+const opt = turn.options[idx];
+const isCorrect = opt.type === 'correct';
+const isPartial = opt.type === 'partial';
+if (isCorrect) score += 2;
+else if (isPartial) score += 1;
+answers.push({q: turn.messages[turn.messages.length-1].text, chosen: opt.text, type: opt.type, reaction: opt.reaction});
+turn.messages.forEach(msg => chatHistory.push({from: msg.from, text: msg.text, isUser: false}));
+chatHistory.push({from: 'user', text: opt.text, isUser: true});
+chatHistory.push({from: 'cliente', text: opt.reaction, isUser: false});
+currentTurn++;
+render();
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const maxScore = turns.length * 2;
+const pct = Math.round((score / maxScore) * 100);
+let html = `<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Conversación completada!</div>
+<div class="results-score">${score}/${maxScore}</div>
+<div class="results-subtitle">${pct >= 80 ? '¡Excelente gestión!' : pct >= 50 ? 'Buena actitud, sigue mejorando' : 'Practica más la comunicación'}</div>
+</div>
+<div class="results-list">`;
+answers.forEach((a, i) => {
+const icon = a.type === 'correct' ? '✓' : a.type === 'partial' ? '~' : '✗';
+const cls = a.type === 'correct' ? 'correct' : a.type === 'partial' ? 'partial' : 'incorrect';
+const explanation = getExplanation(i, a.type);
+html += `<div class="result-item ${cls}">
+<div class="result-question">Turno ${i+1}</div>
+<div class="result-answer">${icon} ${a.chosen}</div>
+<div class="result-explanation">${explanation}</div>
+</div>`;
+});
+html += `</div>
+<div class="results-tip"><strong>💡 Consejo:</strong> Ante una queja, escucha, asume responsabilidad y ofrece solución concreta. El cliente valora la honestidad.</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+scene.innerHTML = html;
+}, 500);
+}
+
+function getExplanation(turnIdx, type) {
+const explanations = [
+{correct:'Reconocer y actuar rápido genera confianza.',partial:'Desviar culpa no ayuda, pero no empeoraste.',incorrect:'Negar el problema irrita al cliente.'},
+{correct:'Dar tiempo estimado tranquiliza al cliente.',partial:'La vaguedad genera incertidumbre.',incorrect:'Mostrar indiferencia daña la relación.'},
+{correct:'Explicar técnicamente demuestra profesionalidad.',partial:'Admitir ignorancia puede ser honesto pero resta confianza.',incorrect:'Minimizar el problema no es profesional.'},
+{correct:'Incluir arreglos sin coste extra fideliza.',partial:'La ambigüedad genera desconfianza.',incorrect:'Cobrar extra por tu error es inaceptable.'},
+{correct:'Ofrecer garantía cierra con buena impresión.',partial:'La duda no transmite seguridad.',incorrect:'Desvincularte destruye la relación comercial.'}
+];
+return explanations[turnIdx][type];
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+}
+}
+
+window.addEventListener('load', () => { render(); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+<style>
+.chat-container{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;margin:0 16px}
+.chat-history{flex:1;overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.chat-bubble{display:flex;align-items:flex-start;gap:8px;max-width:85%}
+.chat-bubble.other,.chat-bubble.mentor{align-self:flex-start}
+.chat-bubble.user{align-self:flex-end;flex-direction:row-reverse}
+.bubble-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.bubble-content{background:var(--glass);border-radius:12px;padding:8px 12px}
+.bubble-name{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:2px}
+.bubble-text{font-size:14px;line-height:1.4;color:var(--ink)}
+.chat-bubble.user .bubble-text{background:var(--ink);color:#fff;border-radius:12px;padding:8px 12px}
+.chat-bubble.mentor .bubble-content{background:rgba(255,193,7,0.15);border:1px solid rgba(255,193,7,0.3)}
+.chat-options{display:flex;flex-direction:column;gap:8px;padding:12px 16px;background:var(--glass);border-radius:16px 16px 0 0;margin:0 8px}
+.chat-options .btn-option{font-size:13px;padding:12px 16px;text-align:left}
+.results-tip{background:var(--glass);border-radius:12px;padding:12px 16px;margin:16px;font-size:13px;line-height:1.5}
+.result-item.partial{border-left:4px solid #ffc107;background:rgba(255,193,7,0.08)}
+</style>
+</body>
+</html>
