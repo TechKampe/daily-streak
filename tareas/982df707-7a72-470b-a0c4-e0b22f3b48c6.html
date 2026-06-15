@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Swipe de Seguridad 🦺 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Swipe de Seguridad 🦺</div>
+<div class="subtitle" id="subtitle">¿Práctica segura o peligrosa?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="swipe-container" id="swipeContainer">
+<div class="swipe-card" id="card">
+<div class="card-content" id="cardContent"></div>
+<div class="swipe-indicator left" id="indicatorLeft">❌</div>
+<div class="swipe-indicator right" id="indicatorRight">✅</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o usa los botones</div>
+<div class="swipe-buttons" id="swipeButtons">
+<button class="btn-option" id="btnIncorrect">❌ Incorrecto</button>
+<button class="btn-option" id="btnCorrect">✅ Correcto</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 3_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">¡Bienvenido aprendiz! 👷</div>
+<div class="modal-body">Desliza a la derecha si la práctica es CORRECTA o a la izquierda si es INCORRECTA. ¡Demuestra lo que sabes!</div>
+<div class="modal-actions">
+<button class="cta" id="startBtn">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const cards=[
+{text:"Usar casco en zonas señalizadas",correct:true,exp:"El casco protege de impactos y caídas de objetos. Es obligatorio en zonas señalizadas."},
+{text:"Manipular herramientas cortantes sin guantes",correct:false,exp:"Los guantes protegen de cortes y abrasiones. Siempre úsalos con herramientas peligrosas."},
+{text:"Dejar materiales bloqueando salidas de emergencia",correct:false,exp:"Las salidas deben estar siempre despejadas para evacuación rápida en caso de emergencia."},
+{text:"Beber agua frecuentemente en jornadas de calor",correct:true,exp:"La hidratación previene golpes de calor. Bebe agua cada 20-30 minutos en días calurosos."},
+{text:"Usar auriculares de música cerca de maquinaria",correct:false,exp:"Los auriculares impiden oír señales de alarma y maquinaria. Riesgo grave de accidente."},
+{text:"Revisar visualmente el andamio antes de subir",correct:true,exp:"Una inspección visual detecta defectos. Siempre verifica estabilidad y anclajes antes de subir."}
+];
+let idx=0,answers=[],startX=0,startY=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),card=document.getElementById('card'),cardContent=document.getElementById('cardContent'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal'),indicatorLeft=document.getElementById('indicatorLeft'),indicatorRight=document.getElementById('indicatorRight'),btnCorrect=document.getElementById('btnCorrect'),btnIncorrect=document.getElementById('btnIncorrect');
+
+modal.classList.add('active');
+document.getElementById('startBtn').onclick=()=>{modal.classList.remove('active');renderCard();};
+
+function renderCard(){
+if(idx>=cards.length){showResults();return;}
+const c=cards[idx];
+cardContent.textContent=c.text;
+progress.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+card.style.transition='none';
+indicatorLeft.style.opacity='0';
+indicatorRight.style.opacity='0';
+ensureFits();
+}
+
+function handleSwipe(isCorrect){
+const c=cards[idx];
+const userCorrect=isCorrect===c.correct;
+answers.push({text:c.text,userAnswer:isCorrect,wasCorrect:userCorrect,exp:c.exp,actualCorrect:c.correct});
+const direction=isCorrect?1:-1;
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+card.style.transform=`translateX(${direction*300}px) rotate(${direction*20}deg)`;
+card.style.opacity='0';
+setTimeout(()=>{idx++;renderCard();},300);
+}
+
+card.addEventListener('touchstart',e=>{
+isDragging=true;
+startX=e.touches[0].clientX;
+startY=e.touches[0].clientY;
+card.style.transition='none';
+},{passive:true});
+
+card.addEventListener('touchmove',e=>{
+if(!isDragging)return;
+currentX=e.touches[0].clientX-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+indicatorLeft.style.opacity=currentX<-30?Math.min(1,Math.abs(currentX)/100):'0';
+indicatorRight.style.opacity=currentX>30?Math.min(1,currentX/100):'0';
+},{passive:true});
+
+card.addEventListener('touchend',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(currentX>80){handleSwipe(true);}
+else if(currentX<-80){handleSwipe(false);}
+else{
+card.style.transition='transform 0.3s ease';
+card.style.transform='translateX(0) rotate(0deg)';
+indicatorLeft.style.opacity='0';
+indicatorRight.style.opacity='0';
+}
+currentX=0;
+});
+
+card.addEventListener('mousedown',e=>{
+isDragging=true;
+startX=e.clientX;
+card.style.transition='none';
+e.preventDefault();
+});
+
+document.addEventListener('mousemove',e=>{
+if(!isDragging)return;
+currentX=e.clientX-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+indicatorLeft.style.opacity=currentX<-30?Math.min(1,Math.abs(currentX)/100):'0';
+indicatorRight.style.opacity=currentX>30?Math.min(1,currentX/100):'0';
+});
+
+document.addEventListener('mouseup',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(currentX>80){handleSwipe(true);}
+else if(currentX<-80){handleSwipe(false);}
+else{
+card.style.transition='transform 0.3s ease';
+card.style.transform='translateX(0) rotate(0deg)';
+indicatorLeft.style.opacity='0';
+indicatorRight.style.opacity='0';
+}
+currentX=0;
+});
+
+btnCorrect.onclick=()=>handleSwipe(true);
+btnIncorrect.onclick=()=>handleSwipe(false);
+
+function showResults(){
+const score=answers.filter(a=>a.wasCorrect).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Reto completado! 🎉</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.wasCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.wasCorrect?'✓ ¡Acertaste!':'✗ Tu respuesta: '+(a.userAnswer?'Correcto':'Incorrecto')}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-message">
+<p>🦺 La seguridad empieza el primer día. ¡Cada pequeña acción cuenta para volver a casa sano y salvo!</p>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+
+<style>
+.swipe-container{display:flex;justify-content:center;align-items:center;flex:1;padding:16px;touch-action:none;}
+.swipe-card{position:relative;width:100%;max-width:300px;min-height:180px;background:#fff;border:3px solid #00E6BC;border-radius:16px;display:flex;justify-content:center;align-items:center;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1);cursor:grab;user-select:none;touch-action:none;}
+.swipe-card:active{cursor:grabbing;}
+.card-content{font-size:1.1rem;text-align:center;font-weight:500;color:#1a1a2e;line-height:1.4;}
+.swipe-indicator{position:absolute;top:50%;transform:translateY(-50%);font-size:3rem;opacity:0;transition:opacity 0.2s;pointer-events:none;}
+.swipe-indicator.left{left:16px;}
+.swipe-indicator.right{right:16px;}
+.swipe-buttons{display:flex;gap:12px;width:100%;}
+.swipe-buttons .btn-option{flex:1;font-size:0.95rem;padding:12px 8px;}
+.results-message{padding:16px;text-align:center;font-size:0.95rem;color:#1a1a2e;background:rgba(0,230,188,0.1);border-radius:12px;margin:16px 0;}
+.results-message p{margin:0;}
+</style>
+</body>
+</html>
