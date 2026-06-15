@@ -1,0 +1,343 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Ordena y Domina: Protocolos de Taller - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y Domina</div>
+<div class="subtitle" id="subtitle">Protocolos de Taller</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">Reto 1/3</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+<div class="footer">
+<div class="helper" id="helper">Ordena los pasos con ↑↓ o arrastrando</div>
+<button class="cta" id="cta">Confirmar orden</button>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primer día en el taller</div>
+<div class="modal-body">El encargado te pide demostrar que conoces los procedimientos. Ordena los pasos correctamente.</div>
+<div class="modal-actions">
+<button class="cta" onclick="closeModal()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const challenges = [
+{
+title: "Revisión de split de A/C",
+steps: [
+{ id: 1, text: "Desconectar alimentación eléctrica" },
+{ id: 2, text: "Retirar filtros y limpiarlos" },
+{ id: 3, text: "Inspeccionar estado del evaporador" },
+{ id: 4, text: "Verificar presiones del sistema" },
+{ id: 5, text: "Reconectar y probar funcionamiento" }
+],
+correctOrder: [1, 2, 3, 4, 5],
+tip: "Siempre desconecta primero la alimentación antes de manipular cualquier equipo."
+},
+{
+title: "Protocolo LOTO (Bloqueo/Etiquetado)",
+steps: [
+{ id: 1, text: "Identificar fuentes de energía" },
+{ id: 2, text: "Notificar a personal afectado" },
+{ id: 3, text: "Apagar el equipo" },
+{ id: 4, text: "Colocar candado y etiqueta" },
+{ id: 5, text: "Verificar energía cero" }
+],
+correctOrder: [1, 2, 3, 4, 5],
+tip: "El protocolo LOTO salva vidas. Nunca omitas la verificación de energía cero."
+},
+{
+title: "Recarga de gas refrigerante",
+steps: [
+{ id: 1, text: "Conectar manómetros al sistema" },
+{ id: 2, text: "Verificar presiones actuales" },
+{ id: 3, text: "Detectar posibles fugas" },
+{ id: 4, text: "Añadir refrigerante lentamente" },
+{ id: 5, text: "Comprobar presiones finales" }
+],
+correctOrder: [1, 2, 3, 4, 5],
+tip: "Nunca recargues sin verificar fugas primero. Contaminas el ambiente y desperdicias gas."
+}
+];
+
+let currentChallenge = 0;
+let userOrders = [];
+let currentOrder = [];
+let draggedItem = null;
+let draggedIndex = -1;
+
+const scene = document.getElementById('scene');
+const main = document.getElementById('main');
+const cta = document.getElementById('cta');
+const subtitle = document.getElementById('subtitle');
+const progress = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const helper = document.getElementById('helper');
+const modal = document.getElementById('modal');
+
+function closeModal() {
+    modal.classList.remove('active');
+    renderChallenge();
+}
+
+function shuffleArray(arr) {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    if (shuffled.every((s, i) => s.id === challenges[currentChallenge].correctOrder[i])) {
+        [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]];
+    }
+    return shuffled;
+}
+
+function renderChallenge() {
+    if (currentChallenge >= challenges.length) {
+        showResults();
+        return;
+    }
+    
+    const ch = challenges[currentChallenge];
+    currentOrder = shuffleArray([...ch.steps]);
+    
+    subtitle.textContent = ch.title;
+    progress.style.width = ((currentChallenge) / challenges.length * 100) + '%';
+    counter.textContent = `Reto ${currentChallenge + 1}/${challenges.length}`;
+    helper.textContent = 'Ordena los pasos con ↑↓ o arrastrando';
+    cta.textContent = 'Confirmar orden';
+    cta.onclick = confirmOrder;
+    
+    renderCards();
+    ensureFits();
+}
+
+function renderCards() {
+    main.innerHTML = `<div class="cards-container" id="cardsContainer">${currentOrder.map((step, i) => `
+        <div class="card" data-index="${i}" draggable="true">
+            <span class="card-num">${i + 1}</span>
+            <span class="card-text">${step.text}</span>
+            <div class="card-controls">
+                <button class="btn-ghost" aria-label="Subir" onclick="moveUp(${i})">↑</button>
+                <button class="btn-ghost" aria-label="Bajar" onclick="moveDown(${i})">↓</button>
+            </div>
+        </div>
+    `).join('')}</div>`;
+    
+    setupDragAndDrop();
+}
+
+function setupDragAndDrop() {
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.addEventListener('dragstart', (e) => {
+            draggedItem = card;
+            draggedIndex = index;
+            setTimeout(() => card.classList.add('dragging'), 0);
+        });
+        
+        card.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+            draggedItem = null;
+            draggedIndex = -1;
+        });
+        
+        card.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const draggingCard = document.querySelector('.dragging');
+            if (draggingCard && draggingCard !== card) {
+                const container = document.getElementById('cardsContainer');
+                const cards = [...container.querySelectorAll('.card:not(.dragging)')];
+                const currentIndex = cards.indexOf(card);
+                if (currentIndex !== -1) {
+                    const rect = card.getBoundingClientRect();
+                    const midY = rect.top + rect.height / 2;
+                    if (e.clientY < midY) {
+                        container.insertBefore(draggingCard, card);
+                    } else {
+                        container.insertBefore(draggingCard, card.nextSibling);
+                    }
+                    updateOrderFromDOM();
+                }
+            }
+        });
+        
+        card.addEventListener('touchstart', handleTouchStart, { passive: false });
+        card.addEventListener('touchmove', handleTouchMove, { passive: false });
+        card.addEventListener('touchend', handleTouchEnd);
+    });
+}
+
+let touchStartY = 0;
+let touchedCard = null;
+
+function handleTouchStart(e) {
+    touchedCard = e.currentTarget;
+    touchStartY = e.touches[0].clientY;
+    touchedCard.classList.add('dragging');
+}
+
+function handleTouchMove(e) {
+    if (!touchedCard) return;
+    e.preventDefault();
+    const touchY = e.touches[0].clientY;
+    const cards = [...document.querySelectorAll('.card')];
+    const currentIdx = cards.indexOf(touchedCard);
+    
+    for (let i = 0; i < cards.length; i++) {
+        if (i === currentIdx) continue;
+        const rect = cards[i].getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        if (touchY < midY && i < currentIdx) {
+            cards[i].parentNode.insertBefore(touchedCard, cards[i]);
+            updateOrderFromDOM();
+            break;
+        } else if (touchY > midY && i > currentIdx) {
+            cards[i].parentNode.insertBefore(touchedCard, cards[i].nextSibling);
+            updateOrderFromDOM();
+            break;
+        }
+    }
+}
+
+function handleTouchEnd() {
+    if (touchedCard) {
+        touchedCard.classList.remove('dragging');
+        touchedCard = null;
+    }
+}
+
+function updateOrderFromDOM() {
+    const container = document.getElementById('cardsContainer');
+    const cards = container.querySelectorAll('.card');
+    const newOrder = [];
+    cards.forEach((card, i) => {
+        const oldIndex = parseInt(card.dataset.index);
+        newOrder.push(currentOrder[oldIndex]);
+        card.querySelector('.card-num').textContent = i + 1;
+    });
+    currentOrder = newOrder;
+    cards.forEach((card, i) => card.dataset.index = i);
+}
+
+function moveUp(index) {
+    if (index === 0) return;
+    [currentOrder[index], currentOrder[index - 1]] = [currentOrder[index - 1], currentOrder[index]];
+    animateSwap(index, index - 1);
+    renderCards();
+    ensureFits();
+}
+
+function moveDown(index) {
+    if (index === currentOrder.length - 1) return;
+    [currentOrder[index], currentOrder[index + 1]] = [currentOrder[index + 1], currentOrder[index]];
+    animateSwap(index, index + 1);
+    renderCards();
+    ensureFits();
+}
+
+function animateSwap(from, to) {
+    const cards = document.querySelectorAll('.card');
+    if (cards[from]) cards[from].style.transform = 'scale(1.02)';
+    if (cards[to]) cards[to].style.transform = 'scale(1.02)';
+    setTimeout(() => {
+        if (cards[from]) cards[from].style.transform = '';
+        if (cards[to]) cards[to].style.transform = '';
+    }, 150);
+}
+
+function confirmOrder() {
+    const ch = challenges[currentChallenge];
+    const userOrder = currentOrder.map(s => s.id);
+    const isCorrect = userOrder.every((id, i) => id === ch.correctOrder[i]);
+    
+    userOrders.push({
+        title: ch.title,
+        userOrder: currentOrder.map(s => s.text),
+        correctOrder: ch.correctOrder.map(id => ch.steps.find(s => s.id === id).text),
+        isCorrect,
+        tip: ch.tip
+    });
+    
+    currentChallenge++;
+    renderChallenge();
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        
+        const correctCount = userOrders.filter(o => o.isCorrect).length;
+        
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">${correctCount === 3 ? '🏆 ¡Perfecto!' : correctCount >= 2 ? '👍 ¡Buen trabajo!' : '💪 ¡Sigue practicando!'}</div>
+                    <div class="results-score">${correctCount}/${challenges.length}</div>
+                    <div class="results-subtitle">Secuencias correctas</div>
+                </div>
+                <div class="results-list">
+                    ${userOrders.map((order, idx) => `
+                        <div class="result-item ${order.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${order.isCorrect ? '✅' : '❌'} ${order.title}</div>
+                            ${!order.isCorrect ? `
+                                <div class="result-answer"><strong>Tu orden:</strong><br>${order.userOrder.map((s, i) => `${i + 1}. ${s}`).join('<br>')}</div>
+                            ` : ''}
+                            <div class="result-explanation"><strong>${order.isCorrect ? '✅ Orden correcto:' : '✅ Orden correcto:'}</strong><br>${order.correctOrder.map((s, i) => `${i + 1}. ${s}`).join('<br>')}</div>
+                            <div class="result-explanation">💡 <strong>Consejo:</strong> ${order.tip}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+    if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+    if (scene.scrollHeight > scene.clientHeight) {
+        document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+    }
+}
+
+window.addEventListener('load', () => { ensureFits(); modal.classList.add('active'); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
