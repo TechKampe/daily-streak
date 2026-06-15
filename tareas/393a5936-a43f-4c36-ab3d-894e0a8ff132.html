@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Errores de Novato - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneText">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progressBar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el elemento con el ERROR</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const scenes=[
+{text:"Vas a cambiar un enchufe. Tu compañero preparó:",items:["Destornillador aislado","Cinta aislante","Alicates sin aislar con corriente activa"],error:2,exp:"Nunca uses herramientas sin aislamiento con corriente. Corta siempre la luz antes."},
+{text:"Limpieza del taller. En la mesa hay:",items:["Lejía","Amoniaco mezclado con lejía","Guantes de goma"],error:1,exp:"Mezclar lejía y amoniaco genera gases tóxicos. Nunca combines productos químicos."},
+{text:"Hay que pintar el techo. Ves preparado:",items:["Rodillo extensible","Escalera sin estabilizar","Cinta de carrocero"],error:1,exp:"Una escalera sin asegurar puede causar caídas graves. Siempre verifica estabilidad."},
+{text:"Toca hacer un agujero en azulejo. Tienes:",items:["Broca para metal en cerámica","Gafas de protección","Taladro con cable"],error:0,exp:"La broca de metal no sirve para cerámica. Usa broca de widia o diamante."},
+{text:"Vas a revisar un cuadro eléctrico. Tu compañero:",items:["Trae linterna","No verificó ausencia de tensión","Tiene guantes dieléctricos"],error:1,exp:"SIEMPRE verifica ausencia de tensión con un buscapolos antes de tocar nada."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sceneText=document.getElementById('sceneText'),progressBar=document.getElementById('progressBar'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+progressBar.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" data-idx="${i}">${item}</button>`).join('');
+opts.querySelectorAll('.btn-option').forEach(btn=>{
+btn.onclick=()=>selectItem(parseInt(btn.dataset.idx));
+});
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const correct=i===s.error;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((btn,j)=>{
+btn.disabled=true;
+if(j===i)btn.classList.add(correct?'correct':'incorrect');
+if(j===s.error&&!correct)btn.classList.add('correct');
+});
+answers.push({scene:s.text,chosen:s.items[i],correctItem:s.items[s.error],wasCorrect:correct,exp:s.exp});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.wasCorrect).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 ¡Inspección completada!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.wasCorrect?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene}</div>
+<div class="result-answer">${a.wasCorrect?'✓ Detectaste: '+a.chosen:'✗ Elegiste: '+a.chosen}</div>
+${!a.wasCorrect?`<div class="result-answer">Error real: ${a.correctItem}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Revisa dos veces antes de actuar. Un segundo de atención puede evitar un accidente grave.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
