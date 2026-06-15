@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Conexiones Seguras: ¿Dominas lo básico? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Conexiones Seguras</div>
+<div class="subtitle" id="question">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la respuesta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{q:"¿Qué EPI es obligatorio antes de tocar un cuadro?",opts:["Guantes aislantes","Gafas de sol","Casco de obra"],ans:0,exp:"Los guantes aislantes protegen contra descargas en baja tensión."},
+{q:"¿De qué color es el cable de tierra?",opts:["Azul","Verde/Amarillo","Marrón"],ans:1,exp:"El verde/amarillo identifica tierra según normativa UNE."},
+{q:"¿Qué función del polímetro usas para medir tensión?",opts:["Ohmios (Ω)","Voltios (V)","Amperios (A)"],ans:1,exp:"La función V (AC/DC) mide diferencia de potencial."},
+{q:"¿Qué hacer ANTES de manipular un circuito?",opts:["Avisar al vecino","Verificar ausencia de tensión","Preparar el café"],ans:1,exp:"Siempre comprobar con polímetro que no hay tensión."},
+{q:"¿Cuál es un riesgo común en instalaciones?",opts:["Cables sueltos en canaleta","Pintura descascarada","Bombilla fundida"],ans:0,exp:"Cables sin fijar pueden provocar cortocircuitos o tirones."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),qEl=document.getElementById('question'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+qEl.textContent=d.q;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+opts.innerHTML='';
+d.opts.forEach((o,i)=>{
+const btn=document.createElement('button');
+btn.className='btn-option';
+btn.textContent=o;
+btn.setAttribute('aria-label','Respuesta: '+o);
+btn.onclick=()=>selectAnswer(i);
+opts.appendChild(btn);
+});
+ensureFits();
+}
+
+function selectAnswer(i){
+const d=data[idx];
+const correct=i===d.ans;
+if(correct)score++;
+answers.push({q:d.q,correct,exp:d.exp,user:d.opts[i],correctAns:d.opts[d.ans]});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===d.ans)b.classList.add('correct');
+else if(j===i&&!correct)b.classList.add('incorrect');
+});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Quiz completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.q}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ '+a.user+' → '+a.correctAns}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+</div>
+<div class="tip-box">
+<strong>💡 Consejo:</strong> Antes de trabajar, usa siempre el polímetro para confirmar ausencia de tensión, aunque hayas cortado el diferencial.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+const scale=Math.max(0.88,scene.clientHeight/scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale',scale);
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
