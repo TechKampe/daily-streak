@@ -1,0 +1,257 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tu primera satisf de cliente 🛠️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Tu primera satisf de cliente 🛠️</div>
+<div class="subtitle" id="subtitle">Gestiona la objeción del cliente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="turn-counter">1/5</span>
+</div>
+</div>
+<div class="main" id="main-area">
+<div class="chat-container" id="chat-container"></div>
+</div>
+<div class="footer" id="footer">
+<div class="helper" id="helper">Elige tu respuesta</div>
+<div class="options" id="options"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const avatars = {
+mentor: { name: "Carlos (Mentor)", img: "https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" },
+cliente: { name: "Sr. García (Cliente)", img: "https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png" }
+};
+
+const turns = [
+{
+messages: [
+{ from: "cliente", text: "¿85 euros por arreglar una fuga? ¡Eso es un robo! Mi cuñado lo habría hecho por 30." }
+],
+options: [
+{ text: "Entiendo su sorpresa. ¿Me permite explicarle el desglose?", score: 2, reaction: "El cliente asiente, algo más calmado.", tag: "correcta" },
+{ text: "Su cuñado no tiene licencia ni garantía.", score: 1, reaction: "El cliente frunce el ceño, algo molesto.", tag: "parcial" },
+{ text: "Es lo que cuesta, lo toma o lo deja.", score: 0, reaction: "El cliente se cruza de brazos, enfadado.", tag: "incorrecta" }
+]
+},
+{
+messages: [
+{ from: "cliente", text: "A ver, explícame entonces por qué es tan caro." }
+],
+options: [
+{ text: "Incluye diagnóstico, materiales de calidad y 1 año de garantía.", score: 2, reaction: "El cliente parece considerar lo que dices.", tag: "correcta" },
+{ text: "Es el precio de mercado, todos cobramos igual.", score: 1, reaction: "El cliente no parece muy convencido.", tag: "parcial" },
+{ text: "Porque tengo que vivir de algo, ¿no?", score: 0, reaction: "El cliente suspira con frustración.", tag: "incorrecta" }
+]
+},
+{
+messages: [
+{ from: "mentor", text: "(Por el pinganillo) Bien, ahora ofrécele el desglose por escrito." },
+{ from: "cliente", text: "¿Y cómo sé que no me estás inflando el precio?" }
+],
+options: [
+{ text: "Aquí tiene el desglose detallado: mano de obra, piezas y desplazamiento.", score: 2, reaction: "El cliente lee el papel y asiente lentamente.", tag: "correcta" },
+{ text: "Confíe en mí, soy profesional.", score: 1, reaction: "El cliente sigue algo desconfiado.", tag: "parcial" },
+{ text: "Si no confía, llame a otro fontanero.", score: 0, reaction: "El cliente se molesta visiblemente.", tag: "incorrecta" }
+]
+},
+{
+messages: [
+{ from: "cliente", text: "Vale, veo los materiales... pero la mano de obra me parece cara." }
+],
+options: [
+{ text: "El tiempo incluye diagnóstico preciso para evitar futuras fugas.", score: 2, reaction: "El cliente empieza a entender el valor.", tag: "correcta" },
+{ text: "Puedo hacerle un 10% de descuento esta vez.", score: 1, reaction: "El cliente acepta, pero no muy satisfecho.", tag: "parcial" },
+{ text: "Es lo mínimo, no puedo bajar más.", score: 0, reaction: "El cliente resopla con disgusto.", tag: "incorrecta" }
+]
+},
+{
+messages: [
+{ from: "cliente", text: "Está bien... supongo que tiene sentido. ¿Aceptas tarjeta?" }
+],
+options: [
+{ text: "Sí, y le doy factura con la garantía por escrito.", score: 2, reaction: "El cliente sonríe y paga tranquilo. ¡Buen trabajo!", tag: "correcta" },
+{ text: "Solo efectivo, pero le hago recibo.", score: 1, reaction: "El cliente paga, aunque hubiera preferido tarjeta.", tag: "parcial" },
+{ text: "Efectivo y sin factura te sale más barato.", score: 0, reaction: "El cliente te mira con desconfianza.", tag: "incorrecta" }
+]
+}
+];
+
+let currentTurn = 0;
+let score = 0;
+let answers = [];
+let selectedOption = -1;
+
+const chatContainer = document.getElementById('chat-container');
+const optionsEl = document.getElementById('options');
+const progressBar = document.getElementById('progress-bar');
+const turnCounter = document.getElementById('turn-counter');
+const helper = document.getElementById('helper');
+const scene = document.getElementById('scene');
+
+function addMessage(from, text, isPlayer = false) {
+const msg = document.createElement('div');
+msg.className = 'chat-message ' + (isPlayer ? 'player' : from);
+if (!isPlayer) {
+const avatar = document.createElement('img');
+avatar.src = avatars[from].img;
+avatar.className = 'chat-avatar';
+avatar.alt = avatars[from].name;
+msg.appendChild(avatar);
+}
+const bubble = document.createElement('div');
+bubble.className = 'chat-bubble' + (isPlayer ? ' player-bubble' : '');
+if (!isPlayer) {
+const name = document.createElement('div');
+name.className = 'chat-name';
+name.textContent = avatars[from].name;
+bubble.appendChild(name);
+}
+const textEl = document.createElement('div');
+textEl.className = 'chat-text';
+textEl.textContent = text;
+bubble.appendChild(textEl);
+msg.appendChild(bubble);
+chatContainer.appendChild(msg);
+chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function addReaction(from, text) {
+const reaction = document.createElement('div');
+reaction.className = 'chat-reaction';
+reaction.textContent = text;
+chatContainer.appendChild(reaction);
+chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function renderTurn() {
+if (currentTurn >= turns.length) {
+showResults();
+return;
+}
+const turn = turns[currentTurn];
+turn.messages.forEach(m => addMessage(m.from, m.text));
+progressBar.style.width = ((currentTurn) / turns.length * 100) + '%';
+turnCounter.textContent = (currentTurn + 1) + '/' + turns.length;
+selectedOption = -1;
+renderOptions(turn.options);
+ensureFits();
+}
+
+function renderOptions(options) {
+optionsEl.innerHTML = '';
+options.forEach((opt, i) => {
+const btn = document.createElement('button');
+btn.className = 'btn-option';
+btn.textContent = opt.text;
+btn.onclick = () => selectOption(i, options);
+optionsEl.appendChild(btn);
+});
+}
+
+function selectOption(i, options) {
+const opt = options[i];
+answers.push({
+turn: currentTurn + 1,
+chosen: opt.text,
+score: opt.score,
+tag: opt.tag,
+reaction: opt.reaction
+});
+score += opt.score;
+addMessage('player', opt.text, true);
+setTimeout(() => {
+addReaction(turns[currentTurn].messages[0].from, opt.reaction);
+currentTurn++;
+setTimeout(() => {
+renderOptions([]);
+renderTurn();
+}, 400);
+}, 300);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+const maxScore = turns.length * 2;
+const percent = Math.round((score / maxScore) * 100);
+let verdict = '¡Excelente gestión!';
+if (percent < 50) verdict = 'Necesitas practicar más';
+else if (percent < 80) verdict = 'Buen intento, puedes mejorar';
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${verdict}</div>
+<div class="results-score">${score}/${maxScore}</div>
+<div class="results-subtitle">Puntos obtenidos</div>
+</div>
+<div class="results-list">
+${answers.map(a => `
+<div class="result-item ${a.tag === 'correcta' ? 'correct' : (a.tag === 'parcial' ? '' : 'incorrect')}">
+<div class="result-question">Turno ${a.turn}</div>
+<div class="result-answer">${a.tag === 'correcta' ? '✓' : (a.tag === 'parcial' ? '◐' : '✗')} ${a.chosen.substring(0, 40)}${a.chosen.length > 40 ? '...' : ''}</div>
+<div class="result-explanation">${a.reaction}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo pro:</strong> Antes de empezar cualquier trabajo, prepara un desglose de presupuesto por escrito. Así evitas objeciones y generas confianza desde el inicio.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>
+`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+}
+}
+
+function init() {
+addMessage('mentor', '¡Ánimo! Acabas de reparar la fuga. Ahora viene lo importante: cobrar y dejar al cliente satisfecho.');
+setTimeout(() => {
+addMessage('cliente', 'A ver... ¿cuánto me va a costar esto?');
+setTimeout(() => {
+addMessage('player', '85 euros, señor García.', true);
+setTimeout(renderTurn, 400);
+}, 600);
+}, 800);
+}
+
+window.addEventListener('load', () => { ensureFits(); init(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
