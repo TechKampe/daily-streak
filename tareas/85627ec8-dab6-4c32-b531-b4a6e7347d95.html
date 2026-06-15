@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Kit 🧰 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Kit 🧰</div>
+<div class="subtitle">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="sentence"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Elige la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{sentence:"Para medir tensión en un enchufe, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos"],exp:"El buscapolos solo detecta presencia de fase, no mide valores."},
+{sentence:"Para saber si un cable tiene fase, uso el ___.",blank:"buscapolos",opts:["buscapolos","multímetro"],exp:"El multímetro mide valores; el buscapolos detecta fase rápidamente."},
+{sentence:"El ___ protege contra fugas de corriente a tierra.",blank:"diferencial",opts:["diferencial","magnetotérmico"],exp:"El magnetotérmico protege contra sobrecargas, no fugas."},
+{sentence:"Para un circuito de horno eléctrico uso cable de ___ mm².",blank:"6",opts:["6","1,5"],exp:"1,5 mm² es para iluminación; hornos requieren mayor sección."},
+{sentence:"Para unir cables uso un ___.",blank:"regleta",opts:["regleta","enchufe"],exp:"El enchufe es punto de conexión, no sirve para empalmar cables."},
+{sentence:"El ___ corta el circuito ante sobrecarga o cortocircuito.",blank:"magnetotérmico",opts:["magnetotérmico","diferencial"],exp:"El diferencial actúa por fugas a tierra, no por sobrecarga."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sentenceEl=document.getElementById('sentence'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+sentenceEl.innerHTML=d.sentence.replace('___','<u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>');
+opts.innerHTML=d.opts.map(o=>`<button class="btn-option" onclick="select('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(chosen){
+const d=data[idx];
+const correct=chosen===d.blank;
+if(correct)score++;
+answers.push({sentence:d.sentence,blank:d.blank,user:chosen,correct,exp:d.exp,opts:d.opts});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===d.blank)b.classList.add('correct');
+else if(b.textContent===chosen&&!correct)b.classList.add('incorrect');
+});
+sentenceEl.innerHTML=d.sentence.replace('___',`<u>${d.blank}</u>`);
+setTimeout(()=>{idx++;render();},700);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Reto completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___',`<strong>${a.blank}</strong>`)}</div>
+<div class="result-answer">${a.correct?'✓ Correcto: '+a.user:'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="tip-box">
+<strong>💡 Consejo final:</strong> Dominar el vocabulario técnico te permite comunicarte con claridad en obra y evitar errores costosos. Practica usando los nombres correctos de cada herramienta.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
