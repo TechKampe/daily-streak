@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 ¿Enchufado o fundido? Mitos eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 ¿Enchufado o fundido?</div>
+<div class="subtitle" id="subtitle">Mitos eléctricos</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="tinder-card">
+<div class="card-content" id="card-content"></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o pulsa para responder</div>
+<div class="tinder-buttons" id="tinder-buttons">
+<button class="btn-option" id="btn-incorrect">❌ Incorrecto</button>
+<button class="btn-option" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 Primer día de prácticas</div>
+<div class="modal-body">El oficial te suelta frases sobre electricidad. ¿Mito o realidad? Desliza izquierda (incorrecto) o derecha (correcto).</div>
+<div class="modal-actions">
+<button class="cta" id="start-btn">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"La madera siempre aísla de la electricidad",correct:false,exp:"Falso. La madera húmeda conduce electricidad. Solo aísla si está completamente seca."},
+{text:"Un diferencial protege contra contactos indirectos",correct:true,exp:"Correcto. El diferencial detecta fugas a tierra y corta el circuito protegiendo a las personas."},
+{text:"Con guantes de goma de cocina puedo manipular cuadros",correct:false,exp:"Falso. Los guantes de cocina no están homologados. Solo usar EPIs certificados para riesgo eléctrico."},
+{text:"Antes de trabajar hay que cortar y verificar ausencia de tensión",correct:true,exp:"Correcto. Es una de las 5 reglas de oro. Siempre verificar con un comprobador homologado."},
+{text:"12V no puede hacerte daño nunca",correct:false,exp:"Falso. En condiciones de humedad o con heridas, incluso tensiones bajas pueden ser peligrosas."},
+{text:"El color del cable indica su función según normativa",correct:true,exp:"Correcto. Azul=neutro, verde/amarillo=tierra, marrón/negro/gris=fases según REBT."}
+];
+let idx=0,answers=[],startX=0,startY=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('tinder-card'),content=document.getElementById('card-content'),helper=document.getElementById('helper'),prog=document.getElementById('progress-bar'),counter=document.getElementById('counter'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect');
+
+document.getElementById('start-btn').onclick=()=>{modal.classList.remove('active');renderCard();};
+btnCorrect.onclick=()=>handleAnswer(true);
+btnIncorrect.onclick=()=>handleAnswer(false);
+
+function renderCard(){
+if(idx>=cards.length){showResults();return;}
+content.textContent=cards[idx].text;
+prog.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+card.classList.remove('swipe-left','swipe-right');
+ensureFits();
+}
+
+function handleAnswer(userSaidCorrect){
+const isCorrect=userSaidCorrect===cards[idx].correct;
+answers.push({q:cards[idx].text,userAnswer:userSaidCorrect,actualAnswer:cards[idx].correct,isCorrect,exp:cards[idx].exp});
+animateOut(userSaidCorrect);
+}
+
+function animateOut(right){
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+card.style.transform=right?'translateX(150%) rotate(20deg)':'translateX(-150%) rotate(-20deg)';
+card.style.opacity='0';
+setTimeout(()=>{card.style.transition='';idx++;renderCard();},300);
+}
+
+card.addEventListener('touchstart',e=>{isDragging=true;startX=e.touches[0].clientX;startY=e.touches[0].clientY;card.style.transition='';},{passive:true});
+card.addEventListener('touchmove',e=>{
+if(!isDragging)return;
+currentX=e.touches[0].clientX-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+},{passive:true});
+card.addEventListener('touchend',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(Math.abs(currentX)>80){handleAnswer(currentX>0);}
+else{card.style.transition='transform 0.2s ease';card.style.transform='translateX(0) rotate(0deg)';}
+currentX=0;
+});
+
+card.addEventListener('mousedown',e=>{isDragging=true;startX=e.clientX;card.style.transition='';e.preventDefault();});
+document.addEventListener('mousemove',e=>{
+if(!isDragging)return;
+currentX=e.clientX-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+});
+document.addEventListener('mouseup',()=>{
+if(!isDragging)return;
+isDragging=false;
+if(Math.abs(currentX)>80){handleAnswer(currentX>0);}
+else{card.style.transition='transform 0.2s ease';card.style.transform='translateX(0) rotate(0deg)';}
+currentX=0;
+});
+
+function showResults(){
+const score=answers.filter(a=>a.isCorrect).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔌 ¡Reto completado!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">${score>=4?'¡Gran instinto eléctrico!':'Sigue aprendiendo, la seguridad es clave'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">Dijiste: ${a.userAnswer?'✅ Correcto':'❌ Incorrecto'} | Era: ${a.actualAnswer?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-message">💡 No te fíes de leyendas urbanas. En electricidad, la formación y los EPIs salvan vidas.</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;padding:16px;min-height:200px;}
+.tinder-card{background:#fff;border:3px solid #00E6BC;border-radius:16px;padding:24px;width:100%;max-width:300px;min-height:140px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:grab;user-select:none;touch-action:none;}
+.tinder-card:active{cursor:grabbing;}
+.card-content{font-size:1.1rem;font-weight:600;color:#1a1a2e;line-height:1.4;}
+.tinder-buttons{display:flex;gap:12px;width:100%;}
+.tinder-buttons .btn-option{flex:1;font-size:0.95rem;padding:12px 8px;}
+.results-message{background:#e8f5e9;border-radius:12px;padding:16px;margin:16px 0;text-align:center;font-size:0.95rem;color:#2e7d32;}
+</style>
+</body>
+</html>
