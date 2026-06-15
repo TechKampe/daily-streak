@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas de fontanería - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Cortar un tubo de PVC de 32mm",opts:["Cortatubos PVC","Sierra de calar","Alicate universal"],ans:0,correct:"Cortatubos PVC",why:"La sierra de calar deja rebabas y el alicate no corta tubos."},
+{task:"Apretar una tuerca de latón sin dañarla",opts:["Llave inglesa","Alicate de presión","Tenaza rusa"],ans:0,correct:"Llave inglesa",why:"El alicate de presión marca el latón y la tenaza lo deforma."},
+{task:"Soldar una unión de cobre",opts:["Soplete de gas","Pistola de silicona","Soldador eléctrico"],ans:0,correct:"Soplete de gas",why:"La silicona no suelda metal y el soldador no alcanza temperatura."},
+{task:"Desatascar un sifón",opts:["Desatascador manual","Llave stillson","Cortatubos"],ans:0,correct:"Desatascador manual",why:"La llave stillson afloja, no desatasca. El cortatubos corta."},
+{task:"Aplicar teflón en una rosca",opts:["Cinta de teflón","Silicona líquida","Masilla epoxi"],ans:0,correct:"Cinta de teflón",why:"La silicona no sella roscas activas. La masilla es permanente."},
+{task:"Doblar tubo de cobre sin aplastarlo",opts:["Muelle curvatubos","Alicate de corte","Llave grifa"],ans:0,correct:"Muelle curvatubos",why:"El alicate corta y la llave grifa deforma el tubo."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" data-idx="${i}">${o}</button>`).join('');
+optsEl.querySelectorAll('.btn-option').forEach(btn=>{
+btn.addEventListener('click',()=>selectAnswer(parseInt(btn.dataset.idx)));
+});
+ensureFits();
+}
+
+function selectAnswer(i){
+const t=tasks[idx];
+const correct=i===t.ans;
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((btn,j)=>{
+btn.disabled=true;
+if(j===i){
+btn.classList.add(correct?'correct':'incorrect');
+btn.innerHTML=(correct?'✓ ':'✗ ')+t.opts[j];
+}
+});
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correct:t.correct,isCorrect:correct,why:t.why});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const consejos=`<div class="result-item"><div class="result-question">💡 Consejos prácticos</div><div class="result-explanation">• Cortatubos: siempre para cortes limpios.<br>• Llave inglesa: ajuste suave en piezas delicadas.<br>• Soplete: uniones de cobre con estaño.<br>• Teflón: 5-7 vueltas en sentido de la rosca.<br>• Muelle curvatubos: evita pliegues en cobre.</div></div>`;
+scene.innerHTML=`<div class="results-scroll"><div class="results-header"><div class="results-title">¡Completado!</div><div class="results-score">${score}/${tasks.length}</div><div class="results-subtitle">Herramientas correctas</div></div><div class="results-list">${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}"><div class="result-question">${a.task}</div><div class="result-answer">${a.isCorrect?'✓ '+a.correct:'✗ Elegiste: '+a.user+' → Correcta: '+a.correct}</div><div class="result-explanation">${a.why}</div></div>`).join('')}${consejos}</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
