@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 📋 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle" id="subtitle">Primer día como aprendiz</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="sentence"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Elige la palabra correcta para el hueco</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{text:"Antes de manipular un circuito, debo comprobar que está ___.",opts:["desconectado","activado","caliente"],ans:0,exp:{correct:"Siempre hay que verificar que no hay tensión antes de tocar.",wrong:["'Activado' significa con corriente, muy peligroso.","'Caliente' no indica el estado eléctrico del circuito."]}},
+{text:"El cable de color amarillo-verde es el de ___.",opts:["tierra","fase","neutro"],ans:0,exp:{correct:"El amarillo-verde identifica la toma de tierra por normativa.",wrong:["La fase suele ser marrón, negro o gris.","El neutro es siempre azul."]}},
+{text:"Para proteger un circuito de sobrecargas uso un ___.",opts:["magnetotérmico","enchufe","empalme"],ans:0,exp:{correct:"El magnetotérmico corta el circuito ante sobrecargas.",wrong:["El enchufe es un punto de conexión, no protege.","El empalme une cables, no tiene función protectora."]}},
+{text:"Para medir tensión, uso el ___.",opts:["multímetro","buscapolos","destornillador"],ans:0,exp:{correct:"El multímetro mide tensión, corriente y resistencia.",wrong:["El buscapolos solo detecta presencia de fase.","El destornillador es para apretar tornillos."]}},
+{text:"El cable de color azul corresponde al ___.",opts:["neutro","tierra","fase"],ans:0,exp:{correct:"El azul identifica el neutro en instalaciones normalizadas.",wrong:["La tierra es amarillo-verde.","La fase es marrón, negro o gris."]}},
+{text:"La herramienta para pelar cables se llama ___.",opts:["pelacables","alicates","llave inglesa"],ans:0,exp:{correct:"El pelacables retira el aislante sin dañar el conductor.",wrong:["Los alicates cortan pero pueden dañar el cable.","La llave inglesa es para tuercas, no cables."]}}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sentenceEl=document.getElementById('sentence'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+subtitle.textContent='Completa la frase '+(idx+1);
+sentenceEl.innerHTML=d.text.replace('___','<u>______</u>');
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const d=data[idx];
+const correct=i===d.ans;
+if(correct)score++;
+const wrongExps=d.exp.wrong.filter((_,j)=>j!==d.ans);
+const userWrongIdx=i>d.ans?i-1:i;
+answers.push({
+text:d.text,
+correctWord:d.opts[d.ans],
+userWord:d.opts[i],
+correct,
+expCorrect:d.exp.correct,
+expWrong:correct?'':wrongExps[userWrongIdx]||wrongExps[0]
+});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===d.ans)b.classList.add('correct');
+else if(j===i&&!correct)b.classList.add('incorrect');
+});
+sentenceEl.innerHTML=d.text.replace('___','<u><strong>'+d.opts[d.ans]+'</strong></u>');
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text.replace('___','<strong>'+a.correctWord+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Correcto: '+a.userWord:'✗ Tu respuesta: '+a.userWord}</div>
+<div class="result-explanation">${a.correct?a.expCorrect:a.expWrong+' '+a.expCorrect}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar la terminología técnica es clave para comunicarte con tu equipo en obra y evitar errores peligrosos. ¡Repasa estos términos a diario!</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
