@@ -1,0 +1,111 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas de fontanería - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Cortar un tubo de PVC de 32mm",opts:["Cortatubos","Llave inglesa","Soplete"],ans:0,why:["El cortatubos hace cortes limpios y perpendiculares en tubería.","La llave inglesa es para apretar, no para cortar.","El soplete es para soldar cobre, no para cortar PVC."],tip:"Usa cortatubos para PVC y cobre. Evita serruchos que dejan rebabas."},
+{task:"Sellar la rosca de un grifo antes de instalarlo",opts:["Teflón","Llave grifa","Dobladora"],ans:0,why:["El teflón sella roscas evitando fugas de agua.","La llave grifa aprieta tuberías, no sella.","La dobladora curva tubos, no sella juntas."],tip:"Enrolla el teflón en sentido horario, 5-7 vueltas mínimo."},
+{task:"Apretar el racor de conexión de un flexo",opts:["Llave inglesa","Cortatubos","Detector de fugas"],ans:0,why:["La llave inglesa ajusta tuercas y racores con precisión.","El cortatubos solo corta, no aprieta.","El detector encuentra fugas, no aprieta conexiones."],tip:"No aprietes en exceso: puedes dañar la junta o la rosca."},
+{task:"Detectar una fuga oculta en una tubería",opts:["Detector de fugas","Soplete","Llave grifa"],ans:0,why:["El detector localiza fugas sin romper paredes.","El soplete es para soldar, no detectar.","La llave grifa aprieta tubos, no detecta fugas."],tip:"Ante sospecha de fuga, cierra la llave general y observa el contador."},
+{task:"Curvar un tubo de cobre flexible para un radiador",opts:["Dobladora","Cortatubos","Teflón"],ans:0,why:["La dobladora curva sin aplastar ni romper el tubo.","El cortatubos corta, no curva.","El teflón sella roscas, no curva tubos."],tip:"Sin dobladora, rellena el tubo con arena para evitar pliegues."},
+{task:"Ajustar el sifón del lavabo que gotea",opts:["Llave grifa","Soplete","Dobladora"],ans:0,why:["La llave grifa aprieta tuercas grandes como las del sifón.","El soplete es para soldar, no para ajustar.","La dobladora curva tubos, no ajusta sifones."],tip:"Revisa la junta tórica del sifón antes de apretar más."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx];
+const correct=i===t.ans;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(correct?'correct':'incorrect');});
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correctTool:t.opts[t.ans],correct,why:t.why,tip:t.tip});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Elegiste: '+a.user+' → Correcta: '+a.correctTool}</div>
+<div class="result-explanation">${a.why.slice(1).map(w=>'• '+w).join(' ')}</div>
+<div class="result-explanation"><strong>Consejo:</strong> ${a.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
