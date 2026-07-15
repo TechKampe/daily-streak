@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o Realidad? ⚡ EPIs en Acción - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o Realidad? ⚡</div>
+<div class="subtitle">EPIs en Acción</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/8</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-area"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">¿Esta afirmación es verdadera o falsa?</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🦺 Primera semana en obra</div>
+<div class="modal-body">El encargado te reta: demuestra cuánto sabes sobre EPIs. ¿Verdadero o Falso?</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const statements=[
+{text:"El casco de seguridad solo es obligatorio cuando trabajas en altura.",answer:false,exp:"El casco es obligatorio siempre que haya riesgo de caída de objetos o golpes, no solo en altura."},
+{text:"Los guantes de látex son adecuados para trabajos eléctricos.",answer:false,exp:"Los guantes de látex NO protegen contra descargas. Se necesitan guantes dieléctricos homologados."},
+{text:"Los EPIs tienen fecha de caducidad y deben revisarse periódicamente.",answer:true,exp:"Correcto. Los EPIs se degradan con el tiempo y el uso. Revisa siempre la fecha y el estado."},
+{text:"El calzado de seguridad y el de protección son exactamente lo mismo.",answer:false,exp:"El calzado de seguridad (S) tiene puntera de 200J, el de protección (P) solo 100J. No son iguales."},
+{text:"La protección auditiva solo es necesaria con ruido constante muy alto.",answer:false,exp:"También se requiere con ruidos de impacto repetidos o exposiciones prolongadas a niveles moderados."},
+{text:"Un arnés de seguridad debe inspeccionarse antes de cada uso.",answer:true,exp:"Correcto. Revisar costuras, hebillas y cuerdas antes de cada uso puede salvarte la vida."},
+{text:"Las gafas de protección normales sirven para trabajos de soldadura.",answer:false,exp:"La soldadura requiere pantallas o gafas con filtros específicos para radiación UV e infrarroja."},
+{text:"Si un EPI tiene un pequeño defecto, puede seguir usándose con cuidado.",answer:false,exp:"Un EPI defectuoso debe retirarse inmediatamente. No protege correctamente y es un riesgo."}
+];
+let idx=0,score=0,answers=[],gameStarted=false;
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),stmtArea=document.getElementById('statement-area'),modal=document.getElementById('modal');
+
+function startGame(){
+modal.classList.remove('active');
+gameStarted=true;
+render();
+}
+
+function render(){
+if(idx>=statements.length){showResults();return}
+const s=statements[idx];
+prog.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+stmtArea.innerHTML=`<p class="statement-text">${s.text}</p>`;
+opts.innerHTML=`<button class="btn-option" id="btn-true" onclick="selectAnswer(true)">✓ Verdadero</button><button class="btn-option" id="btn-false" onclick="selectAnswer(false)">✗ Falso</button>`;
+ensureFits();
+}
+
+function selectAnswer(userAnswer){
+const s=statements[idx];
+const correct=userAnswer===s.answer;
+if(correct)score++;
+answers.push({text:s.text,userAnswer,correctAnswer:s.answer,correct,exp:s.exp});
+const btnTrue=document.getElementById('btn-true');
+const btnFalse=document.getElementById('btn-false');
+btnTrue.disabled=true;
+btnFalse.disabled=true;
+if(userAnswer===true){
+btnTrue.classList.add(correct?'correct':'incorrect');
+}else{
+btnFalse.classList.add(correct?'correct':'incorrect');
+}
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Reto completado!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.correct?'✓ Acertaste':'✗ Fallaste'} · Respuesta: ${a.correctAnswer?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Antes de cada jornada, revisa el estado de tus EPIs: busca grietas, desgaste o fechas caducadas. Tu seguridad depende de ello.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
