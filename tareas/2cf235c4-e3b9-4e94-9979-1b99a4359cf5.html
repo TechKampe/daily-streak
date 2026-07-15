@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Cortar un tubo de PVC para una instalación",opts:["Sierra de arco","Destornillador de estrella","Polímetro"],ans:0,tool:"Sierra de arco",tips:"La sierra de arco corta plástico y metal fino. El destornillador es para tornillos y el polímetro mide electricidad."},
+{task:"Aflojar un tornillo de cabeza en cruz",opts:["Llave inglesa","Destornillador de estrella","Nivel de burbuja"],ans:1,tool:"Destornillador de estrella",tips:"Los tornillos de cruz requieren destornillador de estrella. La llave inglesa es para tuercas y el nivel para nivelar."},
+{task:"Comprobar si hay tensión en un enchufe",opts:["Sargento","Lápiz de carpintero","Polímetro"],ans:2,tool:"Polímetro",tips:"El polímetro mide tensión eléctrica. El sargento sujeta piezas y el lápiz marca superficies."},
+{task:"Verificar que una repisa está horizontal",opts:["Nivel de burbuja","Sierra de arco","Destornillador plano"],ans:0,tool:"Nivel de burbuja",tips:"El nivel de burbuja indica horizontalidad. La sierra corta y el destornillador aprieta tornillos."},
+{task:"Sujetar una pieza de madera para taladrar",opts:["Lápiz de carpintero","Sargento","Polímetro"],ans:1,tool:"Sargento",tips:"El sargento fija piezas al banco. El lápiz marca y el polímetro mide electricidad."},
+{task:"Marcar una línea recta en una tabla",opts:["Nivel de burbuja","Lápiz de carpintero","Sierra de arco"],ans:1,tool:"Lápiz de carpintero",tips:"El lápiz de carpintero marca líneas visibles en madera. El nivel verifica y la sierra corta."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>b.style.pointerEvents='none');
+const correct=i===tasks[idx].ans;
+if(correct){score++;btns[i].classList.add('correct');btns[i].innerHTML+=' ✓';}
+else{btns[i].classList.add('incorrect');btns[i].innerHTML+=' ✗';btns[tasks[idx].ans].classList.add('correct');}
+answers.push({task:tasks[idx].task,user:tasks[idx].opts[i],correct,tool:tasks[idx].tool,tips:tasks[idx].tips});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Elegiste: '+a.user}</div>
+${!a.correct?`<div class="result-answer">Correcta: ${a.tool}</div>`:''}
+<div class="result-explanation">${a.tips}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>Consejo práctico:</strong> Antes de cada tarea, identifica si necesitas cortar, sujetar, medir o marcar. Así elegirás la herramienta correcta.
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
