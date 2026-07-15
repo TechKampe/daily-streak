@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Cables: Memory Eléctrico - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;width:100%;max-width:400px;margin:0 auto}
+.mem-card{height:70px;width:100%;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;box-sizing:border-box;transition:transform 0.2s ease,background 0.2s ease}
+.mem-card.tapada{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.mem-card.destapada{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.shake{animation:shake 0.5s ease}
+.mem-card.pop{animation:pop 0.2s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats-row{display:flex;justify-content:space-between;font-size:14px;color:#0B214A;padding:0 8px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Memory Eléctrico</div>
+<div class="subtitle">Empareja cada concepto con su definición</div>
+</div>
+</div>
+<div class="main">
+<div class="stats-row">
+<span id="intentos">Intento 0/10</span>
+<span id="parejas">0/4 parejas</span>
+</div>
+<div class="memory-board" id="board"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca dos cartas para encontrar parejas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,a:"Fase",b:"Cable con tensión"},
+{id:2,a:"Neutro",b:"Retorno de corriente"},
+{id:3,a:"Tierra",b:"Protección descargas"},
+{id:4,a:"Fusible",b:"Corta sobrecargas"}
+];
+let cards=[],flipped=[],matched=[],attempts=0,locked=false;
+const maxAttempts=10,totalPairs=4;
+const board=document.getElementById('board'),intentosEl=document.getElementById('intentos'),parejasEl=document.getElementById('parejas'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.a});
+cards.push({pairId:p.id,text:p.b});
+});
+shuffle(cards);
+renderBoard();
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+function renderBoard(){
+board.innerHTML='';
+cards.forEach((c,i)=>{
+const div=document.createElement('div');
+div.className='mem-card tapada';
+div.dataset.index=i;
+div.textContent='?';
+div.onclick=()=>flipCard(i);
+board.appendChild(div);
+});
+updateStats();
+}
+
+function flipCard(i){
+if(locked)return;
+if(flipped.includes(i))return;
+if(matched.includes(i))return;
+const cardEl=board.children[i];
+cardEl.classList.remove('tapada');
+cardEl.classList.add('destapada','pop');
+cardEl.textContent=cards[i].text;
+flipped.push(i);
+if(flipped.length===2){
+locked=true;
+attempts++;
+updateStats();
+checkMatch();
+}
+}
+
+function checkMatch(){
+const[i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+if(c1.pairId===c2.pairId){
+setTimeout(()=>{
+board.children[i1].classList.remove('destapada');
+board.children[i1].classList.add('matched');
+board.children[i2].classList.remove('destapada');
+board.children[i2].classList.add('matched');
+matched.push(i1,i2);
+flipped=[];
+locked=false;
+updateStats();
+checkEnd();
+},300);
+}else{
+setTimeout(()=>{
+board.children[i1].classList.add('shake');
+board.children[i2].classList.add('shake');
+},100);
+setTimeout(()=>{
+board.children[i1].classList.remove('destapada','shake');
+board.children[i1].classList.add('tapada');
+board.children[i1].textContent='?';
+board.children[i2].classList.remove('destapada','shake');
+board.children[i2].classList.add('tapada');
+board.children[i2].textContent='?';
+flipped=[];
+locked=false;
+checkEnd();
+},2000);
+}
+}
+
+function updateStats(){
+intentosEl.textContent=`Intento ${attempts}/10`;
+parejasEl.textContent=`${matched.length/2}/4 parejas`;
+}
+
+function checkEnd(){
+if(matched.length===8){
+setTimeout(()=>showResults(true),500);
+}else if(attempts>=maxAttempts){
+setTimeout(()=>showResults(false),500);
+}
+}
+
+function showResults(win){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const foundPairs=[];
+for(let i=0;i<matched.length;i+=2){
+const p=pairs.find(pr=>pr.id===cards[matched[i]].pairId);
+if(p&&!foundPairs.includes(p.id)){foundPairs.push(p.id);}
+}
+const missingPairs=pairs.filter(p=>!foundPairs.includes(p.id));
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${win?'¡Excelente trabajo!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched.length/2}/4</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div>
+<div class="results-list">
+${win?`<div class="result-item correct"><div class="result-question">🎉 ¡Completaste el reto!</div><div class="result-explanation">Demostraste conocer los conceptos eléctricos básicos.</div></div>`:''}
+${pairs.map(p=>{
+const found=foundPairs.includes(p.id);
+return `<div class="result-item ${found?'correct':'incorrect'}">
+<div class="result-question">${p.a} ↔ ${p.b}</div>
+<div class="result-explanation">${found?'✓ Pareja encontrada':'✗ No encontrada'}</div>
+</div>`;
+}).join('')}
+<div class="result-item correct">
+<div class="result-question">💡 ¿Por qué importa?</div>
+<div class="result-explanation">Estos conceptos son esenciales para trabajar con seguridad en instalaciones eléctricas.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{init();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
