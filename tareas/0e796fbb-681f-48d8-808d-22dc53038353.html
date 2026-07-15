@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 📋 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle" id="subtitle">Tu primer día como aprendiz</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<p id="sentence"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{text:"Para medir tensión en un circuito, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","destornillador"],exp:"El multímetro mide tensión, corriente y resistencia. El buscapolos solo detecta fase y el destornillador es herramienta manual."},
+{text:"Antes de trabajar en una instalación, debo ___ el circuito.",blank:"consignar",opts:["consignar","energizar","cablear"],exp:"Consignar significa cortar, bloquear y señalizar. Energizar es lo contrario y cablear es conectar cables."},
+{text:"Para proteger mis manos de descargas uso guantes ___.",blank:"aislantes",opts:["aislantes","de látex","de cuero"],exp:"Los guantes aislantes están homologados para tensión. Los de látex o cuero no protegen de electricidad."},
+{text:"El interruptor ___ protege contra sobrecargas y cortocircuitos.",blank:"magnetotérmico",opts:["magnetotérmico","diferencial","seccionador"],exp:"El magnetotérmico protege el circuito. El diferencial protege personas y el seccionador solo corta sin protección."},
+{text:"Para detectar fugas de corriente a tierra, se instala un ___.",blank:"diferencial",opts:["diferencial","fusible","magnetotérmico"],exp:"El diferencial detecta diferencias entre fase y neutro (fugas). Fusible y magnetotérmico protegen contra sobrecorrientes."},
+{text:"Tras cortar el suministro, debo verificar la ___ de tensión.",blank:"ausencia",opts:["ausencia","presencia","cantidad"],exp:"Siempre verificamos AUSENCIA de tensión antes de tocar. Es la regla de oro de seguridad eléctrica."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),main=document.getElementById('main'),opts=document.getElementById('options'),sentenceEl=document.getElementById('sentence'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),subtitle=document.getElementById('subtitle');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+subtitle.textContent='Página '+(idx+1)+' del manual';
+sentenceEl.innerHTML=d.text.replace('___','<u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>');
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" onclick="selectOpt(${i})">${o}</button>`).join('');
+helper.textContent='Selecciona la palabra correcta';
+ensureFits();
+}
+
+function selectOpt(i){
+const d=data[idx];
+const correct=d.opts[i]===d.blank;
+if(correct)score++;
+answers.push({text:d.text,blank:d.blank,user:d.opts[i],correct,exp:d.exp,opts:d.opts});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(d.opts[j]===d.blank)b.classList.add('correct');
+else if(j===i)b.classList.add('incorrect');
+});
+sentenceEl.innerHTML=d.text.replace('___',`<u><strong>${d.opts[i]}</strong></u>`);
+helper.textContent=correct?'¡Correcto!':'Incorrecto';
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text.replace('___','<strong>'+a.blank+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Usar la terminología técnica correcta es fundamental para comunicarte con tu equipo en obra y evitar errores por malentendidos. Un buen profesional domina el vocabulario de su oficio.</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
