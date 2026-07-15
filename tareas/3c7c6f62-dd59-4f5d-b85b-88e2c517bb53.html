@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 🔧</div>
+<div class="subtitle" id="instruction">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="phrase"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Es tu primer día: repasa el manual de seguridad</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{phrase:"Antes de trabajar en altura, debo usar el ___.",answer:"arnés",opts:["arnés","casco","guantes"],exp:"El arnés es el EPI obligatorio para trabajos en altura. El casco protege la cabeza de impactos y los guantes las manos, pero no evitan caídas."},
+{phrase:"El color de señalización para prohibición es ___.",answer:"rojo",opts:["rojo","amarillo","azul"],exp:"El rojo indica prohibición o peligro. El amarillo advierte de precaución y el azul señala obligación."},
+{phrase:"Para proteger mis ojos de partículas uso ___.",answer:"gafas de seguridad",opts:["gafas de seguridad","visera","mascarilla"],exp:"Las gafas de seguridad protegen de partículas. La visera cubre el rostro completo y la mascarilla protege las vías respiratorias."},
+{phrase:"Para medir tensión eléctrica uso el ___.",answer:"multímetro",opts:["multímetro","buscapolos"],exp:"El multímetro mide tensión con precisión. El buscapolos solo detecta presencia de corriente, no mide valores."},
+{phrase:"El EPI para proteger los oídos del ruido es ___.",answer:"tapones u orejeras",opts:["tapones u orejeras","casco","gafas"],exp:"Tapones u orejeras aíslan del ruido. El casco protege de impactos y las gafas protegen la vista."},
+{phrase:"La señal triangular amarilla indica ___.",answer:"advertencia",opts:["advertencia","prohibición","obligación"],exp:"El triángulo amarillo advierte de un peligro. La prohibición es círculo rojo y la obligación es círculo azul."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),phraseEl=document.getElementById('phrase'),optsEl=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+phraseEl.innerHTML=d.phrase.replace('___','<u>___</u>');
+optsEl.innerHTML=d.opts.map(o=>`<button class="btn-option" onclick="select('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(opt){
+const d=data[idx];
+const correct=opt===d.answer;
+if(correct)score++;
+answers.push({phrase:d.phrase,answer:d.answer,user:opt,correct,exp:d.exp});
+optsEl.querySelectorAll('.btn-option').forEach(b=>{
+b.disabled=true;
+if(b.textContent===d.answer)b.classList.add('correct');
+else if(b.textContent===opt&&!correct)b.classList.add('incorrect');
+});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Términos correctos</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.phrase.replace('___','<strong>'+a.answer+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Correcto: '+a.user:'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>Consejo:</strong> Usar la terminología correcta en obra evita confusiones y accidentes. Asegúrate de conocer bien cada EPI y señal antes de empezar a trabajar.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
