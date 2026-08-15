@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Primero lo primero: ordena y no te electrocutes - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Ordena y no te electrocutes</div>
+<div class="subtitle" id="subtitle">Ordena los pasos correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">Reto 1/3</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+<div class="footer">
+<div class="helper" id="helper">Usa ↑↓ o arrastra para ordenar</div>
+<button class="cta" id="cta">Confirmar orden</button>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{title:"Cuadro eléctrico doméstico",steps:["Cortar suministro en ICP","Verificar ausencia de tensión","Señalizar zona de trabajo","Realizar la intervención","Rearmar el sistema"],tip:"Nunca trabajes sin verificar ausencia de tensión con detector homologado."},
+{title:"Cambiar un enchufe",steps:["Desconectar el diferencial","Comprobar con detector de tensión","Retirar la tapa del enchufe","Sustituir el mecanismo","Restablecer la corriente"],tip:"Aunque parezca sencillo, un enchufe mal conectado puede causar incendios."},
+{title:"Intervenir luminaria averiada",steps:["Apagar interruptor y diferencial","Usar detector de tensión","Desmontar la luminaria","Reparar o sustituir componentes","Verificar funcionamiento y cerrar"],tip:"Las luminarias pueden retener carga incluso apagadas. Siempre verifica."}
+];
+let currentChallenge=0,userOrder=[],correctCount=0,results=[];
+const scene=document.getElementById('scene'),main=document.getElementById('main'),cta=document.getElementById('cta'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle'),helper=document.getElementById('helper');
+let draggedEl=null,dragStartY=0,dragStartIndex=0;
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function renderChallenge(){
+const ch=challenges[currentChallenge];
+userOrder=shuffle(ch.steps);
+subtitle.textContent=ch.title;
+counter.textContent=`Reto ${currentChallenge+1}/3`;
+prog.style.width=`${(currentChallenge/3)*100}%`;
+helper.textContent="Usa ↑↓ o arrastra para ordenar";
+cta.textContent="Confirmar orden";
+cta.onclick=confirmOrder;
+renderCards();
+ensureFits();
+}
+
+function renderCards(){
+main.innerHTML=`<div class="cards-container" id="cards">${userOrder.map((s,i)=>`<div class="card" data-index="${i}" draggable="true"><span class="card-num">${i+1}</span><span class="card-text">${s}</span><div class="card-controls"><button class="btn-ghost" aria-label="Subir" onclick="moveCard(${i},-1)">↑</button><button class="btn-ghost" aria-label="Bajar" onclick="moveCard(${i},1)">↓</button></div></div>`).join('')}</div>`;
+attachDragListeners();
+}
+
+function moveCard(idx,dir){
+const newIdx=idx+dir;
+if(newIdx<0||newIdx>=userOrder.length)return;
+[userOrder[idx],userOrder[newIdx]]=[userOrder[newIdx],userOrder[idx]];
+animateSwap(idx,newIdx);
+renderCards();
+}
+
+function animateSwap(i1,i2){
+const cards=document.querySelectorAll('.card');
+if(cards[i1])cards[i1].style.transform='scale(1.02)';
+if(cards[i2])cards[i2].style.transform='scale(1.02)';
+setTimeout(()=>{if(cards[i1])cards[i1].style.transform='';if(cards[i2])cards[i2].style.transform='';},150);
+}
+
+function attachDragListeners(){
+const cards=document.querySelectorAll('.card');
+cards.forEach(card=>{
+card.addEventListener('dragstart',e=>{draggedEl=card;dragStartIndex=parseInt(card.dataset.index);card.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+card.addEventListener('dragend',()=>{if(draggedEl)draggedEl.classList.remove('dragging');draggedEl=null;});
+card.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';});
+card.addEventListener('drop',e=>{e.preventDefault();if(!draggedEl)return;const targetIdx=parseInt(card.dataset.index);if(dragStartIndex!==targetIdx){const item=userOrder.splice(dragStartIndex,1)[0];userOrder.splice(targetIdx,0,item);renderCards();}});
+card.addEventListener('touchstart',e=>{draggedEl=card;dragStartY=e.touches[0].clientY;dragStartIndex=parseInt(card.dataset.index);card.classList.add('dragging');},{passive:true});
+card.addEventListener('touchmove',e=>{if(!draggedEl)return;const touch=e.touches[0];const cards=document.querySelectorAll('.card');let targetIdx=dragStartIndex;cards.forEach((c,i)=>{const rect=c.getBoundingClientRect();if(touch.clientY>rect.top&&touch.clientY<rect.bottom)targetIdx=i;});if(targetIdx!==dragStartIndex){const item=userOrder.splice(dragStartIndex,1)[0];userOrder.splice(targetIdx,0,item);dragStartIndex=targetIdx;renderCards();}},{passive:true});
+card.addEventListener('touchend',()=>{if(draggedEl)draggedEl.classList.remove('dragging');draggedEl=null;},{passive:true});
+});
+}
+
+function confirmOrder(){
+const ch=challenges[currentChallenge];
+const isCorrect=userOrder.every((s,i)=>s===ch.steps[i]);
+if(isCorrect)correctCount++;
+results.push({title:ch.title,userOrder:[...userOrder],correctOrder:[...ch.steps],isCorrect,tip:ch.tip});
+showFeedback(isCorrect,ch);
+}
+
+function showFeedback(isCorrect,ch){
+const icon=isCorrect?'✅':'❌';
+const status=isCorrect?'¡Orden correcto!':'Orden incorrecto';
+let html=`<div class="feedback-container"><div class="feedback-header ${isCorrect?'correct':'incorrect'}">${icon} ${status}</div>`;
+html+=`<div class="feedback-section"><div class="feedback-label">Tu orden:</div>`;
+userOrder.forEach((s,i)=>html+=`<div class="feedback-step">${i+1}. ${s}</div>`);
+html+=`</div>`;
+if(!isCorrect){
+html+=`<div class="feedback-section"><div class="feedback-label correct-label">✅ Orden correcto:</div>`;
+ch.steps.forEach((s,i)=>html+=`<div class="feedback-step correct-step">${i+1}. ${s}</div>`);
+html+=`</div>`;
+}
+html+=`<div class="feedback-tip">💡 ${ch.tip}</div></div>`;
+main.innerHTML=html;
+helper.textContent=currentChallenge<2?"Pulsa para continuar":"Pulsa para ver resultados";
+cta.textContent=currentChallenge<2?"Siguiente reto":"Ver resultados";
+cta.onclick=nextChallenge;
+ensureFits();
+}
+
+function nextChallenge(){
+currentChallenge++;
+if(currentChallenge>=3){showResults();return;}
+renderChallenge();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+let html=`<div class="results-scroll"><div class="results-header"><div class="results-title">¡Completado!</div><div class="results-score">${correctCount}/3</div><div class="results-subtitle">Secuencias correctas</div></div><div class="results-list">`;
+results.forEach(r=>{
+html+=`<div class="result-item ${r.isCorrect?'correct':'incorrect'}"><div class="result-question">${r.title}</div><div class="result-answer">${r.isCorrect?'✓ Orden correcto':'✗ Orden incorrecto'}</div>`;
+if(!r.isCorrect){
+html+=`<div class="result-explanation"><strong>Tu orden:</strong> ${r.userOrder.map((s,i)=>`${i+1}. ${s.substring(0,25)}${s.length>25?'...':''}`).join(' → ')}</div>`;
+html+=`<div class="result-explanation"><strong>Correcto:</strong> ${r.correctOrder.map((s,i)=>`${i+1}. ${s.substring(0,25)}${s.length>25?'...':''}`).join(' → ')}</div>`;
+}
+html+=`<div class="result-explanation">💡 ${r.tip}</div></div>`;
+});
+html+=`</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+scene.innerHTML=html;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{renderChallenge();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
