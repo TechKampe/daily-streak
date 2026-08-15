@@ -1,0 +1,237 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🛠️ Tu primer día en obra - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🛠️ Tu primer día en obra</div>
+<div class="subtitle" id="subtitle">Simulador de conversación</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="turn-counter">0/5</span>
+</div>
+</div>
+<div class="main" id="main-area">
+<div class="chat-container" id="chat-container"></div>
+</div>
+<div class="footer" id="footer">
+<div class="helper" id="helper">Elige tu respuesta</div>
+<div class="options" id="options"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+mentor:{name:"Carlos (Mentor)",img:"https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png"},
+jefe:{name:"Roberto (Jefe de Obra)",img:"https://techkampe.github.io/daily-streak/assets/Avatar%203_low.png"},
+companero:{name:"Miguel (Veterano)",img:"https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png"},
+jugador:{name:"Tú",img:"https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png"}
+};
+
+const turns=[
+{
+messages:[
+{from:"mentor",text:"¡Bienvenido! Hoy es tu primer día. Te presento al equipo."},
+{from:"jefe",text:"Hola, soy Roberto. ¿Cómo te llamas y qué experiencia tienes?"}
+],
+options:[
+{text:"Buenos días, soy [nombre]. Vengo a aprender todo lo que pueda.",score:"correct",reaction:"jefe",reactionText:"Me gusta tu actitud. Aquí valoramos las ganas de aprender."},
+{text:"Hola. Soy nuevo, no sé mucho todavía.",score:"partial",reaction:"jefe",reactionText:"Bueno, todos empezamos así. Ya irás aprendiendo."},
+{text:"Qué tal. ¿Dónde me pongo?",score:"incorrect",reaction:"jefe",reactionText:"Hmm... primero las presentaciones, luego el trabajo."}
+]
+},
+{
+messages:[
+{from:"mentor",text:"Antes de empezar, ¿tienes alguna duda sobre seguridad?"}
+],
+options:[
+{text:"Sí, ¿dónde están los EPIs y el punto de reunión?",score:"correct",reaction:"mentor",reactionText:"¡Excelente pregunta! Siempre hay que saber eso primero."},
+{text:"No, creo que ya lo sé todo.",score:"incorrect",reaction:"mentor",reactionText:"Cuidado con la confianza excesiva. Aquí siempre hay algo nuevo."},
+{text:"Supongo que me lo irás explicando...",score:"partial",reaction:"mentor",reactionText:"Sí, pero es bueno que tú también preguntes."}
+]
+},
+{
+messages:[
+{from:"mentor",text:"Necesito que me pases la pinza amperimétrica del maletín."}
+],
+options:[
+{text:"Claro, ¿es esta la roja con pantalla digital?",score:"correct",reaction:"mentor",reactionText:"Exacto. Bien hecho en confirmar antes de actuar."},
+{text:"*Le pasas la primera herramienta que ves*",score:"incorrect",reaction:"mentor",reactionText:"No, esta es otra cosa. Pregunta si no estás seguro."},
+{text:"Mmm... no sé cuál es, ¿me la señalas?",score:"partial",reaction:"mentor",reactionText:"Sin problema. Es normal no conocerlas todas al principio."}
+]
+},
+{
+messages:[
+{from:"companero",text:"Ey novato, aquí los nuevos traen el café. Es tradición."}
+],
+options:[
+{text:"Jaja, sin problema. ¿Cómo lo tomáis?",score:"correct",reaction:"companero",reactionText:"¡Así me gusta! Vas a encajar bien aquí."},
+{text:"No sabía... ¿es obligatorio?",score:"partial",reaction:"companero",reactionText:"Era broma, tranqui. Pero mola que no te lo tomes mal."},
+{text:"Eso no está en mi contrato.",score:"incorrect",reaction:"companero",reactionText:"Vaya... era broma. Relájate un poco, ¿no?"}
+]
+},
+{
+messages:[
+{from:"jefe",text:"Bueno, se acabó la jornada. ¿Qué tal tu primer día?"},
+{from:"mentor",text:"Mañana seguimos. ¿Alguna duda final?"}
+],
+options:[
+{text:"Muy bien, gracias. Mañana vendré con más ganas aún.",score:"correct",reaction:"mentor",reactionText:"Perfecto. Descansa y nos vemos mañana temprano."},
+{text:"Bien, supongo. Hasta mañana.",score:"partial",reaction:"mentor",reactionText:"Vale, nos vemos. Intenta llegar puntual."},
+{text:"Ha sido largo. ¿Siempre es así?",score:"incorrect",reaction:"jefe",reactionText:"Esto es obra, chaval. Acostúmbrate."}
+]
+}
+];
+
+let currentTurn=0,answers=[],chatHistory=[];
+const scene=document.getElementById('scene'),chatContainer=document.getElementById('chat-container'),optionsContainer=document.getElementById('options'),helper=document.getElementById('helper'),progressBar=document.getElementById('progress-bar'),turnCounter=document.getElementById('turn-counter'),subtitle=document.getElementById('subtitle');
+
+function renderIntro(){
+subtitle.textContent="Es tu primer día como ayudante de electricista";
+chatContainer.innerHTML='';
+chatHistory=[];
+addMessage("mentor","¡Hola! Soy Carlos, tu mentor. Hoy es tu primer día en la obra. Te voy a presentar al equipo.");
+setTimeout(()=>renderTurn(),800);
+}
+
+function addMessage(from,text,isPlayer=false){
+const msg={from,text,isPlayer};
+chatHistory.push(msg);
+renderChat();
+}
+
+function renderChat(){
+chatContainer.innerHTML=chatHistory.map(m=>{
+const av=avatars[m.from];
+const playerClass=m.isPlayer?'chat-player':'';
+return `<div class="chat-bubble ${playerClass}">
+<div class="chat-avatar"><img src="${av.img}" alt="${av.name}"></div>
+<div class="chat-content">
+<div class="chat-name">${av.name}</div>
+<div class="chat-text">${m.text}</div>
+</div>
+</div>`;
+}).join('');
+chatContainer.scrollTop=chatContainer.scrollHeight;
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){showResults();return}
+const turn=turns[currentTurn];
+turn.messages.forEach((m,i)=>{
+setTimeout(()=>addMessage(m.from,m.text),i*400);
+});
+setTimeout(()=>{
+renderOptions(turn.options);
+updateProgress();
+},turn.messages.length*400+200);
+}
+
+function renderOptions(opts){
+optionsContainer.innerHTML=opts.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join('');
+helper.textContent="Elige tu respuesta";
+ensureFits();
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const opt=turn.options[idx];
+answers.push({turn:currentTurn+1,question:turn.messages.map(m=>m.text).join(' '),chosen:opt.text,score:opt.score,reaction:opt.reactionText});
+addMessage("jugador",opt.text,true);
+setTimeout(()=>{
+addMessage(opt.reaction,opt.reactionText);
+optionsContainer.innerHTML='';
+helper.textContent="Continuando...";
+currentTurn++;
+setTimeout(()=>renderTurn(),600);
+},500);
+}
+
+function updateProgress(){
+const pct=((currentTurn)/turns.length)*100;
+progressBar.style.width=pct+'%';
+turnCounter.textContent=`${currentTurn}/${turns.length}`;
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const correct=answers.filter(a=>a.score==='correct').length;
+const partial=answers.filter(a=>a.score==='partial').length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🎉 ¡Primer día completado!</div>
+<div class="results-score">${correct}/5</div>
+<div class="results-subtitle">Decisiones óptimas</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`
+<div class="result-item ${a.score==='correct'?'correct':a.score==='partial'?'':'incorrect'}">
+<div class="result-question">Turno ${a.turn}</div>
+<div class="result-answer">${a.score==='correct'?'✓ Óptimo':a.score==='partial'?'◐ Aceptable':'✗ Mejorable'}: ${a.chosen.substring(0,40)}...</div>
+<div class="result-explanation">${a.reaction}</div>
+</div>
+`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> En tu primer día, muestra interés genuino, pregunta sobre seguridad y mantén actitud positiva. ¡Las primeras impresiones cuentan!
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();renderIntro();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.chat-container{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;}
+.chat-bubble{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:12px;background:var(--surface);max-width:95%;}
+.chat-bubble.chat-player{flex-direction:row-reverse;align-self:flex-end;background:var(--ink);color:#fff;}
+.chat-bubble.chat-player .chat-name{color:rgba(255,255,255,0.7);}
+.chat-bubble.chat-player .chat-text{color:#fff;}
+.chat-avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;}
+.chat-avatar img{width:100%;height:100%;object-fit:cover;}
+.chat-content{flex:1;min-width:0;}
+.chat-name{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px;}
+.chat-text{font-size:14px;line-height:1.3;}
+.results-tip{background:var(--surface);padding:12px;border-radius:12px;margin:12px 16px;font-size:13px;line-height:1.4;}
+#main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+#footer .options{display:flex;flex-direction:column;gap:6px;width:100%;}
+</style>
+</body>
+</html>
