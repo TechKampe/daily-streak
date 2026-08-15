@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o Realidad? ⚡ Seguridad Eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o Realidad? ⚡</div>
+<div class="subtitle">Seguridad Eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div id="statement-area"></div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">¿Esta afirmación es verdadera o falsa?</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const statements=[
+{text:"12 voltios no pueden matar a una persona en ninguna circunstancia.",answer:false,exp:"Falso. Aunque 12V raramente es letal, en condiciones de piel mojada o contacto prolongado puede causar daño. Nunca subestimes ningún voltaje."},
+{text:"Antes de trabajar en un circuito, siempre hay que cortar el suministro y verificar ausencia de tensión.",answer:true,exp:"Verdadero. Es la regla de oro de la seguridad eléctrica. Cortar, bloquear, verificar y señalizar antes de tocar."},
+{text:"Los guantes de goma domésticos protegen igual que los guantes dieléctricos homologados.",answer:false,exp:"Falso. Los guantes domésticos no están diseñados ni certificados para aislar electricidad. Solo usar EPIs homologados."},
+{text:"La madera seca es un aislante perfecto y seguro para trabajar con electricidad.",answer:false,exp:"Falso. La madera puede contener humedad y conducir electricidad. Nunca confíes en ella como aislante de seguridad."},
+{text:"Un cuadro eléctrico debe estar siempre señalizado con el símbolo de riesgo eléctrico.",answer:true,exp:"Verdadero. La señalización es obligatoria por normativa para advertir del peligro y prevenir accidentes."},
+{text:"Si un compañero sufre una descarga, lo primero es apartarlo con las manos.",answer:false,exp:"Falso. Nunca toques directamente a alguien electrizado. Corta la corriente o usa un material aislante para separarlo."},
+{text:"El procedimiento de bloqueo y etiquetado (LOTO) solo es necesario en industrias grandes.",answer:false,exp:"Falso. El bloqueo y etiquetado es obligatorio en cualquier instalación para evitar reconexiones accidentales mientras se trabaja."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),stArea=document.getElementById('statement-area');
+
+function render(){
+if(idx>=statements.length){showResults();return}
+const s=statements[idx];
+prog.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+stArea.innerHTML=`<div class="result-question" style="font-size:1.1rem;text-align:center;padding:1rem 0;line-height:1.5">${s.text}</div>`;
+opts.innerHTML=`<button class="btn-option" id="btn-true" onclick="answer(true)">✓ Verdadero</button><button class="btn-option" id="btn-false" onclick="answer(false)">✗ Falso</button>`;
+ensureFits();
+}
+
+function answer(userAns){
+const s=statements[idx];
+const correct=userAns===s.answer;
+if(correct)score++;
+answers.push({text:s.text,userAns,correctAns:s.answer,correct,exp:s.exp});
+const btnTrue=document.getElementById('btn-true'),btnFalse=document.getElementById('btn-false');
+btnTrue.disabled=true;btnFalse.disabled=true;
+if(userAns===true){
+btnTrue.classList.add(correct?'correct':'incorrect');
+}else{
+btnFalse.classList.add(correct?'correct':'incorrect');
+}
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const tip="Recuerda la regla de oro: siempre verifica ausencia de tensión con un detector homologado antes de tocar cualquier conductor, aunque hayas cortado el suministro.";
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAns?'Verdadero':'Falso'} ${a.correct?'✓':'✗'} | Correcta: ${a.correctAns?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item" style="background:var(--accent);margin-top:1rem;">
+<div class="result-question" style="color:var(--bg)">💡 Consejo final</div>
+<div class="result-explanation" style="color:var(--bg)">${tip}</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
