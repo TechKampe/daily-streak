@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Herramienta o EPI? 🛠️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Herramienta o EPI? 🛠️</div>
+<div class="subtitle">Clasifica cada ítem en su categoría</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar"></i></div>
+</div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div id="item-display"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para cada ítem</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const items = [
+{ name: "Llave inglesa", category: "Herramienta", explanation: "Herramienta de ajuste para tuercas y tubos." },
+{ name: "Guantes de nitrilo", category: "EPI", explanation: "Protegen las manos de químicos y suciedad." },
+{ name: "Gafas de seguridad", category: "EPI", explanation: "Protegen los ojos de partículas y salpicaduras." },
+{ name: "Soplete", category: "Herramienta", explanation: "Herramienta para soldar tuberías de cobre." },
+{ name: "Casco de obra", category: "EPI", explanation: "Protege la cabeza de impactos y caídas de objetos." },
+{ name: "Alicates", category: "Herramienta", explanation: "Herramienta para sujetar, cortar o doblar." },
+{ name: "Rodilleras", category: "EPI", explanation: "Protegen las rodillas al trabajar en el suelo." },
+{ name: "Flexómetro", category: "Herramienta", explanation: "Herramienta de medición de longitudes." },
+{ name: "Mascarilla FFP2", category: "EPI", explanation: "Protege las vías respiratorias de polvo y gases." },
+{ name: "Nivel de burbuja", category: "Herramienta", explanation: "Herramienta para comprobar superficies horizontales." }
+];
+
+let currentIndex = 0;
+let answers = [];
+let score = 0;
+
+const scene = document.getElementById('scene');
+const itemDisplay = document.getElementById('item-display');
+const categoriesEl = document.getElementById('categories');
+const progressBar = document.getElementById('progress-bar');
+const counter = document.getElementById('counter');
+
+function renderItem() {
+    if (currentIndex >= items.length) {
+        showResults();
+        return;
+    }
+    const item = items[currentIndex];
+    progressBar.style.width = ((currentIndex) / items.length * 100) + '%';
+    counter.textContent = (currentIndex + 1) + '/' + items.length;
+    
+    itemDisplay.innerHTML = `<div class="modal-title" style="font-size:1.5rem;text-align:center;padding:1rem 0;">${item.name}</div>`;
+    
+    categoriesEl.innerHTML = `
+        <button class="btn-option" onclick="selectCategory('Herramienta')">🔧 Herramienta</button>
+        <button class="btn-option" onclick="selectCategory('EPI')">🦺 EPI</button>
+    `;
+    ensureFits();
+}
+
+function selectCategory(selected) {
+    const item = items[currentIndex];
+    const isCorrect = selected === item.category;
+    if (isCorrect) score++;
+    
+    answers.push({
+        name: item.name,
+        userAnswer: selected,
+        correctAnswer: item.category,
+        correct: isCorrect,
+        explanation: item.explanation
+    });
+
+    const buttons = categoriesEl.querySelectorAll('.btn-option');
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.includes(item.category)) {
+            btn.classList.add('correct');
+        }
+        if (btn.textContent.includes(selected) && !isCorrect) {
+            btn.classList.add('incorrect');
+        }
+    });
+
+    setTimeout(() => {
+        currentIndex++;
+        renderItem();
+    }, 600);
+}
+
+function showResults() {
+    setTimeout(() => {
+        document.documentElement.classList.replace('gameplay', 'results');
+        scene.classList.replace('gameplay', 'results');
+        
+        scene.innerHTML = `
+            <div class="results-scroll">
+                <div class="results-header">
+                    <div class="results-title">¡Almacén organizado!</div>
+                    <div class="results-score">${score}/${items.length}</div>
+                    <div class="results-subtitle">Ítems clasificados correctamente</div>
+                </div>
+                <div class="results-list">
+                    ${answers.map(a => `
+                        <div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+                            <div class="result-question">${a.name}</div>
+                            <div class="result-answer">${a.correct ? '✓ ' + a.correctAnswer : '✗ Dijiste ' + a.userAnswer + ' → Era ' + a.correctAnswer}</div>
+                            <div class="result-explanation">${a.explanation}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="result-item correct">
+                    <div class="result-question">💡 Consejo profesional</div>
+                    <div class="result-explanation">Antes de empezar cualquier trabajo, separa mentalmente lo que usas (herramientas) de lo que te protege (EPI). Revisa siempre que tu EPI esté en buen estado.</div>
+                </div>
+                <div class="footer">
+                    <button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+function completeTask() {
+    if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+            action: 'TASK_COMPLETED'
+        }));
+    }
+}
+
+function ensureFits() {
+    scene.classList.remove('compact', 'compact-xs');
+    document.documentElement.style.setProperty('--ui-scale', 1);
+    if (scene.scrollHeight > scene.clientHeight) {
+        scene.classList.add('compact');
+    }
+    if (scene.scrollHeight > scene.clientHeight) {
+        scene.classList.add('compact-xs');
+    }
+    if (scene.scrollHeight > scene.clientHeight) {
+        const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+        document.documentElement.style.setProperty('--ui-scale', scale);
+    }
+}
+
+window.addEventListener('load', () => { ensureFits(); renderItem(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
