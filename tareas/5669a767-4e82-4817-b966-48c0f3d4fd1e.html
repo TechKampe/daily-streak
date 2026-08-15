@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Conceptos Eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;width:100%;box-sizing:border-box;}
+.mem-card{height:70px;width:100%;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;transition:transform 0.2s ease;box-sizing:border-box;padding:4px;}
+.mem-card.covered{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700;}
+.mem-card.uncovered{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2;}
+.mem-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;line-height:1.2;}
+.mem-card.shake{animation:shake 0.5s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.mem-card.pop{animation:pop 0.2s ease;}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats-row{display:flex;justify-content:space-between;padding:0 16px;font-size:14px;color:#0B214A;margin-bottom:8px;}
+.game-area{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 8px;}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta los Conceptos</div>
+<div class="subtitle">Encuentra las 4 parejas de términos eléctricos</div>
+</div>
+</div>
+<div class="game-area">
+<div class="stats-row">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="memory-board" id="board"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca dos cartas para encontrar parejas relacionadas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,a:"Polímetro",b:"Medir tensión",exp:"El polímetro (multímetro) es la herramienta básica para medir tensión, corriente y resistencia en instalaciones eléctricas."},
+{id:2,a:"Cable fase",b:"Color marrón",exp:"Por normativa, el cable de fase se identifica con color marrón (o negro/gris). Transporta la corriente activa."},
+{id:3,a:"Diferencial",b:"Protección personas",exp:"El interruptor diferencial detecta fugas de corriente y desconecta el circuito, protegiendo a las personas de electrocución."},
+{id:4,a:"Empalme",b:"Unir conductores",exp:"El empalme es la técnica para unir dos o más conductores eléctricos de forma segura y duradera."}
+];
+
+let cards=[],first=null,second=null,locked=false,attempts=0,matched=0,history=[];
+const maxAttempts=10,totalPairs=4;
+const board=document.getElementById('board'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({pairId:p.id,text:p.a,type:'a'});
+cards.push({pairId:p.id,text:p.b,type:'b'});
+});
+shuffle(cards);
+renderBoard();
+ensureFits();
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+function renderBoard(){
+board.innerHTML='';
+cards.forEach((c,i)=>{
+const div=document.createElement('div');
+div.className='mem-card covered';
+div.textContent='?';
+div.dataset.index=i;
+div.onclick=()=>handleClick(i,div);
+board.appendChild(div);
+});
+}
+
+function handleClick(idx,el){
+if(locked)return;
+if(el.classList.contains('matched'))return;
+if(el.classList.contains('uncovered'))return;
+uncover(el,idx);
+if(!first){
+first={idx,el};
+}else{
+second={idx,el};
+attempts++;
+attemptsEl.textContent=`Intento ${attempts}/${maxAttempts}`;
+checkMatch();
+}
+}
+
+function uncover(el,idx){
+el.classList.remove('covered');
+el.classList.add('uncovered','pop');
+el.textContent=cards[idx].text;
+}
+
+function cover(el){
+el.classList.remove('uncovered','pop','shake');
+el.classList.add('covered');
+el.textContent='?';
+}
+
+function checkMatch(){
+locked=true;
+const c1=cards[first.idx],c2=cards[second.idx];
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+first.el.classList.remove('uncovered');
+first.el.classList.add('matched');
+second.el.classList.remove('uncovered');
+second.el.classList.add('matched');
+matched++;
+pairsEl.textContent=`${matched}/${totalPairs} parejas`;
+history.push({pairId:c1.pairId,found:true});
+reset();
+if(matched===totalPairs){
+showResults(true);
+}
+}else{
+first.el.classList.add('shake');
+second.el.classList.add('shake');
+setTimeout(()=>{
+cover(first.el);
+cover(second.el);
+reset();
+if(attempts>=maxAttempts){
+showResults(false);
+}
+},2000);
+}
+}
+
+function reset(){
+first=null;second=null;locked=false;
+}
+
+function showResults(won){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const foundIds=history.filter(h=>h.found).map(h=>h.pairId);
+const missingPairs=pairs.filter(p=>!foundIds.includes(p.id));
+let html=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${won?'¡Excelente trabajo!':'¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/${totalPairs}</div>
+<div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div>
+</div>
+<div class="results-list">`;
+if(won){
+html+=`<div class="result-item correct"><div class="result-question">🎉 ¡Encontraste todas las parejas!</div><div class="result-explanation">Demostraste conocer el vocabulario técnico básico de electricidad.</div></div>`;
+}
+pairs.forEach(p=>{
+const found=foundIds.includes(p.id);
+html+=`<div class="result-item ${found?'correct':'incorrect'}">
+<div class="result-question">${p.a} ↔ ${p.b}</div>
+<div class="result-answer">${found?'✓ Pareja encontrada':'✗ No encontrada'}</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`;
+});
+if(!won){
+html+=`<div class="result-item"><div class="result-question">💪 No te rindas</div><div class="result-explanation">Revisa las parejas que faltaban y vuelve a intentarlo.</div></div>`;
+}
+html+=`</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+scene.innerHTML=html;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{init();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+init();
+</script>
+</body>
+</html>
