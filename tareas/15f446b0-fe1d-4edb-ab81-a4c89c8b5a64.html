@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Hay que pelar estos cables para hacer el empalme",opts:["Pelacables","Alicates de corte","Destornillador"],ans:0,exp:"El pelacables está diseñado para retirar el aislante sin dañar el conductor. Los alicates de corte pueden cortar el cable entero, y el destornillador no sirve para esta tarea."},
+{task:"Necesito saber si hay tensión en este enchufe",opts:["Flexómetro","Multímetro","Nivel de burbuja"],ans:1,exp:"El multímetro mide tensión, corriente y resistencia. El flexómetro mide longitudes y el nivel comprueba horizontalidad."},
+{task:"Tengo que cortar este tubo de PVC de 32mm",opts:["Llave inglesa","Sierra de arco","Destornillador"],ans:1,exp:"La sierra de arco corta tubos de PVC con precisión. La llave inglesa aprieta tuercas y el destornillador manipula tornillos."},
+{task:"Hay que apretar esta tuerca de difícil acceso",opts:["Llave inglesa","Martillo","Pelacables"],ans:0,exp:"La llave inglesa es ajustable y permite apretar tuercas de distintos tamaños. El martillo golpea y el pelacables pela cables."},
+{task:"Necesito comprobar si esta pared está nivelada",opts:["Multímetro","Flexómetro","Nivel de burbuja"],ans:2,exp:"El nivel de burbuja indica si una superficie está horizontal o vertical. El multímetro mide electricidad y el flexómetro mide distancias."},
+{task:"Tengo que hacer un agujero en esta pared de ladrillo",opts:["Taladro percutor","Sierra de calar","Llave inglesa"],ans:0,exp:"El taladro percutor perfora materiales duros como ladrillo. La sierra de calar corta madera y la llave inglesa aprieta tuercas."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const btns=opts.querySelectorAll('.btn-option');
+const correct=i===tasks[idx].ans;
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i){
+b.classList.add(correct?'correct':'incorrect');
+b.innerHTML=(correct?'✓ ':'✗ ')+tasks[idx].opts[j];
+}
+if(j===tasks[idx].ans&&!correct){
+b.classList.add('correct');
+b.innerHTML='✓ '+tasks[idx].opts[j];
+}
+});
+if(correct)score++;
+answers.push({task:tasks[idx].task,user:tasks[idx].opts[i],correctTool:tasks[idx].opts[tasks[idx].ans],correct,exp:tasks[idx].exp,allOpts:tasks[idx].opts});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const consejos="Consejo: Mantén tus herramientas limpias y en buen estado. El pelacables debe ajustarse al calibre del cable. El multímetro requiere seleccionar la escala correcta antes de medir. Las sierras necesitan hojas afiladas para cortes limpios.";
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Elegiste: '+a.user}</div>
+${!a.correct?`<div class="result-answer">Correcta: ${a.correctTool}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">${consejos}</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
