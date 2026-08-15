@@ -1,0 +1,116 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Hueco: Herramientas del Oficio 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Herramientas del Oficio 🔧</div>
+<div class="subtitle" id="instruction">Completa la frase correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="sentence-text"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const clozes=[
+{sentence:"Para medir tensión eléctrica, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","pinza amperimétrica"],exp:"El multímetro mide tensión, corriente y resistencia. El buscapolos solo detecta fase y la pinza mide corriente sin cortar el cable."},
+{sentence:"Para aflojar tuercas de distintos tamaños, necesito una ___.",blank:"llave inglesa",opts:["llave inglesa","llave fija","llave Allen"],exp:"La llave inglesa es ajustable para varias medidas. La fija solo sirve para una medida y la Allen es para tornillos hexagonales."},
+{sentence:"Para sellar roscas en tuberías de agua, aplico ___.",blank:"teflón",opts:["teflón","masilla","silicona"],exp:"El teflón (cinta PTFE) sella roscas metálicas. La masilla es para juntas estáticas y la silicona para sellados superficiales."},
+{sentence:"Para comprobar la presión del circuito de gas, uso un ___.",blank:"manómetro",opts:["manómetro","termómetro","higrómetro"],exp:"El manómetro mide presión. El termómetro mide temperatura y el higrómetro mide humedad."},
+{sentence:"Para fijar tornillos en madera sin taladrar, uso un ___.",blank:"atornillador",opts:["atornillador","taladro","destornillador de impacto"],exp:"El atornillador eléctrico fija tornillos. El taladro hace agujeros y el de impacto es para tornillos muy resistentes."},
+{sentence:"Antes de trabajar en altura, me pongo el ___.",blank:"arnés de seguridad",opts:["arnés de seguridad","casco","chaleco reflectante"],exp:"El arnés evita caídas en altura. El casco protege la cabeza y el chaleco da visibilidad, pero no evitan caídas."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),sentenceEl=document.getElementById('sentence-text'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper');
+
+function render(){
+if(idx>=clozes.length){showResults();return}
+const c=clozes[idx];
+sentenceEl.innerHTML=c.sentence.replace("___","<u>___</u>");
+prog.style.width=(idx/clozes.length*100)+"%";
+counter.textContent=(idx+1)+"/"+clozes.length;
+optsEl.innerHTML=c.opts.map((o,i)=>`<button class="btn-option" onclick="selectOpt(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOpt(i){
+const c=clozes[idx];
+const correct=c.opts[i]===c.blank;
+if(correct)score++;
+answers.push({sentence:c.sentence,blank:c.blank,user:c.opts[i],correct,exp:c.exp});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(correct?'correct':'incorrect');if(c.opts[j]===c.blank&&!correct)b.classList.add('correct');});
+sentenceEl.innerHTML=c.sentence.replace("___",`<u>${c.opts[i]}</u>`);
+setTimeout(()=>{idx++;render();},700);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${clozes.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace("___","<strong>"+a.blank+"</strong>")}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar el vocabulario técnico es clave para comunicarte con tu equipo y clientes. Practica nombrando las herramientas cada día.</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
