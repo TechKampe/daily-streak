@@ -1,0 +1,137 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Seguro o peligro? ⚡ Desliza tu instinto - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguro o peligro? ⚡</div>
+<div class="subtitle" id="subtitle">Desliza tu instinto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="tinder-card">
+<div class="tinder-card-content" id="card-content"></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza izquierda o derecha para responder</div>
+<div class="tinder-buttons" id="tinder-buttons">
+<button class="btn-option" id="btn-incorrect">❌ Incorrecto</button>
+<button class="btn-option" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔌 Primer día en obra</div>
+<div class="modal-body">El oficial te muestra situaciones. Desliza a la derecha si es seguro, o izquierda si es peligroso.</div>
+<div class="modal-actions">
+<button class="cta" id="start-btn">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Desconectar el diferencial antes de manipular cables",correct:true,exp:"Correcto. Siempre desconecta antes de trabajar."},
+{text:"Usar guantes de lana para trabajar con cuadros eléctricos",correct:false,exp:"La lana no aísla. Usa guantes dieléctricos."},
+{text:"Comprobar ausencia de tensión con un buscapolos",correct:true,exp:"Correcto. Verificar tensión evita accidentes."},
+{text:"Dejar cables pelados si hay prisa",correct:false,exp:"Nunca dejes cables expuestos. Riesgo de electrocución."},
+{text:"Señalizar la zona cuando el cuadro está abierto",correct:true,exp:"Correcto. Avisa a otros del peligro."},
+{text:"Trabajar con manos mojadas si es poca tensión",correct:false,exp:"El agua conduce. Nunca trabajes mojado."}
+];
+let idx=0,answers=[],startX=0,currentX=0,isDragging=false;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('tinder-card'),cardContent=document.getElementById('card-content'),progressBar=document.getElementById('progress-bar'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect');
+
+document.getElementById('start-btn').onclick=()=>{modal.classList.remove('active');renderCard();};
+modal.classList.add('active');
+
+function renderCard(){
+if(idx>=cards.length){showResults();return;}
+card.style.transform='translateX(0) rotate(0deg)';
+card.style.opacity='1';
+card.style.transition='none';
+cardContent.textContent=cards[idx].text;
+progressBar.style.width=((idx)/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+ensureFits();
+}
+
+function answer(isCorrect){
+const correct=cards[idx].correct===isCorrect;
+answers.push({q:cards[idx].text,userAnswer:isCorrect,correctAnswer:cards[idx].correct,isCorrect:correct,exp:cards[idx].exp});
+const direction=isCorrect?1:-1;
+card.style.transition='transform 0.3s ease, opacity 0.3s ease';
+card.style.transform=`translateX(${direction*300}px) rotate(${direction*20}deg)`;
+card.style.opacity='0';
+idx++;
+setTimeout(renderCard,350);
+}
+
+btnCorrect.onclick=()=>answer(true);
+btnIncorrect.onclick=()=>answer(false);
+
+card.addEventListener('touchstart',e=>{isDragging=true;startX=e.touches[0].clientX;card.style.transition='none';});
+card.addEventListener('touchmove',e=>{if(!isDragging)return;currentX=e.touches[0].clientX-startX;const rotate=currentX*0.1;card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;});
+card.addEventListener('touchend',()=>{if(!isDragging)return;isDragging=false;if(currentX>80){answer(true);}else if(currentX<-80){answer(false);}else{card.style.transition='transform 0.2s ease';card.style.transform='translateX(0) rotate(0deg)';}currentX=0;});
+
+card.addEventListener('mousedown',e=>{isDragging=true;startX=e.clientX;card.style.transition='none';});
+document.addEventListener('mousemove',e=>{if(!isDragging)return;currentX=e.clientX-startX;const rotate=currentX*0.1;card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;});
+document.addEventListener('mouseup',()=>{if(!isDragging)return;isDragging=false;if(currentX>80){answer(true);}else if(currentX<-80){answer(false);}else{card.style.transition='transform 0.2s ease';card.style.transform='translateX(0) rotate(0deg)';}currentX=0;});
+
+function showResults(){
+const score=answers.filter(a=>a.isCorrect).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">⚡ ¡Reto completado!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Decisiones correctas</div>
+</div>
+<div class="results-list">${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">${a.userAnswer?'Dijiste: ✅ Correcto':'Dijiste: ❌ Incorrecto'} ${a.isCorrect?'✓':'✗'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}</div>
+<div class="results-message">🛡️ Piensa antes de actuar. La seguridad empieza por ti.</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
