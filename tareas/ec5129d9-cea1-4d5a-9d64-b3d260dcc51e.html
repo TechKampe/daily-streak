@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Seguridad o eficiencia? ⚡ Clasifica sin dudar - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguridad o eficiencia? ⚡</div>
+<div class="subtitle" id="instruction">Clasifica cada acción</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="item-display" id="itemDisplay"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const items=[
+{text:"Verificar ausencia de tensión",cat:"Seguridad",exp:"Comprobar que no hay corriente evita electrocuciones."},
+{text:"Organizar herramientas antes",cat:"Eficiencia",exp:"Tener todo preparado ahorra tiempo y desplazamientos."},
+{text:"Usar guantes aislantes",cat:"Seguridad",exp:"Los guantes protegen de descargas eléctricas."},
+{text:"Etiquetar cables por colores",cat:"Ambas",exp:"Facilita el trabajo y reduce errores peligrosos."},
+{text:"Bloquear el cuadro eléctrico",cat:"Seguridad",exp:"Evita que alguien active la corriente mientras trabajas."},
+{text:"Planificar la ruta de cableado",cat:"Eficiencia",exp:"Una buena planificación reduce tiempo y material."},
+{text:"Usar casco en obra",cat:"Seguridad",exp:"Protege de caídas de objetos y golpes."},
+{text:"Revisar herramientas al inicio",cat:"Ambas",exp:"Detecta fallos de seguridad y evita interrupciones."},
+{text:"Señalizar zona de trabajo",cat:"Seguridad",exp:"Advierte a otros del peligro y evita accidentes."},
+{text:"Agrupar tareas similares",cat:"Eficiencia",exp:"Hacer tareas parecidas seguidas ahorra tiempo."}
+];
+const categories=["Seguridad","Eficiencia","Ambas"];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),main=document.getElementById('main'),itemDisplay=document.getElementById('itemDisplay'),catsEl=document.getElementById('categories'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),instruction=document.getElementById('instruction');
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+prog.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+itemDisplay.innerHTML=`<div class="item-text">${item.text}</div>`;
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCat('${c}')">${c}</button>`).join('');
+ensureFits();
+}
+
+function selectCat(cat){
+const item=items[idx];
+const correct=cat===item.cat;
+answers.push({text:item.text,user:cat,correct:item.cat,ok:correct,exp:item.exp});
+const btns=catsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===cat){
+b.classList.add(correct?'correct':'incorrect');
+if(correct){b.style.transform='scale(1.05)';setTimeout(()=>b.style.transform='',200);}
+}
+if(b.textContent===item.cat&&!correct)b.classList.add('correct');
+});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.ok).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.ok?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.ok?'✓ '+a.correct:'✗ '+a.user+' → '+a.correct}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Ante la duda, prioriza siempre la seguridad. La eficiencia vendrá con la práctica, pero un accidente puede ser irreversible.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
