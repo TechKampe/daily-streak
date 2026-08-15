@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 📋 ¡Demuestra lo que sabes! - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle" id="subtitle">Rellena los huecos del manual</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<p id="sentence"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{sentence:"Para verificar si hay corriente antes de trabajar, uso el ___.",blank:"buscapolos",opts:["buscapolos","alicates","cinta aislante"],exp:"El buscapolos detecta tensión. Los alicates cortan cable y la cinta aísla."},
+{sentence:"La tensión y resistencia de un circuito se miden con el ___.",blank:"multímetro",opts:["multímetro","nivel","flexómetro"],exp:"El multímetro mide magnitudes eléctricas. El nivel y flexómetro son para medidas físicas."},
+{sentence:"Para quitar el aislante del cable sin dañar el cobre, uso los ___.",blank:"alicates pelacables",opts:["alicates pelacables","alicates de corte","destornilladores"],exp:"Los pelacables retiran aislante sin cortar el conductor. Los de corte seccionan el cable entero."},
+{sentence:"Los cables van protegidos dentro de una ___ corrugada.",blank:"manguera",opts:["manguera","regleta","clema"],exp:"La manguera corrugada protege cables. La regleta y clema sirven para conectar conductores."},
+{sentence:"Para unir dos cables de forma segura y desmontable, uso una ___.",blank:"clema",opts:["clema","cinta aislante","brida"],exp:"La clema permite conexiones desmontables. La cinta aísla y la brida sujeta, no conectan."},
+{sentence:"Antes de tocar cualquier conductor, debo ___ la ausencia de tensión.",blank:"verificar",opts:["verificar","suponer","ignorar"],exp:"Verificar con herramientas adecuadas es obligatorio. Suponer o ignorar puede ser mortal."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),main=document.getElementById('main'),sentenceEl=document.getElementById('sentence'),optsEl=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+sentenceEl.innerHTML=d.sentence.replace('___','<u>___</u>');
+optsEl.innerHTML=d.opts.map(o=>`<button class="btn-option" onclick="select('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(opt){
+const d=data[idx];
+const correct=opt===d.blank;
+answers.push({sentence:d.sentence,blank:d.blank,user:opt,correct,exp:d.exp,opts:d.opts});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===d.blank)b.classList.add('correct');
+else if(b.textContent===opt&&!correct)b.classList.add('incorrect');
+});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.blank+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar la terminología técnica te permite comunicarte con claridad en obra y evitar errores peligrosos. Repasa estos términos hasta que sean automáticos.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
