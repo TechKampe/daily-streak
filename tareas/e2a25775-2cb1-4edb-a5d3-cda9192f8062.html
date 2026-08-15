@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Primero lo primero: Ordena y trabaja seguro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{title:"Preparar zona con herramientas eléctricas",steps:["Inspeccionar el área de trabajo","Verificar estado de herramientas","Conectar a toma con protección","Colocar señalización si es necesario","Comenzar el trabajo"],correctOrder:[0,1,2,3,4],tip:"Siempre revisa el entorno y tus herramientas antes de conectar nada a la red."},
+{title:"Actuar ante derrame de aceite",steps:["Señalizar la zona del derrame","Colocar material absorbente","Recoger residuos con pala","Limpiar superficie con desengrasante","Desechar residuos correctamente"],correctOrder:[0,1,2,3,4],tip:"Nunca pises un derrame sin señalizar; evita caídas y accidentes graves."},
+{title:"Recepcionar material en almacén",steps:["Verificar albarán vs. pedido","Inspeccionar estado del material","Registrar entrada en sistema","Etiquetar y ubicar en estantería","Comunicar incidencias si las hay"],correctOrder:[0,1,2,3,4],tip:"Registra siempre antes de almacenar para mantener el inventario correcto."}
+];
+let currentChallenge=0,userOrder=[],score=0,results=[],draggedIdx=null;
+const scene=document.getElementById('scene');
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function renderChallenge(){
+const ch=challenges[currentChallenge];
+userOrder=shuffle([...Array(ch.steps.length).keys()]);
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y trabaja seguro</div>
+<div class="subtitle">${ch.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${(currentChallenge/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main"><div class="cards" id="cards"></div></div>
+<div class="footer">
+<div class="helper">Ordena los pasos con ↑↓ o arrastrando</div>
+<button class="cta" id="confirmBtn">Confirmar orden</button>
+</div>`;
+renderCards();
+document.getElementById('confirmBtn').onclick=checkAnswer;
+ensureFits();
+}
+
+function renderCards(){
+const ch=challenges[currentChallenge];
+const container=document.getElementById('cards');
+container.innerHTML=userOrder.map((stepIdx,pos)=>`
+<div class="card" draggable="true" data-pos="${pos}">
+<span class="card-num">${pos+1}</span>
+<span class="card-text">${ch.steps[stepIdx]}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveCard(${pos},-1)">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveCard(${pos},1)">↓</button>
+</div>
+</div>`).join('');
+container.querySelectorAll('.card').forEach(card=>{
+card.addEventListener('dragstart',onDragStart);
+card.addEventListener('dragover',onDragOver);
+card.addEventListener('drop',onDrop);
+card.addEventListener('dragend',onDragEnd);
+card.addEventListener('touchstart',onTouchStart,{passive:false});
+card.addEventListener('touchmove',onTouchMove,{passive:false});
+card.addEventListener('touchend',onTouchEnd);
+});
+}
+
+function moveCard(pos,dir){
+const newPos=pos+dir;
+if(newPos<0||newPos>=userOrder.length)return;
+[userOrder[pos],userOrder[newPos]]=[userOrder[newPos],userOrder[pos]];
+renderCards();
+document.querySelectorAll('.card')[newPos].classList.add('dragging');
+setTimeout(()=>document.querySelectorAll('.card')[newPos].classList.remove('dragging'),200);
+}
+
+function onDragStart(e){draggedIdx=+e.target.closest('.card').dataset.pos;e.target.closest('.card').classList.add('dragging');}
+function onDragOver(e){e.preventDefault();}
+function onDrop(e){
+e.preventDefault();
+const targetPos=+e.target.closest('.card').dataset.pos;
+if(draggedIdx!==null&&draggedIdx!==targetPos){
+const item=userOrder.splice(draggedIdx,1)[0];
+userOrder.splice(targetPos,0,item);
+renderCards();
+}
+}
+function onDragEnd(e){e.target.classList.remove('dragging');draggedIdx=null;}
+
+let touchStartY=0,touchCardIdx=null,touchClone=null;
+function onTouchStart(e){
+const card=e.target.closest('.card');
+if(!card||e.target.closest('.btn-ghost'))return;
+touchCardIdx=+card.dataset.pos;
+touchStartY=e.touches[0].clientY;
+card.classList.add('dragging');
+}
+function onTouchMove(e){
+if(touchCardIdx===null)return;
+e.preventDefault();
+}
+function onTouchEnd(e){
+if(touchCardIdx===null)return;
+const endY=e.changedTouches[0].clientY;
+const diff=endY-touchStartY;
+const cards=document.querySelectorAll('.card');
+cards[touchCardIdx].classList.remove('dragging');
+if(Math.abs(diff)>30){
+const dir=diff>0?1:-1;
+const newPos=touchCardIdx+dir;
+if(newPos>=0&&newPos<userOrder.length){
+[userOrder[touchCardIdx],userOrder[newPos]]=[userOrder[newPos],userOrder[touchCardIdx]];
+renderCards();
+}
+}
+touchCardIdx=null;
+}
+
+function checkAnswer(){
+const ch=challenges[currentChallenge];
+const correct=userOrder.every((v,i)=>v===ch.correctOrder[i]);
+if(correct)score++;
+results.push({title:ch.title,userOrder:[...userOrder],correctOrder:ch.correctOrder,steps:ch.steps,correct,tip:ch.tip});
+showFeedback(correct,ch);
+}
+
+function showFeedback(correct,ch){
+const userSteps=userOrder.map((idx,i)=>`<div class="result-step">${i+1}. ${ch.steps[idx]}</div>`).join('');
+const correctSteps=ch.correctOrder.map((idx,i)=>`<div class="result-step">${i+1}. ${ch.steps[idx]}</div>`).join('');
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y trabaja seguro</div>
+<div class="subtitle">${ch.title}</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${((currentChallenge+1)/challenges.length)*100}%"></i></div></div>
+<span class="badge">Reto ${currentChallenge+1}/${challenges.length}</span>
+</div>
+</div>
+<div class="main">
+<div class="feedback-box">
+<div class="feedback-header ${correct?'correct':'incorrect'}">${correct?'✅ ¡Orden correcto!':'❌ Orden incorrecto'}</div>
+${!correct?`<div class="feedback-section"><div class="feedback-label">Tu orden:</div>${userSteps}</div>`:''}
+<div class="feedback-section"><div class="feedback-label">${correct?'Secuencia:':'✅ Orden correcto:'}</div>${correctSteps}</div>
+<div class="feedback-tip">💡 ${ch.tip}</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" id="nextBtn">${currentChallenge<challenges.length-1?'Siguiente reto':'Ver resultados'}</button>
+</div>`;
+document.getElementById('nextBtn').onclick=()=>{
+currentChallenge++;
+if(currentChallenge<challenges.length)renderChallenge();
+else showResults();
+};
+ensureFits();
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${challenges.length}</div>
+<div class="results-subtitle">Secuencias correctas</div>
+</div>
+<div class="results-list">
+${results.map(r=>`
+<div class="result-item ${r.correct?'correct':'incorrect'}">
+<div class="result-question">${r.correct?'✅':'❌'} ${r.title}</div>
+<div class="result-explanation">💡 ${r.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function showIntro(){
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primero lo primero</div>
+<div class="modal-body">Tu supervisor te evalúa. Ordena 3 procedimientos usando ↑↓ o arrastrando las tarjetas.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>
+</div>`;
+}
+
+function startGame(){
+document.getElementById('modal').classList.remove('active');
+renderChallenge();
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{showIntro();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
