@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 🔧</div>
+<div class="subtitle">Tu primer día en mantenimiento</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main"></div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">📋 Manual Básico</div>
+<div class="modal-body">Es tu primer día. Repasa el manual completando las frases con la herramienta o acción correcta.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const clozes = [
+{
+sentence: "Para medir tensión eléctrica, uso el",
+blank: "___",
+options: ["multímetro", "buscapolos", "manómetro"],
+answer: 0,
+explanation: "El multímetro mide tensión, corriente y resistencia. El buscapolos solo detecta fase y el manómetro mide presión de fluidos."
+},
+{
+sentence: "Antes de manipular un cuadro eléctrico, corto",
+blank: "___",
+options: ["el diferencial", "la luz", "el agua"],
+answer: 0,
+explanation: "Cortar el diferencial desconecta la alimentación de forma segura. 'La luz' es impreciso y el agua no tiene relación."
+},
+{
+sentence: "Para detectar fugas de gas usamos",
+blank: "___",
+options: ["detector de gas", "multímetro"],
+answer: 0,
+explanation: "El detector de gas identifica fugas por concentración. El multímetro solo mide magnitudes eléctricas."
+},
+{
+sentence: "Para roscar tubería metálica necesito",
+blank: "___",
+options: ["teflón", "soldadura", "masilla"],
+answer: 0,
+explanation: "El teflón sella roscas metálicas. La soldadura une por calor y la masilla es para sellados superficiales."
+},
+{
+sentence: "Para comprobar continuidad en un cable, uso el",
+blank: "___",
+options: ["multímetro", "buscapolos"],
+answer: 0,
+explanation: "El multímetro en modo continuidad detecta cortes. El buscapolos solo indica presencia de fase."
+},
+{
+sentence: "Para apretar tornillos con cabeza hexagonal uso",
+blank: "___",
+options: ["llave Allen", "destornillador"],
+answer: 0,
+explanation: "La llave Allen encaja en hexágonos interiores. El destornillador es para ranuras o cruciformes."
+}
+];
+
+let currentIndex = 0;
+let score = 0;
+let userAnswers = [];
+const scene = document.getElementById('scene');
+const main = document.getElementById('main');
+const prog = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const helper = document.getElementById('helper');
+const modal = document.getElementById('modal');
+
+function startGame() {
+modal.classList.remove('active');
+renderCloze();
+}
+
+function renderCloze() {
+if (currentIndex >= clozes.length) {
+showResults();
+return;
+}
+const c = clozes[currentIndex];
+prog.style.width = ((currentIndex) / clozes.length * 100) + '%';
+counter.textContent = (currentIndex + 1) + '/' + clozes.length;
+helper.textContent = 'Selecciona la palabra correcta';
+
+main.innerHTML = `
+<div class="cloze-container">
+<p class="cloze-sentence">${c.sentence} <span class="cloze-blank" id="blank">${c.blank}</span>.</p>
+<div class="options" id="options">
+${c.options.map((opt, i) => `<button class="btn-option" onclick="selectOption(${i})">${opt}</button>`).join('')}
+</div>
+</div>
+`;
+ensureFits();
+}
+
+function selectOption(idx) {
+const c = clozes[currentIndex];
+const correct = idx === c.answer;
+const blank = document.getElementById('blank');
+const buttons = document.querySelectorAll('.btn-option');
+
+buttons.forEach((btn, i) => {
+btn.disabled = true;
+if (i === c.answer) btn.classList.add('correct');
+else if (i === idx && !correct) btn.classList.add('incorrect');
+});
+
+blank.textContent = c.options[idx];
+blank.classList.add(correct ? 'correct' : 'incorrect');
+
+if (correct) score++;
+userAnswers.push({
+sentence: c.sentence,
+blank: c.options[c.answer],
+userAnswer: c.options[idx],
+correct: correct,
+explanation: c.explanation,
+options: c.options,
+answerIndex: c.answer
+});
+
+helper.textContent = correct ? '✓ ¡Correcto!' : '✗ Incorrecto';
+
+setTimeout(() => {
+currentIndex++;
+renderCloze();
+}, 1200);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual Completado!</div>
+<div class="results-score">${score}/${clozes.length}</div>
+<div class="results-subtitle">Frases correctas</div>
+</div>
+<div class="results-list">
+${userAnswers.map(a => `
+<div class="result-item ${a.correct ? 'correct' : 'incorrect'}">
+<div class="result-question">${a.sentence} <strong>${a.blank}</strong>.</div>
+<div class="result-answer">${a.correct ? '✓ Correcto' : '✗ Tu respuesta: ' + a.userAnswer}</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>
+`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar el vocabulario técnico te permite comunicarte con precisión en obra y evitar errores costosos. ¡Sigue practicando!</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>
+`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({
+action: 'TASK_COMPLETED'
+}));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+const scale = Math.max(0.88, scene.clientHeight / scene.scrollHeight);
+document.documentElement.style.setProperty('--ui-scale', scale);
+}
+}
+
+window.addEventListener('load', ensureFits);
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
