@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: Herramientas de fontanería - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la herramienta correcta para la tarea</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Cortar un tubo de cobre de 15mm",opts:["Cortatubos","Sierra de arco","Alicates"],ans:0,correct:"Cortatubos",tip:"El cortatubos hace cortes limpios sin virutas internas.",why:"La sierra deja rebabas peligrosas. Los alicates aplastan el tubo."},
+{task:"Apretar un racor de latón en grifo",opts:["Llave inglesa","Llave de tubo","Destornillador"],ans:0,correct:"Llave inglesa",tip:"La llave inglesa es ajustable y no daña el acabado.",why:"La llave de tubo puede rayar el latón. El destornillador no aplica aquí."},
+{task:"Desatascar el sifón del lavabo",opts:["Desatascador ventosa","Llave Stillson","Soplete"],ans:0,correct:"Desatascador ventosa",tip:"La ventosa genera presión para liberar obstrucciones.",why:"La Stillson es para tuberías. El soplete derretiría el PVC."},
+{task:"Medir el diámetro interior de tubería",opts:["Calibre pie de rey","Metro flexible","Nivel de burbuja"],ans:0,correct:"Calibre pie de rey",tip:"El calibre mide con precisión diámetros interiores y exteriores.",why:"El metro no mide diámetros. El nivel mide inclinación, no longitud."},
+{task:"Sellar la rosca de un grifo",opts:["Cinta de teflón","Silicona","Masilla epoxi"],ans:0,correct:"Cinta de teflón",tip:"El teflón sella roscas sin residuos y permite desmontar.",why:"La silicona es para juntas fijas. La masilla es permanente."},
+{task:"Unir dos tubos de cobre con soldadura",opts:["Soplete de gas","Pistola de calor","Secador industrial"],ans:0,correct:"Soplete de gas",tip:"El soplete alcanza temperatura para fundir el estaño.",why:"La pistola de calor no llega a 250°C. El secador es para secar, no soldar."}
+];
+let idx=0,score=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];locked=false;
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+if(locked)return;
+locked=true;
+const t=tasks[idx];
+const correct=i===t.ans;
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correct:t.correct,ok:correct,tip:t.tip,why:t.why});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+if(j===i){
+b.classList.add(correct?'correct':'incorrect');
+b.innerHTML=(correct?'✓ ':'✗ ')+t.opts[j];
+}
+if(j===t.ans&&!correct){
+b.classList.add('correct');
+b.innerHTML='✓ '+t.opts[j];
+}
+});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Prueba completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.ok?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.ok?'✓ '+a.correct:'✗ Elegiste: '+a.user+' → Correcta: '+a.correct}</div>
+<div class="result-explanation">${a.ok?a.tip:a.why+' '+a.tip}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>Consejo práctico:</strong> Antes de cada tarea, piensa: ¿corto, aprieto, mido o sello? Cada acción tiene su herramienta específica.
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
