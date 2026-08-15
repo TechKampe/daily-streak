@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🧠 Conecta los Cables: Memory de Seguridad - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+.memory-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;width:100%;max-width:400px;margin:0 auto}
+.mem-card{height:70px;width:100%;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;transition:transform 0.2s ease;user-select:none;-webkit-tap-highlight-color:transparent;padding:4px;box-sizing:border-box}
+.mem-card.covered{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.mem-card.revealed{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;line-height:1.2}
+.mem-card.shake{animation:shake 0.5s ease}
+.mem-card.pop{animation:pop 0.2s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats-row{display:flex;justify-content:center;gap:16px;font-size:14px;color:#0B214A;margin:8px 0}
+.stats-row span{background:#f0f0f0;padding:4px 10px;border-radius:12px}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🧠 Memory de Seguridad</div>
+<div class="subtitle">Empareja cada EPI con su riesgo</div>
+</div>
+</div>
+<div class="main">
+<div class="stats-row">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="memory-board" id="board"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca dos cartas para encontrar parejas</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const pairsData=[
+{id:1,a:"Guantes aislantes",b:"Descarga eléctrica",exp:"Los guantes aislantes evitan que la corriente pase por tu cuerpo."},
+{id:2,a:"Casco",b:"Caída de objetos",exp:"El casco protege tu cabeza de herramientas o materiales que caen."},
+{id:3,a:"Gafas protectoras",b:"Proyección de partículas",exp:"Las gafas evitan que virutas o chispas dañen tus ojos."},
+{id:4,a:"Mascarilla FFP2",b:"Inhalación de polvo",exp:"La mascarilla filtra partículas nocivas del aire que respiras."}
+];
+let cards=[],flipped=[],matchedPairs=0,attempts=0,locked=false;
+const board=document.getElementById('board'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs'),scene=document.getElementById('scene');
+
+function init(){
+cards=[];
+pairsData.forEach(p=>{
+cards.push({pairId:p.id,text:p.a,type:'a'});
+cards.push({pairId:p.id,text:p.b,type:'b'});
+});
+shuffle(cards);
+renderBoard();
+}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+function renderBoard(){
+board.innerHTML='';
+cards.forEach((c,i)=>{
+const div=document.createElement('div');
+div.className='mem-card covered';
+div.dataset.index=i;
+div.textContent='?';
+div.onclick=()=>flipCard(i);
+board.appendChild(div);
+});
+updateStats();
+ensureFits();
+}
+
+function flipCard(i){
+if(locked)return;
+const el=board.children[i];
+if(el.classList.contains('matched')||el.classList.contains('revealed'))return;
+el.classList.remove('covered');
+el.classList.add('revealed','pop');
+el.textContent=cards[i].text;
+flipped.push(i);
+if(flipped.length===2){
+locked=true;
+attempts++;
+updateStats();
+checkMatch();
+}
+}
+
+function checkMatch(){
+const[i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+const el1=board.children[i1],el2=board.children[i2];
+if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+el1.classList.remove('revealed');el1.classList.add('matched');
+el2.classList.remove('revealed');el2.classList.add('matched');
+matchedPairs++;
+updateStats();
+flipped=[];
+locked=false;
+if(matchedPairs===4)endGame(true);
+}else{
+el1.classList.add('shake');el2.classList.add('shake');
+setTimeout(()=>{
+el1.classList.remove('revealed','shake');el1.classList.add('covered');el1.textContent='?';
+el2.classList.remove('revealed','shake');el2.classList.add('covered');el2.textContent='?';
+flipped=[];
+locked=false;
+if(attempts>=10&&matchedPairs<4)endGame(false);
+},2000);
+}
+}
+
+function updateStats(){
+attemptsEl.textContent=`Intento ${attempts}/10`;
+pairsEl.textContent=`${matchedPairs}/4 parejas`;
+}
+
+function endGame(won){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const foundIds=[];
+cards.forEach((c,i)=>{if(board.children[i].classList.contains('matched')&&!foundIds.includes(c.pairId))foundIds.push(c.pairId);});
+let html=`<div class="results-scroll"><div class="results-header"><div class="results-title">${won?'¡Felicidades!':'¡Sigue practicando!'}</div><div class="results-score">${matchedPairs}/4</div><div class="results-subtitle">Parejas encontradas en ${attempts} intentos</div></div><div class="results-list">`;
+pairsData.forEach(p=>{
+const found=foundIds.includes(p.id);
+html+=`<div class="result-item ${found?'correct':'incorrect'}"><div class="result-question">${p.a} ↔ ${p.b}</div><div class="result-answer">${found?'✓ Emparejado':'✗ No encontrado'}</div><div class="result-explanation">${p.exp}</div></div>`;
+});
+html+=`</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+scene.innerHTML=html;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{init();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+init();
+</script>
+</body>
+</html>
