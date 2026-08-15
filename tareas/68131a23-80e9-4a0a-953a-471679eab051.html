@@ -1,0 +1,116 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Protocolo 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Protocolo 🔧</div>
+<div class="subtitle">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="cloze-text"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Elige la herramienta o término correcto</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const clozes=[
+{text:"Para medir tensión en el cuadro, uso el ___.",opts:["multímetro","buscapolos"],ans:0,exp:"El multímetro mide tensión, corriente y resistencia. El buscapolos solo detecta presencia de fase."},
+{text:"Para saber si un cable tiene corriente, uso el ___.",opts:["buscapolos","multímetro"],ans:0,exp:"El buscapolos detecta rápidamente si hay fase. El multímetro da mediciones precisas pero es más lento."},
+{text:"El ___ protege contra contactos indirectos.",opts:["diferencial","magnetotérmico"],ans:0,exp:"El diferencial detecta fugas a tierra. El magnetotérmico protege contra sobrecargas y cortocircuitos."},
+{text:"El ___ salta cuando hay sobrecarga.",opts:["magnetotérmico","diferencial"],ans:0,exp:"El magnetotérmico corta por exceso de corriente. El diferencial actúa por fugas, no por sobrecarga."},
+{text:"La intensidad se mide en ___.",opts:["amperios","voltios"],ans:0,exp:"Los amperios miden intensidad de corriente. Los voltios miden diferencia de potencial o tensión."},
+{text:"El cable marrón es la ___ y el azul es el neutro.",opts:["fase","tierra"],ans:0,exp:"Por normativa, marrón/negro/gris son fase. El verde/amarillo es tierra, no el azul."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),clozeText=document.getElementById('cloze-text');
+
+function render(){
+if(idx>=clozes.length){showResults();return}
+const c=clozes[idx];
+prog.style.width=((idx)/clozes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+clozes.length;
+clozeText.innerHTML=c.text.replace('___','<u>______</u>');
+optsEl.innerHTML=c.opts.map((o,i)=>`<button class="btn-option" onclick="choose(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function choose(i){
+const c=clozes[idx];
+const correct=i===c.ans;
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===c.ans)b.classList.add('correct');else if(j===i)b.classList.add('incorrect');});
+clozeText.innerHTML=c.text.replace('___',`<u>${c.opts[c.ans]}</u>`);
+answers.push({text:c.text.replace('___',c.opts[c.ans]),user:c.opts[i],correct,exp:c.exp});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+const score=answers.filter(a=>a.correct).length;
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Protocolo completado!</div>
+<div class="results-score">${score}/${clozes.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar la terminología técnica te permite comunicarte con precisión en obra y evitar errores costosos.</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
