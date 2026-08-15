@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 🔧</div>
+<div class="subtitle">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="cloze-text"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Tu primer día: completa el manual</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const clozes=[
+{sentence:"Antes de soldar, me pongo la ___.",answer:"careta",options:["careta","gorra","bufanda"],explanation:"La careta protege los ojos de la radiación UV. La gorra no protege y la bufanda no es un EPI."},
+{sentence:"Para cortar tubo de cobre uso la ___.",answer:"cortatubos",options:["cortatubos","sierra de calar","radial"],explanation:"El cortatubos da un corte limpio sin virutas. La sierra y radial deforman el tubo."},
+{sentence:"Al detectar un escape de gas, primero debo ___.",answer:"ventilar",options:["ventilar","encender la luz","llamar al vecino"],explanation:"Ventilar evita acumulación. Encender luz puede generar chispa. El vecino no es prioridad."},
+{sentence:"Al llegar a una vivienda, lo primero es ___.",answer:"saludar e identificarme",options:["saludar e identificarme","empezar a trabajar"],explanation:"Presentarse genera confianza. Empezar sin avisar es poco profesional."},
+{sentence:"Para medir tensión, uso el ___.",answer:"multímetro",options:["multímetro","buscapolos","manómetro"],explanation:"El multímetro mide tensión exacta. El buscapolos solo detecta fase. El manómetro mide presión."},
+{sentence:"Antes de intervenir un cuadro eléctrico, debo ___.",answer:"cortar la corriente",options:["cortar la corriente","avisar al vecino","ponerme guantes de lana"],explanation:"Cortar la corriente evita electrocución. Los guantes de lana no aíslan."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),clozeText=document.getElementById('cloze-text');
+
+function render(){
+if(idx>=clozes.length){showResults();return}
+const c=clozes[idx];
+prog.style.width=((idx)/clozes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+clozes.length;
+clozeText.textContent=c.sentence;
+optsEl.innerHTML=c.options.map(o=>`<button class="btn-option" onclick="selectOption('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(chosen){
+const c=clozes[idx];
+const correct=chosen===c.answer;
+answers.push({sentence:c.sentence,answer:c.answer,user:chosen,correct,explanation:c.explanation});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===chosen)b.classList.add(correct?'correct':'incorrect');
+if(b.textContent===c.answer)b.classList.add('correct');
+});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual Completado!</div>
+<div class="results-score">${score}/${clozes.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`
+<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___',`<strong>${a.answer}</strong>`)}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>`).join('')}
+</div>
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Usar la terminología correcta evita errores y demuestra profesionalidad ante clientes y compañeros.</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
