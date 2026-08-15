@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Encuentra el Fallo: Obra Segura - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Encuentra el Fallo</div>
+<div class="subtitle" id="sceneDesc">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el ítem que contiene el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">👷 Supervisor en Prueba</div>
+<div class="modal-body">Tu mentor te muestra 5 situaciones de obra. Detecta el error en cada una antes de que cause problemas.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes = [
+{
+desc: "Operario trabajando en zona de lijado",
+items: ["Gafas de protección puestas", "Lijadora conectada", "Sin mascarilla antipolvo", "Ventilación adecuada"],
+error: 2,
+exp: "El polvo del lijado daña los pulmones. La mascarilla FFP2 es obligatoria en trabajos con partículas."
+},
+{
+desc: "Instalación eléctrica en el suelo",
+items: ["Interruptor diferencial activo", "Cable pelado cerca de charco", "Herramientas aisladas"],
+error: 1,
+exp: "Agua + electricidad = riesgo mortal. Los cables dañados deben repararse antes de usar."
+},
+{
+desc: "Trabajador subido a estructura metálica",
+items: ["Arnés de seguridad puesto", "Casco colgado del cinturón", "Botas con puntera reforzada"],
+error: 1,
+exp: "El casco debe estar PUESTO, no colgado. Protege de golpes y caída de objetos."
+},
+{
+desc: "Zona de almacenaje de emergencias",
+items: ["Botiquín visible", "Extintor bloqueado por sacos", "Señalización de salida", "Iluminación de emergencia"],
+error: 1,
+exp: "El extintor debe tener acceso libre siempre. En emergencia, cada segundo cuenta."
+},
+{
+desc: "Corte de material cerámico",
+items: ["Disco de corte adecuado", "Protector de disco quitado", "Agua para refrigerar"],
+error: 1,
+exp: "El protector evita proyecciones y cortes graves. Nunca se debe retirar."
+}
+];
+
+let idx = 0, answers = [];
+const scene = document.getElementById('scene');
+const opts = document.getElementById('options');
+const descEl = document.getElementById('sceneDesc');
+const prog = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const introModal = document.getElementById('introModal');
+
+function startGame() {
+introModal.classList.remove('active');
+render();
+}
+
+function render() {
+if (idx >= scenes.length) { showResults(); return; }
+const s = scenes[idx];
+descEl.textContent = s.desc;
+prog.style.width = (idx / scenes.length * 100) + '%';
+counter.textContent = (idx + 1) + '/' + scenes.length;
+opts.innerHTML = s.items.map((item, i) =>
+`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`
+).join('');
+ensureFits();
+}
+
+function selectItem(i) {
+const s = scenes[idx];
+const correct = i === s.error;
+const btns = opts.querySelectorAll('.btn-option');
+btns.forEach((b, j) => {
+b.disabled = true;
+if (j === i) b.classList.add(correct ? 'correct' : 'incorrect');
+if (j === s.error && !correct) b.classList.add('correct');
+});
+answers.push({
+scene: s.desc,
+chosen: s.items[i],
+correct: s.items[s.error],
+wasCorrect: correct,
+exp: s.exp
+});
+setTimeout(() => { idx++; render(); }, 800);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+const score = answers.filter(a => a.wasCorrect).length;
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🎯 ¡Inspección completada!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a, i) => `
+<div class="result-item ${a.wasCorrect ? 'correct' : 'incorrect'}">
+<div class="result-question">${i + 1}. ${a.scene}</div>
+<div class="result-answer">${a.wasCorrect ? '✓ ' + a.chosen : '✗ Elegiste: ' + a.chosen}</div>
+${!a.wasCorrect ? `<div class="result-answer">→ Correcto: ${a.correct}</div>` : ''}
+<div class="result-explanation">${a.exp}</div>
+</div>
+`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo de tu mentor</div>
+<div class="result-explanation">La prevención empieza por la observación. Cada detalle cuenta para volver a casa sano.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+}
+}
+
+window.addEventListener('load', () => { introModal.classList.add('active'); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
