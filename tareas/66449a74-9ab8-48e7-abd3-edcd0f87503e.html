@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 📋 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<p id="sentence"></p>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Elige la palabra que completa la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{sentence:"Para medir tensión en un circuito, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","alicates"],exp:{correct:"El multímetro mide tensión, corriente y resistencia.",wrong:{"buscapolos":"El buscapolos solo detecta presencia de fase.","alicates":"Los alicates son para cortar o sujetar cables."|}|}},
+{sentence:"Antes de trabajar, debo verificar la ___ de tensión.",blank:"ausencia",opts:["ausencia","presencia","cantidad"],exp:{correct:"Siempre se verifica ausencia de tensión por seguridad.",wrong:{"presencia":"Verificar presencia no garantiza seguridad.","cantidad":"No se habla de cantidad de tensión en este contexto."|}|}},
+{sentence:"Para proteger mis manos uso guantes ___.",blank:"aislantes",opts:["aislantes","de cuero","térmicos"],exp:{correct:"Los guantes aislantes protegen de descargas eléctricas.",wrong:{"de cuero":"El cuero no aísla de la electricidad.","térmicos":"Los térmicos protegen del calor, no de electricidad."|}|}},
+{sentence:"El cable verde-amarillo es el conductor de ___.",blank:"tierra",opts:["tierra","fase","neutro"],exp:{correct:"Por normativa, verde-amarillo identifica la tierra.",wrong:{"fase":"La fase usa marrón, negro o gris.","neutro":"El neutro es de color azul."|}|}},
+{sentence:"Un material que no conduce electricidad es un ___.",blank:"aislante",opts:["aislante","conductor","semiconductor"],exp:{correct:"Los aislantes impiden el paso de corriente.",wrong:{"conductor":"El conductor permite el paso de corriente.","semiconductor":"El semiconductor conduce en ciertas condiciones."|}|}},
+{sentence:"Para detectar fase en un enchufe uso el ___.",blank:"buscapolos",opts:["buscapolos","multímetro","destornillador"],exp:{correct:"El buscapolos detecta presencia de fase fácilmente.",wrong:{"multímetro":"El multímetro sirve pero es menos práctico aquí.","destornillador":"Un destornillador normal no detecta fase."|}|}}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),sentenceEl=document.getElementById('sentence'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=data.length){showResults();return|}
+const d=data[idx];
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+sentenceEl.innerHTML=d.sentence.replace('___','<u>___</u>');
+optsEl.innerHTML=d.opts.map(o=>`<button class="btn-option" onclick="select('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(choice){
+const d=data[idx];
+const correct=choice===d.blank;
+if(correct)score++;
+const wrongExps=[];
+d.opts.forEach(o=>{if(o!==d.blank)wrongExps.push(o+': '+d.exp.wrong[o]);});
+answers.push({sentence:d.sentence,blank:d.blank,user:choice,correct,expCorrect:d.exp.correct,wrongExps});
+optsEl.querySelectorAll('.btn-option').forEach(b=>{
+if(b.textContent===d.blank)b.classList.add('correct');
+else if(b.textContent===choice&&!correct)b.classList.add('incorrect');
+b.disabled=true;
+});
+sentenceEl.innerHTML=d.sentence.replace('___','<u>'+d.blank+'</u>');
+setTimeout(()=>{idx++;render();},700);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.blank+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Correcto: '+a.user:'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.expCorrect}</div>
+${!a.correct?'<div class="result-explanation">'+a.wrongExps.join(' ')+'</div>':''}
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>Consejo:</strong> Dominar el vocabulario técnico te ayuda a comunicarte con tu equipo y trabajar con seguridad.
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+|}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+|}
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
