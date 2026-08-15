@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas de fontanería - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Cortar un tubo de cobre de 15mm",opts:["Cortatubos","Sierra de metal","Tijeras de PVC"],ans:0,correct:"Cortatubos",why:["El cortatubos hace cortes limpios y precisos en cobre sin deformar el tubo.","La sierra deja rebabas y puede aplastar el tubo.","Las tijeras de PVC no cortan metal."],tip:"Usa cortatubos para cobre y multicapa; sierra solo si no cabe la herramienta."},
+{task:"Apretar el racor del desagüe del lavabo",opts:["Llave inglesa","Alicates","Destornillador"],ans:0,correct:"Llave inglesa",why:["La llave inglesa ajusta a distintos tamaños y aprieta sin dañar.","Los alicates marcan y redondean las tuercas.","El destornillador no sirve para tuercas."],tip:"La llave inglesa es versátil; usa llave fija si conoces la medida exacta."},
+{task:"Sellar la unión de dos tubos de PVC",opts:["Pegamento PVC","Soldador de estaño","Cinta de teflón"],ans:0,correct:"Pegamento PVC",why:["El pegamento PVC fusiona químicamente las piezas de PVC.","El soldador es para cobre, no plástico.","El teflón sella roscas, no uniones lisas de PVC."],tip:"Limpia y aplica imprimación antes del pegamento PVC para mejor adherencia."},
+{task:"Desatascar el sifón del fregadero",opts:["Desatascador de ventosa","Soplete","Curvadora"],ans:0,correct:"Desatascador de ventosa",why:["La ventosa crea presión/succión para mover el tapón.","El soplete es para soldar, no desatascar.","La curvadora dobla tubos, no desatasca."],tip:"Usa ventosa antes de químicos; si no funciona, desmonta el sifón."},
+{task:"Doblar tubo multicapa de 20mm",opts:["Curvadora de muelles","Llave inglesa","Cortatubos"],ans:0,correct:"Curvadora de muelles",why:["La curvadora evita que el tubo se aplaste al doblarlo.","La llave inglesa no dobla tubos.","El cortatubos corta, no dobla."],tip:"Introduce el muelle por dentro del tubo y dobla con las manos en ángulo suave."},
+{task:"Comprobar el caudal del grifo",opts:["Caudalímetro","Manómetro","Nivel de burbuja"],ans:0,correct:"Caudalímetro",why:["El caudalímetro mide litros por minuto de agua.","El manómetro mide presión, no caudal.","El nivel mide horizontalidad, no agua."],tip:"Caudal mínimo recomendado: 6-10 L/min para ducha confortable."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx];
+const correct=i===t.ans;
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correct:t.correct,isCorrect:correct,why:t.why,tip:t.tip});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i){
+b.classList.add(correct?'correct':'incorrect');
+b.innerHTML=(correct?'✓ ':'✗ ')+t.opts[j];
+}
+if(j===t.ans&&!correct){
+b.classList.add('correct');
+b.innerHTML='✓ '+t.opts[j];
+}
+});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Jornada completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.isCorrect?'✓ '+a.user:'✗ Elegiste: '+a.user+' → Correcta: '+a.correct}</div>
+<div class="result-explanation">${a.isCorrect?a.why[0]:a.why[tasks[answers.indexOf(a)].opts.indexOf(a.user)]||a.why[1]}</div>
+<div class="result-explanation"><strong>Consejo:</strong> ${a.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{render();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
