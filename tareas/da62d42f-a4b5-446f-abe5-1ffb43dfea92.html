@@ -1,0 +1,275 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tu primera satisfacción de cliente 💬 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene"></div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+mentor:{name:"Carlos (Mentor)",img:"https://techkampe.github.io/daily-streak/assets/Avatar 1_low.png"},
+cliente:{name:"Sra. García",img:"https://techkampe.github.io/daily-streak/assets/Avatar 4_low.png"},
+compañero:{name:"Luis (Compañero)",img:"https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png"}
+};
+
+const turns=[
+{
+messages:[
+{from:"mentor",text:"¡Ey! ¿Qué tal ha ido la instalación? Recuerda explicarle bien al cliente lo que has hecho 👍"},
+{from:"cliente",text:"Bueno, ya veo que has terminado... ¿Me puedes explicar qué has hecho exactamente?"}
+],
+options:[
+{text:"He instalado el enchufe y ya está listo para usar",type:"partial",reaction:"cliente",reactionText:"Mmm, vale... pero ¿es seguro?"},
+{text:"He cambiado el enchufe antiguo por uno nuevo con toma de tierra, todo según normativa",type:"correct",reaction:"cliente",reactionText:"¡Ah, perfecto! Me quedo más tranquila 😊"},
+{text:"Pues lo típico, el trabajo de siempre",type:"incorrect",reaction:"cliente",reactionText:"Ya... pero no me queda muy claro qué has hecho..."}
+],
+feedback:{
+correct:"Explicar el trabajo en lenguaje sencillo genera confianza.",
+partial:"Respuesta correcta pero incompleta, falta detalle técnico.",
+incorrect:"Respuestas vagas generan desconfianza en el cliente."
+}
+},
+{
+messages:[
+{from:"cliente",text:"Por cierto, he visto que hay un poco de polvo en el suelo cerca del enchufe..."}
+],
+options:[
+{text:"Ahora mismo lo limpio, siempre dejo la zona como estaba",type:"correct",reaction:"cliente",reactionText:"¡Muchas gracias! Se nota el profesionalismo ✨"},
+{text:"Es normal, es poco polvo, no pasa nada",type:"incorrect",reaction:"cliente",reactionText:"Bueno... esperaba que lo dejaras limpio..."},
+{text:"¿Tiene una escoba? Lo recojo rápido",type:"partial",reaction:"cliente",reactionText:"Sí, claro... toma."}
+],
+feedback:{
+correct:"Limpiar siempre tu zona de trabajo es marca de profesionalidad.",
+partial:"Bien por ofrecerte, pero lleva siempre tu propio material de limpieza.",
+incorrect:"Dejar suciedad da muy mala imagen profesional."
+}
+},
+{
+messages:[
+{from:"compañero",text:"Ey, ¿cómo va? Si te pide algo extra, no lo hagas gratis eh 😅"},
+{from:"cliente",text:"Oye, ya que estás aquí... ¿podrías echarle un vistazo a otro enchufe del pasillo?"}
+],
+options:[
+{text:"Claro, puedo revisarlo y le paso presupuesto si necesita arreglo",type:"correct",reaction:"cliente",reactionText:"Me parece bien, así sé a qué atenerme 👍"},
+{text:"Lo miro rápido gratis, no hay problema",type:"incorrect",reaction:"cliente",reactionText:"¡Oh, genial! (Esto sienta mal precedente...)"},
+{text:"Hoy no puedo, pero puedo volver otro día",type:"partial",reaction:"cliente",reactionText:"Vale, lo entiendo. Ya te llamaré."}
+],
+feedback:{
+correct:"Ofrecer presupuesto es profesional y valora tu trabajo.",
+partial:"Válido, pero pierdes oportunidad de fidelizar.",
+incorrect:"Trabajar gratis devalúa tu oficio y crea malas expectativas."
+}
+},
+{
+messages:[
+{from:"cliente",text:"¿Y si el enchufe falla en unos días? ¿Tiene alguna garantía esto?"}
+],
+options:[
+{text:"Tiene 1 año de garantía en mano de obra, guarde la factura",type:"correct",reaction:"cliente",reactionText:"Perfecto, me quedo tranquila entonces 😊"},
+{text:"No se preocupe, no va a fallar",type:"incorrect",reaction:"cliente",reactionText:"Ya, pero por si acaso..."},
+{text:"Si falla me llama y lo reviso",type:"partial",reaction:"cliente",reactionText:"Vale... ¿pero tiene algún coste?"}
+],
+feedback:{
+correct:"Informar sobre garantías genera confianza y profesionalidad.",
+partial:"Bien ofrecerte, pero especifica siempre las condiciones.",
+incorrect:"Evitar el tema de garantías genera desconfianza."
+}
+},
+{
+messages:[
+{from:"mentor",text:"No olvides entregarle la factura o albarán, es importante 📝"},
+{from:"cliente",text:"Bueno, creo que ya está todo... ¿verdad?"}
+],
+options:[
+{text:"Sí, aquí tiene la factura. Cualquier duda, tiene mi contacto. ¡Gracias!",type:"correct",reaction:"cliente",reactionText:"¡Muchas gracias! Ha sido un placer, le recomendaré 🌟"},
+{text:"Sí, ya está. ¡Hasta luego!",type:"partial",reaction:"cliente",reactionText:"Vale, adiós... (¿y la factura?)"},
+{text:"Sí. Ya me voy que tengo otro trabajo",type:"incorrect",reaction:"cliente",reactionText:"Ah... vale, pues nada. (Qué prisas...)"}
+],
+feedback:{
+correct:"Cierre profesional: factura, contacto y agradecimiento.",
+partial:"Olvidar la factura es un error común pero grave.",
+incorrect:"Las prisas dan imagen de poco profesional."
+}
+}
+];
+
+let currentTurn=0,chatHistory=[],decisions=[];
+const scene=document.getElementById('scene');
+
+function renderIntro(){
+scene.innerHTML=`
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primera satisfacción de cliente 💬</div>
+<div class="modal-body">Acabas de instalar un enchufe. Gestiona la conversación con el cliente de forma profesional.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>`;
+}
+
+function startGame(){
+document.getElementById('modal').classList.remove('active');
+renderTurn();
+}
+
+function renderTurn(){
+const turn=turns[currentTurn];
+const progress=((currentTurn)/turns.length*100);
+scene.innerHTML=`
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Cliente: Sra. García 💬</div>
+<div class="subtitle">Elige tu respuesta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i style="width:${progress}%"></i></div></div>
+<span class="badge">${currentTurn+1}/${turns.length}</span>
+</div>
+</div>
+<div class="chat-container" id="chatContainer">
+<div class="chat-history" id="chatHistory"></div>
+</div>
+<div class="chat-options" id="chatOptions"></div>`;
+renderChatHistory();
+renderCurrentMessages(turn.messages);
+renderOptions(turn.options);
+ensureFits();
+}
+
+function renderChatHistory(){
+const container=document.getElementById('chatHistory');
+container.innerHTML=chatHistory.map(m=>{
+if(m.isUser){
+return `<div class="chat-bubble user"><div class="bubble-content user-bubble">${m.text}</div></div>`;
+}else{
+const av=avatars[m.from];
+return `<div class="chat-bubble other">
+<img class="chat-avatar" src="${av.img}" alt="${av.name}">
+<div class="bubble-wrapper">
+<span class="bubble-name">${av.name}</span>
+<div class="bubble-content">${m.text}</div>
+</div>
+</div>`;
+}
+}).join('');
+}
+
+function renderCurrentMessages(messages){
+const container=document.getElementById('chatHistory');
+messages.forEach(m=>{
+const av=avatars[m.from];
+container.innerHTML+=`<div class="chat-bubble other">
+<img class="chat-avatar" src="${av.img}" alt="${av.name}">
+<div class="bubble-wrapper">
+<span class="bubble-name">${av.name}</span>
+<div class="bubble-content">${m.text}</div>
+</div>
+</div>`;
+chatHistory.push(m);
+});
+scrollChatToBottom();
+}
+
+function scrollChatToBottom(){
+const container=document.getElementById('chatContainer');
+if(container)container.scrollTop=container.scrollHeight;
+}
+
+function renderOptions(options){
+const container=document.getElementById('chatOptions');
+container.innerHTML=options.map((o,i)=>`<button class="btn-option chat-option" onclick="selectOption(${i})">${o.text}</button>`).join('');
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const option=turn.options[idx];
+chatHistory.push({isUser:true,text:option.text});
+decisions.push({turn:currentTurn,question:turn.messages[turn.messages.length-1].text,answer:option.text,type:option.type,feedback:turn.feedback[option.type]});
+const reactionMsg={from:option.reaction,text:option.reactionText};
+chatHistory.push(reactionMsg);
+currentTurn++;
+if(currentTurn>=turns.length){
+showResults();
+}else{
+renderTurn();
+}
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const correct=decisions.filter(d=>d.type==='correct').length;
+const partial=decisions.filter(d=>d.type==='partial').length;
+scene.innerHTML=`
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Conversación completada!</div>
+<div class="results-score">${correct}/${turns.length}</div>
+<div class="results-subtitle">Respuestas óptimas${partial>0?' (+'+partial+' parciales)':''}</div>
+</div>
+<div class="results-list">
+${decisions.map((d,i)=>`<div class="result-item ${d.type==='correct'?'correct':d.type==='partial'?'partial':'incorrect'}">
+<div class="result-question">Turno ${i+1}</div>
+<div class="result-answer">${d.type==='correct'?'✓ Óptima':d.type==='partial'?'◐ Parcial':'✗ Mejorable'}: ${d.answer.substring(0,40)}...</div>
+<div class="result-explanation">${d.feedback}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> La fidelización se construye con pequeños detalles: limpieza, explicaciones claras, factura y despedida profesional.
+</div>
+<div class="footer footer-fixed">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();renderIntro();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+<style>
+.chat-container{flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:8px;min-height:0;-webkit-overflow-scrolling:touch;}
+.chat-history{display:flex;flex-direction:column;gap:8px;}
+.chat-bubble{display:flex;gap:8px;align-items:flex-start;}
+.chat-bubble.other{flex-direction:row;}
+.chat-bubble.user{flex-direction:row-reverse;}
+.chat-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.bubble-wrapper{display:flex;flex-direction:column;gap:2px;max-width:75%;}
+.bubble-name{font-size:11px;color:#666;font-weight:600;}
+.bubble-content{background:#f0f0f0;padding:10px 12px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word;}
+.user-bubble{background:#1a1a2e;color:#fff;max-width:75%;margin-left:auto;}
+.chat-options{padding:12px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+.chat-option{text-align:left;font-size:13px;padding:12px 14px;line-height:1.3;}
+.results-tip{background:linear-gradient(135deg,#fff8e1,#ffecb3);padding:14px;border-radius:12px;margin:12px 0;font-size:13px;line-height:1.5;}
+.result-item.partial{border-left:4px solid #ff9800;background:rgba(255,152,0,0.1);}
+.footer-fixed{position:sticky;bottom:0;background:#fff;padding:16px;margin-top:auto;}
+</style>
+</body>
+</html>
