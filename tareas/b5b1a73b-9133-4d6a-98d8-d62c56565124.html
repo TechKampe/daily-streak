@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Encuentra el Fallo: Misión Obra Segura - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Misión Obra Segura</div>
+<div class="subtitle" id="sceneText">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔍 Control de Calidad</div>
+<div class="modal-body">Eres técnico de calidad. Revisa 5 situaciones y detecta el error en cada una tocando el ítem incorrecto.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes = [
+{
+text: "Un operario sube al andamio para colocar canalones.",
+items: ["Arnés de seguridad", "Casco puesto", "Zapatillas deportivas", "Guantes de trabajo"],
+error: 2,
+explanation: "Las zapatillas deportivas no son calzado de seguridad. Se requieren botas con puntera reforzada."
+},
+{
+text: "El electricista va a manipular el cuadro eléctrico.",
+items: ["Guantes aislantes", "Herramienta sin aislar", "Comprobador de tensión"],
+error: 1,
+explanation: "Usar herramienta sin aislamiento en trabajos eléctricos puede provocar electrocución."
+},
+{
+text: "Almacén de obra: sacos de cemento junto a la pared.",
+items: ["Sacos sobre palé", "Sacos en suelo húmedo", "Zona cubierta", "Etiquetas visibles"],
+error: 1,
+explanation: "El cemento en suelo húmedo se endurece y queda inservible. Debe estar sobre palés."
+},
+{
+text: "Dos operarios cortan baldosas con radial.",
+items: ["Gafas de protección", "Mascarilla FFP2", "Sin protección auditiva"],
+error: 2,
+explanation: "La radial genera ruido intenso. Los protectores auditivos son obligatorios."
+},
+{
+text: "El fontanero explica al cliente el trabajo realizado.",
+items: ["Muestra la factura", "Explica el trabajo", "No menciona garantía"],
+error: 2,
+explanation: "Siempre hay que informar al cliente sobre la garantía del trabajo realizado."
+}
+];
+
+let idx = 0, answers = [], score = 0;
+const scene = document.getElementById('scene');
+const opts = document.getElementById('options');
+const sceneText = document.getElementById('sceneText');
+const prog = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const helper = document.getElementById('helper');
+const modal = document.getElementById('modal');
+
+function startGame() {
+modal.classList.remove('active');
+render();
+}
+
+function render() {
+if (idx >= scenes.length) { showResults(); return; }
+const s = scenes[idx];
+sceneText.textContent = s.text;
+prog.style.width = (idx / scenes.length * 100) + '%';
+counter.textContent = (idx + 1) + '/' + scenes.length;
+helper.textContent = 'Toca el elemento con el error';
+opts.innerHTML = s.items.map((item, i) =>
+`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`
+).join('');
+ensureFits();
+}
+
+function selectItem(i) {
+const s = scenes[idx];
+const btns = opts.querySelectorAll('.btn-option');
+btns.forEach(b => b.disabled = true);
+const correct = i === s.error;
+if (correct) score++;
+btns[i].classList.add(correct ? 'correct' : 'incorrect');
+if (!correct) btns[s.error].classList.add('correct');
+answers.push({
+scene: s.text,
+chosen: s.items[i],
+correctItem: s.items[s.error],
+wasCorrect: correct,
+explanation: s.explanation
+});
+setTimeout(() => { idx++; render(); }, 800);
+}
+
+function showResults() {
+setTimeout(() => {
+document.documentElement.classList.replace('gameplay', 'results');
+scene.classList.replace('gameplay', 'results');
+scene.innerHTML = `
+<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Revisión Completa</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a, i) => `
+<div class="result-item ${a.wasCorrect ? 'correct' : 'incorrect'}">
+<div class="result-question">Escena ${i + 1}</div>
+<div class="result-answer">${a.wasCorrect ? '✓ ' + a.chosen : '✗ Elegiste: ' + a.chosen}</div>
+${!a.wasCorrect ? `<div class="result-answer">Correcto: ${a.correctItem}</div>` : ''}
+<div class="result-explanation">${a.explanation}</div>
+</div>
+`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">La atención al detalle salva vidas. Antes de empezar, revisa siempre EPIs, herramientas y entorno. La cultura preventiva empieza por ti.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+}, 500);
+}
+
+function completeTask() {
+if (window.ReactNativeWebView) {
+window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'TASK_COMPLETED' }));
+}
+}
+
+function ensureFits() {
+scene.classList.remove('compact', 'compact-xs');
+document.documentElement.style.setProperty('--ui-scale', 1);
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact');
+if (scene.scrollHeight > scene.clientHeight) scene.classList.add('compact-xs');
+if (scene.scrollHeight > scene.clientHeight) {
+document.documentElement.style.setProperty('--ui-scale', Math.max(0.88, scene.clientHeight / scene.scrollHeight));
+}
+}
+
+window.addEventListener('load', () => { modal.classList.add('active'); ensureFits(); });
+window.addEventListener('resize', ensureFits);
+window.addEventListener('orientationchange', () => setTimeout(ensureFits, 100));
+</script>
+</body>
+</html>
