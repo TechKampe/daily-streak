@@ -1,0 +1,146 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Apretar un tornillo con cabeza en cruz",tools:["Destornillador de estrella","Destornillador plano","Llave Allen"],correct:0,explanations:["El plano resbala en cabezas de cruz.","La llave Allen es para tornillos hexagonales."]},
+{task:"Cortar un cable eléctrico de 2.5mm²",tools:["Alicates de corte","Alicates universales","Pelacables"],correct:0,explanations:["Los universales cortan pero menos precisos.","El pelacables pela, no corta cables."]},
+{task:"Medir el hueco para un marco de puerta",tools:["Flexómetro","Nivel de burbuja","Escuadra"],correct:0,explanations:["El nivel mide horizontalidad, no longitud.","La escuadra mide ángulos, no distancias."]},
+{task:"Pelar el aislante de un conductor",tools:["Pelacables","Alicates de corte","Alicates universales"],correct:0,explanations:["Los de corte pueden dañar el cobre.","Los universales no tienen calibre de pelado."]},
+{task:"Aflojar una tuerca hexagonal de 13mm",tools:["Llave fija del 13","Llave inglesa","Llave de tubo"],correct:0,explanations:["La inglesa puede resbalar si no ajusta bien.","La de tubo es para espacios profundos."]},
+{task:"Marcar una línea de corte en madera",tools:["Lápiz de carpintero","Rotulador permanente","Punzón"],correct:0,explanations:["El rotulador mancha y no se lija bien.","El punzón hace marcas, no líneas visibles."]}
+];
+const tips={
+"Destornillador de estrella":"Usa destornillador de estrella (Phillips) para tornillos con cruz. Nunca fuerces con uno plano.",
+"Destornillador plano":"El destornillador plano es solo para tornillos de ranura recta.",
+"Llave Allen":"Las llaves Allen son para tornillos con hueco hexagonal interior.",
+"Alicates de corte":"Usa alicates de corte para seccionar cables limpios sin deformar.",
+"Alicates universales":"Los universales son multiuso pero menos precisos para cortes finos.",
+"Pelacables":"El pelacables tiene muescas calibradas para pelar sin dañar el cobre.",
+"Flexómetro":"El flexómetro mide distancias. Bloquea la cinta para mediciones precisas.",
+"Nivel de burbuja":"El nivel verifica horizontalidad y verticalidad, no mide longitudes.",
+"Escuadra":"La escuadra comprueba ángulos de 90°, ideal para cortes rectos.",
+"Llave fija del 13":"La llave fija ajusta mejor que la inglesa si coincide la medida exacta.",
+"Llave inglesa":"La llave inglesa es ajustable pero puede dañar tuercas si resbala.",
+"Llave de tubo":"La llave de tubo accede a tuercas en lugares profundos o estrechos.",
+"Lápiz de carpintero":"El lápiz de carpintero marca visible y se elimina fácil al lijar.",
+"Rotulador permanente":"El rotulador mancha la madera y es difícil de eliminar.",
+"Punzón":"El punzón hace puntos de referencia, no líneas continuas."
+};
+let idx=0,score=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+locked=false;
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.tools.map((tool,i)=>`<button class="btn-option" onclick="select(${i})">${tool}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+if(locked)return;
+locked=true;
+const t=tasks[idx];
+const correct=i===t.correct;
+if(correct)score++;
+const btns=optsEl.querySelectorAll('.btn-option');
+btns[i].classList.add(correct?'correct':'incorrect');
+btns[i].innerHTML=(correct?'✓ ':'✗ ')+t.tools[i];
+if(!correct){btns[t.correct].classList.add('correct');btns[t.correct].innerHTML='✓ '+t.tools[t.correct];}
+answers.push({task:t.task,userChoice:t.tools[i],correctTool:t.tools[t.correct],correct,explanations:t.explanations,tools:t.tools});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+let feedbackHTML=answers.map(a=>{
+let expText='';
+if(!a.correct){
+const wrongIdx=a.tools.indexOf(a.userChoice);
+if(wrongIdx>0&&a.explanations[wrongIdx-1])expText=a.explanations[wrongIdx-1];
+else expText='La herramienta correcta era: '+a.correctTool;
+}else{
+expText='¡Perfecto! '+a.correctTool+' es la ideal.';
+}
+return `<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.userChoice:'✗ Elegiste: '+a.userChoice}</div>
+<div class="result-answer">${a.correct?'':'✓ Correcta: '+a.correctTool}</div>
+<div class="result-explanation">${expText}</div>
+</div>`;
+}).join('');
+const mentionedTools=[...new Set(answers.flatMap(a=>a.tools))];
+const tipsHTML=mentionedTools.slice(0,6).map(t=>`<div class="result-item"><div class="result-explanation">💡 ${tips[t]||''}</div></div>`).join('');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Jornada completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">${feedbackHTML}</div>
+<div class="results-header"><div class="results-subtitle">Consejos prácticos</div></div>
+<div class="results-list">${tipsHTML}</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
