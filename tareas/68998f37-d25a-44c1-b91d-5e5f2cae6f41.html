@@ -1,0 +1,101 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas de fontanería - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Elige la herramienta correcta para la tarea</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar 2_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Cortar un tubo de cobre de 15mm",opts:["Cortatubos","Sierra de arco","Tijera de PVC"],ans:0,exp:"El cortatubos hace cortes limpios en cobre sin rebabas. La sierra deja rebabas y la tijera es solo para PVC."},
+{task:"Apretar un racor de compresión",opts:["Llave inglesa","Alicates","Llave Stillson"],ans:0,exp:"La llave inglesa ajusta sin dañar el cromado. Los alicates marcan y la Stillson es para tubos, no racores."},
+{task:"Desatascar un sifón obstruido",opts:["Desatascador de ventosa","Sonda metálica","Producto químico"],ans:0,exp:"La ventosa es lo primero: rápida y no daña. La sonda es para atascos duros y el químico puede dañar tuberías."},
+{task:"Sellar la rosca de un grifo",opts:["Cinta de teflón","Masilla de fontanero","Soldadura"],ans:0,exp:"El teflón sella roscas metálicas perfectamente. La masilla es para desagües y la soldadura para uniones de cobre."},
+{task:"Cortar un tubo de PVC de 32mm",opts:["Tijera de PVC","Cortatubos de cobre","Sierra de arco"],ans:0,exp:"La tijera de PVC corta limpio y rápido. El cortatubos de cobre no sirve y la sierra deja rebabas."},
+{task:"Sujetar un tubo de hierro para girarlo",opts:["Llave Stillson","Llave inglesa","Alicates"],ans:0,exp:"La Stillson agarra tubos redondos con fuerza. La inglesa resbala y los alicates no tienen palanca."}
+];
+let idx=0,score=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),optsEl=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+locked=false;
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+optsEl.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+if(locked)return;
+locked=true;
+const t=tasks[idx],correct=i===t.ans;
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correct:t.opts[t.ans],ok:correct,exp:t.exp});
+const btns=optsEl.querySelectorAll('.btn-option');
+btns[i].classList.add(correct?'correct':'incorrect');
+btns[i].innerHTML=(correct?'✓ ':'✗ ')+t.opts[i];
+if(!correct)btns[t.ans].classList.add('correct');
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const consejos=`<div class="result-item"><div class="result-question">💡 Consejos prácticos</div><div class="result-explanation">• Cortatubos para cobre, tijera para PVC, sierra solo si no hay otra opción.<br>• Llave inglesa para racores cromados, Stillson para tubos de hierro.<br>• Siempre prueba la ventosa antes de usar químicos.<br>• Teflón en roscas, masilla en desagües.</div></div>`;
+scene.innerHTML=`<div class="results-scroll"><div class="results-header"><div class="results-title">¡Jornada completada!</div><div class="results-score">${score}/${tasks.length}</div><div class="results-subtitle">Herramientas correctas</div></div><div class="results-list">${answers.map(a=>`<div class="result-item ${a.ok?'correct':'incorrect'}"><div class="result-question">${a.task}</div><div class="result-answer">${a.ok?'✓ '+a.user:'✗ Elegiste: '+a.user+' → Correcta: '+a.correct}</div><div class="result-explanation">${a.exp}</div></div>`).join('')}${consejos}</div><div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div></div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact');
+if(scene.scrollHeight>scene.clientHeight)scene.classList.add('compact-xs');
+if(scene.scrollHeight>scene.clientHeight){
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,scene.clientHeight/scene.scrollHeight));
+}
+}
+
+window.addEventListener('load',()=>{ensureFits();render();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
