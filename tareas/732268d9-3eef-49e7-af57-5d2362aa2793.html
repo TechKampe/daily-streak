@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Encuentra el Fallo: Misión Obra Segura - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Misión Obra Segura</div>
+<div class="subtitle" id="sceneText">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main"><div class="options" id="options"></div></div>
+<div class="footer">
+<div class="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">👷 Técnico de Calidad</div>
+<div class="modal-body">Tu supervisor te pide revisar 5 situaciones antes de dar el visto bueno. Detecta el error en cada escena.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{text:"Un compañero sube al andamio para colocar canalones.",items:["Casco de seguridad","Arnés anticaídas","Zapatillas deportivas","Guantes de trabajo"],error:2,exp:"Las zapatillas deportivas no son calzado de seguridad homologado. Se requieren botas con puntera reforzada."},
+{text:"El electricista va a manipular el cuadro eléctrico.",items:["Corta la corriente","Usa guantes aislantes","Trabaja con anillos puestos"],error:2,exp:"Los anillos y joyas metálicas pueden provocar cortocircuitos o quemaduras graves al trabajar con electricidad."},
+{text:"Almacenamiento de materiales en el patio de obra.",items:["Sacos de cemento tapados","Tubos PVC apilados","Bombonas de gas al sol"],error:2,exp:"Las bombonas de gas nunca deben exponerse al sol directo: riesgo de sobrepresión y explosión."},
+{text:"Un operario corta baldosas con la radial.",items:["Gafas de protección","Protector auditivo","Radial sin carcasa"],error:2,exp:"Usar la radial sin carcasa protectora expone al operario a proyecciones y riesgo de corte grave."},
+{text:"Fontanero explica la avería al cliente.",items:["Muestra el problema","Usa lenguaje técnico","Da presupuesto verbal","Deja recibo firmado"],error:1,exp:"El lenguaje muy técnico confunde al cliente. Hay que explicar de forma clara y comprensible."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sceneText=document.getElementById('sceneText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),introModal=document.getElementById('introModal');
+
+function startGame(){introModal.classList.remove('active');render();}
+window.onload=()=>{introModal.classList.add('active');ensureFits();};
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===s.error)b.classList.add('correct');if(j===i&&i!==s.error)b.classList.add('incorrect');});
+answers.push({scene:s.text,chosen:s.items[i],correct:s.items[s.error],isCorrect:i===s.error,exp:s.exp});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🎯 Revisión completada</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene.substring(0,40)}...</div>
+<div class="result-answer">${a.isCorrect?'✓ Correcto: '+a.chosen:'✗ Elegiste: '+a.chosen}</div>
+${!a.isCorrect?`<div class="result-answer">→ Error real: ${a.correct}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">La atención al detalle salva vidas. Antes de empezar cualquier tarea, dedica 30 segundos a revisar EPIs, herramientas y entorno. La cultura preventiva empieza por ti.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+else if(window.parent!==window){window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');}
+else{alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){const m=document.querySelector('.main,.content,.board')||scene;document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
