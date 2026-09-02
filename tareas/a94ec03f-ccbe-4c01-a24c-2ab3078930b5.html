@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obra en Marcha - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="subtitle">Encuentra el error en cada escena</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="content">
+<div class="card" id="sceneCard">
+<span class="card-text" id="sceneText"></span>
+</div>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el ítem que contiene el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🏗️ ¡Bienvenido al tajo!</div>
+<div class="modal-body">Es tu primera semana. Revisa 5 situaciones y detecta el error en cada una antes de que llegue el inspector.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{text:"Un compañero sube al andamio cargando ladrillos.",items:["Casco puesto","Arnés enganchado","Herramientas sueltas en mano","Botas de seguridad"],error:2,exp:"Las herramientas deben subirse en bolsa o cubo. Caer desde altura puede herir a otros."},
+{text:"Preparando mortero para levantar un tabique interior.",items:["Cemento + arena 1:4","Agua limpia","Guantes de obra","Mezcla con arena de playa"],error:3,exp:"La arena de playa tiene sal que debilita el mortero y causa eflorescencias."},
+{text:"Zona de excavación abierta junto al paso de peatones.",items:["Vallas perimetrales","Señal de peligro","Cinta de obra","Sin iluminación nocturna"],error:3,exp:"La normativa exige balizamiento luminoso en zanjas abiertas durante la noche."},
+{text:"Operario levantando un saco de 25 kg del suelo.",items:["Flexiona las rodillas","Espalda recta","Agarre firme","Levanta girando el tronco"],error:3,exp:"Girar el tronco bajo carga provoca lesiones lumbares. Gira moviendo los pies."},
+{text:"Cortando baldosas con radial en el interior de la obra.",items:["Gafas de protección","Guantes anticorte","Disco de diamante","Sin mascarilla antipolvo"],error:3,exp:"El polvo de cerámica es nocivo. La mascarilla FFP2 es obligatoria al cortar."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),sceneText=document.getElementById('sceneText'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+sceneText.textContent=s.text;
+helper.textContent='Toca el ítem que contiene el error';
+opts.innerHTML=s.items.map((it,i)=>`<button class="btn-option" onclick="selectItem(${i})">${it}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const correct=i===s.error;
+const btns=opts.querySelectorAll('.btn-option');
+btns[i].classList.add(correct?'correct':'incorrect');
+btns[s.error].classList.add('correct');
+answers.push({scene:s.text,chosen:s.items[i],correctItem:s.items[s.error],correct,exp:s.exp});
+btns.forEach(b=>b.disabled=true);
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Inspección completada</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene}</div>
+<div class="result-answer">${a.correct?'✓ Detectaste: '+a.chosen:'✗ Elegiste: '+a.chosen}</div>
+${!a.correct?`<div class="result-answer">→ Error real: ${a.correctItem}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">En obra, un ojo crítico salva vidas. Antes de actuar, observa: ¿hay algo fuera de sitio? La prevención empieza por la atención al detalle.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
