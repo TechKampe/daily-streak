@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 📋 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle" id="instruction">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="clozeContainer">
+<p id="clozeText"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Es tu primer día como aprendiz ⚡</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">📋 Manual de Procedimientos</div>
+<div class="modal-body">El oficial te pide completar el manual. Algunas palabras clave se han borrado. ¡Selecciona la correcta!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const clozes=[
+{sentence:"Para medir tensión en un circuito, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","alicates"],exp:"El multímetro mide tensión, corriente y resistencia. El buscapolos solo detecta presencia de fase."},
+{sentence:"Antes de trabajar en una instalación, debo ___ la corriente.",blank:"desconectar",opts:["desconectar","aumentar","medir"],exp:"Siempre desconectar antes de manipular. Aumentar o medir no garantizan seguridad."},
+{sentence:"Para proteger mis manos de descargas uso ___ aislantes.",blank:"guantes",opts:["guantes","gafas","casco"],exp:"Los guantes aislantes protegen de descargas. Gafas y casco protegen de otros riesgos."},
+{sentence:"El cable de color verde-amarillo es el ___.",blank:"conductor de tierra",opts:["conductor de tierra","fase","neutro"],exp:"Por normativa, verde-amarillo identifica la tierra. Fase suele ser marrón/negro, neutro azul."},
+{sentence:"Tras desconectar, debo verificar ___ de tensión.",blank:"ausencia",opts:["ausencia","presencia","aumento"],exp:"Verificar ausencia confirma que no hay corriente. Verificar presencia o aumento no tiene sentido."},
+{sentence:"El material que no conduce electricidad es un ___.",blank:"aislante",opts:["aislante","conductor","fusible"],exp:"Un aislante impide el paso de corriente. Los conductores la permiten, el fusible es protección."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),clozeText=document.getElementById('clozeText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),instruction=document.getElementById('instruction'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=clozes.length){showResults();return}
+const c=clozes[idx];
+prog.style.width=(idx/clozes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+clozes.length;
+const parts=c.sentence.split('___');
+clozeText.innerHTML=parts[0]+'<span class="cloze-blank">______</span>'+(parts[1]||'');
+opts.innerHTML=c.opts.map((o,i)=>`<button class="btn-option" onclick="selectOpt(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOpt(i){
+const c=clozes[idx];
+const correct=c.opts[i]===c.blank;
+if(correct)score++;
+answers.push({sentence:c.sentence,blank:c.blank,user:c.opts[i],correct,exp:c.exp,opts:c.opts});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(c.opts[j]===c.blank)b.classList.add('correct');
+});
+const blankEl=document.querySelector('.cloze-blank');
+if(blankEl){blankEl.textContent=c.opts[i];blankEl.classList.add(correct?'correct':'incorrect');}
+setTimeout(()=>{idx++;render();},900);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual Completado!</div>
+<div class="results-score">${score}/${clozes.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>{
+const wrongOpts=a.opts.filter(o=>o!==a.blank).map(o=>`"${o}"`).join(' y ');
+return `<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.blank+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Correcto: '+a.user:'✗ Tu respuesta: '+a.user+' (Correcta: '+a.blank+')'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`;}).join('')}
+</div>
+<div class="results-tip">
+<strong>💡 Consejo:</strong> Dominar el vocabulario técnico es clave para comunicarte con tu equipo y trabajar con seguridad. ¡Repasa estos términos!
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
