@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Swipe Eléctrico: ¿Seguro o Peligro? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Swipe Eléctrico</div>
+<div class="subtitle" id="subtitle">¿Seguro o Peligro?</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="tinder-container" id="cardContainer"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza o usa los botones</div>
+<div class="swipe-buttons">
+<button class="swipe-btn no" id="btnLeft" aria-label="Incorrecto">❌ Incorrecto</button>
+<button class="swipe-btn yes" id="btnRight" aria-label="Correcto">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">Tu primer día como ayudante</div>
+<div class="modal-body">El oficial te pide identificar prácticas seguras. Desliza derecha si es CORRECTO, izquierda si es INCORRECTO.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Comenzar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Desconectar el diferencial antes de manipular un enchufe",safe:true,exp:"Obligatorio por PRL. Evita electrocución al cortar el suministro."},
+{text:"Trabajar con las manos mojadas para ir más rápido",safe:false,exp:"El agua conduce electricidad. Riesgo mortal de electrocución."},
+{text:"Usar herramientas con mango aislante",safe:true,exp:"Los mangos aislantes protegen contra descargas hasta 1000V."},
+{text:"Comprobar ausencia de tensión con un buscapolos",safe:true,exp:"Verificar siempre antes de tocar. Es el primer paso de seguridad."},
+{text:"Dejar cables pelados expuestos temporalmente",safe:false,exp:"Contacto accidental = cortocircuito o electrocución. Siempre aislar."},
+{text:"Usar EPI básico aunque sea una tarea corta",safe:true,exp:"Los accidentes no avisan. Guantes y gafas siempre obligatorios."}
+];
+let idx=0,answers=[],currentCard=null,isDragging=false,startX=0,currentX=0,startTime=0;
+const scene=document.getElementById('scene'),container=document.getElementById('cardContainer'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnLeft=document.getElementById('btnLeft'),btnRight=document.getElementById('btnRight');
+
+function startGame(){document.getElementById('modal').classList.remove('active');renderCard();}
+
+function renderCard(){
+if(idx>=cards.length){showResults();return}
+container.innerHTML='';
+const card=document.createElement('div');
+card.className='tinder-card';
+card.innerHTML=`<div class="tinder-card-content">${cards[idx].text}</div>`;
+container.appendChild(card);
+currentCard=card;
+prog.style.width=(idx/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.addEventListener('pointerdown',onStart);
+card.addEventListener('pointermove',onMove);
+card.addEventListener('pointerup',onEnd);
+card.addEventListener('pointercancel',onEnd);
+ensureFits();
+}
+
+function onStart(e){
+isDragging=true;
+currentCard.classList.add('dragging');
+currentCard.setPointerCapture(e.pointerId);
+startX=e.clientX;
+currentX=0;
+startTime=Date.now();
+}
+
+function onMove(e){
+if(!isDragging||!currentCard)return;
+currentX=e.clientX-startX;
+const rotate=currentX*0.1;
+currentCard.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+}
+
+function onEnd(e){
+if(!isDragging||!currentCard)return;
+isDragging=false;
+currentCard.classList.remove('dragging');
+const elapsed=Math.max(Date.now()-startTime,1);
+const velocity=Math.abs(currentX)/elapsed;
+const DISTANCE_THRESHOLD=80;
+const VELOCITY_THRESHOLD=0.5;
+const passedDistance=Math.abs(currentX)>DISTANCE_THRESHOLD;
+const passedVelocity=Math.abs(currentX)>24&&velocity>VELOCITY_THRESHOLD;
+if(currentX<0&&(passedDistance||passedVelocity)){swipe('left');}
+else if(currentX>0&&(passedDistance||passedVelocity)){swipe('right');}
+else{currentCard.style.transform='translateX(0) rotate(0)';}
+}
+
+function swipe(dir){
+const userSafe=dir==='right';
+const correct=userSafe===cards[idx].safe;
+answers.push({q:cards[idx].text,userSafe,correctSafe:cards[idx].safe,correct,exp:cards[idx].exp});
+const flyX=dir==='left'?-400:400;
+currentCard.style.transition='transform 0.3s ease-out';
+currentCard.style.transform=`translateX(${flyX}px) rotate(${flyX*0.1}deg)`;
+setTimeout(()=>{idx++;renderCard();},300);
+}
+
+btnLeft.onclick=()=>{if(currentCard)swipe('left');};
+btnRight.onclick=()=>{if(currentCard)swipe('right');};
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">⚡ ¡Evaluación completada!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">Prácticas identificadas correctamente</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.q}</div>
+<div class="result-answer">${a.userSafe?'✅ Marcaste: Correcto':'❌ Marcaste: Incorrecto'} ${a.correct?'— ¡Bien!':'— Era '+(a.correctSafe?'SEGURO':'PELIGRO')}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-message">${score>=5?'¡Excelente! Tienes buen ojo para la seguridad.':score>=3?'Buen intento. Repasa las normas PRL básicas.':'Cuidado: la seguridad eléctrica es vital. Revisa bien las prácticas.'}</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
