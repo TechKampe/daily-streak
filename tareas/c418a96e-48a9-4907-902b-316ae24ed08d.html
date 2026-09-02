@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas del taller - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main"><div class="options" id="options"></div></div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Tu primer día en el taller</div>
+<div class="modal-body">Tu tutor te pone a prueba: elige la herramienta correcta para cada tarea. ¡Demuestra lo que sabes!</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">Comenzar</button></div>
+</div>
+</div>
+
+<script>
+const tasks=[
+{task:"Apretar un tornillo de cabeza Phillips en una caja eléctrica",opts:["Destornillador Phillips","Llave inglesa","Alicates"],correct:0,tools:["destornillador","llave","alicates"],exp:"El destornillador Phillips encaja en la cabeza en cruz. La llave inglesa es para tuercas y los alicates no tienen la forma adecuada para tornillos."},
+{task:"Cortar un cable eléctrico de 2.5mm²",opts:["Tijeras de electricista","Sierra de mano","Cúter"],correct:0,tools:["tijeras","sierra","cúter"],exp:"Las tijeras de electricista están diseñadas para cortar cables con precisión y seguridad. La sierra es para materiales más duros y el cúter puede dañar los hilos."},
+{task:"Medir la longitud de una tubería de 2 metros",opts:["Flexómetro","Nivel de burbuja","Escuadra"],correct:0,tools:["flexómetro","nivel","escuadra"],exp:"El flexómetro mide longitudes. El nivel comprueba horizontalidad y la escuadra mide ángulos rectos."},
+{task:"Comprobar si un estante está horizontal",opts:["Nivel de burbuja","Flexómetro","Destornillador"],correct:0,tools:["nivel","flexómetro","destornillador"],exp:"El nivel de burbuja indica si una superficie está horizontal. El flexómetro mide distancias y el destornillador aprieta tornillos."},
+{task:"Clavar una alcayata en la pared",opts:["Martillo","Mazo de goma","Cincel"],correct:0,tools:["martillo","mazo","cincel"],exp:"El martillo clava elementos metálicos. El mazo de goma es para golpes sin dañar superficies y el cincel es para picar o tallar."},
+{task:"Cortar una canaleta de PVC para cables",opts:["Sierra de mano","Tijeras de electricista","Alicates"],correct:0,tools:["sierra","tijeras","alicates"],exp:"La sierra de mano corta PVC y materiales rígidos. Las tijeras son para cables blandos y los alicates para sujetar o doblar."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const btns=opts.querySelectorAll('.btn-option');
+const correct=i===tasks[idx].correct;
+btns[i].classList.add(correct?'correct':'incorrect');
+if(correct)score++;
+answers.push({task:tasks[idx].task,user:tasks[idx].opts[i],correctTool:tasks[idx].opts[tasks[idx].correct],correct,exp:tasks[idx].exp,allTools:tasks[idx].opts});
+btns.forEach(b=>b.disabled=true);
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔧 ¡Prueba completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">${score>=5?'¡Excelente! Tu tutor está impresionado':score>=3?'Buen trabajo, sigue practicando':'Necesitas repasar las herramientas básicas'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Elegiste: '+a.user+' → Correcta: '+a.correctTool}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejos prácticos</div>
+<div class="result-explanation">• Destornillador: tornillos. Usa el tipo correcto (Phillips, plano).<br>• Llave inglesa: tuercas y pernos de distintos tamaños.<br>• Alicates: sujetar, doblar o cortar alambre fino.<br>• Flexómetro: medir longitudes hasta 5-8m.<br>• Nivel: verificar horizontal/vertical.<br>• Martillo: clavar en materiales duros.<br>• Sierra: cortar PVC, madera, metal.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+else if(window.parent!==window){window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');}
+else{alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){const m=document.querySelector('.main,.content,.board')||scene;document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
