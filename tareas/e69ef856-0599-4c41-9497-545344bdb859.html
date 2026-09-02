@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Conceptos Eléctricos - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+.memory-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;width:100%;max-width:100%}
+.memory-card{height:70px;width:100%;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;box-sizing:border-box;transition:transform 0.2s ease,background 0.2s ease}
+.memory-card.covered{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.memory-card.revealed{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2}
+.memory-card.matched{background:#d4edda;border:2px solid #28a745;color:#0B214A;font-size:12px;line-height:1.2}
+.memory-card.shake{animation:shake 0.4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.stats-row{display:flex;justify-content:space-between;padding:0 16px;font-size:14px;color:#0B214A;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta los Conceptos</div>
+<div class="subtitle">Encuentra las 4 parejas técnicas</div>
+</div>
+</div>
+<div class="stats-row">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="main">
+<div class="memory-grid" id="grid"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca dos cartas para emparejar término y definición</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{id:1,term:"Interruptor diferencial",def:"Protege contra contactos eléctricos",exp:"El diferencial detecta fugas de corriente y corta el circuito para evitar electrocuciones."},
+{id:2,term:"Conductor de fase",def:"Cable que lleva corriente activa",exp:"El conductor de fase (marrón/negro/gris) transporta la corriente desde el cuadro hasta los receptores."},
+{id:3,term:"Toma de tierra",def:"Deriva corrientes de fuga al suelo",exp:"La toma de tierra evacúa corrientes peligrosas al terreno, protegiendo personas y equipos."},
+{id:4,term:"Magnetotérmico",def:"Corta el circuito por sobrecarga",exp:"El magnetotérmico protege contra sobrecargas y cortocircuitos desconectando automáticamente."}
+];
+
+let cards=[],flipped=[],matched=[],attempts=0,locked=false;
+const maxAttempts=10,totalPairs=4;
+const grid=document.getElementById('grid'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs');
+
+function initGame(){
+cards=[];
+pairs.forEach(p=>{
+cards.push({id:p.id,type:'term',text:p.term,pairId:p.id});
+cards.push({id:p.id,type:'def',text:p.def,pairId:p.id});
+});
+cards=shuffle(cards);
+flipped=[];matched=[];attempts=0;locked=false;
+renderGrid();
+updateStats();
+}
+
+function shuffle(arr){
+const a=[...arr];
+for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+return a;
+}
+
+function renderGrid(){
+grid.innerHTML='';
+cards.forEach((c,i)=>{
+const card=document.createElement('div');
+card.className='memory-card covered';
+card.dataset.index=i;
+card.textContent='?';
+card.onclick=()=>flipCard(i);
+grid.appendChild(card);
+});
+}
+
+function flipCard(i){
+if(locked)return;
+if(flipped.includes(i))return;
+if(matched.includes(i))return;
+const cardEl=grid.children[i];
+cardEl.classList.remove('covered');
+cardEl.classList.add('revealed');
+cardEl.textContent=cards[i].text;
+cardEl.style.transform='scale(0.95)';
+setTimeout(()=>cardEl.style.transform='scale(1)',100);
+flipped.push(i);
+if(flipped.length===2){
+attempts++;
+updateStats();
+checkMatch();
+}
+}
+
+function checkMatch(){
+locked=true;
+const [i1,i2]=flipped;
+const c1=cards[i1],c2=cards[i2];
+const isMatch=c1.pairId===c2.pairId&&c1.type!==c2.type;
+if(isMatch){
+matched.push(i1,i2);
+grid.children[i1].classList.remove('revealed');
+grid.children[i1].classList.add('matched');
+grid.children[i2].classList.remove('revealed');
+grid.children[i2].classList.add('matched');
+flipped=[];
+locked=false;
+updateStats();
+if(matched.length===8)endGame(true);
+}else{
+setTimeout(()=>{
+grid.children[i1].classList.add('shake');
+grid.children[i2].classList.add('shake');
+setTimeout(()=>{
+grid.children[i1].classList.remove('shake','revealed');
+grid.children[i1].classList.add('covered');
+grid.children[i1].textContent='?';
+grid.children[i2].classList.remove('shake','revealed');
+grid.children[i2].classList.add('covered');
+grid.children[i2].textContent='?';
+flipped=[];
+locked=false;
+if(attempts>=maxAttempts&&matched.length<8)endGame(false);
+},400);
+},2000);
+}
+}
+
+function updateStats(){
+attemptsEl.textContent=`Intento ${attempts}/${maxAttempts}`;
+pairsEl.textContent=`${matched.length/2}/${totalPairs} parejas`;
+}
+
+function endGame(won){
+setTimeout(()=>{
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const foundPairs=pairs.filter(p=>matched.some(m=>cards[m].pairId===p.id));
+const missingPairs=pairs.filter(p=>!matched.some(m=>cards[m].pairId===p.id));
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${won?'¡Excelente!':'¡Buen intento!'}</div>
+<div class="results-score">${matched.length/2}/${totalPairs}</div>
+<div class="results-subtitle">${won?'Parejas encontradas':'Parejas conseguidas en '+attempts+' intentos'}</div>
+</div>
+<div class="results-list">
+${foundPairs.map(p=>`<div class="result-item correct">
+<div class="result-question">${p.term} ↔ ${p.def}</div>
+<div class="result-answer">✓ Pareja encontrada</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`).join('')}
+${missingPairs.map(p=>`<div class="result-item incorrect">
+<div class="result-question">${p.term} ↔ ${p.def}</div>
+<div class="result-answer">✗ No encontrada</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const scene=document.getElementById('scene');
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+initGame();
+</script>
+</body>
+</html>
