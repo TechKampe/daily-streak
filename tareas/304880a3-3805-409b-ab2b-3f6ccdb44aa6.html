@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 📋 ¡Demuestra lo que sabes! - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle" id="subtitle">Rellena el hueco con la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="content">
+<p id="sentence"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la opción correcta para completar la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">📋 Tu primer día</div>
+<div class="modal-body">El oficial necesita que completes el manual antes de salir al tajo. Elige la palabra correcta para cada hueco.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<script>
+const clozes=[
+{sentence:"Para verificar si hay corriente en un enchufe, uso el ___.",options:["buscapolos","martillo","nivel"],answer:0,explanations:["El buscapolos detecta presencia de tensión.","El martillo es para golpear, no mide electricidad.","El nivel mide horizontalidad, no corriente."]},
+{sentence:"Antes de manipular un circuito, debo ___ la ausencia de tensión.",options:["verificar","suponer","ignorar"],answer:0,explanations:["Verificar es obligatorio por seguridad.","Suponer puede causar accidentes graves.","Ignorar la tensión es muy peligroso."]},
+{sentence:"Para medir voltaje y resistencia uso el ___.",options:["multímetro","destornillador","taladro"],answer:0,explanations:["El multímetro mide tensión, corriente y resistencia.","El destornillador es para apretar tornillos.","El taladro hace agujeros, no mide nada."]},
+{sentence:"Para quitar el aislante del cable uso los ___.",options:["alicates pelacables","alicates de corte","guantes"],answer:0,explanations:["Los pelacables retiran el aislante sin dañar el cobre.","Los de corte cortan, no pelan con precisión.","Los guantes protegen, no pelan cables."]},
+{sentence:"Los cables se conectan entre sí usando una ___.",options:["regleta","cinta métrica","llave inglesa"],answer:0,explanations:["La regleta une cables de forma segura.","La cinta métrica mide distancias.","La llave inglesa aprieta tuercas."]},
+{sentence:"El tubo corrugado que protege los cables se llama ___.",options:["manguera","tubería de cobre","canaleta"],answer:0,explanations:["La manguera corrugada protege cables empotrados.","La tubería de cobre es para fontanería.","La canaleta va en superficie, no empotrada."]}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sentenceEl=document.getElementById('sentence'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=clozes.length){showResults();return}
+const c=clozes[idx];
+prog.style.width=(idx/clozes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+clozes.length;
+sentenceEl.innerHTML=c.sentence.replace('___','<u>&nbsp;&nbsp;&nbsp;???&nbsp;&nbsp;&nbsp;</u>');
+opts.innerHTML=c.options.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(i){
+const c=clozes[idx];
+const correct=i===c.answer;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(correct?'correct':'incorrect');if(j===c.answer&&!correct)b.classList.add('correct');});
+sentenceEl.innerHTML=c.sentence.replace('___',`<u><strong>${c.options[c.answer]}</strong></u>`);
+answers.push({sentence:c.sentence,userAnswer:c.options[i],correctAnswer:c.options[c.answer],correct,explanations:c.explanations,userIndex:i});
+setTimeout(()=>{idx++;render();},900);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">📋 ¡Manual completado!</div>
+<div class="results-score">${score}/${clozes.length}</div>
+<div class="results-subtitle">Frases completadas correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___',`<strong>${a.correctAnswer}</strong>`)}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Respondiste: '+a.userAnswer}</div>
+<div class="result-explanation">${a.correct?a.explanations[0]:a.explanations[a.userIndex]}</div>
+</div>`).join('')}
+<div class="result-item" style="border-left-color:#ffc107">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar el vocabulario técnico es clave para comunicarte con tu equipo y evitar errores en obra. Repasa estos términos hasta que los tengas claros.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+else if(window.parent!==window){window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');}
+else{alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){const m=document.querySelector('.main,.content,.board')||scene;document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
