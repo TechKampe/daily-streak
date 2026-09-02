@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Seguro o Peligro? ⚡ Desliza tu instinto - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;padding:1rem;touch-action:none;}
+.tinder-card{background:#fff;border:3px solid #00E6BC;border-radius:16px;padding:1.5rem;width:100%;max-width:300px;min-height:180px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;transition:transform .15s ease,opacity .15s ease;cursor:grab;user-select:none;}
+.tinder-card:active{cursor:grabbing;}
+.tinder-card-content{font-size:1.25rem;font-weight:700;color:#1a1a2e;line-height:1.4;text-align:center;}
+.tinder-indicators{display:flex;justify-content:space-between;width:100%;margin-top:1rem;font-size:.75rem;font-weight:600;}
+.indicator-left{color:#ff6b6b;}
+.indicator-right{color:#00E6BC;}
+.tinder-buttons{display:flex;flex-direction:row;gap:.75rem;width:100%;}
+.tinder-btn-left,.tinder-btn-right{flex:1;min-width:0;position:static;font-size:.9rem;padding:.75rem .5rem;border-radius:var(--radius-card);text-align:center;justify-content:center;white-space:nowrap;overflow:hidden;}
+.tinder-btn-left{border-color:#ff6b6b;color:#ff6b6b;}
+.tinder-btn-left:hover{background:#ff6b6b;color:#fff;}
+.tinder-btn-right{border-color:#00E6BC;color:#00E6BC;}
+.tinder-btn-right:hover{background:#00E6BC;color:#fff;}
+.swipe-left{transform:translateX(-150%) rotate(-30deg)!important;opacity:0!important;transition:transform .3s ease,opacity .3s ease!important;}
+.swipe-right{transform:translateX(150%) rotate(30deg)!important;opacity:0!important;transition:transform .3s ease,opacity .3s ease!important;}
+.results-message{text-align:center;padding:1rem;font-weight:600;color:#1a1a2e;}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguro o Peligro? ⚡</div>
+<div class="subtitle">Desliza tu instinto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress-bar" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="tinder-card">
+<div class="tinder-card-content" id="card-content"></div>
+<div class="tinder-indicators">
+<span class="indicator-left">❌ INCORRECTO</span>
+<span class="indicator-right">✅ CORRECTO</span>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza izquierda o derecha para responder</div>
+<div class="tinder-buttons">
+<button class="btn-option tinder-btn-left" id="btn-incorrect">❌ Incorrecto</button>
+<button class="btn-option tinder-btn-right" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">⚡ Tu primer día en obra</div>
+<div class="modal-body">El oficial te señala situaciones. Desliza derecha si es CORRECTO, izquierda si es INCORRECTO.</div>
+<div class="modal-actions">
+<button class="cta" id="start-btn">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Trabajar en el cuadro eléctrico sin cortar la corriente",correct:false,exp:"Siempre hay que cortar el suministro antes de manipular cualquier instalación eléctrica."},
+{text:"Usar guantes aislantes antes de manipular cables",correct:true,exp:"Los guantes aislantes son un EPI obligatorio para protegerte de descargas eléctricas."},
+{text:"Utilizar un destornillador con mango metálico",correct:false,exp:"Las herramientas deben tener mangos aislantes para evitar conducción eléctrica."},
+{text:"Señalizar la zona con cartel de riesgo eléctrico",correct:true,exp:"La señalización advierte a otros trabajadores del peligro y es obligatoria por PRL."},
+{text:"Trabajar con cables pelados cerca de una tubería mojada",correct:false,exp:"El agua conduce la electricidad. Nunca trabajes con humedad cerca de instalaciones."},
+{text:"Verificar ausencia de tensión antes de tocar cables",correct:true,exp:"Comprobar con un detector es el primer paso de seguridad antes de cualquier intervención."}
+];
+let idx=0,answers=[],isDragging=false,startX=0,currentX=0,startTime=0;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('tinder-card'),cardContent=document.getElementById('card-content'),progressBar=document.getElementById('progress-bar'),counter=document.getElementById('counter'),btnCorrect=document.getElementById('btn-correct'),btnIncorrect=document.getElementById('btn-incorrect');
+
+document.getElementById('start-btn').onclick=()=>{modal.classList.remove('active');renderCard();};
+
+function renderCard(){
+if(idx>=cards.length){showResults();return;}
+cardContent.textContent=cards[idx].text;
+progressBar.style.width=(idx/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.classList.remove('swipe-left','swipe-right');
+card.style.transform='translateX(0) rotate(0)';
+card.style.opacity='1';
+ensureFits();
+}
+
+function answer(isCorrect){
+const correct=cards[idx].correct===isCorrect;
+answers.push({text:cards[idx].text,userAnswer:isCorrect,wasCorrect:correct,correctAnswer:cards[idx].correct,exp:cards[idx].exp});
+card.classList.add(isCorrect?'swipe-right':'swipe-left');
+setTimeout(()=>{idx++;renderCard();},300);
+}
+
+function onStart(e){
+isDragging=true;card.style.transition='none';
+startX=e.clientX||e.touches[0].clientX;currentX=0;startTime=Date.now();
+}
+function onMove(e){
+if(!isDragging)return;
+const clientX=e.clientX||e.touches[0].clientX;
+currentX=clientX-startX;
+const rotate=currentX*0.1;
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+card.style.opacity=Math.max(0.5,1-Math.abs(currentX)/300);
+}
+function onEnd(){
+if(!isDragging)return;
+isDragging=false;card.style.transition='transform .15s ease, opacity .15s ease';
+const elapsed=Math.max(Date.now()-startTime,1);
+const velocity=Math.abs(currentX)/elapsed;
+const passedDistance=Math.abs(currentX)>80;
+const passedVelocity=Math.abs(currentX)>24&&velocity>0.5;
+if(currentX<0&&(passedDistance||passedVelocity)){answer(false);}
+else if(currentX>0&&(passedDistance||passedVelocity)){answer(true);}
+else{card.style.transform='translateX(0) rotate(0)';card.style.opacity='1';}
+}
+
+card.addEventListener('pointerdown',onStart);
+card.addEventListener('pointermove',onMove);
+card.addEventListener('pointerup',onEnd);
+card.addEventListener('pointercancel',onEnd);
+card.addEventListener('touchstart',e=>{onStart(e);},{passive:true});
+card.addEventListener('touchmove',e=>{onMove(e);},{passive:true});
+card.addEventListener('touchend',onEnd);
+
+btnCorrect.onclick=()=>answer(true);
+btnIncorrect.onclick=()=>answer(false);
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.wasCorrect).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">⚡ ¡Evaluación completada!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">${score>=4?'¡Buen instinto de seguridad!':'Repasa las normas de PRL'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.wasCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.wasCorrect?'✓ Acertaste':'✗ Fallaste'} — Era: ${a.correctAnswer?'CORRECTO':'INCORRECTO'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-message">${score===6?'¡Perfecto! Demuestras criterio profesional en seguridad eléctrica.':score>=4?'Buen trabajo. Sigue reforzando estos conceptos.':'La seguridad es lo primero. Revisa bien cada situación antes de actuar.'}</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+else if(window.parent!==window){window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');}
+else{alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){const m=document.querySelector('.main,.content,.board')||scene;document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
