@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o Realidad? ⚡ Seguridad Eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o Realidad? ⚡</div>
+<div class="subtitle">Seguridad Eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progress"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="content">
+<div class="statement-area" id="statementArea"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">¿Es verdadero o falso?</div>
+<div class="tf-buttons" id="tfButtons">
+<button class="cta tf-btn" id="btnTrue">Verdadero</button>
+<button class="cta tf-btn" id="btnFalse">Falso</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">⚡ Primer día de prácticas</div>
+<div class="modal-body">El encargado quiere comprobar qué sabes sobre seguridad eléctrica antes de tocar herramientas. ¿Verdadero o Falso?</div>
+<div class="modal-actions">
+<button class="cta" id="startBtn">Comenzar</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const statements=[
+{text:"12 voltios no pueden causar ningún daño a una persona.",ans:false,exp:"Falso. Aunque 12V raramente es letal, puede causar quemaduras o ser peligroso en ambientes húmedos o con heridas abiertas."},
+{text:"Antes de trabajar en un circuito, siempre hay que cortar el suministro y verificar ausencia de tensión.",ans:true,exp:"Verdadero. Es la regla de oro: cortar, bloquear, verificar con polímetro y señalizar antes de intervenir."},
+{text:"Los guantes de goma de cocina sirven como aislantes eléctricos.",ans:false,exp:"Falso. Solo los guantes homologados para riesgo eléctrico (clase 00 a 4) ofrecen protección real."},
+{text:"La madera seca es un aislante perfecto y seguro para trabajar.",ans:false,exp:"Falso. La madera puede absorber humedad y conducir electricidad. Solo los materiales homologados son seguros."},
+{text:"El cuadro eléctrico debe estar siempre señalizado con el símbolo de riesgo eléctrico.",ans:true,exp:"Verdadero. La señalización es obligatoria por normativa para prevenir accidentes."},
+{text:"Si un compañero sufre un calambrazo, debo apartarlo tocándolo directamente.",ans:false,exp:"Falso. Primero corta el suministro. Si no es posible, usa un objeto aislante (madera seca, ropa) para separarlo."},
+{text:"El procedimiento de bloqueo y etiquetado (LOTO) es obligatorio antes de cualquier intervención.",ans:true,exp:"Verdadero. LOTO garantiza que el equipo no se reactive mientras trabajas. Es normativa de seguridad laboral."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),content=document.getElementById('content'),statementArea=document.getElementById('statementArea'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),btnTrue=document.getElementById('btnTrue'),btnFalse=document.getElementById('btnFalse'),modal=document.getElementById('modal'),startBtn=document.getElementById('startBtn');
+
+function render(){
+if(idx>=statements.length){showResults();return}
+const s=statements[idx];
+prog.style.width=(idx/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+statementArea.innerHTML=`<p class="statement-text">${s.text}</p>`;
+btnTrue.disabled=false;btnFalse.disabled=false;
+btnTrue.className='cta tf-btn';btnFalse.className='cta tf-btn';
+helper.textContent='¿Es verdadero o falso?';
+ensureFits();
+}
+
+function answer(userAns){
+btnTrue.disabled=true;btnFalse.disabled=true;
+const correct=userAns===statements[idx].ans;
+answers.push({text:statements[idx].text,userAns,correctAns:statements[idx].ans,correct,exp:statements[idx].exp});
+if(userAns){
+btnTrue.classList.add(correct?'correct':'incorrect');
+}else{
+btnFalse.classList.add(correct?'correct':'incorrect');
+}
+helper.textContent=correct?'¡Correcto!':'Incorrecto';
+setTimeout(()=>{idx++;render();},1000);
+}
+
+btnTrue.onclick=()=>answer(true);
+btnFalse.onclick=()=>answer(false);
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">⚡ ¡Evaluación completada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.userAns?'Dijiste: Verdadero':'Dijiste: Falso'} ${a.correct?'✓':'✗'}</div>
+<div class="result-correct">Respuesta correcta: ${a.correctAns?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item tip">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Regla de oro: SIEMPRE verifica ausencia de tensión con un polímetro antes de tocar cualquier conductor, aunque hayas cortado el suministro. Los errores de etiquetado y las tensiones residuales existen.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+startBtn.onclick=()=>{modal.classList.remove('active');render();};
+modal.classList.add('active');
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
