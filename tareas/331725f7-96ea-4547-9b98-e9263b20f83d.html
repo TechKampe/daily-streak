@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el manual 🔧</div>
+<div class="subtitle" id="instruction">Completa la frase con la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="cloze-container">
+<p id="cloze-text"></p>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la opción correcta para el hueco</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">📋 Tu primer día</div>
+<div class="modal-body">Tu supervisor te entrega el manual básico, pero algunas palabras están borradas. ¡Complétalo!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+<script>
+const data=[
+{sentence:"Para medir tensión eléctrica, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","nivel de burbuja"],exp:"El multímetro mide tensión, corriente y resistencia. El buscapolos solo detecta fase y el nivel mide horizontalidad."},
+{sentence:"Antes de entrar en obra, debo ponerme el ___ de seguridad.",blank:"casco",opts:["casco","chaleco","cinturón"],exp:"El casco protege la cabeza de impactos y caídas de objetos. El chaleco da visibilidad y el cinturón es para trabajos en altura."},
+{sentence:"Para cortar tubería de cobre, necesito una ___.",blank:"cortatubos",opts:["cortatubos","sierra de calar","radial"],exp:"El cortatubos hace cortes limpios en tubo. La sierra de calar es para madera y la radial puede deformar el tubo."},
+{sentence:"El cable de tierra siempre es de color ___.",blank:"verde y amarillo",opts:["verde y amarillo","azul","marrón"],exp:"Por normativa, tierra es verde/amarillo. El azul es neutro y el marrón es fase."},
+{sentence:"Para apretar tuercas hexagonales uso una ___.",blank:"llave inglesa",opts:["llave inglesa","destornillador","alicates"],exp:"La llave inglesa ajusta tuercas hexagonales. El destornillador es para tornillos y los alicates para sujetar."},
+{sentence:"Para proteger mis manos de cortes uso ___.",blank:"guantes",opts:["guantes","gafas","orejeras"],exp:"Los guantes protegen las manos. Las gafas protegen los ojos y las orejeras el oído."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),clozeText=document.getElementById('cloze-text'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+const parts=d.sentence.split('___');
+clozeText.innerHTML=parts[0]+'<span class="cloze-blank">___</span>'+(parts[1]||'');
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i},'${o.replace(/'/g,"\\'")}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(i,selected){
+const d=data[idx];
+const correct=selected===d.blank;
+if(correct)score++;
+answers.push({sentence:d.sentence,blank:d.blank,user:selected,correct,exp:d.exp,opts:d.opts});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(b.textContent===d.blank)b.classList.add('correct');
+else if(j===i&&!correct)b.classList.add('incorrect');
+});
+const parts=d.sentence.split('___');
+clozeText.innerHTML=parts[0]+`<span class="cloze-filled ${correct?'correct':'incorrect'}">${selected}</span>`+(parts[1]||'');
+helper.textContent=correct?'¡Correcto!':'Incorrecto';
+setTimeout(()=>{idx++;render();},900);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">📋 ¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>{
+const wrongOpts=a.opts.filter(o=>o!==a.blank);
+return `<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.blank+'</strong>')}</div>
+<div class="result-answer">Tu respuesta: ${a.user} ${a.correct?'✓':'✗'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`;
+}).join('')}
+<div class="result-item" style="background:var(--surface-alt)">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar el vocabulario técnico te permite comunicarte con precisión en obra y evitar errores costosos. ¡Sigue practicando!</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
