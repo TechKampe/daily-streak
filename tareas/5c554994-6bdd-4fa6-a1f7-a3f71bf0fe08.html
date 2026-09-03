@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 Conecta los Cables del Conocimiento - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+.memory-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;width:100%;max-width:400px;margin:0 auto}
+.memory-card{height:70px;width:100%;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;box-sizing:border-box;transition:transform 0.2s ease,background 0.2s ease}
+.memory-card.face-down{background:#00E6BC;color:#0B214A;font-size:15px;font-weight:700}
+.memory-card.face-up{background:#fff;border:2px solid #0B214A;color:#0B214A;font-size:12px;line-height:1.2}
+.memory-card.matched{background:#d4edda!important;border:2px solid #28a745!important}
+.memory-card.shake{animation:shake 0.4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.memory-card.pop{animation:pop 0.2s ease}
+@keyframes pop{0%{transform:scale(0.95)}100%{transform:scale(1)}}
+.stats{display:flex;justify-content:center;gap:16px;font-size:14px;color:#0B214A;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 Conecta los Cables</div>
+<div class="subtitle">Encuentra las parejas de conceptos eléctricos</div>
+</div>
+</div>
+<div class="main">
+<div class="stats">
+<span id="attempts">Intento 0/10</span>
+<span id="pairs">0/4 parejas</span>
+</div>
+<div class="memory-grid" id="grid"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca dos cartas para emparejar término y definición</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const pairs=[
+{term:"Interruptor diferencial",def:"Protege contra contactos eléctricos",exp:"El diferencial detecta fugas de corriente y corta el circuito para evitar electrocuciones."},
+{term:"Cable de tierra",def:"Amarillo y verde",exp:"El cable de tierra siempre es amarillo-verde por normativa, para identificarlo fácilmente."},
+{term:"Fusible",def:"Se funde por sobrecarga",exp:"El fusible se sacrifica fundiéndose cuando la corriente es excesiva, protegiendo el circuito."},
+{term:"Voltímetro",def:"Mide tensión eléctrica",exp:"El voltímetro mide la diferencia de potencial (voltios) entre dos puntos del circuito."}
+];
+
+let cards=[],flipped=[],matched=0,attempts=0,locked=false;
+const maxAttempts=10,totalPairs=4;
+const grid=document.getElementById('grid'),attemptsEl=document.getElementById('attempts'),pairsEl=document.getElementById('pairs');
+
+function init(){
+cards=[];
+pairs.forEach((p,i)=>{
+cards.push({id:i*2,pairId:i,text:p.term,type:'term'});
+cards.push({id:i*2+1,pairId:i,text:p.def,type:'def'});
+});
+cards=shuffle(cards);
+render();
+ensureFits();
+}
+
+function shuffle(arr){
+for(let i=arr.length-1;i>0;i--){
+const j=Math.floor(Math.random()*(i+1));
+[arr[i],arr[j]]=[arr[j],arr[i]];
+}
+return arr;
+}
+
+function render(){
+grid.innerHTML=cards.map(c=>`<div class="memory-card face-down" data-id="${c.id}" onclick="flip(${c.id})">?</div>`).join('');
+updateStats();
+}
+
+function updateStats(){
+attemptsEl.textContent=`Intento ${attempts}/${maxAttempts}`;
+pairsEl.textContent=`${matched}/${totalPairs} parejas`;
+}
+
+function flip(id){
+if(locked)return;
+const card=cards.find(c=>c.id===id);
+const el=document.querySelector(`[data-id="${id}"]`);
+if(!el||el.classList.contains('face-up')||el.classList.contains('matched'))return;
+
+el.classList.remove('face-down');
+el.classList.add('face-up','pop');
+el.textContent=card.text;
+flipped.push({card,el});
+
+if(flipped.length===2){
+attempts++;
+updateStats();
+checkMatch();
+}
+}
+
+function checkMatch(){
+locked=true;
+const [f1,f2]=flipped;
+const isMatch=f1.card.pairId===f2.card.pairId&&f1.card.type!==f2.card.type;
+
+if(isMatch){
+setTimeout(()=>{
+f1.el.classList.add('matched');
+f2.el.classList.add('matched');
+matched++;
+updateStats();
+flipped=[];
+locked=false;
+if(matched===totalPairs)showResults();
+},300);
+}else{
+setTimeout(()=>{
+f1.el.classList.add('shake');
+f2.el.classList.add('shake');
+setTimeout(()=>{
+f1.el.classList.remove('face-up','shake','pop');
+f1.el.classList.add('face-down');
+f1.el.textContent='?';
+f2.el.classList.remove('face-up','shake','pop');
+f2.el.classList.add('face-down');
+f2.el.textContent='?';
+flipped=[];
+locked=false;
+if(attempts>=maxAttempts&&matched<totalPairs)showResults();
+},400);
+},1600);
+}
+}
+
+function showResults(){
+setTimeout(()=>{
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+
+const won=matched===totalPairs;
+const missing=pairs.filter((_,i)=>!document.querySelector(`[data-id="${i*2}"].matched`));
+
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${won?'🎉 ¡Excelente trabajo!':'💡 ¡Sigue practicando!'}</div>
+<div class="results-score">${matched}/${totalPairs}</div>
+<div class="results-subtitle">${won?'Parejas encontradas en '+attempts+' intentos':'Parejas encontradas'}</div>
+</div>
+<div class="results-list">
+${pairs.map((p,i)=>{
+const wasMatched=!!document.querySelector?true:true;
+return `<div class="result-item ${matched===totalPairs||i<matched?'correct':'incorrect'}">
+<div class="result-question">${p.term} ↔ ${p.def}</div>
+<div class="result-explanation">${p.exp}</div>
+</div>`;
+}).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const scene=document.getElementById('scene');
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{init();ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
