@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Herramienta o EPI? 🛠️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Herramienta o EPI? 🛠️</div>
+<div class="subtitle" id="subtitle">Clasifica el material del almacén</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div class="board" id="board">
+<div class="item-display" id="itemDisplay"></div>
+<div class="options" id="categories"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para clasificar</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">📦 ¡Organiza el almacén!</div>
+<div class="modal-body">Es tu primer día. Clasifica cada elemento como Herramienta de trabajo o Equipo de Protección Individual (EPI).</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const items=[
+{name:"Guantes aislantes",cat:"EPI",exp:"Protegen las manos de descargas eléctricas."},
+{name:"Destornillador",cat:"Herramienta",exp:"Herramienta básica para apretar/aflojar tornillos."},
+{name:"Casco de seguridad",cat:"EPI",exp:"Protege la cabeza de impactos y caídas de objetos."},
+{name:"Polímetro",cat:"Herramienta",exp:"Instrumento para medir tensión, corriente y resistencia."},
+{name:"Gafas de seguridad",cat:"EPI",exp:"Protegen los ojos de partículas y chispas."},
+{name:"Alicates",cat:"Herramienta",exp:"Herramienta para sujetar, cortar o doblar cables."},
+{name:"Chaleco reflectante",cat:"EPI",exp:"Aumenta la visibilidad del trabajador."},
+{name:"Cinta aislante",cat:"Herramienta",exp:"Material para aislar empalmes eléctricos."},
+{name:"Botas de seguridad",cat:"EPI",exp:"Protegen los pies de golpes y descargas."},
+{name:"Nivel láser",cat:"Herramienta",exp:"Herramienta para nivelar instalaciones con precisión."}
+];
+
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),board=document.getElementById('board'),itemDisplay=document.getElementById('itemDisplay'),cats=document.getElementById('categories'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+prog.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+subtitle.textContent='¿Dónde va este elemento?';
+itemDisplay.innerHTML=`<div class="current-item">${item.name}</div>`;
+cats.innerHTML=`
+<button class="btn-option" onclick="classify('Herramienta')">🔧 Herramienta</button>
+<button class="btn-option" onclick="classify('EPI')">🦺 EPI</button>`;
+ensureFits();
+}
+
+function classify(choice){
+const item=items[idx];
+const correct=choice===item.cat;
+if(correct)score++;
+answers.push({name:item.name,correct,userChoice:choice,correctCat:item.cat,exp:item.exp});
+
+const btns=cats.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+if(b.textContent.includes(choice)){
+b.classList.add(correct?'correct':'incorrect');
+}
+if(b.textContent.includes(item.cat)&&!correct){
+b.classList.add('correct');
+}
+b.disabled=true;
+});
+
+itemDisplay.querySelector('.current-item').classList.add(correct?'drop-correct':'drop-incorrect');
+
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🎉 ¡Almacén organizado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Elementos bien clasificados</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctCat:'✗ Dijiste '+a.userChoice+' → Era '+a.correctCat}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--surface-alt)">
+<div class="result-question">💡 Consejo profesional</div>
+<div class="result-explanation">Antes de empezar la jornada, separa mentalmente lo que usas para trabajar de lo que te protege. ¡Tu seguridad es lo primero!</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
