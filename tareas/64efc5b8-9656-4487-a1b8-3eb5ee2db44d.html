@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="taskText">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main"><div class="options" id="options"></div></div>
+<div class="footer">
+<div class="helper">Elige la herramienta correcta para la tarea</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">🔧 Primera semana de ayudante</div>
+<div class="modal-body">Tu supervisor te asigna tareas básicas. Demuestra que sabes qué herramienta usar en cada situación.</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">¡Empezar!</button></div>
+</div>
+</div>
+
+<script>
+const tasks=[
+{task:"Apretar un tornillo con cabeza en cruz",tools:["Destornillador de estrella","Destornillador plano","Llave Allen"],correct:0,correctName:"Destornillador de estrella",explanations:["El plano resbala en cabezas de cruz y daña la ranura.","La llave Allen es para tornillos hexagonales, no de cruz."]},
+{task:"Cortar un cable eléctrico fino",tools:["Alicates de corte","Alicates universales","Alicates de punta fina"],correct:0,correctName:"Alicates de corte",explanations:["Los universales cortan pero con menos precisión y más esfuerzo.","Los de punta fina son para sujetar, no para cortar cables."]},
+{task:"Medir el ancho de un mueble",tools:["Flexómetro","Nivel de burbuja","Escuadra"],correct:0,correctName:"Flexómetro",explanations:["El nivel comprueba horizontalidad, no mide longitudes.","La escuadra mide ángulos de 90°, no distancias largas."]},
+{task:"Pelar el aislante de un conductor",tools:["Pelacables","Tijeras","Cúter"],correct:0,correctName:"Pelacables",explanations:["Las tijeras pueden dañar los hilos de cobre al pelar.","El cúter corta el aislante pero es fácil mellar el conductor."]},
+{task:"Aflojar una tuerca hexagonal",tools:["Llave fija","Llave inglesa","Llave de tubo"],correct:0,correctName:"Llave fija",explanations:["La inglesa sirve pero es menos precisa y puede redondear la tuerca.","La de tubo es para tuercas en sitios profundos o de fontanería."]},
+{task:"Marcar una línea de corte en madera",tools:["Lápiz de carpintero","Rotulador permanente","Tiza"],correct:0,correctName:"Lápiz de carpintero",explanations:["El rotulador mancha la madera y es difícil de lijar.","La tiza se borra con el roce y no marca con precisión."]}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('taskText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),introModal=document.getElementById('introModal');
+
+function startGame(){introModal.classList.remove('active');render();}
+window.onload=()=>{introModal.classList.add('active');ensureFits();};
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.tools.map((tool,i)=>`<button class="btn-option" onclick="select(${i})">${tool}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx],btns=opts.querySelectorAll('.btn-option'),isCorrect=i===t.correct;
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(isCorrect?'correct':'incorrect');if(j===t.correct&&!isCorrect)b.classList.add('correct');});
+answers.push({task:t.task,userChoice:t.tools[i],correctTool:t.correctName,correct:isCorrect,explanations:t.explanations});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔧 ¡Jornada completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question"><strong>Tarea:</strong> ${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.userChoice:'✗ Elegiste: '+a.userChoice}</div>
+${!a.correct?`<div class="result-explanation"><strong>Correcta:</strong> ${a.correctTool}</div>`:''}
+<div class="result-explanation">${a.explanations.map(e=>'• '+e).join('<br>')}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question"><strong>💡 Consejos prácticos</strong></div>
+<div class="result-explanation">
+• <strong>Destornilladores:</strong> Usa siempre el que coincida con la cabeza del tornillo para evitar daños.<br>
+• <strong>Alicates:</strong> Los de corte para cables, los universales para sujetar y cortar alambre grueso.<br>
+• <strong>Flexómetro:</strong> Imprescindible para medir; el nivel y la escuadra son para otras funciones.<br>
+• <strong>Pelacables:</strong> Ajusta el calibre para no dañar el cobre; nunca uses cúter en cables finos.<br>
+• <strong>Llaves:</strong> La fija para tuercas accesibles, la inglesa como comodín y la de tubo en fontanería.<br>
+• <strong>Marcado:</strong> El lápiz de carpintero no mancha y se lija fácil; ideal para madera.
+</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+else if(window.parent!==window){window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');}
+else{alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){const m=document.querySelector('.main,.content,.board')||scene;document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
