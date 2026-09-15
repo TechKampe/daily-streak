@@ -1,0 +1,259 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tu primera satisfacción de una reforma 🏠 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+.chat-container{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.chat-history{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;animation:fadeIn 0.3s ease}
+.chat-bubble.client{background:#e8f5e9;align-self:flex-start;border-bottom-left-radius:4px}
+.chat-bubble.mentor{background:#fff3e0;align-self:flex-start;border-bottom-left-radius:4px;font-style:italic}
+.chat-bubble.player{background:#1a1a2e;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-sender{font-size:11px;font-weight:700;margin-bottom:4px;opacity:0.7}
+.chat-avatar{width:28px;height:28px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.options-panel{padding:12px;background:linear-gradient(to top,rgba(26,26,46,0.95),rgba(26,26,46,0.85));border-top:1px solid rgba(255,255,255,0.1)}
+.option-btn{width:100%;padding:12px 16px;margin-bottom:8px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);border-radius:12px;color:#fff;font-size:13px;text-align:left;cursor:pointer;transition:all 0.2s}
+.option-btn:last-child{margin-bottom:0}
+.option-btn:active{transform:scale(0.98);background:rgba(255,255,255,0.2)}
+.option-btn.correct{border-color:#4caf50;background:rgba(76,175,80,0.2)}
+.option-btn.partial{border-color:#ff9800;background:rgba(255,152,0,0.2)}
+.option-btn.incorrect{border-color:#f44336;background:rgba(244,67,54,0.2)}
+.reaction-bubble{padding:8px 12px;background:#ffeb3b;color:#333;border-radius:12px;font-size:12px;text-align:center;margin:8px auto;max-width:80%;animation:popIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Tu primera satisfacción 🏠</div>
+<div class="subtitle" id="subtitle">Cierra el trato con profesionalidad</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">Intro</span>
+</div>
+</div>
+<div class="chat-container">
+<div class="chat-history" id="chatHistory"></div>
+<div class="options-panel" id="optionsPanel"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+mentor:'https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png',
+client:'https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png'
+};
+const turns=[
+{
+messages:[
+{sender:'client',name:'Carlos (Cliente)',text:'¡Hola! Ya he visto todo el trabajo terminado. Tengo algunas dudas antes de cerrar.'},
+{sender:'mentor',name:'Mentor',text:'💡 Recuerda: el cliente quiere sentirse seguro. Sé claro y accesible.'}
+],
+options:[
+{text:'Claro Carlos, pregunta lo que necesites. Estoy aquí para ayudarte.',score:'correct',feedback:'👍 Excelente apertura, generas confianza.'},
+{text:'Dime rápido que tengo otro trabajo.',score:'incorrect',feedback:'😬 Eso suena muy frío y distante.'},
+{text:'Sí, cuéntame.',score:'partial',feedback:'🤔 Correcto pero podrías ser más cálido.'}
+]
+},
+{
+messages:[
+{sender:'client',name:'Carlos (Cliente)',text:'¿Podrías explicarme qué habéis hecho exactamente con la instalación eléctrica?'}
+],
+options:[
+{text:'Hemos renovado todo el cableado, puesto protecciones nuevas y dejado tomas extra donde pediste. Todo cumple normativa.',score:'correct',feedback:'👍 Claro, sin tecnicismos y completo.'},
+{text:'Pues cambiar los ICP, poner diferenciales de 30mA y sección de 2.5mm² en alumbrado.',score:'partial',feedback:'🤔 Técnicamente correcto, pero confuso para el cliente.'},
+{text:'Lo típico de una reforma eléctrica.',score:'incorrect',feedback:'😬 Demasiado vago, no aporta valor.'}
+]
+},
+{
+messages:[
+{sender:'client',name:'Carlos (Cliente)',text:'¿Y si algo falla en unas semanas? ¿Tengo alguna garantía?'}
+],
+options:[
+{text:'Tienes 1 año de garantía en mano de obra. Si hay cualquier problema, me llamas y lo reviso sin coste.',score:'correct',feedback:'👍 Profesional y tranquilizador.'},
+{text:'Hombre, si falla algo será problema del material, no mío.',score:'incorrect',feedback:'😬 Eso genera desconfianza total.'},
+{text:'Sí, hay garantía. Ya te lo comenté al principio.',score:'partial',feedback:'🤔 Correcto pero suena un poco cortante.'}
+]
+},
+{
+messages:[
+{sender:'client',name:'Carlos (Cliente)',text:'Una cosa... en el baño veo que el azulejo de la esquina tiene una pequeña imperfección. ¿Es normal?'}
+],
+options:[
+{text:'Déjame verlo. Si es un defecto de colocación, lo corrijo esta semana sin problema.',score:'correct',feedback:'👍 Actitud resolutiva y profesional.'},
+{text:'Eso ya estaba así, no es cosa nuestra.',score:'incorrect',feedback:'😬 Defensivo y poco profesional.'},
+{text:'A ver, envíame una foto y lo miro.',score:'partial',feedback:'🤔 Bien, pero mejor verlo en persona.'}
+]
+},
+{
+messages:[
+{sender:'client',name:'Carlos (Cliente)',text:'Perfecto. ¿Algún consejo para mantener todo en buen estado?'},
+{sender:'mentor',name:'Mentor',text:'💡 Es tu oportunidad de dejar huella y abrir puerta a futuros trabajos.'}
+],
+options:[
+{text:'Revisa el diferencial cada mes pulsando el botón de test. Y si necesitas algo más adelante, aquí me tienes.',score:'correct',feedback:'👍 Consejo útil + fidelización.'},
+{text:'No hace falta hacer nada especial.',score:'incorrect',feedback:'😬 Oportunidad perdida de aportar valor.'},
+{text:'Cuida los grifos y no sobrecargues los enchufes.',score:'partial',feedback:'🤔 Buen consejo pero sin cierre comercial.'}
+]
+}
+];
+let currentTurn=0,answers=[],score=0;
+const chatHistory=document.getElementById('chatHistory'),optionsPanel=document.getElementById('optionsPanel'),progressBar=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function addMessage(msg,isPlayer=false){
+const bubble=document.createElement('div');
+bubble.className='chat-bubble '+(isPlayer?'player':msg.sender);
+if(!isPlayer&&msg.name){
+const sender=document.createElement('div');
+sender.className='chat-sender';
+if(msg.sender!=='mentor'){
+const img=document.createElement('img');
+img.src=avatars[msg.sender];
+img.className='chat-avatar';
+sender.appendChild(img);
+}
+sender.appendChild(document.createTextNode(msg.name));
+bubble.appendChild(sender);
+}
+const text=document.createElement('div');
+text.textContent=msg.text;
+bubble.appendChild(text);
+chatHistory.appendChild(bubble);
+chatHistory.scrollTop=chatHistory.scrollHeight;
+}
+
+function addReaction(text){
+const reaction=document.createElement('div');
+reaction.className='reaction-bubble';
+reaction.textContent=text;
+chatHistory.appendChild(reaction);
+chatHistory.scrollTop=chatHistory.scrollHeight;
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){showResults();return}
+const turn=turns[currentTurn];
+turn.messages.forEach(m=>addMessage(m));
+progressBar.style.width=((currentTurn+1)/turns.length*100)+'%';
+counter.textContent=(currentTurn+1)+'/'+turns.length;
+subtitle.textContent='Turno '+(currentTurn+1)+': Elige tu respuesta';
+optionsPanel.innerHTML='';
+turn.options.forEach((opt,i)=>{
+const btn=document.createElement('button');
+btn.className='option-btn';
+btn.textContent=opt.text;
+btn.onclick=()=>selectOption(i);
+optionsPanel.appendChild(btn);
+});
+ensureFits();
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const opt=turn.options[idx];
+const btns=optionsPanel.querySelectorAll('.option-btn');
+btns.forEach((b,i)=>{
+b.disabled=true;
+if(i===idx)b.classList.add(opt.score);
+});
+addMessage({text:opt.text},true);
+setTimeout(()=>{
+addReaction(opt.feedback);
+if(opt.score==='correct')score+=2;
+else if(opt.score==='partial')score+=1;
+answers.push({turn:currentTurn+1,chosen:opt.text,score:opt.score,feedback:opt.feedback});
+setTimeout(()=>{
+currentTurn++;
+renderTurn();
+},800);
+},400);
+}
+
+function showResults(){
+setTimeout(()=>{
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const maxScore=turns.length*2;
+const pct=Math.round(score/maxScore*100);
+let mensaje='';
+if(pct>=80)mensaje='¡Excelente comunicación profesional!';
+else if(pct>=50)mensaje='Buen trabajo, pero puedes mejorar.';
+else mensaje='Necesitas practicar más la comunicación.';
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Conversación completada!</div>
+<div class="results-score">${score}/${maxScore}</div>
+<div class="results-subtitle">${mensaje}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.score==='correct'?'correct':a.score==='partial'?'':'incorrect'}">
+<div class="result-question">Turno ${a.turn}</div>
+<div class="result-answer">"${a.chosen.substring(0,50)}${a.chosen.length>50?'...':''}"</div>
+<div class="result-explanation">${a.feedback}</div>
+</div>`).join('')}
+<div class="result-item correct">
+<div class="result-question">💡 Consejo profesional</div>
+<div class="result-explanation">La fidelización empieza en el cierre: un cliente satisfecho te recomienda a 3 personas. Siempre ofrece garantía clara y deja la puerta abierta.</div>
+</div>
+</div>
+<div class="footer" style="position:sticky;bottom:0;background:#1a1a2e;padding:16px;">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const scene=document.getElementById('scene');
+const m=document.querySelector('.chat-container')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.chat-container')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{ensureFits();renderTurn();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
