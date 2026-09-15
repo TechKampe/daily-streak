@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Desafío eléctrico - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">Primera semana como aprendiz</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="content">
+<div class="statement" id="statement"></div>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper">¿Verdadero o Falso? Elige tu respuesta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">⚡ Desafío Eléctrico</div>
+<div class="modal-body">Tu supervisor quiere comprobar si distingues hechos de mitos peligrosos. ¿Listo para demostrar lo que sabes?</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements=[
+{text:"La madera siempre aísla la corriente eléctrica.",answer:false,exp:"La madera húmeda conduce electricidad. Solo la madera completamente seca tiene propiedades aislantes."},
+{text:"Los cables negros son siempre la fase en una instalación.",answer:false,exp:"El color de fase varía según normativa y país. En España puede ser marrón, negro o gris. Siempre verificar con medidor."},
+{text:"Se puede trabajar en un circuito si el diferencial está bajado.",answer:false,exp:"Bajar el diferencial no garantiza ausencia de tensión. Siempre hay que verificar con un detector de tensión antes de tocar."},
+{text:"El agua destilada pura no conduce la electricidad.",answer:true,exp:"Correcto. El agua destilada pura no tiene iones y no conduce. Pero el agua común siempre tiene impurezas que la hacen conductora."},
+{text:"Los guantes de látex comunes protegen de descargas eléctricas.",answer:false,exp:"Los guantes de látex domésticos NO son aislantes eléctricos. Solo los guantes dieléctricos homologados ofrecen protección."},
+{text:"Antes de trabajar en un circuito, siempre se debe verificar la ausencia de tensión.",answer:true,exp:"Correcto. Es la regla de oro de seguridad eléctrica. Nunca confiar solo en el interruptor: usar siempre un detector de tensión."}
+];
+
+let idx=0,score=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),statement=document.getElementById('statement'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),introModal=document.getElementById('introModal');
+
+introModal.classList.add('active');
+
+function startGame(){
+introModal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=statements.length){showResults();return}
+locked=false;
+const s=statements[idx];
+prog.style.width=((idx)/statements.length*100)+'%';
+counter.textContent=(idx+1)+'/'+statements.length;
+statement.textContent=s.text;
+opts.innerHTML=`<button class="btn-option" id="btnTrue" onclick="answer(true)">✓ Verdadero</button><button class="btn-option" id="btnFalse" onclick="answer(false)">✗ Falso</button>`;
+ensureFits();
+}
+
+function answer(userAnswer){
+if(locked)return;
+locked=true;
+const s=statements[idx];
+const correct=userAnswer===s.answer;
+if(correct)score++;
+answers.push({text:s.text,userAnswer,correctAnswer:s.answer,correct,exp:s.exp});
+const btnTrue=document.getElementById('btnTrue');
+const btnFalse=document.getElementById('btnFalse');
+if(userAnswer===true){
+btnTrue.classList.add(correct?'correct':'incorrect');
+}else{
+btnFalse.classList.add(correct?'correct':'incorrect');
+}
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Desafío completado!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">${score>=5?'¡Excelente! Conoces bien los riesgos':score>=3?'Buen trabajo, sigue aprendiendo':'Repasa estos conceptos de seguridad'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAnswer?'Verdadero':'Falso'} ${a.correct?'✓':'✗'} | Correcta: ${a.correctAnswer?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item correct">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Antes de intervenir en cualquier circuito: 1) Corta la alimentación, 2) Bloquea el interruptor, 3) Verifica ausencia de tensión con detector homologado. ¡Las 3 reglas de oro!</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
