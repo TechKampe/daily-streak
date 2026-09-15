@@ -1,0 +1,237 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Ordena y Conquista: Secuencias de Oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena y Conquista</div>
+<div class="subtitle" id="subtitle">Ordena los pasos correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">Reto 1/3</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="cards" id="cards"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Usa ↑↓ o arrastra para ordenar</div>
+<button class="cta" id="cta">Confirmar orden</button>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">👷 Evaluación de Protocolos</div>
+<div class="modal-body">Tu supervisor te observa. Ordena 3 procedimientos correctamente para demostrar que conoces los protocolos de seguridad.</div>
+<div class="modal-actions">
+<button class="cta" onclick="closeModal()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const challenges=[
+{title:"Preparación de herramientas (fontanería)",
+steps:["Identificar el tipo de avería","Cortar el suministro de agua","Reunir herramientas necesarias","Verificar estado de las herramientas","Preparar el área de trabajo"],
+correct:[0,2,3,1,4],
+tip:"Siempre verifica tus herramientas antes de cortar suministros para no dejar al cliente sin agua más tiempo del necesario."},
+{title:"Atención de llamada por avería",
+steps:["Registrar datos del cliente","Escuchar descripción del problema","Confirmar dirección y horario","Preparar herramientas según avería","Informar tiempo estimado de llegada"],
+correct:[1,0,2,4,3],
+tip:"Escuchar primero te permite identificar qué herramientas necesitarás y dar un tiempo realista."},
+{title:"Cierre seguro del área de trabajo",
+steps:["Recoger todas las herramientas","Verificar que no hay fugas/fallos","Limpiar el área de trabajo","Informar al cliente del trabajo","Documentar la intervención"],
+correct:[1,0,2,3,4],
+tip:"Verificar antes de recoger evita tener que volver a sacar herramientas si hay problemas."}
+];
+
+let currentChallenge=0,currentOrder=[],answers=[],draggedIdx=null,startY=0,startTime=0;
+const scene=document.getElementById('scene'),cardsEl=document.getElementById('cards'),cta=document.getElementById('cta'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+function closeModal(){modal.classList.remove('active');}
+function showModal(){modal.classList.add('active');}
+
+function render(){
+if(currentChallenge>=challenges.length){showResults();return;}
+const ch=challenges[currentChallenge];
+currentOrder=[...Array(ch.steps.length).keys()].sort(()=>Math.random()-0.5);
+subtitle.textContent=ch.title;
+counter.textContent=`Reto ${currentChallenge+1}/3`;
+prog.style.width=((currentChallenge)/3*100)+'%';
+helper.textContent='Usa ↑↓ o arrastra para ordenar';
+renderCards();
+ensureFits();
+}
+
+function renderCards(){
+const ch=challenges[currentChallenge];
+cardsEl.innerHTML=currentOrder.map((stepIdx,pos)=>`
+<div class="card" data-pos="${pos}" draggable="true">
+<span class="card-num">${pos+1}</span>
+<span class="card-text">${ch.steps[stepIdx]}</span>
+<div class="card-controls">
+<button class="btn-ghost" onclick="moveUp(${pos})" aria-label="Subir"${pos===0?' disabled':''}>↑</button>
+<button class="btn-ghost" onclick="moveDown(${pos})" aria-label="Bajar"${pos===currentOrder.length-1?' disabled':''}>↓</button>
+</div>
+</div>`).join('');
+attachDragListeners();
+}
+
+function moveUp(pos){
+if(pos<=0)return;
+[currentOrder[pos],currentOrder[pos-1]]=[currentOrder[pos-1],currentOrder[pos]];
+renderCards();animateCard(pos-1);
+}
+
+function moveDown(pos){
+if(pos>=currentOrder.length-1)return;
+[currentOrder[pos],currentOrder[pos+1]]=[currentOrder[pos+1],currentOrder[pos]];
+renderCards();animateCard(pos+1);
+}
+
+function animateCard(pos){
+const card=cardsEl.children[pos];
+if(card){card.style.transform='scale(1.02)';setTimeout(()=>card.style.transform='',150);}
+}
+
+function attachDragListeners(){
+const cards=cardsEl.querySelectorAll('.card');
+cards.forEach((card,idx)=>{
+card.addEventListener('pointerdown',e=>onDragStart(e,idx));
+card.addEventListener('pointermove',onDragMove);
+card.addEventListener('pointerup',onDragEnd);
+card.addEventListener('pointercancel',onDragEnd);
+});
+}
+
+function onDragStart(e,idx){
+if(e.target.closest('.btn-ghost'))return;
+draggedIdx=idx;startY=e.clientY;startTime=Date.now();
+const card=cardsEl.children[idx];
+card.classList.add('dragging');
+card.setPointerCapture(e.pointerId);
+}
+
+function onDragMove(e){
+if(draggedIdx===null)return;
+const card=cardsEl.children[draggedIdx];
+const diffY=e.clientY-startY;
+card.style.transform=`translateY(${diffY}px)`;
+card.style.zIndex='10';
+}
+
+function onDragEnd(e){
+if(draggedIdx===null)return;
+const card=cardsEl.children[draggedIdx];
+card.classList.remove('dragging');
+card.style.transform='';card.style.zIndex='';
+const diffY=e.clientY-startY;
+const elapsed=Math.max(Date.now()-startTime,1);
+const velocity=Math.abs(diffY)/elapsed;
+const cardH=card.offsetHeight+8;
+const passedDist=Math.abs(diffY)>cardH*0.5;
+const passedVel=Math.abs(diffY)>20&&velocity>0.4;
+if(passedDist||passedVel){
+const steps=Math.round(diffY/cardH);
+let newPos=draggedIdx+steps;
+newPos=Math.max(0,Math.min(currentOrder.length-1,newPos));
+if(newPos!==draggedIdx){
+const item=currentOrder.splice(draggedIdx,1)[0];
+currentOrder.splice(newPos,0,item);
+renderCards();animateCard(newPos);
+}
+}
+draggedIdx=null;
+}
+
+cta.onclick=()=>{
+const ch=challenges[currentChallenge];
+const userOrder=currentOrder.slice();
+const correctOrder=ch.correct.slice();
+const isCorrect=JSON.stringify(userOrder)===JSON.stringify(correctOrder);
+answers.push({title:ch.title,steps:ch.steps,userOrder,correctOrder,isCorrect,tip:ch.tip});
+currentChallenge++;
+render();
+};
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${score===3?'¡Excelente!':score>=2?'¡Buen trabajo!':'Sigue practicando'}</div>
+<div class="results-score">${score}/3</div>
+<div class="results-subtitle">Procedimientos correctos</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.isCorrect?'✅':'❌'} Reto ${i+1}: ${a.title}</div>
+<div class="result-answer"><strong>Tu orden:</strong><br>${a.userOrder.map((idx,p)=>`${p+1}. ${a.steps[idx]}`).join('<br>')}</div>
+${!a.isCorrect?`<div class="result-answer" style="margin-top:8px;color:var(--ok)"><strong>✅ Orden correcto:</strong><br>${a.correctOrder.map((idx,p)=>`${p+1}. ${a.steps[idx]}`).join('<br>')}</div>`:''}
+<div class="result-explanation">💡 ${a.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{ensureFits();showModal();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
