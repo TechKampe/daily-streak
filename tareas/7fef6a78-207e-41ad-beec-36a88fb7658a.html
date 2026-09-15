@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o Realidad? ⚡ Seguridad Eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o Realidad? ⚡</div>
+<div class="subtitle">Seguridad Eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="content">
+<div class="statement-text" id="statement"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">¿Verdadero o Falso?</div>
+<div class="tf-buttons" id="tfButtons">
+<button class="cta tf-btn" id="btnTrue">Verdadero</button>
+<button class="cta tf-btn secondary" id="btnFalse">Falso</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Primer día de prácticas ⚡</div>
+<div class="modal-body">El encargado quiere evaluar qué sabes sobre mitos y verdades de seguridad eléctrica antes de empezar.</div>
+<div class="modal-actions">
+<button class="cta" id="startBtn">Comenzar</button>
+</div>
+</div>
+</div>
+<script>
+const data=[
+{statement:"La madera siempre aísla la electricidad",answer:false,exp:"La madera húmeda o tratada puede conducir electricidad. Solo la madera seca y limpia ofrece cierto aislamiento."},
+{statement:"Los guantes de látex protegen de descargas eléctricas",answer:false,exp:"Los guantes de látex comunes no son aislantes. Solo los guantes dieléctricos certificados ofrecen protección."},
+{statement:"Un circuito desconectado puede mantener carga residual",answer:true,exp:"Los condensadores pueden almacenar carga peligrosa incluso con el circuito desconectado. Siempre hay que descargarlos."},
+{statement:"El agua destilada pura no conduce electricidad",answer:true,exp:"El agua destilada pura (sin minerales) es muy mal conductor. Son las impurezas y sales las que permiten la conducción."},
+{statement:"Los voltajes bajos (12V) nunca son peligrosos",answer:false,exp:"Aunque menos peligrosos, voltajes bajos con alta corriente pueden causar quemaduras o parada cardíaca en condiciones específicas."},
+{statement:"Antes de trabajar, hay que verificar ausencia de tensión con un detector",answer:true,exp:"La verificación con detector homologado es obligatoria. Nunca confiar solo en que el interruptor está bajado."},
+{statement:"El diferencial protege de todos los contactos eléctricos",answer:false,exp:"El diferencial protege de contactos indirectos. Para contactos directos se necesitan otras medidas como aislamiento y distancias de seguridad."}
+];
+let idx=0,score=0,answers=[],canAnswer=true;
+const scene=document.getElementById('scene'),statement=document.getElementById('statement'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnTrue=document.getElementById('btnTrue'),btnFalse=document.getElementById('btnFalse'),modal=document.getElementById('modal'),startBtn=document.getElementById('startBtn'),helper=document.getElementById('helper');
+
+modal.classList.add('active');
+startBtn.onclick=()=>{modal.classList.remove('active');render();};
+
+function render(){
+if(idx>=data.length){showResults();return}
+canAnswer=true;
+const d=data[idx];
+statement.textContent=d.statement;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+btnTrue.className='cta tf-btn';
+btnFalse.className='cta tf-btn secondary';
+helper.textContent='¿Verdadero o Falso?';
+ensureFits();
+}
+
+function handleAnswer(userAnswer){
+if(!canAnswer)return;
+canAnswer=false;
+const d=data[idx];
+const correct=userAnswer===d.answer;
+if(correct)score++;
+answers.push({statement:d.statement,userAnswer,correctAnswer:d.answer,correct,exp:d.exp});
+if(userAnswer){
+btnTrue.classList.add(correct?'correct':'incorrect');
+}else{
+btnFalse.classList.add(correct?'correct':'incorrect');
+}
+helper.textContent=correct?'¡Correcto!':'Incorrecto';
+setTimeout(()=>{idx++;render();},1000);
+}
+
+btnTrue.onclick=()=>handleAnswer(true);
+btnFalse.onclick=()=>handleAnswer(false);
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">"${a.statement}"</div>
+<div class="result-answer">${a.correct?'✓':'✗'} Tu respuesta: ${a.userAnswer?'Verdadero':'Falso'} | Correcta: ${a.correctAnswer?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="result-item" style="background:var(--surface);border-left:4px solid var(--accent);">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Siempre usa las 5 reglas de oro: desconectar, bloquear, verificar ausencia de tensión, poner a tierra y señalizar. Nunca te fíes solo de que "está desconectado".</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
