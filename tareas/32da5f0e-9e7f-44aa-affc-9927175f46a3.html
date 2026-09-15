@@ -1,0 +1,245 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tu primera satisfacción del cliente 💬 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+.chat-container{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.chat-history{flex:1;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;animation:fadeIn 0.3s ease}
+.chat-bubble.npc{background:#e8f4e8;align-self:flex-start;border-bottom-left-radius:4px}
+.chat-bubble.player{background:#1a1a1a;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-bubble .sender{font-weight:700;font-size:12px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.chat-bubble .sender img{width:24px;height:24px;border-radius:50%;object-fit:cover}
+.chat-bubble.npc.mentor{background:#fff3cd;border-left:3px solid #ffc107}
+.chat-bubble.npc.client{background:#e3f2fd;border-left:3px solid #2196f3}
+.response-area{padding:12px 16px;background:#f5f5f5;border-top:1px solid #e0e0e0}
+.response-btn{width:100%;padding:14px 16px;margin-bottom:8px;border:2px solid #ddd;border-radius:12px;background:#fff;font-size:14px;text-align:left;cursor:pointer;transition:all 0.2s}
+.response-btn:hover{border-color:#4CAF50;background:#f9fff9}
+.response-btn:last-child{margin-bottom:0}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Tu primera satisfacción del cliente 💬</div>
+<div class="subtitle" id="subtitle">Gestiona las dudas del cliente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="chat-container">
+<div class="chat-history" id="chatHistory"></div>
+<div class="response-area" id="responseArea"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const AVATARS={
+mentor:'https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png',
+client:'https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png'
+};
+
+const turns=[
+{
+messages:[
+{sender:'Cliente',avatar:AVATARS.client,type:'client',text:'¡Muchas gracias por instalar el termo! Oye, ¿a qué temperatura debería ponerlo?'}
+],
+options:[
+{text:'Te recomiendo entre 55-60°C. Así ahorras energía y evitas cal.',value:'correct',reaction:'¡Perfecto! Muy bien explicado.'},
+{text:'Ponlo al máximo, así tienes agua bien caliente siempre.',value:'incorrect',reaction:'Hmm, ¿no gastará mucha luz así?'},
+{text:'Pues... no sé, mira el manual.',value:'partial',reaction:'Vale... buscaré el manual entonces.'}
+]
+},
+{
+messages:[
+{sender:'Cliente',avatar:AVATARS.client,type:'client',text:'¿Y si algún día no sale agua caliente? ¿Qué hago?'}
+],
+options:[
+{text:'Primero revisa que el piloto esté encendido y el termostato activo. Si sigue sin funcionar, llámanos.',value:'correct',reaction:'Genial, lo apunto. Gracias por el consejo.'},
+{text:'Llama a un técnico directamente, no toques nada.',value:'partial',reaction:'Vale, pero ¿no hay nada básico que pueda revisar yo?'},
+{text:'Eso ya no es mi problema, tendrás que buscar otro técnico.',value:'incorrect',reaction:'Vaya... pensé que podía contar con vosotros.'}
+]
+},
+{
+messages:[
+{sender:'Mentor (mensaje)',avatar:AVATARS.mentor,type:'mentor',text:'💬 Recuerda: ofrécele el contacto de servicio y pregunta si tiene más dudas.'}
+],
+options:[
+{text:'Aquí tienes nuestra tarjeta. ¿Tienes alguna otra duda sobre el termo?',value:'correct',reaction:'¡Qué detalle! Sí, una cosa más...'},
+{text:'Bueno, si no hay más, me voy.',value:'incorrect',reaction:'Espera, aún tenía una pregunta...'},
+{text:'Llámanos si hay problemas. Hasta luego.',value:'partial',reaction:'Vale... aunque tenía otra duda rápida.'}
+]
+},
+{
+messages:[
+{sender:'Cliente',avatar:AVATARS.client,type:'client',text:'¿Cada cuánto hay que hacerle mantenimiento al termo?'}
+],
+options:[
+{text:'Una revisión anual es ideal. Sobre todo limpiar cal y revisar el ánodo.',value:'correct',reaction:'Perfecto, lo tendré en cuenta para el año que viene.'},
+{text:'Cuando deje de funcionar, básicamente.',value:'incorrect',reaction:'¿No es mejor prevenir? Me preocupa que se estropee.'},
+{text:'Depende del uso, pero una vez al año está bien.',value:'partial',reaction:'Entendido, gracias.'}
+]
+},
+{
+messages:[
+{sender:'Cliente',avatar:AVATARS.client,type:'client',text:'¡Genial! ¿Me dejas los papeles de la garantía?'},
+{sender:'Mentor (mensaje)',avatar:AVATARS.mentor,type:'mentor',text:'💬 Buen momento para cerrar profesionalmente. ¡Déjale buena impresión!'}
+],
+options:[
+{text:'Aquí tienes la garantía y mi contacto. Ha sido un placer, ¡cualquier duda me llamas!',value:'correct',reaction:'¡Muchas gracias! Ha sido un placer. Te recomendaré seguro.'},
+{text:'Sí, toma. Adiós.',value:'incorrect',reaction:'Vale... gracias, supongo.'},
+{text:'Aquí está todo. Que te vaya bien con el termo.',value:'partial',reaction:'Gracias. Hasta luego.'}
+]
+}
+];
+
+let currentTurn=0,answers=[],chatLog=[];
+const scene=document.getElementById('scene'),chatHistory=document.getElementById('chatHistory'),responseArea=document.getElementById('responseArea'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function addBubble(sender,text,type,avatar){
+const bubble=document.createElement('div');
+bubble.className='chat-bubble npc '+type;
+bubble.innerHTML=`<div class="sender"><img src="${avatar}" alt="">${sender}</div><div>${text}</div>`;
+chatHistory.appendChild(bubble);
+chatHistory.scrollTop=chatHistory.scrollHeight;
+chatLog.push({sender,text,type});
+}
+
+function addPlayerBubble(text){
+const bubble=document.createElement('div');
+bubble.className='chat-bubble player';
+bubble.innerHTML=`<div>${text}</div>`;
+chatHistory.appendChild(bubble);
+chatHistory.scrollTop=chatHistory.scrollHeight;
+chatLog.push({sender:'Tú',text,type:'player'});
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){showResults();return}
+const turn=turns[currentTurn];
+progress.style.width=((currentTurn)/turns.length*100)+'%';
+counter.textContent=(currentTurn+1)+'/'+turns.length;
+subtitle.textContent='Turno '+(currentTurn+1)+': Elige tu respuesta';
+turn.messages.forEach(m=>addBubble(m.sender,m.text,m.type,m.avatar));
+responseArea.innerHTML=turn.options.map((opt,i)=>`<button class="response-btn" onclick="selectOption(${i})">${opt.text}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const opt=turn.options[idx];
+addPlayerBubble(opt.text);
+answers.push({turn:currentTurn+1,question:turn.messages[turn.messages.length-1].text,chosen:opt.text,value:opt.value,reaction:opt.reaction});
+setTimeout(()=>{
+const reactor=turn.messages.find(m=>m.type==='client')||turn.messages[0];
+addBubble(reactor.sender,opt.reaction,reactor.type,reactor.avatar);
+currentTurn++;
+setTimeout(()=>renderTurn(),600);
+},400);
+responseArea.innerHTML='<div style="text-align:center;color:#888;padding:16px">Procesando...</div>';
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const correct=answers.filter(a=>a.value==='correct').length;
+const feedbackMap={
+correct:{icon:'✓',label:'Excelente',class:'correct'},
+partial:{icon:'~',label:'Mejorable',class:''},
+incorrect:{icon:'✗',label:'A mejorar',class:'incorrect'}
+};
+const explanations=[
+'Recomendaste la temperatura ideal (55-60°C) ahorrando energía.',
+'Diste instrucciones claras para solucionar problemas básicos.',
+'Ofreciste contacto y mostraste disponibilidad profesional.',
+'Explicaste la importancia del mantenimiento preventivo.',
+'Cerraste con profesionalidad dejando buena impresión.'
+];
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Servicio completado!</div>
+<div class="results-score">${correct}/${answers.length}</div>
+<div class="results-subtitle">Respuestas excelentes</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${feedbackMap[a.value].class}">
+<div class="result-question">Turno ${a.turn}: ${a.question.substring(0,45)}...</div>
+<div class="result-answer">${feedbackMap[a.value].icon} ${feedbackMap[a.value].label}: "${a.chosen.substring(0,40)}..."</div>
+<div class="result-explanation">${explanations[i]}</div>
+</div>`).join('')}
+<div class="result-item" style="background:#e8f5e9;border-left:3px solid #4CAF50">
+<div class="result-question">💡 Consejo profesional</div>
+<div class="result-explanation">La satisfacción del cliente empieza con una buena explicación y termina con un cierre profesional. Deja siempre tu contacto y muestra disposición: ¡los clientes satisfechos te recomendarán!</div>
+</div>
+</div>
+<div class="footer" style="position:sticky;bottom:0;background:#fff;padding:16px;border-top:1px solid #eee">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.chat-container')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.chat-container')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+function showIntro(){
+const modal=document.createElement('div');
+modal.className='modal-backdrop active';
+modal.innerHTML=`<div class="modal">
+<div class="modal-title">🔧 Tu primera satisfacción</div>
+<div class="modal-body">Acabas de instalar un termo eléctrico. El cliente tiene dudas y tu mentor te observa. ¡Demuestra tu profesionalidad!</div>
+<div class="modal-actions"><button class="cta" onclick="this.closest('.modal-backdrop').remove();renderTurn()">Comenzar</button></div>
+</div>`;
+document.body.appendChild(modal);
+}
+
+window.addEventListener('load',()=>{ensureFits();showIntro()});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
