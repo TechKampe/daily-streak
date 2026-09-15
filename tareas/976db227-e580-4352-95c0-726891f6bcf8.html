@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: Herramientas de fontanería - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="taskText">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progressBar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const tasks=[
+{task:"Cortar un tubo de PVC de 32mm para el desagüe",tools:["Sierra de arco","Tijera de PVC","Cortatubos de cobre"],correct:1,why:{0:"Funciona pero deja rebabas y el corte es irregular.",2:"Diseñado para cobre, no agarra bien el PVC."},tip:"La tijera de PVC da cortes limpios y rápidos en tubos hasta 40mm."},
+{task:"Apretar el racor de una válvula de escuadra",tools:["Llave inglesa","Alicates","Llave grifa"],correct:0,why:{1:"Resbalan y pueden dañar el cromado del racor.",2:"Demasiado agresiva, marca las superficies pulidas."},tip:"La llave inglesa ajustable es ideal para racores y tuercas con caras planas."},
+{task:"Sellar la rosca de un flexo de ducha",tools:["Teflón","Masilla de fontanero","Silicona"],correct:0,why:{1:"Para juntas mecánicas, no roscas metálicas.",2:"No soporta bien el roscado, se rompe al apretar."},tip:"El teflón se enrolla en sentido de la rosca, 8-10 vueltas."},
+{task:"Cortar un tubo de cobre de 15mm",tools:["Sierra de arco","Tijera de PVC","Cortatubos"],correct:2,why:{0:"Genera virutas que pueden obstruir la instalación.",1:"No corta metal, solo plástico."},tip:"El cortatubos de cobre deja un corte limpio sin virutas."},
+{task:"Desatascar un sifón de lavabo",tools:["Desatascador manual (ventosa)","Producto químico","Sonda flexible"],correct:0,why:{1:"Agresivo con tuberías, úsalo solo si la ventosa falla.",2:"Para atascos profundos en bajantes, no en sifones."},tip:"La ventosa es el primer recurso: económica y no daña tuberías."},
+{task:"Sellar la base de un inodoro al suelo",tools:["Teflón","Masilla de fontanero","Silicona sanitaria"],correct:2,why:{0:"Solo para roscas, no para juntas de apoyo.",1:"No es impermeable ni flexible, se agrieta."},tip:"La silicona sanitaria es antimoho e impermeable, ideal para sanitarios."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('taskText'),progBar=document.getElementById('progressBar'),counter=document.getElementById('counter');
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+progBar.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.tools.map((tool,i)=>`<button class="btn-option" onclick="select(${i})">${tool}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx];
+const correct=i===t.correct;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===t.correct&&!correct)b.classList.add('correct');
+});
+btns[i].innerHTML=(correct?'✓ ':'✗ ')+t.tools[i];
+if(correct)score++;
+answers.push({task:t.task,userChoice:t.tools[i],correctTool:t.tools[t.correct],correct,why:t.why,tip:t.tip,tools:t.tools,correctIdx:t.correct,userIdx:i});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔧 ¡Completado!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>{
+let wrongExps='';
+if(!a.correct&&a.why[a.userIdx]){wrongExps=`<div class="result-explanation">❌ ${a.userChoice}: ${a.why[a.userIdx]}</div>`;}
+else if(a.correct){
+const wrongKeys=Object.keys(a.why);
+wrongExps=wrongKeys.map(k=>`<div class="result-explanation">❌ ${a.tools[k]}: ${a.why[k]}</div>`).join('');
+}else{
+const wrongKeys=Object.keys(a.why).filter(k=>parseInt(k)!==a.userIdx);
+wrongExps=`<div class="result-explanation">❌ ${a.userChoice}: ${a.why[a.userIdx]}</div>`+wrongKeys.map(k=>`<div class="result-explanation">❌ ${a.tools[k]}: ${a.why[k]}</div>`).join('');
+}
+return `<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctTool:'Tu elección: '+a.userChoice+' → Correcta: '+a.correctTool}</div>
+${wrongExps}
+<div class="result-explanation">💡 ${a.tip}</div>
+</div>`;}).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
