@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Hueco: Herramientas del Oficio 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Hueco 🔧</div>
+<div class="subtitle">Primer día en el taller</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="content">
+<p id="sentence" style="font-size:1.1rem;text-align:center;margin-bottom:1.5rem;line-height:1.5"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">¡Bienvenido al taller! 🔧</div>
+<div class="modal-body">El oficial te pone a prueba: completa cada frase con la herramienta o material correcto.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+<script>
+const data=[
+{sentence:"Para medir tensión en un enchufe, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","pinza amperimétrica"],exp:"El multímetro mide tensión (V). El buscapolos detecta fase y la pinza mide corriente sin cortar el cable."},
+{sentence:"Las tuberías de agua fría en viviendas suelen ser de ___.",blank:"polietileno",opts:["polietileno","cobre","PVC"],exp:"El polietileno (PE) es estándar para agua fría. El cobre se usa más en caliente y el PVC para saneamiento."},
+{sentence:"El elemento que protege un circuito de sobrecargas es el ___.",blank:"magnetotérmico",opts:["diferencial","magnetotérmico","fusible"],exp:"El magnetotérmico corta por sobrecarga o cortocircuito. El diferencial protege a personas y el fusible es de un solo uso."},
+{sentence:"Para apretar racores de fontanería uso la llave ___.",blank:"stillson",opts:["stillson","inglesa","allen"],exp:"La llave stillson (o grifa) agarra tubos redondos. La inglesa es para tuercas y la allen para tornillos hexagonales."},
+{sentence:"Un cable de 2,5 mm² se usa para circuitos de ___.",blank:"enchufes",opts:["iluminación","enchufes","vitrocerámica"],exp:"2,5 mm² es para enchufes (16 A). Iluminación usa 1,5 mm² y vitrocerámica necesita 6 mm²."},
+{sentence:"Para sellar uniones roscadas de agua uso cinta de ___.",blank:"teflón",opts:["teflón","aislante","carrocero"],exp:"El teflón (PTFE) sella roscas hidráulicas. La cinta aislante es para cables y la de carrocero para pintura."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),content=document.getElementById('content'),opts=document.getElementById('options'),sentenceEl=document.getElementById('sentence'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+const parts=d.sentence.split('___');
+sentenceEl.innerHTML=parts[0]+'<span style="border-bottom:2px solid var(--accent);padding:0 0.5rem;color:var(--accent);font-weight:700">___</span>'+parts[1];
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(i){
+const d=data[idx];
+const correct=d.opts[i]===d.blank;
+if(correct)score++;
+answers.push({sentence:d.sentence,blank:d.blank,user:d.opts[i],correct,exp:d.exp,opts:d.opts});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(d.opts[j]===d.blank)b.classList.add('correct');
+else if(j===i)b.classList.add('incorrect');
+});
+const parts=d.sentence.split('___');
+sentenceEl.innerHTML=parts[0]+'<span style="border-bottom:2px solid '+(correct?'var(--ok)':'var(--err)')+';padding:0 0.5rem;color:'+(correct?'var(--ok)':'var(--err)')+';font-weight:700">'+d.opts[i]+'</span>'+parts[1];
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Prueba superada!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>{
+const parts=a.sentence.split('___');
+const filledSentence=parts[0]+'<strong>'+a.blank+'</strong>'+parts[1];
+const wrongOpts=a.opts.filter(o=>o!==a.blank).join(', ');
+return `<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${filledSentence}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Tu respuesta: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`;
+}).join('')}
+<div class="result-item" style="background:var(--surface);border-left:4px solid var(--accent)">
+<div class="result-question" style="color:var(--accent)">💡 Consejo final</div>
+<div class="result-explanation">Dominar la terminología técnica te permite comunicarte con claridad con tu equipo y clientes, evitando errores y ganando confianza profesional.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
