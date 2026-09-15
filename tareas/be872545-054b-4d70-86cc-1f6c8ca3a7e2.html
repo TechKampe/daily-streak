@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Protocolo 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Protocolo 🔧</div>
+<div class="subtitle" id="instruction">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="clozeArea">
+<p id="sentenceText"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Es tu primera semana como ayudante de electricista</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">¡Bienvenido, ayudante! 👷</div>
+<div class="modal-body">El oficial te explica los procedimientos básicos. Completa cada frase con la palabra técnica correcta.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{sentence:"Para verificar si hay tensión en un enchufe, uso el ___.",blank:"buscapolos",opts:["buscapolos","multímetro"],exp:"El buscapolos detecta presencia de tensión de forma rápida y segura. El multímetro mide valores exactos, pero para una comprobación rápida el buscapolos es más práctico."},
+{sentence:"Antes de trabajar en un cuadro, hay que ___ el circuito.",blank:"consignar",opts:["consignar","señalizar","limpiar"],exp:"Consignar significa cortar, bloquear y verificar ausencia de tensión. Señalizar solo advierte del peligro pero no elimina el riesgo."},
+{sentence:"Para protegerme de descargas, uso guantes ___.",blank:"aislantes",opts:["aislantes","de cuero"],exp:"Los guantes aislantes están homologados para trabajos eléctricos. Los de cuero protegen de cortes pero no aíslan de la corriente."},
+{sentence:"El dispositivo que corta automáticamente ante una fuga a tierra es el ___.",blank:"diferencial",opts:["diferencial","magnetotérmico"],exp:"El diferencial detecta fugas de corriente a tierra y protege a las personas. El magnetotérmico protege contra sobrecargas y cortocircuitos."},
+{sentence:"Para atornillar en bornes de enchufe uso destornillador ___.",blank:"plano",opts:["plano","de estrella"],exp:"Los bornes de enchufes y mecanismos suelen tener tornillos de cabeza plana. El de estrella (Phillips) se usa en otros tipos de tornillos."},
+{sentence:"Siempre trabajo con ___ de protección para evitar partículas en los ojos.",blank:"gafas",opts:["gafas","casco"],exp:"Las gafas protegen de partículas y chispas al taladrar o cortar. El casco protege la cabeza de golpes pero no los ojos."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),sentenceText=document.getElementById('sentenceText'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+sentenceText.innerHTML=d.sentence.replace('___','<u style="text-decoration:underline;text-decoration-color:#00D9FF;text-underline-offset:4px">______</u>');
+opts.innerHTML=d.opts.map(o=>`<button class="btn-option" onclick="selectOption('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(choice){
+const d=data[idx];
+const correct=choice===d.blank;
+answers.push({sentence:d.sentence,blank:d.blank,user:choice,correct,exp:d.exp,opts:d.opts});
+opts.querySelectorAll('.btn-option').forEach(b=>{
+if(b.textContent===choice)b.classList.add(correct?'correct':'incorrect');
+if(b.textContent===d.blank&&!correct)b.classList.add('correct');
+b.disabled=true;
+});
+sentenceText.innerHTML=d.sentence.replace('___',`<u style="text-decoration:underline;text-decoration-color:${correct?'#00FF88':'#FF6B9D'};text-underline-offset:4px"><strong>${d.blank}</strong></u>`);
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Protocolo completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Frases completadas correctamente</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.blank+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Respondiste: '+a.user:'✗ Respondiste: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item correct">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Usar la terminología precisa evita malentendidos en obra. Cuando el oficial dice "consigna el circuito", no basta con señalizar: hay que cortar, bloquear y verificar. Dominar el vocabulario técnico es el primer paso para trabajar con seguridad.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
