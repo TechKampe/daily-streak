@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ Seguridad eléctrica - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">Seguridad eléctrica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="statementArea">
+<p id="statement" style="font-size:1.15rem;line-height:1.5;text-align:center;padding:1rem;margin:0"></p>
+</div>
+<div class="options" id="buttons">
+<button class="btn-option" id="btnTrue" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btnFalse" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">¿Es verdadero o falso?</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Primera semana en obra ⚡</div>
+<div class="modal-body">Tu supervisor quiere comprobar si distingues mitos de verdades sobre seguridad eléctrica. ¡Demuestra lo que sabes!</div>
+<div class="modal-actions">
+<button class="cta" onclick="closeModal()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{text:"12 voltios no pueden hacerte daño porque es bajo voltaje.",correct:false,exp:"Falso. En condiciones húmedas o con contacto directo, incluso voltajes bajos pueden ser peligrosos. El peligro depende también de la corriente y las condiciones."},
+{text:"Antes de trabajar en un circuito, siempre hay que verificar ausencia de tensión con un detector.",correct:true,exp:"Verdadero. Nunca confíes en que el interruptor está apagado. Usa siempre un detector de tensión homologado antes de tocar cualquier conductor."},
+{text:"Los guantes de goma normales sirven como aislantes eléctricos.",correct:false,exp:"Falso. Solo los guantes dieléctricos certificados protegen contra descargas. Los guantes de limpieza comunes no ofrecen protección adecuada."},
+{text:"La madera seca es un buen aislante eléctrico.",correct:true,exp:"Verdadero. La madera seca tiene alta resistencia, pero si está húmeda puede conducir electricidad. Nunca confíes al 100% en ella como protección."},
+{text:"Si alguien recibe una descarga, debo apartarlo inmediatamente con las manos.",correct:false,exp:"Falso. Tocar a la víctima puede electrocutarte también. Primero corta la corriente o usa un objeto aislante (palo seco, ropa) para separarlo."},
+{text:"Un diferencial protege a las personas contra contactos eléctricos.",correct:true,exp:"Verdadero. El interruptor diferencial detecta fugas de corriente y corta el circuito en milisegundos, evitando electrocuciones graves."},
+{text:"Si el cable tiene la funda intacta, no hay riesgo de descarga.",correct:false,exp:"Falso. El aislamiento puede estar dañado internamente. Siempre verifica con instrumentos antes de manipular cualquier conductor."}
+];
+
+let idx=0,answers=[],waiting=false;
+const scene=document.getElementById('scene'),statement=document.getElementById('statement'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnTrue=document.getElementById('btnTrue'),btnFalse=document.getElementById('btnFalse'),modal=document.getElementById('modal'),helper=document.getElementById('helper');
+
+modal.classList.add('active');
+
+function closeModal(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+waiting=false;
+btnTrue.disabled=false;btnFalse.disabled=false;
+btnTrue.classList.remove('correct','incorrect','selected');
+btnFalse.classList.remove('correct','incorrect','selected');
+statement.textContent=data[idx].text;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+helper.textContent='¿Es verdadero o falso?';
+ensureFits();
+}
+
+function answer(userAnswer){
+if(waiting)return;
+waiting=true;
+btnTrue.disabled=true;btnFalse.disabled=true;
+const correct=userAnswer===data[idx].correct;
+const clickedBtn=userAnswer?btnTrue:btnFalse;
+clickedBtn.classList.add(correct?'correct':'incorrect');
+answers.push({text:data[idx].text,userAnswer,correctAnswer:data[idx].correct,correct,exp:data[idx].exp});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">${score>=5?'Excelente conocimiento de seguridad':score>=3?'Buen inicio, sigue aprendiendo':'Repasa los conceptos básicos'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAnswer?'Verdadero':'Falso'} ${a.correct?'✓':'✗'} · Correcta: ${a.correctAnswer?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="border-left-color:#f59e0b">
+<div class="result-question">💡 Consejo del supervisor</div>
+<div class="result-explanation">Antes de intervenir en cualquier instalación, aplica siempre las 5 reglas de oro: desconectar, bloquear, verificar ausencia de tensión, poner a tierra y señalizar. Tu vida depende de ello.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
