@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="taskText">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main"><div class="options" id="options"></div></div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primera semana de ayudante</div>
+<div class="modal-body">El oficial te asigna tareas. Demuestra que sabes qué herramienta usar en cada momento.</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">¡Comenzar!</button></div>
+</div>
+</div>
+<script>
+const tasks=[
+{task:"Apretar un tornillo en madera",opts:["Destornillador","Llave inglesa","Alicates"],correct:0,icon:["","🔧",""],exp:"El destornillador aplica torque directo al tornillo. La llave inglesa es para tuercas y los alicates no transmiten el giro correctamente."},
+{task:"Cortar un tubo de PVC",opts:["Sierra de arco","Flexómetro","Nivel de burbuja"],correct:0,icon:["","📏",""],exp:"La sierra de arco corta materiales como PVC. El flexómetro mide y el nivel comprueba horizontalidad."},
+{task:"Pelar un cable eléctrico",opts:["Pelacables","Tijeras","Cúter"],correct:0,icon:["","✂️",""],exp:"El pelacables retira el aislante sin dañar el conductor. Las tijeras y el cúter pueden cortar los hilos."},
+{task:"Medir un hueco para una ventana",opts:["Flexómetro","Nivel de burbuja","Destornillador"],correct:0,icon:["📏","",""],exp:"El flexómetro permite medir distancias con precisión. El nivel y el destornillador tienen otras funciones."},
+{task:"Nivelar una estantería",opts:["Nivel de burbuja","Alicates","Sierra de arco"],correct:0,icon:["","",""],exp:"El nivel de burbuja indica si la superficie está horizontal. Los alicates sujetan y la sierra corta."},
+{task:"Aflojar una tuerca oxidada",opts:["Llave inglesa","Destornillador","Pelacables"],correct:0,icon:["🔧","",""],exp:"La llave inglesa ajusta su apertura a la tuerca y aplica palanca. El destornillador no agarra tuercas y el pelacables es para cables."}
+];
+const tips={
+"Destornillador":"Usa el tamaño correcto para evitar dañar la cabeza del tornillo.",
+"Llave inglesa":"Ajusta bien las mordazas antes de aplicar fuerza para no redondear la tuerca.",
+"Alicates":"Ideales para sujetar, doblar o cortar alambre, no para tornillos.",
+"Sierra de arco":"Mantén la hoja tensa y usa movimientos largos y constantes.",
+"Flexómetro":"Bloquea la cinta al medir para mayor precisión.",
+"Nivel de burbuja":"Apóyalo completamente sobre la superficie a verificar.",
+"Pelacables":"Selecciona el calibre correcto para no cortar el cobre.",
+"Tijeras":"Solo para materiales blandos, nunca para cables eléctricos.",
+"Cúter":"Úsalo con cuidado, nunca hacia tu cuerpo."
+};
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('taskText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=((idx)/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${t.icon[i]?t.icon[i]+' ':''}${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const t=tasks[idx];
+const correct=i===t.correct;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(correct?'correct':'incorrect');});
+answers.push({task:t.task,userChoice:t.opts[i],correctTool:t.opts[t.correct],correct,exp:t.exp,allOpts:t.opts});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+const usedTools=[...new Set(answers.flatMap(a=>a.allOpts))];
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔧 ¡Jornada completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas bien elegidas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.userChoice:'✗ Elegiste: '+a.userChoice+' → Correcta: '+a.correctTool}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-header" style="margin-top:16px;">
+<div class="results-subtitle">💡 Consejos prácticos</div>
+</div>
+<div class="results-list">
+${usedTools.map(tool=>`<div class="result-item"><div class="result-question">${tool}</div><div class="result-explanation">${tips[tool]||''}</div></div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+else if(window.parent!==window){window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');}
+else{alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){const m=document.querySelector('.main,.content,.board')||scene;document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
