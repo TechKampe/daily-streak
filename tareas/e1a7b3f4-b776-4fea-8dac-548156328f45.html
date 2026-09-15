@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Errores que Cuestan Caro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="sceneTitle">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="sceneCard" style="margin-bottom:12px;pointer-events:none">
+<span class="card-text" id="sceneDesc" style="font-size:0.95rem;line-height:1.4"></span>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">👷 Control de Calidad</div>
+<div class="modal-body">Eres el nuevo supervisor. Revisa 5 situaciones y detecta el error en cada una. ¡Demuestra tu ojo crítico!</div>
+<div class="modal-actions">
+<button class="cta" onclick="closeIntro()">Empezar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{title:"Instalación de enchufe en baño",desc:"El electricista instala un enchufe junto al lavabo. Revisa los elementos:",items:["Enchufe con tapa IP44","Diferencial 30mA","Cable sin tubo protector","Distancia >60cm de ducha"],error:2,errorItem:"Cable sin tubo protector",exp:"En zonas húmedas, el cableado debe ir siempre protegido en tubo para evitar cortocircuitos y riesgo de electrocución."},
+{title:"Entrega de presupuesto",desc:"El técnico entrega un presupuesto al cliente por una reforma. Revisa:",items:["Desglose de materiales","Plazo de ejecución","Precio sin desglosar IVA","Firma del técnico"],error:2,errorItem:"Precio sin desglosar IVA",exp:"Por ley, los presupuestos deben mostrar el IVA desglosado. Omitirlo puede generar problemas legales y desconfianza del cliente."},
+{title:"Colocación de escalera",desc:"Un operario coloca una escalera de tijera para trabajar en altura. Observas:",items:["Escalera abierta completa","Ángulo de 75° en pared","Suelo nivelado","Ángulo de 45° en pared"],error:3,errorItem:"Ángulo de 45° en pared",exp:"El ángulo correcto es 75° (1:4). Un ángulo de 45° hace que la escalera resbale hacia atrás, causando caídas graves."},
+{title:"Uso de EPI en soldadura",desc:"Un soldador se prepara para trabajar. Lleva puesto:",items:["Pantalla de soldador","Mandil ignífugo","Botas de seguridad","Manos sin guantes"],error:3,errorItem:"Manos sin guantes",exp:"Los guantes son obligatorios en soldadura para proteger de quemaduras, salpicaduras y radiación UV. Sin ellos, hay riesgo de lesiones graves."},
+{title:"Conexión de termo eléctrico",desc:"Se instala un termo de 2000W. El técnico usa:",items:["Conexión a tierra","Termostato de seguridad","Cable de 1.5mm² sección","Protección magnetotérmica"],error:2,errorItem:"Cable de 1.5mm² sección",exp:"Un termo de 2000W necesita cable de 2.5mm² mínimo. Usar 1.5mm² provoca sobrecalentamiento y riesgo de incendio."}
+];
+
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),sceneTitle=document.getElementById('sceneTitle'),sceneDesc=document.getElementById('sceneDesc'),introModal=document.getElementById('introModal');
+
+introModal.classList.add('active');
+
+function closeIntro(){introModal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneTitle.textContent=s.title;
+sceneDesc.textContent=s.desc;
+prog.style.width=((idx)/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add('selected');});
+const correct=i===s.error;
+setTimeout(()=>{
+btns[i].classList.add(correct?'correct':'incorrect');
+if(!correct)btns[s.error].classList.add('correct');
+answers.push({title:s.title,userChoice:s.items[i],correctItem:s.errorItem,correct,exp:s.exp});
+setTimeout(()=>{idx++;render();},800);
+},300);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Inspección Completa</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.title}</div>
+<div class="result-answer">${a.correct?'✓ Detectaste: '+a.userChoice:'✗ Elegiste: '+a.userChoice}</div>
+${!a.correct?`<div class="result-answer" style="opacity:0.8">Error real: ${a.correctItem}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:linear-gradient(135deg,#fef9c3,#fef08a)">
+<div class="result-question">💡 Consejo del Supervisor</div>
+<div class="result-explanation">Revisa dos veces antes de actuar. Un minuto de atención evita horas de retrabajo, accidentes y quejas de clientes.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
