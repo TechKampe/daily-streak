@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Hueco: Herramientas Esenciales 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Herramientas Esenciales 🔧</div>
+<div class="subtitle" id="subtitle">Completa cada frase con la herramienta correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="content">
+<p id="cloze-sentence"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Elige la herramienta que completa la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">¡Bienvenido al taller! 🔧</div>
+<div class="modal-body">Es tu primer día. El oficial te pedirá herramientas. Demuestra que conoces cada una eligiendo la correcta.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+<script>
+const data=[
+{sentence:"Para medir si hay tensión en un enchufe, uso el ___.",blank:"polímetro",opts:["polímetro","destornillador plano","alicate de corte"],exp:"El polímetro mide tensión, corriente y resistencia. El destornillador y el alicate son herramientas manuales sin capacidad de medición."},
+{sentence:"Para apretar un tornillo con cabeza en cruz, necesito un destornillador ___.",blank:"de estrella",opts:["de estrella","plano","de punta"],exp:"Los tornillos en cruz requieren destornillador de estrella. El plano es para ranuras rectas y 'de punta' no es un tipo estándar."},
+{sentence:"Para cortar un cable de cobre, utilizo el ___.",blank:"alicate de corte",opts:["alicate de corte","alicate de punta","flexómetro"],exp:"El alicate de corte tiene filos para seccionar cables. El de punta sirve para sujetar y el flexómetro para medir longitudes."},
+{sentence:"Para medir la longitud de una canaleta, uso el ___.",blank:"flexómetro",opts:["flexómetro","nivel de burbuja","alicate de punta"],exp:"El flexómetro (metro) mide distancias. El nivel comprueba horizontalidad y el alicate sujeta piezas pequeñas."},
+{sentence:"Para comprobar si una superficie está horizontal, uso el ___.",blank:"nivel de burbuja",opts:["nivel de burbuja","polímetro","destornillador plano"],exp:"El nivel de burbuja indica si algo está nivelado. El polímetro mide electricidad y el destornillador aprieta tornillos."},
+{sentence:"Para aflojar una tuerca de tamaño variable, uso la llave ___.",blank:"inglesa",opts:["inglesa","fija","de estrella"],exp:"La llave inglesa es ajustable a distintos tamaños. La fija tiene medida única y 'de estrella' se refiere a destornilladores."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal'),sentenceEl=document.getElementById('cloze-sentence'),helper=document.getElementById('helper');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+sentenceEl.innerHTML=d.sentence.replace('___','<span class="cloze-blank">___</span>');
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o}</button>`).join('');
+helper.textContent='Elige la herramienta correcta';
+ensureFits();
+}
+
+function selectOption(i){
+const d=data[idx];
+const correct=d.opts[i]===d.blank;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(d.opts[j]===d.blank)b.classList.add('correct');
+else if(j===i)b.classList.add('incorrect');
+});
+const blankSpan=sentenceEl.querySelector('.cloze-blank');
+if(blankSpan){
+blankSpan.textContent=d.blank;
+blankSpan.classList.add(correct?'correct':'incorrect');
+}
+answers.push({sentence:d.sentence,blank:d.blank,user:d.opts[i],correct,exp:d.exp});
+helper.textContent=correct?'¡Correcto!':'La respuesta era: '+d.blank;
+setTimeout(()=>{idx++;render();},1200);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado! 🔧</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Frases completadas correctamente</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.blank+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Respondiste: '+a.user:'✗ Respondiste: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Usar la terminología correcta en obra evita confusiones y accidentes. Cuando el oficial pida una herramienta, asegúrate de entender exactamente cuál necesita antes de pasarla.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
