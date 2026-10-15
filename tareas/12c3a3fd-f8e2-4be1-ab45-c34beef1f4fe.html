@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Herramienta o EPI? Clasifica rápido 🛠️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Herramienta o EPI? 🛠️</div>
+<div class="subtitle" id="itemDisplay">Cargando...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/8</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para cada ítem</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">📦 Primer día en el almacén</div>
+<div class="modal-body">Organiza el material nuevo en dos zonas: EPI (equipos de protección) y Herramientas de trabajo.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const items=[
+{name:"Casco de obra",category:"EPI",exp:"El casco protege la cabeza de impactos y caídas de objetos. Es obligatorio en obra."},
+{name:"Destornillador",category:"Herramienta",exp:"Herramienta manual para apretar o aflojar tornillos. No protege, sirve para trabajar."},
+{name:"Gafas de protección",category:"EPI",exp:"Protegen los ojos de partículas, salpicaduras y radiaciones. EPI básico."},
+{name:"Llave inglesa",category:"Herramienta",exp:"Herramienta ajustable para tuercas y tornillos de distintos tamaños."},
+{name:"Guantes anticorte",category:"EPI",exp:"EPI certificado que protege las manos de cortes. No confundir con guantes de trabajo normales."},
+{name:"Flexómetro",category:"Herramienta",exp:"Cinta métrica retráctil para medir distancias. Herramienta de medición básica."},
+{name:"Tapones auditivos",category:"EPI",exp:"Protegen el oído del ruido excesivo. Obligatorios en ambientes con más de 85 dB."},
+{name:"Nivel de burbuja",category:"Herramienta",exp:"Instrumento para comprobar la horizontalidad o verticalidad de superficies."}
+];
+
+const categories=["EPI","Herramienta"];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),catEl=document.getElementById('categories'),itemEl=document.getElementById('itemDisplay'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+itemEl.textContent=item.name;
+prog.style.width=(idx/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+catEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCategory('${c}')">${c}</button>`).join('');
+ensureFits();
+}
+
+function selectCategory(cat){
+const item=items[idx];
+const correct=cat===item.category;
+const btns=catEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+if(b.textContent===cat){
+b.classList.add(correct?'correct':'incorrect');
+animateDrop(b,correct);
+}
+if(b.textContent===item.category&&!correct){
+b.classList.add('correct');
+}
+b.disabled=true;
+});
+answers.push({name:item.name,userCat:cat,correctCat:item.category,correct,exp:item.exp});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function animateDrop(btn,correct){
+btn.style.transform='scale(1.1)';
+btn.style.transition='transform 0.2s ease';
+setTimeout(()=>{btn.style.transform='scale(1)';},200);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Almacén organizado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctCat:'✗ Dijiste '+a.userCat+' → Era '+a.correctCat}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Antes de empezar cualquier tarea, separa mentalmente qué te protege y qué usas para trabajar. Tu seguridad siempre va primero.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
