@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tu primera satisfacción de cliente 💬 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+.chat-container{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.chat-history{flex:1;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;animation:fadeIn 0.3s ease}
+.chat-bubble.npc{background:#f0f0f0;color:#333;align-self:flex-start;border-bottom-left-radius:4px}
+.chat-bubble.user{background:#1a1a1a;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-bubble .speaker{font-weight:700;font-size:12px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.chat-bubble .speaker img{width:24px;height:24px;border-radius:50%;object-fit:cover}
+.chat-bubble.npc .speaker{color:#666}
+.response-area{padding:12px 16px;background:#fff;border-top:1px solid #eee;flex-shrink:0}
+.response-options{display:flex;flex-direction:column;gap:8px}
+.btn-response{width:100%;padding:14px 16px;border:2px solid #e0e0e0;border-radius:12px;background:#fff;font-size:14px;text-align:left;cursor:pointer;transition:all 0.2s;line-height:1.3}
+.btn-response:active{transform:scale(0.98)}
+.btn-response.correct-choice{border-color:#4CAF50;background:#e8f5e9}
+.btn-response.partial-choice{border-color:#FF9800;background:#fff3e0}
+.btn-response.incorrect-choice{border-color:#f44336;background:#ffebee}
+.reaction{padding:8px 12px;border-radius:8px;font-size:13px;margin-top:4px;font-style:italic}
+.reaction.positive{background:#e8f5e9;color:#2e7d32}
+.reaction.neutral{background:#fff3e0;color:#e65100}
+.reaction.negative{background:#ffebee;color:#c62828}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Tu primera satisfacción de cliente 💬</div>
+<div class="subtitle" id="subtitle">Gestiona tu primera queja</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">Intro</span>
+</div>
+</div>
+<div class="chat-container" id="chatContainer">
+<div class="chat-history" id="chatHistory"></div>
+<div class="response-area" id="responseArea"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const AVATARS={
+cliente:'https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png',
+mentor:'https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png',
+jugador:'https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png'
+};
+
+const TURNS=[
+{
+id:'intro',
+messages:[
+{speaker:'Cliente',avatar:AVATARS.cliente,text:'Oye, acabo de revisar los enchufes y hay uno que no funciona. ¿No se supone que ya habías terminado?'},
+{speaker:'Cliente',avatar:AVATARS.cliente,text:'Es que necesito usarlo hoy mismo...'}
+],
+options:[
+{text:'Lo siento mucho. Déjeme revisarlo ahora mismo.',type:'correct',reaction:'El cliente relaja un poco el gesto.',reactionType:'positive'},
+{text:'Imposible, lo he comprobado todo antes de irme.',type:'incorrect',reaction:'El cliente frunce el ceño, molesto.',reactionType:'negative'},
+{text:'Puede ser un fallo del enchufe antiguo, no mío.',type:'partial',reaction:'El cliente parece escéptico.',reactionType:'neutral'}
+],
+feedback:{
+correct:'Disculparte sin excusas genera confianza.',
+partial:'Desviar la culpa no resuelve el problema.',
+incorrect:'Negar el error enfada más al cliente.'
+}
+},
+{
+id:'turno2',
+messages:[
+{speaker:'Cliente',avatar:AVATARS.cliente,text:'Mira, es este de aquí. Lo he probado con el cargador del móvil y nada.'}
+],
+options:[
+{text:'Voy a comprobarlo. ¿Me permite unos minutos?',type:'correct',reaction:'El cliente asiente y te deja trabajar.',reactionType:'positive'},
+{text:'Seguro que es el cargador, pruebe con otro.',type:'incorrect',reaction:'El cliente se cruza de brazos.',reactionType:'negative'},
+{text:'Hmm, debería funcionar... qué raro.',type:'partial',reaction:'El cliente espera algo más concreto.',reactionType:'neutral'}
+],
+feedback:{
+correct:'Pedir permiso para revisar muestra profesionalidad.',
+partial:'Dudar en voz alta no tranquiliza al cliente.',
+incorrect:'Culpar al equipo del cliente es un error grave.'
+}
+},
+{
+id:'turno3',
+messages:[
+{speaker:'Narrador',avatar:AVATARS.jugador,text:'Revisas la conexión y descubres que un cable estaba flojo. Decides llamar a tu mentor.'},
+{speaker:'Mentor',avatar:AVATARS.mentor,text:'¿Qué tal va? ¿Algún problema?'}
+],
+options:[
+{text:'He encontrado un cable flojo. ¿Cómo lo explico al cliente?',type:'correct',reaction:'Bien pensado pedir consejo antes de hablar.',reactionType:'positive'},
+{text:'Nada grave, ya lo arreglo yo solo.',type:'partial',reaction:'Podrías aprender algo útil preguntando.',reactionType:'neutral'},
+{text:'El cliente está enfadado, no sé qué hacer.',type:'incorrect',reaction:'Centrarse en el problema, no en el enfado.',reactionType:'negative'}
+],
+feedback:{
+correct:'Consultar al mentor demuestra madurez profesional.',
+partial:'Resolver solo está bien, pero perder consejos no.',
+incorrect:'Enfocarte en el enfado te bloquea para actuar.'
+}
+},
+{
+id:'turno4',
+messages:[
+{speaker:'Mentor',avatar:AVATARS.mentor,text:'Explícale el problema con honestidad y dile que lo arreglas en 5 minutos.'},
+{speaker:'Cliente',avatar:AVATARS.cliente,text:'¿Y bien? ¿Qué pasaba?'}
+],
+options:[
+{text:'Era un cable flojo. Lo arreglo en 5 minutos, sin coste extra.',type:'correct',reaction:'El cliente sonríe aliviado.',reactionType:'positive'},
+{text:'Un problemilla técnico. Ya está casi listo.',type:'partial',reaction:'El cliente prefiere saber qué pasó.',reactionType:'neutral'},
+{text:'Estas cosas pasan, no es para tanto.',type:'incorrect',reaction:'El cliente no parece convencido.',reactionType:'negative'}
+],
+feedback:{
+correct:'Ser claro y ofrecer solución sin coste fideliza.',
+partial:'Ser vago no transmite confianza.',
+incorrect:'Minimizar el error molesta al cliente.'
+}
+},
+{
+id:'turno5',
+messages:[
+{speaker:'Narrador',avatar:AVATARS.jugador,text:'Arreglas el enchufe y funciona perfectamente.'},
+{speaker:'Cliente',avatar:AVATARS.cliente,text:'¡Genial, ya va! Gracias por volver a revisarlo.'}
+],
+options:[
+{text:'Gracias a usted por su paciencia. Aquí tiene mi contacto por si necesita algo.',type:'correct',reaction:'El cliente guarda tu número con una sonrisa.',reactionType:'positive'},
+{text:'De nada. Hasta luego.',type:'partial',reaction:'El cliente se despide, pero sin entusiasmo.',reactionType:'neutral'},
+{text:'Ya le dije que no era nada grave.',type:'incorrect',reaction:'El cliente pone cara de circunstancias.',reactionType:'negative'}
+],
+feedback:{
+correct:'Ofrecer contacto convierte errores en oportunidades.',
+partial:'Despedirse sin más pierde la oportunidad de fidelizar.',
+incorrect:'Insistir en minimizar irrita al cliente.'
+}
+}
+];
+
+let currentTurn=0,answers=[];
+const scene=document.getElementById('scene'),chatHistory=document.getElementById('chatHistory'),responseArea=document.getElementById('responseArea'),progress=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle');
+
+function addBubble(speaker,avatar,text,isUser=false){
+const bubble=document.createElement('div');
+bubble.className='chat-bubble '+(isUser?'user':'npc');
+if(isUser){
+bubble.innerHTML=text;
+}else{
+bubble.innerHTML=`<div class="speaker"><img src="${avatar}" alt="">${speaker}</div>${text}`;
+}
+chatHistory.appendChild(bubble);
+chatHistory.scrollTop=chatHistory.scrollHeight;
+}
+
+function addReaction(text,type){
+const reaction=document.createElement('div');
+reaction.className='reaction '+type;
+reaction.textContent=text;
+chatHistory.appendChild(reaction);
+chatHistory.scrollTop=chatHistory.scrollHeight;
+}
+
+function renderTurn(){
+if(currentTurn>=TURNS.length){showResults();return}
+const turn=TURNS[currentTurn];
+progress.style.width=((currentTurn)/TURNS.length*100)+'%';
+counter.textContent=(currentTurn+1)+'/'+TURNS.length;
+subtitle.textContent='Turno '+(currentTurn+1)+': Elige tu respuesta';
+turn.messages.forEach(m=>addBubble(m.speaker,m.avatar,m.text));
+responseArea.innerHTML='<div class="response-options">'+turn.options.map((o,i)=>`<button class="btn-response" data-idx="${i}">${o.text}</button>`).join('')+'</div>';
+responseArea.querySelectorAll('.btn-response').forEach(btn=>{
+btn.onclick=()=>selectOption(parseInt(btn.dataset.idx));
+});
+ensureFits();
+}
+
+function selectOption(idx){
+const turn=TURNS[currentTurn];
+const opt=turn.options[idx];
+responseArea.querySelectorAll('.btn-response').forEach((btn,i)=>{
+btn.disabled=true;
+if(i===idx){
+btn.classList.add(opt.type===('correct')?'correct-choice':opt.type==='partial'?'partial-choice':'incorrect-choice');
+}
+});
+addBubble('Tú',AVATARS.jugador,opt.text,true);
+setTimeout(()=>{
+addReaction(opt.reaction,opt.reactionType);
+answers.push({turn:currentTurn+1,question:turn.messages[turn.messages.length-1].text,choice:opt.text,type:opt.type,feedback:turn.feedback[opt.type]});
+setTimeout(()=>{
+currentTurn++;
+renderTurn();
+},800);
+},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const correctCount=answers.filter(a=>a.type==='correct').length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Conversación completada!</div>
+<div class="results-score">${correctCount}/${answers.length}</div>
+<div class="results-subtitle">Respuestas óptimas</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.type==='correct'?'correct':a.type==='partial'?'':'incorrect'}">
+<div class="result-question">Turno ${a.turn}</div>
+<div class="result-answer">${a.type==='correct'?'✓ Óptima':a.type==='partial'?'◐ Parcial':'✗ Mejorable'}: ${a.choice}</div>
+<div class="result-explanation">${a.feedback}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Un error bien gestionado puede fidelizar más que un trabajo perfecto. Ofrece siempre tu contacto al terminar: convierte problemas en oportunidades.</div>
+</div>
+</div>
+<div class="footer" style="position:sticky;bottom:0;background:#fff;padding:16px;"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.chat-container')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.chat-container')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{ensureFits();renderTurn();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
