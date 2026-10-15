@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Seguridad en Obra - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="subtitle">Detecta el error de seguridad</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="sceneCard">
+<span class="card-text" id="sceneText"></span>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">🔍 Inspección de Seguridad</div>
+<div class="modal-body">Eres el responsable de PRL. Revisa 5 escenas y detecta el fallo de seguridad en cada una.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar inspección</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{text:"Operario subiendo al andamio",items:["Casco de seguridad","Arnés anticaídas","Zapatillas deportivas","Guantes de trabajo"],error:2,errorItem:"Zapatillas deportivas",correct:"Botas de seguridad con puntera",exp:"Las zapatillas no protegen de caídas de objetos ni tienen suela antideslizante."},
+{text:"Zona de corte con radial",items:["Gafas protectoras","Protector auditivo","Camiseta manga corta","Mascarilla antipolvo"],error:2,errorItem:"Camiseta manga corta",correct:"Manga larga o manguitos",exp:"La manga corta expone la piel a chispas y fragmentos del disco de corte."},
+{text:"Almacén de productos químicos",items:["Ventilación adecuada","Etiquetado visible","Bidones sin tapa","Extintor cercano"],error:2,errorItem:"Bidones sin tapa",correct:"Bidones siempre cerrados",exp:"Los bidones abiertos liberan vapores tóxicos y riesgo de derrame."},
+{text:"Excavación de zanja profunda",items:["Entibación lateral","Cinta de balizamiento","Escalera de acceso","Operario solo sin vigilancia"],error:3,errorItem:"Operario solo sin vigilancia",correct:"Trabajo con vigilante de seguridad",exp:"En espacios confinados siempre debe haber alguien supervisando."},
+{text:"Soldadura en altura",items:["Pantalla de soldador","Guantes ignífugos","Manta ignífuga abajo","Arnés sin anclar"],error:3,errorItem:"Arnés sin anclar",correct:"Arnés anclado a línea de vida",exp:"Un arnés sin anclar no protege de caídas, es como no llevarlo."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),sceneText=document.getElementById('sceneText'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),introModal=document.getElementById('introModal');
+
+introModal.classList.add('active');
+
+function startGame(){introModal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const correct=i===s.error;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===s.error&&!correct)b.classList.add('correct');
+});
+answers.push({scene:s.text,chosen:s.items[i],errorItem:s.errorItem,correctAlt:s.correct,exp:s.exp,correct});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Inspección completada</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene}</div>
+<div class="result-answer">${a.correct?'✓ Detectaste: '+a.chosen:'✗ Elegiste: '+a.chosen}</div>
+<div class="result-answer">${a.correct?'':'Error real: '+a.errorItem+' → '+a.correctAlt}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo de seguridad</div>
+<div class="result-explanation">La atención al detalle salva vidas. Haz una ronda de inspección visual cada mañana antes de empezar.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
