@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Herramienta o EPI? 🛠️ - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Herramienta o EPI? 🛠️</div>
+<div class="subtitle" id="instruction">Clasifica cada elemento</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/10</span>
+</div>
+</div>
+<div class="main">
+<div class="item-display" id="itemDisplay"></div>
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const items=[
+{name:"Destornillador",category:"Herramienta",exp:"Sirve para apretar o aflojar tornillos. Es una herramienta de trabajo."},
+{name:"Casco de seguridad",category:"EPI",exp:"Protege la cabeza de impactos y caídas de objetos."},
+{name:"Alicates",category:"Herramienta",exp:"Se usan para sujetar, cortar o doblar cables y piezas."},
+{name:"Guantes aislantes",category:"EPI",exp:"Protegen las manos de descargas eléctricas."},
+{name:"Gafas protectoras",category:"EPI",exp:"Protegen los ojos de partículas, salpicaduras o radiación."},
+{name:"Llave inglesa",category:"Herramienta",exp:"Herramienta ajustable para apretar tuercas y tornillos."},
+{name:"Chaleco reflectante",category:"EPI",exp:"Hace visible al trabajador en zonas con tráfico o poca luz."},
+{name:"Metro o flexómetro",category:"Herramienta",exp:"Instrumento para medir longitudes con precisión."},
+{name:"Mascarilla FFP2",category:"EPI",exp:"Protege las vías respiratorias de polvo y partículas."},
+{name:"Martillo",category:"Herramienta",exp:"Se usa para golpear, clavar o extraer clavos."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),itemDisplay=document.getElementById('itemDisplay'),categories=document.getElementById('categories'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),instruction=document.getElementById('instruction');
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+prog.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+itemDisplay.innerHTML=`<div class="item-name">${item.name}</div>`;
+categories.innerHTML=`<button class="btn-option" onclick="classify('Herramienta')">🔧 Herramienta</button><button class="btn-option" onclick="classify('EPI')">🦺 EPI</button>`;
+ensureFits();
+}
+
+function classify(choice){
+const item=items[idx];
+const correct=choice===item.category;
+if(correct)score++;
+answers.push({name:item.name,correct,userChoice:choice,correctCategory:item.category,exp:item.exp});
+const btns=categories.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent.includes(choice)){
+b.classList.add(correct?'correct':'incorrect');
+if(correct){b.classList.add('drop-anim');}
+}
+if(b.textContent.includes(item.category)&&!correct){
+b.classList.add('correct');
+}
+});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Almacén organizado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctCategory:'✗ Dijiste '+a.userChoice+' → Era '+a.correctCategory}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item tip">
+<div class="result-question">💡 Consejo profesional</div>
+<div class="result-explanation">Antes de empezar cualquier tarea, pregúntate: "¿Esto me protege o lo uso para trabajar?" Lo que te protege es EPI, lo que usas para la tarea es herramienta. Sepáralos mentalmente y nunca olvides ponerte el EPI primero.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
