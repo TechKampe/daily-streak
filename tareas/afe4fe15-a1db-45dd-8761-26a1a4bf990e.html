@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Seguro o Riesgo? ⚡ Desliza tu instinto - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;padding:1rem;touch-action:none;}
+.tinder-card{background:#fff;border:3px solid #00E6BC;border-radius:16px;padding:1.5rem;width:100%;max-width:300px;min-height:180px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;transition:transform .15s ease,opacity .15s ease;cursor:grab;user-select:none;}
+.tinder-card:active{cursor:grabbing;}
+.tinder-card-content{font-size:1.25rem;font-weight:700;color:#1a1a2e;line-height:1.4;text-align:center;}
+.tinder-indicators{display:flex;justify-content:space-between;width:100%;margin-top:1rem;font-size:.75rem;font-weight:600;}
+.indicator-left{color:#ff6b6b;}
+.indicator-right{color:#00E6BC;}
+.tinder-buttons{display:flex;flex-direction:row;gap:.75rem;width:100%;}
+.tinder-btn-left,.tinder-btn-right{flex:1;min-width:0;position:static;font-size:.9rem;padding:.75rem .5rem;border-radius:var(--radius-card);text-align:center;justify-content:center;white-space:nowrap;overflow:hidden;}
+.tinder-btn-left{border-color:#ff6b6b;color:#ff6b6b;}
+.tinder-btn-left:hover{background:#ff6b6b;color:#fff;}
+.tinder-btn-right{border-color:#00E6BC;color:#00E6BC;}
+.tinder-btn-right:hover{background:#00E6BC;color:#fff;}
+.swipe-left{transform:translateX(-150%) rotate(-30deg)!important;opacity:0!important;transition:transform .3s ease,opacity .3s ease!important;}
+.swipe-right{transform:translateX(150%) rotate(30deg)!important;opacity:0!important;transition:transform .3s ease,opacity .3s ease!important;}
+.results-message{text-align:center;padding:1rem;font-weight:600;color:#1a1a2e;}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Seguro o Riesgo? ⚡</div>
+<div class="subtitle">Desliza tu instinto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress-bar" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="tinder-card">
+<div class="tinder-card-content" id="card-content"></div>
+<div class="tinder-indicators">
+<span class="indicator-left">❌ INCORRECTO</span>
+<span class="indicator-right">✅ CORRECTO</span>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza izquierda o derecha para responder</div>
+<div class="tinder-buttons">
+<button class="btn-option tinder-btn-left" id="btn-incorrect">❌ Incorrecto</button>
+<button class="btn-option tinder-btn-right" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">⚡ Primer día en obra</div>
+<div class="modal-body">Desliza derecha si la práctica es SEGURA, izquierda si es PELIGROSA. ¡Confía en tu instinto!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const cards=[
+{text:"Verificar ausencia de tensión antes de tocar cables",correct:true,exp:"Siempre hay que comprobar que no hay tensión con un detector antes de manipular cualquier cable."},
+{text:"Trabajar con las manos mojadas si hay prisa",correct:false,exp:"El agua conduce la electricidad. Nunca trabajes con las manos mojadas, sin importar la urgencia."},
+{text:"Usar herramientas con mango aislante",correct:true,exp:"Las herramientas aislantes protegen de descargas eléctricas y son obligatorias en trabajos eléctricos."},
+{text:"Dejar cables pelados en el suelo temporalmente",correct:false,exp:"Los cables pelados son un riesgo de electrocución. Deben aislarse inmediatamente."},
+{text:"Señalizar el cuadro eléctrico durante la intervención",correct:true,exp:"La señalización evita que alguien reconecte la corriente mientras trabajas."},
+{text:"Quitar el diferencial para que no salte",correct:false,exp:"El diferencial protege de electrocuciones. Anularlo pone en riesgo tu vida y la de otros."}
+];
+let idx=0,answers=[],isDragging=false,startX=0,currentX=0,startTime=0;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),card=document.getElementById('tinder-card'),cardContent=document.getElementById('card-content'),progressBar=document.getElementById('progress-bar'),counter=document.getElementById('counter'),btnLeft=document.getElementById('btn-incorrect'),btnRight=document.getElementById('btn-correct');
+
+function startGame(){modal.classList.remove('active');renderCard();}
+
+function renderCard(){
+if(idx>=cards.length){showResults();return;}
+cardContent.textContent=cards[idx].text;
+progressBar.style.width=(idx/cards.length*100)+'%';
+counter.textContent=(idx+1)+'/'+cards.length;
+card.classList.remove('swipe-left','swipe-right');
+card.style.transform='translateX(0) rotate(0)';
+card.style.opacity='1';
+ensureFits();
+}
+
+function answer(isCorrect){
+const c=cards[idx];
+const userSaidCorrect=isCorrect;
+const wasRight=userSaidCorrect===c.correct;
+answers.push({text:c.text,correct:c.correct,userSaidCorrect,wasRight,exp:c.exp});
+card.classList.add(isCorrect?'swipe-right':'swipe-left');
+setTimeout(()=>{idx++;renderCard();},300);
+}
+
+function swipe(dir){answer(dir==='right');}
+
+card.addEventListener('pointerdown',onStart);
+card.addEventListener('pointermove',onMove);
+card.addEventListener('pointerup',onEnd);
+card.addEventListener('pointercancel',onEnd);
+
+function onStart(e){
+isDragging=true;
+card.classList.add('dragging');
+card.setPointerCapture(e.pointerId);
+startX=e.clientX;
+currentX=0;
+startTime=Date.now();
+}
+
+function onMove(e){
+if(!isDragging)return;
+currentX=e.clientX-startX;
+const rotate=currentX*0.1;
+const opacity=Math.max(0.5,1-Math.abs(currentX)/300);
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+card.style.opacity=opacity;
+}
+
+function onEnd(e){
+if(!isDragging)return;
+isDragging=false;
+card.classList.remove('dragging');
+const elapsed=Math.max(Date.now()-startTime,1);
+const velocity=Math.abs(currentX)/elapsed;
+const DISTANCE_THRESHOLD=80;
+const VELOCITY_THRESHOLD=0.5;
+const passedDistance=Math.abs(currentX)>DISTANCE_THRESHOLD;
+const passedVelocity=Math.abs(currentX)>24&&velocity>VELOCITY_THRESHOLD;
+if(currentX<0&&(passedDistance||passedVelocity)){swipe('left');}
+else if(currentX>0&&(passedDistance||passedVelocity)){swipe('right');}
+else{card.style.transform='translateX(0) rotate(0)';card.style.opacity='1';}
+}
+
+btnLeft.onclick=()=>answer(false);
+btnRight.onclick=()=>answer(true);
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.wasRight).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">⚡ ¡Evaluación completa!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">${score>=5?'¡Excelente instinto de seguridad!':score>=3?'Buen inicio, sigue formándote':'Revisa bien las normas de seguridad'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.wasRight?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.wasRight?'✓ Acertaste':'✗ Fallaste'} — Es ${a.correct?'SEGURO':'PELIGROSO'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
