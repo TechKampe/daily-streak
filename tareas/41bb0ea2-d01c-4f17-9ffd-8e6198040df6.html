@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Elige tu arma: herramientas del oficio - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Elige tu arma</div>
+<div class="subtitle" id="task">Cargando tarea...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Selecciona la herramienta adecuada</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Primera semana de ayudante</div>
+<div class="modal-body">El oficial te asigna tareas. Demuestra que sabes qué herramienta usar en cada situación.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const tasks=[
+{task:"Apretar una tuerca de grifo que gotea",opts:["Llave inglesa","Destornillador estrella","Nivel de burbuja"],correct:0,
+reasons:["Ajusta tuercas de distintos tamaños","Solo sirve para tornillos de cabeza Phillips","Mide horizontalidad, no aprieta"],
+tip:"Llave inglesa: ajusta la apertura antes de aplicar fuerza para no dañar la tuerca."},
+{task:"Pelar un cable de 2,5mm²",opts:["Alicates pelacables","Sierra para metales","Polímetro"],correct:0,
+reasons:["Pela sin dañar el conductor","Corta metal, destrozaría el cable","Mide electricidad, no pela"],
+tip:"Pelacables: usa la muesca del calibre correcto para no cortar hilos del conductor."},
+{task:"Nivelar un cuadro en la pared",opts:["Nivel de burbuja","Llave inglesa","Alicates de corte"],correct:0,
+reasons:["Garantiza horizontalidad perfecta","Es para tuercas, no para medir","Cortan cable, no miden nivel"],
+tip:"Nivel: limpia la superficie antes de apoyarlo para lecturas precisas."},
+{task:"Cortar un tubo de PVC de 32mm",opts:["Sierra para metales","Alicates universales","Destornillador plano"],correct:0,
+reasons:["Corte limpio en plástico y metal","Aplastarían el tubo sin cortarlo bien","No corta, solo gira tornillos"],
+tip:"Sierra: usa hoja de dientes finos y corta despacio para evitar rebabas."},
+{task:"Medir si hay tensión en un enchufe",opts:["Polímetro","Nivel de burbuja","Llave inglesa"],correct:0,
+reasons:["Mide voltaje de forma segura","Solo mide inclinación","Es para tuercas, no mide electricidad"],
+tip:"Polímetro: selecciona V~ (alterna) y rango >250V antes de medir enchufes domésticos."},
+{task:"Atornillar un taco en pladur",opts:["Destornillador estrella","Alicates de corte","Polímetro"],correct:0,
+reasons:["Gira tornillos Phillips del taco","Solo cortan, no atornillan","Mide electricidad, no atornilla"],
+tip:"En pladur: usa tacos especiales (mariposa) y no aprietes en exceso."}
+];
+
+let idx=0,score=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),taskEl=document.getElementById('task'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=tasks.length){showResults();return}
+locked=false;
+const t=tasks[idx];
+taskEl.textContent=t.task;
+prog.style.width=(idx/tasks.length*100)+'%';
+counter.textContent=(idx+1)+'/'+tasks.length;
+opts.innerHTML=t.opts.map((o,i)=>`<button class="btn-option" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+if(locked)return;
+locked=true;
+const t=tasks[idx];
+const correct=i===t.correct;
+if(correct)score++;
+answers.push({task:t.task,user:t.opts[i],correctTool:t.opts[t.correct],correct,reasons:t.reasons,tip:t.tip,opts:t.opts});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===t.correct&&!correct)b.classList.add('correct');
+b.innerHTML=j===i?(correct?b.textContent+' ✓':b.textContent+' ✗'):(j===t.correct&&!correct?b.textContent+' ✓':b.textContent);
+});
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔧 ¡Jornada completada!</div>
+<div class="results-score">${score}/${tasks.length}</div>
+<div class="results-subtitle">Herramientas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.task}</div>
+<div class="result-answer">${a.correct?'✓ '+a.user:'✗ Elegiste: '+a.user+' → Correcta: '+a.correctTool}</div>
+<div class="result-explanation"><strong>¿Por qué?</strong><br>
+${a.opts.map((o,i)=>'• '+o+': '+a.reasons[i]).join('<br>')}</div>
+<div class="result-explanation"><strong>💡 Consejo:</strong> ${a.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
