@@ -1,0 +1,227 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔌 ¿Correcto o cortocircuito? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+.tinder-container{display:flex;justify-content:center;align-items:center;flex:1;padding:1rem;touch-action:none;}
+.tinder-card{background:#fff;border:3px solid #00E6BC;border-radius:16px;padding:1.5rem;width:100%;max-width:300px;min-height:180px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;transition:transform .15s ease,opacity .15s ease;cursor:grab;user-select:none;}
+.tinder-card:active{cursor:grabbing;}
+.tinder-card-content{font-size:1.25rem;font-weight:700;color:#1a1a2e;line-height:1.4;text-align:center;}
+.tinder-indicators{display:flex;justify-content:space-between;width:100%;margin-top:1rem;font-size:.75rem;font-weight:600;}
+.indicator-left{color:#ff6b6b;}
+.indicator-right{color:#00E6BC;}
+.tinder-buttons{display:flex;flex-direction:row;gap:.75rem;width:100%;}
+.tinder-btn-left,.tinder-btn-right{flex:1;min-width:0;position:static;font-size:.9rem;padding:.75rem .5rem;border-radius:var(--radius-card);text-align:center;justify-content:center;white-space:nowrap;overflow:hidden;}
+.tinder-btn-left{border-color:#ff6b6b;color:#ff6b6b;}
+.tinder-btn-left:hover{background:#ff6b6b;color:#fff;}
+.tinder-btn-right{border-color:#00E6BC;color:#00E6BC;}
+.tinder-btn-right:hover{background:#00E6BC;color:#fff;}
+.swipe-left{transform:translateX(-150%) rotate(-30deg)!important;opacity:0!important;transition:transform .3s ease,opacity .3s ease!important;}
+.swipe-right{transform:translateX(150%) rotate(30deg)!important;opacity:0!important;transition:transform .3s ease,opacity .3s ease!important;}
+.results-message{text-align:center;padding:1rem;font-weight:600;color:#1a1a2e;}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔌 ¿Correcto o cortocircuito?</div>
+<div class="subtitle">Seguridad eléctrica básica</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress-bar" style="width:0%"></i></div></div>
+<span class="badge" id="badge">1/6</span>
+</div>
+</div>
+<div class="main" id="main">
+<div class="tinder-container" id="tinder-container">
+<div class="tinder-card" id="tinder-card">
+<div class="tinder-card-content" id="card-content"></div>
+<div class="tinder-indicators">
+<span class="indicator-left">❌ INCORRECTO</span>
+<span class="indicator-right">✅ CORRECTO</span>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Desliza izquierda o derecha para responder</div>
+<div class="tinder-buttons">
+<button class="btn-option tinder-btn-left" id="btn-incorrect">❌ Incorrecto</button>
+<button class="btn-option tinder-btn-right" id="btn-correct">✅ Correcto</button>
+</div>
+</div>
+</div>
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">⚡ Tutorial</div>
+<div class="modal-body">Desliza derecha si es CORRECTO, izquierda si es INCORRECTO. ¡Tu mentor te evalúa!</div>
+<div class="modal-actions">
+<button class="cta" id="start-btn">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+
+<script>
+const cards=[
+{text:"Siempre cortar la corriente antes de manipular un enchufe",correct:true,exp:"Regla de oro: desconectar SIEMPRE la corriente evita electrocuciones y cortocircuitos."},
+{text:"Los cables pelados se pueden tapar con cualquier cinta",correct:false,exp:"Solo la cinta aislante homologada garantiza aislamiento seguro. Otras cintas pueden derretirse o no aislar."},
+{text:"El diferencial protege a las personas de electrocución",correct:true,exp:"El interruptor diferencial detecta fugas de corriente y corta el circuito en milisegundos, salvando vidas."},
+{text:"Trabajar con manos mojadas no es peligroso con guantes de tela",correct:false,exp:"La tela mojada conduce electricidad. Solo los guantes dieléctricos homologados protegen contra descargas."},
+{text:"El color verde-amarillo identifica el cable de tierra",correct:true,exp:"Por normativa internacional, el cable de tierra es verde-amarillo para fácil identificación."},
+{text:"Un enchufe que chispea solo necesita apretar los tornillos",correct:false,exp:"Las chispas indican conexiones sueltas o deterioradas. Hay que revisar todo el mecanismo y sustituir si es necesario."}
+];
+
+let idx=0,score=0,answers=[];
+let isDragging=false,startX=0,currentX=0,startTime=0;
+
+const scene=document.getElementById('scene');
+const modal=document.getElementById('modal');
+const startBtn=document.getElementById('start-btn');
+const card=document.getElementById('tinder-card');
+const cardContent=document.getElementById('card-content');
+const progressBar=document.getElementById('progress-bar');
+const badge=document.getElementById('badge');
+const btnCorrect=document.getElementById('btn-correct');
+const btnIncorrect=document.getElementById('btn-incorrect');
+
+startBtn.onclick=()=>{modal.classList.remove('active');renderCard();};
+
+function renderCard(){
+if(idx>=cards.length){showResults();return;}
+cardContent.textContent=cards[idx].text;
+progressBar.style.width=(idx/cards.length*100)+'%';
+badge.textContent=(idx+1)+'/'+cards.length;
+card.style.transform='translateX(0) rotate(0)';
+card.style.opacity='1';
+card.classList.remove('swipe-left','swipe-right');
+ensureFits();
+}
+
+function answer(isCorrect){
+const c=cards[idx];
+const userCorrect=(isCorrect===c.correct);
+if(userCorrect)score++;
+answers.push({text:c.text,correct:c.correct,userAnswer:isCorrect,wasRight:userCorrect,exp:c.exp});
+card.classList.add(isCorrect?'swipe-right':'swipe-left');
+setTimeout(()=>{idx++;renderCard();},300);
+}
+
+function swipe(dir){
+answer(dir==='right');
+}
+
+card.addEventListener('pointerdown',onStart);
+card.addEventListener('pointermove',onMove);
+card.addEventListener('pointerup',onEnd);
+card.addEventListener('pointercancel',onEnd);
+
+function onStart(e){
+isDragging=true;
+card.setPointerCapture(e.pointerId);
+startX=e.clientX;
+currentX=0;
+startTime=Date.now();
+card.style.transition='none';
+}
+
+function onMove(e){
+if(!isDragging)return;
+currentX=e.clientX-startX;
+const rotate=currentX*0.1;
+const opacity=Math.max(0.5,1-Math.abs(currentX)/300);
+card.style.transform=`translateX(${currentX}px) rotate(${rotate}deg)`;
+card.style.opacity=opacity;
+}
+
+function onEnd(e){
+if(!isDragging)return;
+isDragging=false;
+card.style.transition='transform .15s ease, opacity .15s ease';
+const elapsed=Math.max(Date.now()-startTime,1);
+const velocity=Math.abs(currentX)/elapsed;
+const DISTANCE_THRESHOLD=80;
+const VELOCITY_THRESHOLD=0.5;
+const passedDistance=Math.abs(currentX)>DISTANCE_THRESHOLD;
+const passedVelocity=Math.abs(currentX)>24&&velocity>VELOCITY_THRESHOLD;
+if(currentX<0&&(passedDistance||passedVelocity)){swipe('left');}
+else if(currentX>0&&(passedDistance||passedVelocity)){swipe('right');}
+else{card.style.transform='translateX(0) rotate(0)';card.style.opacity='1';}
+}
+
+btnCorrect.onclick=()=>answer(true);
+btnIncorrect.onclick=()=>answer(false);
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">⚡ ¡Evaluación completa!</div>
+<div class="results-score">${score}/${cards.length}</div>
+<div class="results-subtitle">${score>=4?'¡Tu mentor te da el visto bueno!':'Repasa antes de trabajar solo'}</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.wasRight?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.wasRight?'✓ Acertaste':'✗ Fallaste'} — Era: ${a.correct?'CORRECTO':'INCORRECTO'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
