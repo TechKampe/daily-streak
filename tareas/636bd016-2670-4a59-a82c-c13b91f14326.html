@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ EPIs al descubierto - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">EPIs al descubierto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="content">
+<p id="statement" style="font-size:1.15rem;line-height:1.5;text-align:center;padding:1rem 0.5rem;margin:0"></p>
+</div>
+<div class="options" id="options">
+<button class="btn-option" id="btnTrue" onclick="answer(true)">✓ Verdadero</button>
+<button class="btn-option" id="btnFalse" onclick="answer(false)">✗ Falso</button>
+</div>
+</div>
+<div class="footer">
+<div class="helper">¿Esta afirmación es verdadera o falsa?</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">🧰 Tu primera semana</div>
+<div class="modal-body">El encargado quiere comprobar tus conocimientos sobre EPIs antes de dejarte trabajar en obra. ¿Mito o realidad?</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{text:"Los guantes de látex sirven para trabajos eléctricos.",ans:false,exp:"Los guantes de látex NO protegen contra descargas eléctricas. Se necesitan guantes dieléctricos homologados según la tensión de trabajo."},
+{text:"El casco debe sustituirse tras un golpe fuerte aunque no tenga grietas visibles.",ans:true,exp:"Correcto. Un impacto puede dañar la estructura interna del casco sin dejar marcas visibles, comprometiendo su capacidad de protección."},
+{text:"Las gafas de seguridad solo son obligatorias si hay chispas.",ans:false,exp:"Falso. Las gafas protegen también contra polvo, salpicaduras químicas y proyección de partículas, no solo chispas."},
+{text:"El calzado de seguridad protege únicamente de caída de objetos.",ans:false,exp:"Falso. También protege contra perforaciones en la suela, descargas eléctricas (si es dieléctrico) y resbalones."},
+{text:"Un arnés de seguridad debe revisarse antes de cada uso.",ans:true,exp:"Correcto. Hay que comprobar costuras, hebillas y estado general. Un arnés dañado puede fallar en una caída."},
+{text:"Puedes usar tu casco de obra personal sin marcado CE.",ans:false,exp:"Falso. Todo EPI debe llevar marcado CE que certifica que cumple la normativa europea de seguridad."},
+{text:"Los tapones de oídos solo hacen falta con maquinaria muy ruidosa.",ans:false,exp:"Falso. La exposición prolongada a ruidos moderados (>80dB) también causa daño auditivo. Usa protección según la evaluación de riesgos."}
+];
+let idx=0,answers=[],score=0,canAnswer=true;
+const scene=document.getElementById('scene'),statement=document.getElementById('statement'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),btnTrue=document.getElementById('btnTrue'),btnFalse=document.getElementById('btnFalse'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+canAnswer=true;
+const d=data[idx];
+statement.textContent=d.text;
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+btnTrue.classList.remove('correct','incorrect','selected');
+btnFalse.classList.remove('correct','incorrect','selected');
+btnTrue.disabled=false;
+btnFalse.disabled=false;
+ensureFits();
+}
+
+function answer(userAns){
+if(!canAnswer)return;
+canAnswer=false;
+const d=data[idx];
+const correct=userAns===d.ans;
+if(correct)score++;
+answers.push({text:d.text,userAns,correctAns:d.ans,correct,exp:d.exp});
+const btnClicked=userAns?btnTrue:btnFalse;
+btnClicked.classList.add(correct?'correct':'incorrect');
+btnTrue.disabled=true;
+btnFalse.disabled=true;
+setTimeout(()=>{idx++;render();},1000);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🎉 ¡Evaluación completada!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAns?'Verdadero':'Falso'} ${a.correct?'✓':'✗'} · Correcta: ${a.correctAns?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--accent-bg);border-left:4px solid var(--accent)">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Antes de cada jornada, dedica 2 minutos a revisar tus EPIs: busca grietas, desgaste o daños. Un EPI en mal estado es peor que no llevarlo porque da falsa seguridad.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
