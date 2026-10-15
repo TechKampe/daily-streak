@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>⚡ Voltios Básicos: ¿Controlas lo esencial? - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">⚡ Voltios Básicos</div>
+<div class="subtitle" id="subtitle">Primer día en el taller. ¡Demuestra lo que sabes!</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progressBar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="questionArea">
+<div class="modal-title" id="questionText"></div>
+<div id="optionsContainer"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca la respuesta correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">⚡ ¡Bienvenido al taller!</div>
+<div class="modal-body">El oficial quiere ver si dominas lo básico antes de tocar herramientas. 5 preguntas rápidas.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startQuiz()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const questions=[
+{q:"¿Qué tipo de corriente hay en los enchufes de casa?",opts:["Corriente alterna (CA)","Corriente continua (CC)","Corriente mixta"],ans:0,exp:"Los enchufes domésticos usan corriente alterna a 230V. Las pilas y baterías dan continua."},
+{q:"¿De qué color es el cable de tierra según normativa?",opts:["Azul","Verde y amarillo","Marrón"],ans:1,exp:"El cable de tierra siempre es verde/amarillo. Nunca lo uses para otra función."},
+{q:"Antes de tocar un cuadro eléctrico, ¿qué debes hacer?",opts:["Ponerte guantes de lana","Cortar la corriente","Mojarte las manos"],ans:1,exp:"SIEMPRE corta la corriente antes de manipular. Es la regla de oro de seguridad."},
+{q:"¿Para qué sirve el diferencial?",opts:["Subir la potencia","Proteger de electrocución","Medir el consumo"],ans:1,exp:"El diferencial detecta fugas y corta la corriente para evitar electrocuciones."},
+{q:"¿Qué herramientas necesitas para trabajar con tensión?",opts:["Cualquier destornillador","Herramientas aisladas 1000V","Guantes de algodón"],ans:1,exp:"Solo herramientas con aislamiento certificado 1000V. Tu vida depende de ello."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),qText=document.getElementById('questionText'),optsCont=document.getElementById('optionsContainer'),progBar=document.getElementById('progressBar'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),introModal=document.getElementById('introModal');
+
+function startQuiz(){introModal.classList.remove('active');renderQuestion();}
+
+function renderQuestion(){
+if(idx>=questions.length){showResults();return}
+const q=questions[idx];
+qText.textContent=q.q;
+progBar.style.width=((idx)/questions.length*100)+'%';
+counter.textContent=(idx+1)+'/'+questions.length;
+helper.textContent='Toca la respuesta correcta';
+optsCont.innerHTML=q.opts.map((o,i)=>`<button class="btn-option" onclick="selectAnswer(${i})" aria-label="${o}">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectAnswer(i){
+const q=questions[idx];
+const correct=i===q.ans;
+if(correct)score++;
+answers.push({q:q.q,opts:q.opts,userIdx:i,ansIdx:q.ans,correct,exp:q.exp});
+const btns=optsCont.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===q.ans)b.classList.add('correct');
+else if(j===i&&!correct)b.classList.add('incorrect');
+});
+helper.textContent=correct?'¡Correcto!':'Incorrecto';
+setTimeout(()=>{idx++;renderQuestion();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const pct=Math.round(score/questions.length*100);
+let msg=pct>=80?'¡Excelente! Estás listo para el taller.':pct>=60?'Bien, pero repasa algunos conceptos.':'Necesitas estudiar más antes de tocar cables.';
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">⚡ Quiz completado</div>
+<div class="results-score">${score}/${questions.length}</div>
+<div class="results-subtitle">${msg}</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.q}</div>
+<div class="result-answer">Tu respuesta: ${a.opts[a.userIdx]} ${a.correct?'✓':'✗'}</div>
+${!a.correct?`<div class="result-answer">Correcta: ${a.opts[a.ansIdx]}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo del oficial</div>
+<div class="result-explanation">La electricidad no perdona. Pregunta siempre antes de actuar y nunca trabajes solo sin supervisión.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{introModal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
