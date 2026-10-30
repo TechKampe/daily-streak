@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Errores que Cuestan Caro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="subtitle">Encuentra el error en cada escena</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="sceneCard" style="margin-bottom:12px;cursor:default">
+<span class="card-text" id="sceneText" style="font-size:1rem;line-height:1.4"></span>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el ítem con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔍 Supervisor de Calidad</div>
+<div class="modal-body">Eres el nuevo supervisor. Tu jefe te pone a prueba: revisa 5 situaciones y detecta qué falla en cada una.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{scene:"Instalación de enchufe en baño húmedo",items:["Enchufe IP44","Conexión a diferencial","Cable sin tubo protector","Toma de tierra"],error:2,errorText:"Cable sin tubo protector",exp:"En zonas húmedas el cableado debe ir protegido con tubo. Sin él, hay riesgo de electrocución."},
+{scene:"Entrega de presupuesto a cliente particular",items:["Desglose de materiales","Plazo de ejecución","Precio total sin IVA","Firma del técnico"],error:2,errorText:"Precio total sin IVA",exp:"A particulares se les debe mostrar el precio con IVA incluido. Es obligatorio por ley."},
+{scene:"Colocación de escalera para trabajar a 3m",items:["Ángulo de 75°","Base sobre suelo firme","Ángulo de 45°","Tres puntos de apoyo"],error:2,errorText:"Ángulo de 45°",exp:"El ángulo correcto es 75° (1:4). Con 45° la escalera puede deslizarse y causar caídas."},
+{scene:"Preparación de soldadura en taller",items:["Pantalla de soldador","Guantes de cuero","Ropa de algodón","Manos descubiertas"],error:3,errorText:"Manos descubiertas",exp:"Soldar sin guantes causa quemaduras graves por salpicaduras y radiación UV."},
+{scene:"Conexión de termo eléctrico de 2000W",items:["Diferencial 30mA","Cable de 1.5mm²","Magnetotérmico 16A","Toma de tierra"],error:1,errorText:"Cable de 1.5mm² ",exp:"Para 2000W se necesita mínimo 2.5mm². Con 1.5mm² el cable se sobrecalienta y hay riesgo de incendio."}
+];
+let idx=0,answers=[],locked=false;
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),sceneText=document.getElementById('sceneText'),subtitle=document.getElementById('subtitle'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+locked=false;
+const d=scenes[idx];
+sceneText.textContent=d.scene;
+subtitle.textContent="Escena "+(idx+1)+": ¿Qué está mal?";
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=d.items.map((o,i)=>`<button class="btn-option" data-idx="${i}">${o}</button>`).join('');
+opts.querySelectorAll('.btn-option').forEach(b=>b.onclick=()=>select(parseInt(b.dataset.idx)));
+ensureFits();
+}
+
+function select(i){
+if(locked)return;
+locked=true;
+const d=scenes[idx];
+const correct=i===d.error;
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+if(j===i)b.classList.add(correct?'correct':'incorrect');
+if(j===d.error&&!correct)b.classList.add('correct');
+});
+answers.push({scene:d.scene,userIdx:i,user:d.items[i],correct,errorText:d.errorText,exp:d.exp});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const correctCount=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Inspección completada</div>
+<div class="results-score">${correctCount}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${i+1}. ${a.scene}</div>
+<div class="result-answer">${a.correct?'✓ Correcto: '+a.user:'✗ Elegiste: '+a.user+' → Error real: '+a.errorText}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--surface-alt,#f0f4ff)">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">Antes de actuar, revisa dos veces. Un minuto de atención evita horas de retrabajo y accidentes costosos.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
