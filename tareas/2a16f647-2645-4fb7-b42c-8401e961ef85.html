@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Errores que Cuestan Caro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="subtitle">Detecta el error en cada escena</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento que está MAL</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔍 ¡Ojo de Supervisor!</div>
+<div class="modal-body">Tu jefe te pone a prueba: detecta el error en 5 situaciones reales de obra. Solo uno falla.</div>
+<div class="modal-actions">
+<button class="cta" onclick="closeModal()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{scene:"Instalación de enchufe en baño",opts:["Enchufe con toma tierra","Cable sin tubo protector","Interruptor diferencial"],ans:1,exp:"En zonas húmedas el cable debe ir siempre protegido en tubo para evitar cortocircuitos y electrocución."},
+{scene:"Entrega de presupuesto al cliente",opts:["Precio total claro","IVA no desglosado","Fecha de validez"],ans:1,exp:"No desglosar el IVA puede generar problemas legales y desconfianza del cliente."},
+{scene:"Colocación de escalera de mano",opts:["Base en suelo firme","Ángulo de 45° (muy vertical)","Alguien sujeta la base"],ans:1,exp:"El ángulo correcto es 75° (1:4). Con 45° la escalera puede volcar hacia atrás."},
+{scene:"Uso de EPI en soldadura",opts:["Pantalla de soldador","Guantes de algodón finos","Mandil ignífugo"],ans:1,exp:"La soldadura requiere guantes de cuero resistentes al calor, no de algodón que pueden arder."},
+{scene:"Conexión de termo eléctrico 2000W",opts:["Magnetotérmico dedicado","Cable de 1,5mm²","Conexión a tierra"]
+,ans:1,exp:"Un termo de 2000W necesita mínimo 2,5mm². Con 1,5mm² el cable se sobrecalienta y puede incendiarse."}
+];
+
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),subtitle=document.getElementById('subtitle'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function closeModal(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+subtitle.textContent=d.scene;
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+helper.textContent='Toca el elemento que está MAL';
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" aria-label="Opción: ${o}" onclick="select(${i})">${o}</button>`).join('');
+ensureFits();
+}
+
+function select(i){
+const d=data[idx];
+const correct=i===d.ans;
+if(correct)score++;
+answers.push({scene:d.scene,correct,exp:d.exp,user:d.opts[i],correctAns:d.opts[d.ans]});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===d.ans)b.classList.add('correct');
+else if(j===i&&!correct)b.classList.add('incorrect');
+});
+helper.textContent=correct?'✓ ¡Bien visto!':'✗ No era ese...';
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Inspección completada</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Errores detectados</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.scene}</div>
+<div class="result-answer">${a.correct?'✓ Detectaste: '+a.user:'✗ Marcaste: '+a.user}</div>
+${!a.correct?`<div class="result-answer">Error real: ${a.correctAns}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo del supervisor</div>
+<div class="result-explanation">Revisa dos veces antes de actuar. Un error detectado a tiempo ahorra dinero, retrabajos y accidentes.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
