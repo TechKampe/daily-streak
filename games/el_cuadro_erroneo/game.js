@@ -25,7 +25,7 @@
     };
 
     const COMP_IMG = {
-        iga: `${CLOUDINARY_BASE}iga_gc2r1r.png`,
+        iga: `${CLOUDINARY_BASE}v1793875378/iga_gc2r1r.png`,
         id:  `${CLOUDINARY_BASE}id_h0k5cr.png`,
         pia: `${CLOUDINARY_BASE}v1772807187/PIA_umn2cw.png`
     };

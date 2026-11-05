@@ -17,7 +17,7 @@
     worried:     `${CB}v1772019465/fer_worried_g1z3jz.png`
   };
   const COMP = {
-    iga: `${CB}iga_gc2r1r.png`,
+    iga: `${CB}v1793875378/iga_gc2r1r.png`,
     id:  `${CB}id_h0k5cr.png`,
     pia: `${CB}v1772807187/PIA_umn2cw.png`
   };
