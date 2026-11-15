@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obra en Marcha - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="subtitle">Encuentra el error en cada escena</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="content"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el ítem que tenga el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">👷 Supervisor Novato</div>
+<div class="modal-body">Revisa 5 situaciones de obra y detecta el error en cada una. ¡Un fallo puede causar un accidente!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{scene:"Un compañero va a mezclar cemento con cal viva.",items:["Pala de mezcla","Guantes de látex fino","Mascarilla FFP2","Gafas protectoras"],error:1,correct:"Guantes de nitrilo gruesos",exp:"La cal viva es muy corrosiva. Los guantes de látex fino no protegen; se necesitan guantes de nitrilo gruesos o de neopreno."},
+{scene:"Van a cortar azulejos con la radial.",items:["Radial con disco diamante","Guantes anticorte","Botas de seguridad","Gafas de sol"],error:3,correct:"Gafas de protección",exp:"Las gafas de sol no protegen de partículas. Se requieren gafas de seguridad con protección lateral contra fragmentos."},
+{scene:"Un operario sube a pintar el techo del pasillo.",items:["Escalera de tijera abierta","Rodillo extensible","Cinta de carrocero","Escalera apoyada en pared sin trabar"],error:3,correct:"Escalera de tijera bien abierta",exp:"Una escalera apoyada sin trabar puede resbalar. Siempre usar escalera de tijera completamente abierta o fijar la base."},
+{scene:"Están preparando mortero en zona de lluvia reciente.",items:["Cemento en sacos secos","Agua limpia","Arena de río","Zapatillas deportivas"],error:3,correct:"Botas de agua con puntera",exp:"En zonas húmedas el calzado deportivo resbala y no protege. Se necesitan botas de agua con suela antideslizante y puntera."},
+{scene:"Van a aplicar disolvente para limpiar herramientas.",items:["Trapos de algodón","Guantes de nitrilo","Ventilación cruzada","Mascarilla de tela"],error:3,correct:"Mascarilla con filtro químico",exp:"Los disolventes emiten vapores tóxicos. La mascarilla de tela no filtra químicos; se necesita mascarilla con filtro A (orgánicos)."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),content=document.getElementById('content'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+prog.style.width=((idx)/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+subtitle.textContent=s.scene;
+helper.textContent='Toca el ítem con el error';
+content.innerHTML=`<div class="options" id="options">${s.items.map((it,i)=>`<button class="btn-option" onclick="selectItem(${i})">${it}</button>`).join('')}</div>`;
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=content.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===s.error)b.classList.add('incorrect');if(j===i&&j!==s.error)b.classList.add('selected');});
+const correct=i===s.error;
+answers.push({scene:s.scene,chosen:s.items[i],errorItem:s.items[s.error],correctAlt:s.correct,exp:s.exp,correct});
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const aciertos=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Revisión Completa</div>
+<div class="results-score">${aciertos}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question"><strong>Escena ${i+1}:</strong> ${a.scene}</div>
+<div class="result-answer">${a.correct?'✓ Detectaste: '+a.chosen:'✗ Elegiste: '+a.chosen}</div>
+<div class="result-answer"><strong>Error real:</strong> ${a.errorItem} → ${a.correctAlt}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo del supervisor</div>
+<div class="result-explanation">La atención al detalle salva vidas en obra. Antes de empezar cualquier tarea, revisa EPIs, herramientas y entorno. Un minuto de revisión evita horas en urgencias.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+else if(window.parent!==window){window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');}
+else{alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){const m=document.querySelector('.main,.content,.board')||scene;document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{ensureFits();modal.classList.add('active');});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
