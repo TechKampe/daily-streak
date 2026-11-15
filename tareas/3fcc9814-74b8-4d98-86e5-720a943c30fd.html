@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 🔧</div>
+<div class="subtitle" id="instruction">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="clozeArea">
+<p id="sentenceText" style="font-size:1.1rem;line-height:1.5;text-align:center;margin-bottom:1.5rem;padding:0 8px;"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Es tu primer día en el taller de climatización</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<div class="modal-backdrop active" id="modal">
+<div class="modal">
+<div class="modal-title">📋 Manual del Aprendiz</div>
+<div class="modal-body">Completa las frases del manual con la herramienta o término correcto. ¡Demuestra que conoces el vocabulario técnico!</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">Comenzar</button></div>
+</div>
+</div>
+<script>
+const data=[
+{sentence:"Para medir la presión del gas refrigerante uso el ___.",answer:"manómetro",options:["manómetro","termómetro","higrómetro"],explanation:"El manómetro mide presión. El termómetro mide temperatura y el higrómetro mide humedad."},
+{sentence:"Antes de cargar refrigerante debo ___ el circuito.",answer:"evacuar",options:["presurizar","evacuar"],explanation:"Evacuar elimina aire y humedad del circuito. Presurizar se hace después, para detectar fugas."},
+{sentence:"El ___ es el componente que comprime el gas refrigerante.",answer:"compresor",options:["evaporador","compresor","condensador"],explanation:"El compresor comprime el gas. El evaporador absorbe calor y el condensador lo libera."},
+{sentence:"Para detectar fugas de refrigerante utilizo un ___.",answer:"detector de fugas",options:["vacuómetro","detector de fugas"],explanation:"El detector de fugas localiza escapes de gas. El vacuómetro mide el nivel de vacío."},
+{sentence:"El refrigerante R-32 tiene menor ___ que el R-410A.",answer:"impacto ambiental",options:["presión","impacto ambiental","temperatura"],explanation:"El R-32 tiene GWP más bajo (675 vs 2088). Ambos trabajan a presiones similares."},
+{sentence:"El ___ absorbe el calor del aire interior.",answer:"evaporador",options:["compresor","evaporador","condensador"],explanation:"El evaporador absorbe calor en interior. El condensador lo expulsa en exterior."}
+];
+let idx=0,score=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sentenceEl=document.getElementById('sentenceText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=(idx/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+const parts=d.sentence.split('___');
+sentenceEl.innerHTML=parts[0]+'<span style="border-bottom:2px dashed var(--accent);padding:0 8px;font-weight:700;">???</span>'+parts[1];
+opts.innerHTML=d.options.map(o=>`<button class="btn-option" onclick="selectAnswer('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectAnswer(selected){
+const d=data[idx];
+const correct=selected===d.answer;
+if(correct)score++;
+answers.push({sentence:d.sentence,answer:d.answer,user:selected,correct,explanation:d.explanation,options:d.options});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===d.answer)b.classList.add('correct');
+else if(b.textContent===selected&&!correct)b.classList.add('incorrect');
+});
+const parts=d.sentence.split('___');
+sentenceEl.innerHTML=parts[0]+`<span style="border-bottom:2px solid ${correct?'var(--ok)':'var(--err)'};padding:0 8px;font-weight:700;">${d.answer}</span>`+parts[1];
+setTimeout(()=>{idx++;render();},1200);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual Completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>{
+const wrongOpts=a.options.filter(o=>o!==a.answer).join(', ');
+return `<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.answer+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Respondiste: '+a.user}</div>
+<div class="result-explanation">${a.explanation}</div>
+</div>`;}).join('')}
+<div class="result-item" style="background:var(--surface);border-left:4px solid var(--accent);">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar la terminología técnica es clave para comunicarte con oficiales y proveedores. Revisa este vocabulario regularmente.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
