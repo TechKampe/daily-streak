@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 🔧</div>
+<div class="subtitle" id="instruction">Selecciona la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="clozeArea">
+<p id="sentenceText"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Completa cada frase del manual</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">📋 Tu Primer Día</div>
+<div class="modal-body">Es tu primer día en el taller. El técnico senior te pide que repases el manual antes de salir a instalar.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const data=[
+{sentence:"Para verificar la presión del refrigerante, uso el ___.",answer:"manómetro",opts:["manómetro","termómetro","voltímetro"],exp:"El manómetro mide presión en sistemas de refrigeración. El termómetro mide temperatura y el voltímetro mide tensión eléctrica."},
+{sentence:"Antes de cargar gas, debo hacer vacío con el ___.",answer:"vacuómetro",opts:["vacuómetro","compresor","detector"],exp:"El vacuómetro mide el nivel de vacío necesario antes de cargar refrigerante. El compresor bombea y el detector localiza fugas."},
+{sentence:"El refrigerante más usado en splits modernos es el ___.",answer:"R-32",opts:["R-32","R-22","R-12"],exp:"El R-32 es el estándar actual por su menor impacto ambiental. R-22 y R-12 están prohibidos o en desuso."},
+{sentence:"El componente que absorbe el calor del interior es el ___.",answer:"evaporador",opts:["evaporador","condensador","compresor"],exp:"El evaporador absorbe calor del aire interior. El condensador lo expulsa al exterior y el compresor bombea el refrigerante."},
+{sentence:"La presión en climatización suele medirse en ___ o bar.",answer:"PSI",opts:["PSI","voltios","amperios"],exp:"PSI (libras por pulgada cuadrada) y bar son unidades de presión. Voltios miden tensión y amperios miden corriente."},
+{sentence:"Antes de manipular el circuito, debo ___ la corriente.",answer:"desconectar",opts:["desconectar","aumentar","invertir"],exp:"Siempre se debe desconectar la corriente por seguridad. Nunca aumentar ni invertir durante el mantenimiento."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sentenceText=document.getElementById('sentenceText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+sentenceText.innerHTML=d.sentence.replace('___','<u style="padding:0 8px;font-weight:700">___</u>');
+opts.innerHTML=d.opts.map(o=>`<button class="btn-option" onclick="selectAnswer('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectAnswer(choice){
+const d=data[idx];
+const correct=choice===d.answer;
+answers.push({sentence:d.sentence,answer:d.answer,user:choice,correct,exp:d.exp,opts:d.opts});
+opts.querySelectorAll('.btn-option').forEach(b=>{
+if(b.textContent===choice)b.classList.add(correct?'correct':'incorrect');
+if(b.textContent===d.answer)b.classList.add('correct');
+b.disabled=true;
+});
+sentenceText.innerHTML=d.sentence.replace('___',`<u style="padding:0 8px;font-weight:700;color:${correct?'#22c55e':'#ef4444'}">${choice}</u>`);
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Manual Completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Frases correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.answer+'</strong>')}</div>
+<div class="result-answer">Tu respuesta: ${a.user} ${a.correct?'✓':'✗'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo Final</div>
+<div class="result-explanation">Dominar el vocabulario técnico es clave para comunicarte con tu equipo y proveedores. Repasa estos términos antes de cada instalación.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
