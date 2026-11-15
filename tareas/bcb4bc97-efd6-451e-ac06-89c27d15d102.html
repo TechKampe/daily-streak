@@ -1,0 +1,227 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Tu primera visita al cliente - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+.chat-container{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.chat-history{flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word}
+.bubble-npc{background:var(--surface);align-self:flex-start;border-bottom-left-radius:4px}
+.bubble-user{background:var(--text);color:var(--bg);align-self:flex-end;border-bottom-right-radius:4px}
+.bubble-header{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-weight:700;font-size:12px;color:var(--accent)}
+.bubble-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover}
+.chat-options{padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg);border-top:1px solid var(--surface)}
+.chat-options .btn-option{text-align:left;padding:12px 16px;font-size:13px;min-height:44px}
+.reaction-text{font-size:12px;color:var(--muted);margin-top:4px;font-style:italic}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Tu primera visita al cliente</div>
+<div class="subtitle" id="subtitle">Acompaña a tu mentor a casa del cliente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="chat-container">
+<div class="chat-history" id="chatHistory"></div>
+<div class="chat-options" id="chatOptions"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const avatars={
+mentor:{name:'Carlos (Mentor)',img:'https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png'},
+aprendiz:{name:'Luis (Compañero)',img:'https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png'},
+cliente:{name:'Sra. García',img:'https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png'}
+};
+
+const turns=[
+{
+messages:[
+{from:'mentor',text:'Hemos llegado. Recuerda: la primera impresión cuenta mucho. ¿Cómo vas a saludar cuando abran?'}
+],
+options:[
+{text:'Buenos días, somos los electricistas. ¿Podemos pasar?',score:2,reaction:'Bien, pero falta presentarte con nombre.'},
+{text:'Hola, soy [nombre], aprendiz de electricista. Venimos por el problema de enchufes.',score:3,reaction:'¡Perfecto! Claro, profesional y cercano.'},
+{text:'Buenas, ¿es aquí lo de los enchufes?',score:1,reaction:'Demasiado informal. El cliente espera profesionalidad.'}
+]
+},
+{
+messages:[
+{from:'cliente',text:'Pasen, pasen. Llevo días con esto, es muy molesto.'},
+{from:'mentor',text:'(Te mira) Antes de entrar, ¿qué deberíamos hacer?'}
+],
+options:[
+{text:'Pedir permiso y preguntar dónde dejar herramientas',score:3,reaction:'¡Exacto! Mostrar respeto por su hogar.'},
+{text:'Entrar directamente y buscar los enchufes',score:1,reaction:'Nunca entres sin pedir permiso explícito.'},
+{text:'Esperar a que ella nos guíe',score:2,reaction:'Está bien, pero es mejor ser proactivo y preguntar.'}
+]
+},
+{
+messages:[
+{from:'cliente',text:'El problema está en el salón. A veces salta el diferencial cuando enchufo la aspiradora.'},
+{from:'aprendiz',text:'(Por mensaje) Ey, ¿qué tal va? Mi primer cliente fue un desastre 😅'}
+],
+options:[
+{text:'Responder a Luis y luego atender a la clienta',score:1,reaction:'El cliente siempre es prioridad. El móvil puede esperar.'},
+{text:'Ignorar el mensaje y escuchar atentamente a la clienta',score:3,reaction:'¡Muy bien! Escucha activa es clave.'},
+{text:'Leer el mensaje rápido mientras ella habla',score:1,reaction:'Se nota cuando no prestas atención. Mala imagen.'}
+]
+},
+{
+messages:[
+{from:'cliente',text:'¿Es muy grave? ¿Me va a costar mucho arreglarlo?'},
+{from:'mentor',text:'(Te deja responder para ver cómo manejas las expectativas)'}
+],
+options:[
+{text:'Tranquila, primero revisamos y luego le explicamos qué encontramos.',score:3,reaction:'Perfecto. No prometas nada sin diagnóstico.'},
+{text:'Seguro que es una tontería, lo arreglamos en un momento.',score:1,reaction:'Nunca minimices sin saber. Puede ser grave.'},
+{text:'Depende, puede ser caro si hay que cambiar el cableado.',score:2,reaction:'Honesto pero alarmante. Mejor esperar al diagnóstico.'}
+]
+},
+{
+messages:[
+{from:'mentor',text:'Hemos terminado la revisión. Era un enchufe con mal contacto. ¿Cómo te despides?'},
+{from:'cliente',text:'Muchas gracias por venir tan rápido.'}
+],
+options:[
+{text:'De nada. Aquí tiene mi tarjeta por si necesita algo más. ¡Buen día!',score:3,reaction:'Excelente cierre: amable y profesional.'},
+{text:'Vale, adiós.',score:1,reaction:'Demasiado seco. Despedirse bien deja buena impresión.'},
+{text:'Gracias a usted. Si tiene más problemas, llámenos.',score:2,reaction:'Bien, pero ofrecer contacto directo es mejor.'}
+]
+}
+];
+
+let currentTurn=0,answers=[],chatHistory=[];
+const historyEl=document.getElementById('chatHistory'),optionsEl=document.getElementById('chatOptions'),progressEl=document.getElementById('progress'),counterEl=document.getElementById('counter'),subtitleEl=document.getElementById('subtitle');
+
+function addBubble(from,text,isUser=false){
+const bubble=document.createElement('div');
+bubble.className='chat-bubble '+(isUser?'bubble-user':'bubble-npc');
+if(!isUser&&avatars[from]){
+bubble.innerHTML=`<div class="bubble-header"><img class="bubble-avatar" src="${avatars[from].img}" alt="">${avatars[from].name}</div>${text}`;
+}else{
+bubble.textContent=text;
+}
+historyEl.appendChild(bubble);
+chatHistory.push({from,text,isUser});
+historyEl.scrollTop=historyEl.scrollHeight;
+}
+
+function addReaction(text){
+const reaction=document.createElement('div');
+reaction.className='reaction-text';
+reaction.textContent=text;
+historyEl.appendChild(reaction);
+historyEl.scrollTop=historyEl.scrollHeight;
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){showResults();return}
+const turn=turns[currentTurn];
+turn.messages.forEach(m=>addBubble(m.from,m.text));
+progressEl.style.width=((currentTurn)/turns.length*100)+'%';
+counterEl.textContent=(currentTurn+1)+'/'+turns.length;
+subtitleEl.textContent='Turno '+(currentTurn+1)+': Elige tu respuesta';
+optionsEl.innerHTML=turn.options.map((o,i)=>`<button class="btn-option" onclick="selectOption(${i})">${o.text}</button>`).join('');
+}
+
+function selectOption(i){
+const turn=turns[currentTurn];
+const opt=turn.options[i];
+addBubble('user',opt.text,true);
+addReaction(opt.reaction);
+answers.push({turn:currentTurn+1,text:opt.text,score:opt.score,maxScore:3,reaction:opt.reaction});
+optionsEl.innerHTML='';
+currentTurn++;
+setTimeout(()=>renderTurn(),800);
+}
+
+function showResults(){
+setTimeout(()=>{
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const total=answers.reduce((a,b)=>a+b.score,0);
+const max=answers.length*3;
+const pct=Math.round(total/max*100);
+let nivel=pct>=80?'¡Excelente!':pct>=60?'Buen trabajo':'Puedes mejorar';
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${nivel}</div>
+<div class="results-score">${total}/${max}</div>
+<div class="results-subtitle">Puntos de profesionalidad</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.score===3?'correct':a.score===2?'':'incorrect'}">
+<div class="result-question">Turno ${a.turn}</div>
+<div class="result-answer">${a.text}</div>
+<div class="result-explanation">${a.reaction}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">La primera impresión en una visita técnica define la confianza del cliente. Preséntate con nombre, pide permiso antes de entrar, escucha sin distracciones y nunca prometas sin diagnosticar primero.</div>
+</div>
+</div>
+<div class="footer" style="position:sticky;bottom:0;background:var(--bg);padding:16px;"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const scene=document.getElementById('scene');
+const m=document.querySelector('.chat-container')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.chat-container')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{ensureFits();renderTurn();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+
+addBubble('mentor','Hoy es tu primera visita a un cliente. Vamos a casa de la Sra. García, tiene problemas con sus enchufes. ¡Demuestra lo que sabes!');
+</script>
+</body>
+</html>
