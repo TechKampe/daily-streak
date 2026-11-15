@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Dónde va? Clasifica como un pro 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Dónde va? 🔧</div>
+<div class="subtitle">Clasifica cada elemento en su categoría</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/8</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="gameArea">
+<div class="item-display" id="itemDisplay"></div>
+<div class="categories" id="categories"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca la categoría correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">Primera semana en el taller 🏭</div>
+<div class="modal-body">El encargado quiere comprobar si distingues EPIs, herramientas y residuos. ¡Clasifica los 8 ítems!</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const items=[
+{name:"Guantes de nitrilo",cat:"EPI",exp:"Protegen tus manos de químicos y cortes leves."},
+{name:"Destornillador",cat:"Herramienta",exp:"Herramienta básica para apretar o aflojar tornillos."},
+{name:"Viruta metálica",cat:"Residuo",exp:"Residuo del mecanizado, se recoge en contenedor metálico."},
+{name:"Casco",cat:"EPI",exp:"Protege la cabeza de impactos y caídas de objetos."},
+{name:"Llave inglesa",cat:"Herramienta",exp:"Herramienta ajustable para tuercas de distintos tamaños."},
+{name:"Aceite usado",cat:"Residuo",exp:"Residuo peligroso, nunca va al desagüe. Punto limpio."},
+{name:"Gafas de seguridad",cat:"EPI",exp:"Protegen los ojos de partículas y salpicaduras."},
+{name:"Cartón de embalaje",cat:"Residuo",exp:"Residuo reciclable, va al contenedor de cartón."}
+];
+const categories=["EPI","Herramienta","Residuo"];
+let idx=0,answers=[],score=0;
+const scene=document.getElementById('scene'),modal=document.getElementById('modal'),itemDisplay=document.getElementById('itemDisplay'),catsEl=document.getElementById('categories'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper');
+
+function startGame(){
+modal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+prog.style.width=((idx)/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+itemDisplay.innerHTML=`<div class="current-item">${item.name}</div>`;
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option cat-btn" onclick="selectCat('${c}')">${c}</button>`).join('');
+helper.textContent="Toca la categoría correcta";
+ensureFits();
+}
+
+function selectCat(cat){
+const item=items[idx];
+const correct=cat===item.cat;
+if(correct)score++;
+answers.push({name:item.name,userCat:cat,correctCat:item.cat,correct,exp:item.exp});
+const btns=catsEl.querySelectorAll('.cat-btn');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===item.cat)b.classList.add('correct');
+if(b.textContent===cat&&!correct)b.classList.add('incorrect');
+});
+itemDisplay.querySelector('.current-item').classList.add(correct?'drop-correct':'drop-incorrect');
+helper.textContent=correct?'¡Correcto!':'Era: '+item.cat;
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Clasificación completa!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Aciertos</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.name}</div>
+<div class="result-answer">${a.correct?'✓ '+a.correctCat:'✗ Pusiste: '+a.userCat+' → Correcto: '+a.correctCat}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--surface-alt)">
+<div class="result-question">💡 Consejo pro</div>
+<div class="result-explanation">Organiza tu zona: EPIs cerca de ti, herramientas ordenadas y residuos en sus contenedores. Así trabajas seguro y eficiente.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{ensureFits();modal.classList.add('active');});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
