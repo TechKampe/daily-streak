@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Obra en Acción - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="subtitle">Detecta el error en cada escena</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="sceneCard" style="margin-bottom:12px;cursor:default">
+<span class="card-text" id="sceneText" style="font-size:1rem;line-height:1.4"></span>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">👷 Supervisor Junior</div>
+<div class="modal-body">Haces tu ronda de control en obra. En cada escena, detecta qué elemento NO cumple con seguridad o buenas prácticas.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar inspección!</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const scenes=[
+{text:"Un operario suelda una estructura metálica en el taller.",items:["Guantes de cuero","Gafas de sol oscuras","Ropa ignífuga","Ventilación activa"],error:1,errorItem:"Gafas de sol oscuras",correct:"Careta de soldador homologada",exp:"Las gafas de sol no protegen de la radiación UV/IR de la soldadura. Se requiere careta con filtro adecuado."},
+{text:"Una escalera de mano está apoyada contra la pared para acceder al altillo.",items:["Escalera en buen estado","Ángulo de 80° con el suelo","Base sobre superficie firme"],error:1,errorItem:"Ángulo de 80° con el suelo",correct:"Ángulo de 75° (relación 1:4)",exp:"Un ángulo de 80° es excesivo y favorece el vuelco hacia atrás. El ángulo seguro es 75° aproximadamente."},
+{text:"Zona de instalación eléctrica junto al cuarto de limpieza.",items:["Cables correctamente pelados","Conexiones junto a fregadero","Diferencial instalado","Canaleta protectora"],error:1,errorItem:"Conexiones junto a fregadero",correct:"Conexiones alejadas de humedad",exp:"Los empalmes eléctricos cerca de agua suponen riesgo de electrocución. Deben alejarse o protegerse con IP adecuado."},
+{text:"Operario trabajando en andamio a 4 metros de altura.",items:["Arnés enganchado a línea de vida","Casco colgado en barandilla","Plataforma con rodapié","Acceso por escalera interior"],error:1,errorItem:"Casco colgado en barandilla",correct:"Casco puesto en la cabeza",exp:"En trabajos en altura el casco debe llevarse puesto siempre. Un golpe o caída de objeto puede ser fatal."},
+{text:"Zona de paso junto al almacén de materiales.",items:["Señalización de emergencia visible","Extintor tras sacos de cemento","Botiquín accesible","Salida despejada"],error:1,errorItem:"Extintor tras sacos de cemento",correct:"Extintor visible y accesible",exp:"Los extintores deben estar siempre visibles y accesibles. Bloquearlos retrasa la respuesta ante un incendio."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),sceneText=document.getElementById('sceneText'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+prog.style.width=((idx)/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+sceneText.textContent=s.text;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+helper.textContent="Toca el elemento con el error";
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{
+b.disabled=true;
+if(j===s.error)b.classList.add('incorrect');
+if(j===i&&j!==s.error)b.classList.add('selected');
+});
+const isCorrect=i===s.error;
+answers.push({scene:s.text,selected:s.items[i],errorItem:s.errorItem,correctAlt:s.correct,exp:s.exp,gotIt:isCorrect});
+helper.textContent=isCorrect?"✓ ¡Bien visto!":"✗ Ese no era el fallo";
+setTimeout(()=>{idx++;render();},900);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.gotIt).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Inspección completada</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.gotIt?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene.substring(0,45)}...</div>
+<div class="result-answer">${a.gotIt?'✓ Detectaste':'✗ Elegiste'}: ${a.selected}</div>
+<div class="result-explanation"><strong>Error real:</strong> ${a.errorItem} → ${a.correctAlt}. ${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--accent-bg)">
+<div class="result-question">💡 Consejo del supervisor</div>
+<div class="result-explanation">Las inspecciones visuales rápidas salvan vidas. Acostúmbrate a escanear tu entorno antes de empezar cualquier tarea: EPIs, herramientas, accesos y señalización. La cultura preventiva empieza por el ojo crítico.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
