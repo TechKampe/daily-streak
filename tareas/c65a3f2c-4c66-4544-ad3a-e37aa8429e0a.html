@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Mito o realidad? ⚡ EPIs bajo la lupa - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Mito o realidad? ⚡</div>
+<div class="subtitle">EPIs bajo la lupa</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progressBar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/7</span>
+</div>
+</div>
+<div class="main">
+<div class="content" id="gameContent">
+<p id="statement" style="font-size:1.15rem;line-height:1.5;text-align:center;padding:1rem;margin:0"></p>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">¿Verdadero o Falso?</div>
+<div class="options" id="btnContainer">
+<button class="btn-option" id="btnTrue">Verdadero</button>
+<button class="btn-option" id="btnFalse">Falso</button>
+</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">🧰 Primer día en el almacén</div>
+<div class="modal-body">El encargado te reta: demuestra cuánto sabes sobre EPIs antes de entrar al tajo.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const statements=[
+{text:"El casco de seguridad caduca y debe sustituirse cada 10 años como máximo.",answer:true,exp:"Los cascos tienen fecha de caducidad (normalmente 10 años desde fabricación). Además, deben cambiarse tras un golpe fuerte."},
+{text:"Los guantes de látex domésticos sirven para trabajos eléctricos en baja tensión.",answer:false,exp:"Para riesgo eléctrico se requieren guantes dieléctricos certificados (EN 60903), no guantes de látex comunes."},
+{text:"El empresario debe proporcionar los EPIs gratuitamente al trabajador.",answer:true,exp:"Según la Ley de Prevención de Riesgos Laborales (art. 17), el empresario debe facilitar los EPIs sin coste para el trabajador."},
+{text:"Las gafas de sol oscuras pueden sustituir a las gafas de seguridad en obra.",answer:false,exp:"Las gafas de seguridad deben cumplir la norma EN 166. Las gafas de sol no protegen contra impactos ni salpicaduras."},
+{text:"El calzado de seguridad con puntera reforzada es obligatorio en obras de construcción.",answer:true,exp:"El RD 1627/1997 exige calzado de seguridad (S3 mínimo) en obras para proteger contra caída de objetos y perforaciones."},
+{text:"Los protectores auditivos solo son necesarios si el ruido supera los 100 dB.",answer:false,exp:"A partir de 80 dB el empresario debe ofrecer protección; a partir de 85 dB su uso es obligatorio (RD 286/2006)."},
+{text:"Un EPI dañado o desgastado sigue siendo válido si aún cumple su función aparente.",answer:false,exp:"Un EPI deteriorado pierde sus propiedades de protección. Debe retirarse y sustituirse de inmediato."}
+];
+
+let currentIdx=0,score=0,answers=[],gameStarted=false;
+const scene=document.getElementById('scene'),statementEl=document.getElementById('statement'),progressBar=document.getElementById('progressBar'),counter=document.getElementById('counter'),btnTrue=document.getElementById('btnTrue'),btnFalse=document.getElementById('btnFalse'),helper=document.getElementById('helper'),introModal=document.getElementById('introModal');
+
+function startGame(){
+introModal.classList.remove('active');
+gameStarted=true;
+renderQuestion();
+}
+
+function renderQuestion(){
+if(currentIdx>=statements.length){showResults();return}
+const s=statements[currentIdx];
+statementEl.textContent=s.text;
+progressBar.style.width=((currentIdx)/statements.length*100)+'%';
+counter.textContent=(currentIdx+1)+'/'+statements.length;
+helper.textContent='¿Verdadero o Falso?';
+btnTrue.disabled=false;btnFalse.disabled=false;
+btnTrue.classList.remove('correct','incorrect','selected');
+btnFalse.classList.remove('correct','incorrect','selected');
+ensureFits();
+}
+
+function handleAnswer(userAnswer){
+if(!gameStarted)return;
+btnTrue.disabled=true;btnFalse.disabled=true;
+const s=statements[currentIdx];
+const isCorrect=userAnswer===s.answer;
+if(isCorrect)score++;
+answers.push({text:s.text,userAnswer,correctAnswer:s.answer,isCorrect,exp:s.exp});
+
+if(userAnswer===true){
+btnTrue.classList.add(isCorrect?'correct':'incorrect');
+}else{
+btnFalse.classList.add(isCorrect?'correct':'incorrect');
+}
+
+setTimeout(()=>{currentIdx++;renderQuestion();},1000);
+}
+
+btnTrue.addEventListener('click',()=>handleAnswer(true));
+btnFalse.addEventListener('click',()=>handleAnswer(false));
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🎉 ¡Prueba superada!</div>
+<div class="results-score">${score}/${statements.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">Tu respuesta: ${a.userAnswer?'Verdadero':'Falso'} ${a.isCorrect?'✓':'✗'} | Correcta: ${a.correctAnswer?'Verdadero':'Falso'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--surface-alt);border-left:4px solid var(--accent)">
+<div class="result-question">💡 Consejo del encargado</div>
+<div class="result-explanation">Revisa siempre el estado de tus EPIs antes de cada jornada. Un equipo en mal estado no protege.</div>
+</div>
+</div>
+<div class="footer">
+<button class="cta" onclick="completeTask()">Ver mi recompensa</button>
+</div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{introModal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
