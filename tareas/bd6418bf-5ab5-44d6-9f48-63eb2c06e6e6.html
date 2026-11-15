@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tu primera satisfacción de cliente 💬 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+.chat-container{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.chat-history{flex:1;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.chat-bubble{max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;animation:fadeIn 0.3s ease}
+.chat-bubble.npc{background:#e8e8e8;color:#333;align-self:flex-start;border-bottom-left-radius:4px}
+.chat-bubble.player{background:#1a1a1a;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-bubble .sender{font-weight:700;font-size:12px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.chat-bubble .sender img{width:24px;height:24px;border-radius:50%;object-fit:cover}
+.chat-options{padding:12px 16px;background:#f5f5f5;border-top:1px solid #ddd;display:flex;flex-direction:column;gap:8px}
+.chat-options .btn-option{text-align:left;padding:12px 16px;font-size:14px;white-space:normal;line-height:1.3}
+.reaction{font-size:12px;color:#666;font-style:italic;margin-top:4px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Tu primera satisfacción de cliente 💬</div>
+<div class="subtitle" id="subtitle">Comunicación post-servicio</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress" style="width:0%"></i></div></div>
+<span class="badge" id="counter">Intro</span>
+</div>
+</div>
+<div class="chat-container">
+<div class="chat-history" id="chatHistory"></div>
+<div class="chat-options" id="chatOptions"></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png" alt="" loading="lazy">
+<script>
+const AVATARS={
+mentor:'https://techkampe.github.io/daily-streak/assets/Avatar%201_low.png',
+client:'https://techkampe.github.io/daily-streak/assets/Avatar%204_low.png'
+};
+const NAMES={mentor:'Carlos (Mentor)',client:'Doña María (Cliente)'};
+
+const turns=[
+{
+messages:[
+{sender:'client',text:'¡Ay, hijo! Ya terminaste. Oye, ¿y qué es lo que has hecho exactamente? Es que yo de estas cosas no entiendo nada...'}
+],
+options:[
+{text:'He sustituido el mecanismo del enchufe antiguo por uno nuevo con toma de tierra y he verificado la conexión.',score:2,reaction:'Mmm... vale, vale... *asiente sin entender*'},
+{text:'Básicamente, he cambiado el enchufe viejo por uno nuevo y más seguro. Ahora sus aparatos estarán mejor protegidos.',score:3,reaction:'¡Ah, qué bien! Eso sí lo entiendo, gracias.'},
+{text:'Pues eso, el enchufe. Ya está.',score:1,reaction:'Ah... bueno... *se queda con cara de duda*'}
+]
+},
+{
+messages:[
+{sender:'mentor',text:'💡 Recuerda: el cliente valora que le expliques las cosas con claridad y paciencia.'},
+{sender:'client',text:'Oye, una cosa... 45€ me parece un poco caro solo por cambiar un enchufe, ¿no?'}
+],
+options:[
+{text:'Señora, el precio es el que es. Los materiales cuestan dinero.',score:1,reaction:'*Frunce el ceño* Bueno, si tú lo dices...'},
+{text:'Entiendo que pueda parecerlo. El precio incluye el material de calidad, el desplazamiento y la garantía del trabajo.',score:3,reaction:'Ah, claro, si lo miras así tiene más sentido.'},
+{text:'¿Caro? Hay quien cobra el doble, ¿eh?',score:1,reaction:'*Se queda callada, incómoda*'}
+]
+},
+{
+messages:[
+{sender:'client',text:'¿Y esto me va a durar mucho? Es que el otro enchufe se estropeó muy rápido...'}
+],
+options:[
+{text:'Este es de buena marca, debería durar años. Pero evite enchufar demasiados aparatos a la vez con regletas.',score:3,reaction:'¡Anda! Eso no lo sabía. Gracias por el consejo.'},
+{text:'Depende del uso que le dé.',score:2,reaction:'Ya... bueno, intentaré cuidarlo.'},
+{text:'Ni idea, eso ya no depende de mí.',score:1,reaction:'*Se queda preocupada*'}
+]
+},
+{
+messages:[
+{sender:'mentor',text:'👍 Ofrecer consejos de mantenimiento genera confianza y fideliza al cliente.'},
+{sender:'client',text:'¿Y si me pasa algo con otro enchufe o con la luz? ¿Puedo llamarte?'}
+],
+options:[
+{text:'Claro, aquí le dejo mi tarjeta. Puede llamarme cuando lo necesite, sin compromiso.',score:3,reaction:'¡Qué detalle! La guardaré bien guardada.'},
+{text:'Sí, pero solo en horario laboral.',score:2,reaction:'Vale, lo tendré en cuenta.'},
+{text:'Mejor llame a la empresa directamente.',score:1,reaction:'Ah... vale, pensé que podía contactarte a ti.'}
+]
+},
+{
+messages:[
+{sender:'client',text:'Bueno, pues muchas gracias por todo. ¡Qué mañana más entretenida!'}
+],
+options:[
+{text:'Gracias a usted por confiar en nosotros. Si necesita cualquier cosa, ya sabe dónde estoy. ¡Que tenga buen día!',score:3,reaction:'¡Igualmente, hijo! Eres muy majo. Te recomendaré a mis vecinas.'},
+{text:'De nada. Adiós.',score:1,reaction:'Adiós... *cierra la puerta algo desconcertada*'},
+{text:'A usted. Cualquier cosa, me avisa. ¡Hasta pronto!',score:2,reaction:'¡Hasta pronto! *sonríe*'}
+]
+}
+];
+
+let currentTurn=0,answers=[],totalScore=0;
+const chatHistory=document.getElementById('chatHistory');
+const chatOptions=document.getElementById('chatOptions');
+const progress=document.getElementById('progress');
+const counter=document.getElementById('counter');
+const subtitle=document.getElementById('subtitle');
+
+function addBubble(sender,text,isPlayer=false){
+const bubble=document.createElement('div');
+bubble.className='chat-bubble '+(isPlayer?'player':'npc');
+if(!isPlayer){
+const name=NAMES[sender]||sender;
+const avatar=AVATARS[sender]||AVATARS.client;
+bubble.innerHTML=`<div class="sender"><img src="${avatar}" alt="">${name}</div>${text}`;
+}else{
+bubble.innerHTML=text;
+}
+chatHistory.appendChild(bubble);
+chatHistory.scrollTop=chatHistory.scrollHeight;
+}
+
+function addReaction(text){
+const reaction=document.createElement('div');
+reaction.className='chat-bubble npc';
+reaction.innerHTML=`<div class="sender"><img src="${AVATARS.client}" alt="">${NAMES.client}</div><span class="reaction">${text}</span>`;
+chatHistory.appendChild(reaction);
+chatHistory.scrollTop=chatHistory.scrollHeight;
+}
+
+function renderTurn(){
+if(currentTurn>=turns.length){
+setTimeout(showResults,500);
+return;
+}
+const turn=turns[currentTurn];
+progress.style.width=((currentTurn)/turns.length*100)+'%';
+counter.textContent=`${currentTurn+1}/${turns.length}`;
+subtitle.textContent='Elige tu respuesta';
+turn.messages.forEach(m=>addBubble(m.sender,m.text));
+chatOptions.innerHTML='';
+turn.options.forEach((opt,i)=>{
+const btn=document.createElement('button');
+btn.className='btn-option';
+btn.textContent=opt.text;
+btn.onclick=()=>selectOption(i);
+chatOptions.appendChild(btn);
+});
+chatHistory.scrollTop=chatHistory.scrollHeight;
+ensureFits();
+}
+
+function selectOption(idx){
+const turn=turns[currentTurn];
+const opt=turn.options[idx];
+addBubble('player',opt.text,true);
+answers.push({turn:currentTurn+1,text:opt.text,score:opt.score,reaction:opt.reaction});
+totalScore+=opt.score;
+chatOptions.innerHTML='<div class="helper" style="text-align:center;padding:8px;">Procesando...</div>';
+setTimeout(()=>{
+addReaction(opt.reaction);
+currentTurn++;
+setTimeout(()=>{
+chatOptions.innerHTML='';
+renderTurn();
+},800);
+},500);
+}
+
+function showResults(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const maxScore=turns.length*3;
+const pct=Math.round(totalScore/maxScore*100);
+let nivel='Mejorable';
+if(pct>=80)nivel='¡Excelente!';
+else if(pct>=60)nivel='Bien hecho';
+const feedbacks=[
+{turn:1,good:'Explicar en términos sencillos genera confianza.',bad:'Una explicación técnica o escueta deja al cliente confundido.'},
+{turn:2,good:'Justificar el precio con transparencia evita conflictos.',bad:'Ponerse a la defensiva genera desconfianza.'},
+{turn:3,good:'Dar consejos de mantenimiento demuestra profesionalidad.',bad:'No orientar al cliente puede hacerle sentir abandonado.'},
+{turn:4,good:'Ofrecer contacto directo fideliza al cliente.',bad:'Derivar sin más rompe la relación personal.'},
+{turn:5,good:'Una despedida cálida deja buena impresión y genera recomendaciones.',bad:'Una despedida fría es una oportunidad perdida.'}
+];
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">${nivel}</div>
+<div class="results-score">${totalScore}/${maxScore}</div>
+<div class="results-subtitle">Puntuación de comunicación</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>{
+const fb=feedbacks[i];
+const isGood=a.score===3;
+const isOk=a.score===2;
+return`<div class="result-item ${isGood?'correct':isOk?'':'incorrect'}">
+<div class="result-question">Turno ${a.turn}</div>
+<div class="result-answer">${isGood?'✓ Óptimo':isOk?'○ Aceptable':'✗ Mejorable'}</div>
+<div class="result-explanation">${isGood||isOk?fb.good:fb.bad}</div>
+</div>`;
+}).join('')}
+<div class="result-item" style="background:#fffbe6;border-left:4px solid #f5a623">
+<div class="result-question">💡 Consejo práctico</div>
+<div class="result-explanation">La primera impresión con un cliente puede convertirse en recomendaciones futuras. Explica con claridad, justifica tu trabajo y despídete dejando la puerta abierta. ¡Un cliente satisfecho es tu mejor publicidad!</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const scene=document.getElementById('scene');
+const m=document.querySelector('.chat-container')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+const scene=document.getElementById('scene');
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.chat-container')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+function showIntro(){
+chatOptions.innerHTML='';
+addBubble('mentor','¡Buenas! Acabas de terminar tu primera instalación en casa de un cliente. Ahora viene lo importante: cerrar bien el servicio. 💪');
+addBubble('mentor','Recuerda: cómo te comuniques ahora puede marcar la diferencia entre un cliente satisfecho... ¡o uno que no vuelve a llamarte!');
+setTimeout(()=>{
+const btn=document.createElement('button');
+btn.className='cta';
+btn.textContent='Empezar conversación';
+btn.onclick=()=>{renderTurn();};
+chatOptions.appendChild(btn);
+},800);
+}
+
+window.addEventListener('load',()=>{ensureFits();showIntro();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
