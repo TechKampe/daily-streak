@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¿Urgente o puede esperar? 🚨 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">¿Urgente o puede esperar? 🚨</div>
+<div class="subtitle" id="situation">Cargando situación...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/9</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="categories"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca la categoría correcta para esta tarea</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">Tu primera semana 🔧</div>
+<div class="modal-body">Eres ayudante de mantenimiento. Clasifica cada tarea según su urgencia real: Urgente, Importante o Rutina.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const items=[
+{text:"Fuga de agua en el baño principal",cat:"Urgente",exp:"El agua puede dañar instalaciones y causar resbalones. Actúa inmediatamente."},
+{text:"Olor a quemado en el cuadro eléctrico",cat:"Urgente",exp:"Riesgo de incendio. Corta la luz y avisa al técnico ya."},
+{text:"Puerta de emergencia atascada",cat:"Urgente",exp:"Afecta la seguridad de evacuación. Prioridad máxima."},
+{text:"Ascensor hace ruido extraño al arrancar",cat:"Importante",exp:"Puede fallar pronto. Programa revisión esta semana."},
+{text:"Grifo del office gotea ligeramente",cat:"Importante",exp:"Desperdicia agua pero no es emergencia. Repara en 2-3 días."},
+{text:"Cambiar fluorescente fundido en almacén",cat:"Rutina",exp:"Zona de poco uso. Puede esperar al mantenimiento programado."},
+{text:"Revisar filtros del aire acondicionado",cat:"Rutina",exp:"Mantenimiento preventivo. Programa para la próxima semana."},
+{text:"Reponer jabón en los aseos",cat:"Rutina",exp:"Importante pero no urgente. Incluye en la ronda diaria."},
+{text:"Baldosa suelta en zona de paso",cat:"Importante",exp:"Riesgo de tropiezo. Señaliza y repara en 1-2 días."}
+];
+const categories=["Urgente","Importante","Rutina"];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),sitEl=document.getElementById('situation'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),catsEl=document.getElementById('categories'),introModal=document.getElementById('introModal');
+
+function startGame(){
+introModal.classList.remove('active');
+render();
+}
+
+function render(){
+if(idx>=items.length){showResults();return}
+const item=items[idx];
+sitEl.textContent=item.text;
+prog.style.width=(idx/items.length*100)+'%';
+counter.textContent=(idx+1)+'/'+items.length;
+catsEl.innerHTML=categories.map(c=>`<button class="btn-option" onclick="selectCat('${c}')">${c}</button>`).join('');
+ensureFits();
+}
+
+function selectCat(cat){
+const item=items[idx];
+const correct=cat===item.cat;
+const btns=catsEl.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+if(b.textContent===cat)b.classList.add(correct?'correct':'incorrect');
+if(b.textContent===item.cat&&!correct)b.classList.add('correct');
+b.disabled=true;
+});
+answers.push({text:item.text,user:cat,correct:item.cat,ok:correct,exp:item.exp});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.ok).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Completado!</div>
+<div class="results-score">${score}/${items.length}</div>
+<div class="results-subtitle">Clasificaciones correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.ok?'correct':'incorrect'}">
+<div class="result-question">${a.text}</div>
+<div class="result-answer">${a.ok?'✓ '+a.correct:'✗ Dijiste: '+a.user+' → Era: '+a.correct}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo profesional</div>
+<div class="result-explanation">Prioriza con la regla Seguridad-Servicio-Estética: primero lo que pone en riesgo personas, luego lo que afecta operaciones, y al final lo visual.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{introModal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
