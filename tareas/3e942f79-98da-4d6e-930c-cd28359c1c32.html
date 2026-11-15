@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Kit 🧰 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Kit 🧰</div>
+<div class="subtitle" id="instruction">Elige la palabra correcta</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap">
+<span class="bar-label">Progreso</span>
+<div class="bar"><i id="progressBar" style="width:0%"></i></div>
+</div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="clozeArea">
+<p id="clozeText" style="font-size:1.1rem;text-align:center;margin:1rem 0;line-height:1.5"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper">Tu tutor te pregunta mientras revisáis la caja</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="introModal">
+<div class="modal">
+<div class="modal-title">¡Primera jornada en obra!</div>
+<div class="modal-body">Tu tutor revisará contigo la caja de herramientas. Completa cada frase eligiendo la opción correcta.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const clozes=[
+{sentence:"Para comprobar si hay tensión en un enchufe, uso el ___.",blank:"buscapolos",options:["buscapolos","pelacables","cinta aislante"],exp:"El buscapolos detecta presencia de tensión. El pelacables retira aislante y la cinta protege empalmes."},
+{sentence:"Para medir la tensión exacta en voltios, necesito un ___.",blank:"multímetro",options:["multímetro","buscapolos","destornillador"],exp:"El multímetro muestra el valor numérico. El buscapolos solo indica presencia, no mide voltaje exacto."},
+{sentence:"Si un circuito se sobrecarga, el ___ corta la corriente automáticamente.",blank:"magnetotérmico",options:["fusible","magnetotérmico","interruptor"],exp:"El magnetotérmico protege contra sobrecargas y cortocircuitos. El fusible también protege pero hay que reemplazarlo; el interruptor solo enciende/apaga."},
+{sentence:"Para retirar el aislante de un cable sin dañar el cobre, uso el ___.",blank:"pelacables",options:["pelacables","alicates","cúter"],exp:"El pelacables tiene muescas calibradas para cada sección. Los alicates pueden cortar hilos y el cúter es peligroso e impreciso."},
+{sentence:"Antes de trabajar en un cuadro eléctrico, me pongo guantes ___.",blank:"aislantes",options:["aislantes","de látex","de obra"],exp:"Los guantes aislantes protegen de descargas. Los de látex no aíslan lo suficiente y los de obra solo protegen de golpes."},
+{sentence:"Para apretar bornes en mecanismos, uso un destornillador con mango ___.",blank:"aislado",options:["aislado","metálico","corto"],exp:"El mango aislado evita descargas si tocas partes con tensión. Un mango metálico conduciría la corriente."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),clozeText=document.getElementById('clozeText'),progressBar=document.getElementById('progressBar'),counter=document.getElementById('counter'),introModal=document.getElementById('introModal');
+
+function startGame(){introModal.classList.remove('active');render();}
+window.addEventListener('load',()=>{introModal.classList.add('active');ensureFits();});
+
+function render(){
+if(idx>=clozes.length){showResults();return}
+const c=clozes[idx];
+clozeText.innerHTML=c.sentence.replace("___","<u style='padding:0 0.5rem;border-bottom:2px dashed var(--accent)'>___</u>");
+progressBar.style.width=((idx)/clozes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+clozes.length;
+opts.innerHTML=c.options.map(o=>`<button class="btn-option" onclick="choose('${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function choose(ans){
+const c=clozes[idx];
+const correct=ans===c.blank;
+answers.push({sentence:c.sentence,blank:c.blank,user:ans,correct,exp:c.exp,options:c.options});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===c.blank)b.classList.add('correct');
+else if(b.textContent===ans&&!correct)b.classList.add('incorrect');
+});
+clozeText.innerHTML=c.sentence.replace("___",`<u style="color:var(--ok);font-weight:700">${c.blank}</u>`);
+setTimeout(()=>{idx++;render();},800);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Kit revisado!</div>
+<div class="results-score">${score}/${clozes.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>{
+const wrongOpts=a.options.filter(o=>o!==a.blank).map(o=>`"${o}"`).join(' y ');
+return `<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace("___",`<strong>${a.blank}</strong>`)}</div>
+<div class="result-answer">${a.correct?'✓ Correcto':'✗ Elegiste: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`;}).join('')}
+<div class="result-item" style="background:var(--surface2);border-left:3px solid var(--accent)">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar la terminología te ayuda a comunicarte mejor con tu equipo y evitar errores en obra. ¡Sigue practicando!</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+else if(window.parent!==window){window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');}
+else{alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
