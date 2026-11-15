@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Caza el Fallo: Errores de Novato - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Caza el Fallo</div>
+<div class="subtitle" id="subtitle">Encuentra el error del novato</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="card" id="sceneCard">
+<span class="card-text" id="sceneText"></span>
+</div>
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper">Toca el elemento incorrecto</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔍 Caza el Fallo</div>
+<div class="modal-body">Tu mentor te pide revisar el trabajo de otros aprendices. Encuentra el error en cada escena.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">Comenzar</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{text:"Carlos conecta un enchufe sin desconectar el diferencial.",items:["Destornillador aislado","Guantes de trabajo","Corriente activa","Cinta aislante"],error:2,errorItem:"Corriente activa",exp:"Siempre corta la corriente antes de manipular instalaciones eléctricas. Riesgo de electrocución."},
+{text:"María sube a una escalera de tijera en el pasillo.",items:["Escalera de tijera","Casco de obra","Escalera sin asegurar","Botas de seguridad"],error:2,errorItem:"Escalera sin asegurar",exp:"Las escaleras deben estar abiertas completamente y con topes de seguridad activos."},
+{text:"Pedro repara una lámpara con las manos.",items:["Guantes aislantes","Manos desnudas","Multímetro","Cinta aislante"],error:1,errorItem:"Manos desnudas",exp:"Para trabajos eléctricos siempre usa guantes aislantes homologados."},
+{text:"Ana empalma cables con cinta americana gris.",items:["Cables de cobre","Cinta americana","Tijeras de electricista","Regleta"],error:1,errorItem:"Cinta americana",exp:"Usa cinta aislante homologada, no cinta americana. Esta no aísla correctamente."},
+{text:"Luis mezcla lejía con amoniaco para limpiar.",items:["Guantes de goma","Mascarilla FFP2","Lejía + Amoniaco","Cubo y fregona"],error:2,errorItem:"Lejía + Amoniaco",exp:"Mezclar lejía y amoniaco genera gases tóxicos. Nunca combines productos químicos."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sceneText=document.getElementById('sceneText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),modal=document.getElementById('modal');
+
+modal.classList.add('active');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+sceneText.textContent=s.text;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const correct=i===s.error;
+const btns=opts.querySelectorAll('.btn-option');
+btns[i].classList.add(correct?'correct':'incorrect');
+btns.forEach(b=>b.disabled=true);
+answers.push({scene:s.text,selected:s.items[i],correct,errorItem:s.errorItem,exp:s.exp});
+setTimeout(()=>{idx++;render();},600);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Revisión completada!</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">Escena ${i+1}: ${a.scene.substring(0,45)}...</div>
+<div class="result-answer">${a.correct?'✓ Detectaste: '+a.selected:'✗ Elegiste: '+a.selected+' → Error real: '+a.errorItem}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item">
+<div class="result-question">💡 Consejo del mentor</div>
+<div class="result-explanation">La atención al detalle salva vidas. Revisa siempre antes de actuar y pregunta si tienes dudas. La cultura preventiva empieza el primer día.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
