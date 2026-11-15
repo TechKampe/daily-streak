@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Manual del Aprendiz 📋 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Completa el Manual 📋</div>
+<div class="subtitle" id="subtitle">Rellena los huecos del manual</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="clozeArea">
+<p id="clozeText" style="font-size:1.1rem;line-height:1.5;margin-bottom:1.5rem;text-align:center;padding:0 8px;"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra correcta</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">📋 Tu primer día</div>
+<div class="modal-body">Tu supervisor te da un manual con palabras borradas. Completa cada frase eligiendo la opción correcta.</div>
+<div class="modal-actions"><button class="cta" onclick="startGame()">¡Empezar!</button></div>
+</div>
+</div>
+<script>
+const data=[
+{text:"Antes de trabajar en un circuito, siempre debo ___ la corriente.",blank:"cortar",opts:["cortar","aumentar","medir"],exp:"Cortar la corriente es el primer paso de seguridad. Medir se hace después de cortar, y aumentar pondría en riesgo tu vida."},
+{text:"Para verificar si hay tensión uso el ___.",blank:"buscapolos",opts:["buscapolos","martillo","nivel"],exp:"El buscapolos detecta presencia de tensión. El martillo y nivel son herramientas de albañilería."},
+{text:"El cable de color verde/amarillo es el de ___.",blank:"tierra",opts:["tierra","fase","neutro"],exp:"Por normativa, verde/amarillo siempre indica tierra. Fase suele ser marrón/negro y neutro es azul."},
+{text:"Para pelar cables uso los alicates ___.",blank:"pelacables",opts:["pelacables","de corte","universales"],exp:"Los pelacables tienen muescas calibradas para no dañar el conductor. Los otros cortan o sujetan."},
+{text:"Mis manos deben estar protegidas con guantes ___.",blank:"aislantes",opts:["aislantes","de cuero","de látex"],exp:"Los guantes aislantes protegen de descargas eléctricas. Cuero y látex no ofrecen protección eléctrica."},
+{text:"Para medir tensión, corriente y resistencia uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","destornillador"],exp:"El multímetro mide múltiples magnitudes. El buscapolos solo detecta tensión y el destornillador no mide nada."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),clozeText=document.getElementById('clozeText'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+const parts=d.text.split('___');
+clozeText.innerHTML=parts[0]+'<u style="border-bottom:2px dashed var(--accent);padding:0 8px;color:var(--accent);">______</u>'+parts[1];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+const shuffled=[...d.opts].sort(()=>Math.random()-0.5);
+opts.innerHTML=shuffled.map(o=>`<button class="btn-option" onclick="selectOption(this,'${o}')">${o}</button>`).join('');
+ensureFits();
+}
+
+function selectOption(btn,chosen){
+const d=data[idx];
+const correct=chosen===d.blank;
+answers.push({text:d.text,blank:d.blank,chosen,correct,exp:d.exp,opts:d.opts});
+opts.querySelectorAll('.btn-option').forEach(b=>{
+b.disabled=true;
+if(b.textContent===d.blank)b.classList.add('correct');
+else if(b.textContent===chosen&&!correct)b.classList.add('incorrect');
+});
+const parts=d.text.split('___');
+clozeText.innerHTML=parts[0]+`<u style="border-bottom:2px solid ${correct?'var(--ok)':'var(--err)'};padding:0 4px;color:${correct?'var(--ok)':'var(--err)'};font-weight:700;">${chosen}</u>`+parts[1];
+helper.textContent=correct?'¡Correcto! ✓':'Incorrecto ✗';
+setTimeout(()=>{idx++;helper.textContent='Selecciona la palabra correcta';render();},1200);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">📋 ¡Manual completado!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Respuestas correctas</div>
+</div>
+<div class="results-list">
+${answers.map(a=>{
+const parts=a.text.split('___');
+const wrongOpts=a.opts.filter(o=>o!==a.blank);
+return`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${parts[0]}<strong>${a.blank}</strong>${parts[1]}</div>
+<div class="result-answer">Tu respuesta: ${a.chosen} ${a.correct?'✓':'✗'}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`;}).join('')}
+<div class="result-item" style="background:var(--surface);border-left:4px solid var(--accent);">
+<div class="result-question">💡 Consejo final</div>
+<div class="result-explanation">Dominar la terminología técnica te permite comunicarte con precisión en obra y evitar errores costosos o peligrosos.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+else if(window.parent!==window){window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');}
+else{alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){const m=document.querySelector('.main,.content,.board')||scene;document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{ensureFits();modal.classList.add('active');});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
