@@ -1,0 +1,258 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔧 Primero lo primero: Ordena como un pro - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔧 Ordena como un pro</div>
+<div class="subtitle" id="subtitle">Ordena los pasos correctamente</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">Reto 1/3</span>
+</div>
+</div>
+<div class="main">
+<div class="cards" id="cards"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Usa ↑↓ o arrastra para ordenar</div>
+<button class="cta" id="cta">Confirmar orden</button>
+</div>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">🔧 Bienvenido, técnico</div>
+<div class="modal-body">Tu supervisor quiere ver si conoces los procedimientos. Ordena los pasos de cada tarea correctamente.</div>
+<div class="modal-actions"><button class="cta" onclick="closeModal()">¡Empezar!</button></div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const challenges=[
+{title:"Cambiar una rueda",steps:["Aflojar tuercas en cruz","Elevar vehículo con gato","Retirar rueda dañada","Colocar rueda nueva","Apretar tuercas en cruz"],correct:[0,1,2,3,4],tip:"Afloja las tuercas antes de elevar para evitar que la rueda gire en el aire."},
+{title:"Usar una amoladora",steps:["Colocarse EPI completo","Revisar estado del disco","Fijar pieza a cortar","Realizar el corte","Apagar y esperar parada"],correct:[0,1,2,3,4],tip:"Nunca retires el protector del disco; está ahí para protegerte de fragmentos."},
+{title:"Primera jornada laboral",steps:["Llegar puntual al trabajo","Saludar a compañeros","Recibir instrucciones","Ejecutar la tarea asignada","Reportar al supervisor"],correct:[0,1,2,3,4],tip:"Reportar al final demuestra profesionalismo y facilita el seguimiento."}
+];
+let idx=0,userAnswers=[],draggedIdx=null,startY=0,startTime=0;
+const scene=document.getElementById('scene'),cardsEl=document.getElementById('cards'),cta=document.getElementById('cta'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),subtitle=document.getElementById('subtitle'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function render(){
+if(idx>=challenges.length){showResults();return;}
+const c=challenges[idx];
+subtitle.textContent=c.title;
+counter.textContent=`Reto ${idx+1}/${challenges.length}`;
+prog.style.width=((idx)/challenges.length*100)+'%';
+helper.textContent="Usa ↑↓ o arrastra para ordenar";
+const shuffled=shuffle(c.steps.map((s,i)=>({text:s,origIdx:i})));
+cardsEl.innerHTML=shuffled.map((s,i)=>`<div class="card" data-idx="${i}" draggable="false">
+<span class="card-num">${i+1}</span>
+<span class="card-text">${s.text}</span>
+<div class="card-controls">
+<button class="btn-ghost" aria-label="Subir" onclick="moveUp(${i})">↑</button>
+<button class="btn-ghost" aria-label="Bajar" onclick="moveDown(${i})">↓</button>
+</div>
+</div>`).join('');
+cardsEl.dataset.order=JSON.stringify(shuffled.map(s=>s.origIdx));
+bindDrag();
+ensureFits();
+}
+
+function getOrder(){return JSON.parse(cardsEl.dataset.order);}
+function setOrder(arr){
+cardsEl.dataset.order=JSON.stringify(arr);
+const cards=cardsEl.querySelectorAll('.card');
+arr.forEach((origIdx,pos)=>{
+const card=Array.from(cards).find(c=>parseInt(c.dataset.origIdx)===origIdx)||cards[pos];
+card.querySelector('.card-num').textContent=pos+1;
+});
+reorderDOM();
+}
+
+function reorderDOM(){
+const order=getOrder();
+const cards=Array.from(cardsEl.querySelectorAll('.card'));
+const map={};cards.forEach(c=>map[c.dataset.origIdx]=c);
+order.forEach((origIdx,pos)=>{
+const card=cards.find(c=>parseInt(c.dataset.origIdx)===origIdx);
+if(card){card.querySelector('.card-num').textContent=pos+1;card.dataset.idx=pos;}
+});
+const sorted=order.map(origIdx=>cards.find(c=>parseInt(c.dataset.origIdx)===origIdx));
+sorted.forEach(c=>cardsEl.appendChild(c));
+}
+
+function moveUp(i){
+const order=getOrder();
+if(i<=0)return;
+[order[i-1],order[i]]=[order[i],order[i-1]];
+cardsEl.dataset.order=JSON.stringify(order);
+reorderDOM();
+animateSwap(i,i-1);
+}
+
+function moveDown(i){
+const order=getOrder();
+if(i>=order.length-1)return;
+[order[i],order[i+1]]=[order[i+1],order[i]];
+cardsEl.dataset.order=JSON.stringify(order);
+reorderDOM();
+animateSwap(i,i+1);
+}
+
+function animateSwap(from,to){
+const cards=cardsEl.querySelectorAll('.card');
+cards[Math.min(from,to)]?.classList.add('dragging');
+setTimeout(()=>cards[Math.min(from,to)]?.classList.remove('dragging'),200);
+}
+
+function bindDrag(){
+const cards=cardsEl.querySelectorAll('.card');
+const order=getOrder();
+cards.forEach((card,i)=>{
+card.dataset.origIdx=order[i];
+card.addEventListener('pointerdown',onDragStart);
+card.addEventListener('pointermove',onDragMove);
+card.addEventListener('pointerup',onDragEnd);
+card.addEventListener('pointercancel',onDragEnd);
+});
+}
+
+function onDragStart(e){
+if(e.target.closest('.card-controls'))return;
+draggedIdx=parseInt(this.dataset.idx);
+startY=e.clientY;
+startTime=Date.now();
+this.classList.add('dragging');
+this.setPointerCapture(e.pointerId);
+}
+
+function onDragMove(e){
+if(draggedIdx===null)return;
+const dy=e.clientY-startY;
+this.style.transform=`translateY(${dy}px)`;
+}
+
+function onDragEnd(e){
+if(draggedIdx===null)return;
+this.classList.remove('dragging');
+this.style.transform='';
+const dy=e.clientY-startY;
+const elapsed=Math.max(Date.now()-startTime,1);
+const velocity=Math.abs(dy)/elapsed;
+const cards=cardsEl.querySelectorAll('.card');
+const cardH=cards[0]?.offsetHeight||60;
+const threshold=cardH*0.4;
+const velThreshold=0.3;
+const order=getOrder();
+let newIdx=draggedIdx;
+if(dy<-threshold||(dy<-20&&velocity>velThreshold)){
+newIdx=Math.max(0,draggedIdx-1);
+}else if(dy>threshold||(dy>20&&velocity>velThreshold)){
+newIdx=Math.min(order.length-1,draggedIdx+1);
+}
+if(newIdx!==draggedIdx){
+const item=order.splice(draggedIdx,1)[0];
+order.splice(newIdx,0,item);
+cardsEl.dataset.order=JSON.stringify(order);
+reorderDOM();
+bindDrag();
+}
+draggedIdx=null;
+}
+
+cta.onclick=()=>{
+const order=getOrder();
+const c=challenges[idx];
+const correct=order.every((v,i)=>v===c.correct[i]);
+userAnswers.push({
+title:c.title,
+userOrder:order.map(i=>c.steps[i]),
+correctOrder:c.correct.map(i=>c.steps[i]),
+correct,
+tip:c.tip
+});
+idx++;
+render();
+};
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=userAnswers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Evaluación completada!</div>
+<div class="results-score">${score}/${challenges.length}</div>
+<div class="results-subtitle">secuencias correctas</div>
+</div>
+<div class="results-list">
+${userAnswers.map((a,i)=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.correct?'✅':'❌'} ${a.title}</div>
+${a.correct?`<div class="result-answer">¡Orden correcto!</div>`:`<div class="result-answer"><strong>Tu orden:</strong><br>${a.userOrder.map((s,j)=>`${j+1}. ${s}`).join('<br>')}</div>
+<div class="result-answer"><strong>✅ Orden correcto:</strong><br>${a.correctOrder.map((s,j)=>`${j+1}. ${s}`).join('<br>')}</div>`}
+<div class="result-explanation">💡 ${a.tip}</div>
+</div>`).join('')}
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function closeModal(){modal.classList.remove('active');render();}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
