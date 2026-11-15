@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🔍 Ojo Clínico: Detecta el Fallo - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">🔍 Ojo Clínico</div>
+<div class="subtitle" id="sceneTitle">Cargando escena...</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/5</span>
+</div>
+</div>
+<div class="main">
+<div class="options" id="options"></div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Toca el elemento con el error</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-title">👷 Prueba de Supervisor</div>
+<div class="modal-body">Tu jefe te pone a prueba: revisa 5 trabajos y detecta el error en cada uno antes de dar el visto bueno.</div>
+<div class="modal-actions">
+<button class="cta" onclick="startGame()">¡Empezar!</button>
+</div>
+</div>
+</div>
+
+<script>
+const scenes=[
+{title:"Empalme eléctrico en caja",desc:"Revisas un empalme en una caja de derivación:",items:["Cables de 2.5mm²","Regleta de conexión","Cable sin aislar en unión","Tapa de protección"],error:2,exp:"Un empalme sin aislamiento puede causar cortocircuito o electrocución. Siempre usar cinta aislante o terminales."},
+{title:"Conexión de tubería de agua",desc:"Inspeccionas una conexión roscada de fontanería:",items:["Llave inglesa usada","Tubería de cobre","Unión sin teflón","Abrazadera de sujeción"],error:2,exp:"Sin teflón en las roscas habrá fugas de agua. Es obligatorio sellar todas las uniones roscadas."},
+{title:"Instalación de climatización",desc:"Verificas la colocación de un termostato:",items:["Cableado correcto","Termostato junto a ventana","Altura a 1.5m del suelo","Conexión a la unidad"],error:1,exp:"Un termostato junto a ventana da lecturas falsas por corrientes de aire. Ubicar en pared interior."},
+{title:"Trabajo de mantenimiento",desc:"Observas a un técnico cambiando un interruptor:",items:["Destornillador aislado","Alicate universal","Martillo para extraer","Comprobador de tensión"],error:2,exp:"El martillo no es herramienta para trabajos eléctricos. Usar solo herramientas específicas y aisladas."},
+{title:"Reparación en altura",desc:"Revisas a un operario en una escalera a 4m:",items:["Escalera bien apoyada","Casco de seguridad","Sin arnés de sujeción","Herramientas en cinturón"],error:2,exp:"Trabajar a más de 2m sin arnés incumple la normativa de prevención y riesgo de caída grave."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),titleEl=document.getElementById('sceneTitle'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper'),modal=document.getElementById('modal');
+
+function startGame(){modal.classList.remove('active');render();}
+
+function render(){
+if(idx>=scenes.length){showResults();return}
+const s=scenes[idx];
+titleEl.textContent=s.desc;
+prog.style.width=(idx/scenes.length*100)+'%';
+counter.textContent=(idx+1)+'/'+scenes.length;
+helper.textContent='Toca el elemento con el error';
+opts.innerHTML=s.items.map((item,i)=>`<button class="btn-option" onclick="selectItem(${i})">${item}</button>`).join('');
+ensureFits();
+}
+
+function selectItem(i){
+const s=scenes[idx];
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add(j===s.error?'correct':'incorrect');if(j===s.error&&j!==i)b.classList.add('correct');});
+answers.push({scene:s.title,desc:s.desc,chosen:s.items[i],correct:s.items[s.error],isCorrect:i===s.error,exp:s.exp});
+helper.textContent=i===s.error?'✓ ¡Correcto!':'✗ Ese no era el error';
+setTimeout(()=>{idx++;render();},1200);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.isCorrect).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">🔍 Inspección Completada</div>
+<div class="results-score">${score}/${scenes.length}</div>
+<div class="results-subtitle">Errores detectados correctamente</div>
+</div>
+<div class="results-list">
+${answers.map((a,i)=>`<div class="result-item ${a.isCorrect?'correct':'incorrect'}">
+<div class="result-question"><strong>Escena ${i+1}:</strong> ${a.scene}</div>
+<div class="result-answer">${a.isCorrect?'✓ Detectaste: '+a.correct:'✗ Elegiste: '+a.chosen}</div>
+${!a.isCorrect?`<div class="result-answer" style="opacity:0.8">→ Error real: ${a.correct}</div>`:''}
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+<div class="result-item" style="background:var(--surface-alt);border-left:4px solid var(--accent)">
+<div class="result-question"><strong>💡 Consejo del supervisor</strong></div>
+<div class="result-explanation">Siempre revisa dos veces antes de validar cualquier trabajo. Un error detectado a tiempo evita accidentes, reclamaciones y costes de reparación.</div>
+</div>
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));}
+else if(window.parent!==window){window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');}
+else{alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){const m=document.querySelector('.main,.content,.board')||scene;document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',()=>{modal.classList.add('active');ensureFits();});
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+</script>
+</body>
+</html>
