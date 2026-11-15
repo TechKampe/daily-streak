@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="es" class="gameplay">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Completa el Hueco: Domina el Vocabulario del Taller 🔧 - Kämpe Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://techkampe.github.io/daily-streak/assets/css/daily_tasks.css">
+<style>
+html.results body{overflow:visible!important;overscroll-behavior:auto!important}
+html.force-scroll{overflow-y:auto!important;height:auto!important;position:static!important}
+html.force-scroll body{overflow:visible!important;height:auto!important;position:static!important;overscroll-behavior:auto!important}
+html.force-scroll .main,html.force-scroll .content,html.force-scroll .board{overflow:visible;touch-action:auto}
+html.force-scroll .scene.gameplay{height:auto;max-height:none;overflow:visible}
+</style>
+</head>
+<body>
+<div class="scene gameplay" id="scene">
+<div class="hud">
+<div class="hud-titles">
+<div class="brand">Vocabulario del Taller 🔧</div>
+<div class="subtitle">Completa cada frase con el término correcto</div>
+</div>
+<div class="progress-row">
+<div class="bar-wrap"><span class="bar-label">Progreso</span><div class="bar"><i id="progress"></i></div></div>
+<span class="badge" id="counter">1/6</span>
+</div>
+</div>
+<div class="main">
+<div id="cloze-area">
+<p id="cloze-sentence"></p>
+<div class="options" id="options"></div>
+</div>
+</div>
+<div class="footer">
+<div class="helper" id="helper">Selecciona la palabra que completa la frase</div>
+</div>
+</div>
+<img class="avatar" src="https://techkampe.github.io/daily-streak/assets/Avatar%202_low.png" alt="" loading="lazy">
+<script>
+const data=[
+{sentence:"Para comprobar continuidad en un cable, uso el ___.",blank:"multímetro",opts:["multímetro","buscapolos","nivel"],exp:"El multímetro mide continuidad; el buscapolos detecta tensión y el nivel es para alineación."},
+{sentence:"Las tuberías de agua fría suelen ser de ___.",blank:"PVC",opts:["PVC","cobre","plomo"],exp:"El PVC es económico y resistente a la corrosión; el cobre se usa más en agua caliente."},
+{sentence:"Antes de intervenir un cuadro eléctrico debo ___.",blank:"cortar la corriente",opts:["cortar la corriente","avisar al vecino","usar guantes de látex"],exp:"Cortar la corriente evita electrocuciones; los guantes de látex no aíslan."},
+{sentence:"Para nivelar una superficie horizontal uso el ___.",blank:"nivel de burbuja",opts:["nivel de burbuja","flexómetro","calibre"],exp:"El nivel de burbuja indica horizontalidad; el flexómetro mide longitudes."},
+{sentence:"El cable de tierra se identifica por su color ___.",blank:"verde/amarillo",opts:["verde/amarillo","azul","marrón"],exp:"Por normativa, verde/amarillo es tierra; azul es neutro y marrón es fase."},
+{sentence:"Para cortar tubos de cobre se usa el ___.",blank:"cortatubos",opts:["cortatubos","serrucho","alicate"],exp:"El cortatubos hace cortes limpios sin deformar el tubo; el serrucho deja rebabas."}
+];
+let idx=0,answers=[];
+const scene=document.getElementById('scene'),opts=document.getElementById('options'),sentenceEl=document.getElementById('cloze-sentence'),prog=document.getElementById('progress'),counter=document.getElementById('counter'),helper=document.getElementById('helper');
+
+function render(){
+if(idx>=data.length){showResults();return}
+const d=data[idx];
+prog.style.width=((idx)/data.length*100)+'%';
+counter.textContent=(idx+1)+'/'+data.length;
+sentenceEl.innerHTML=d.sentence.replace('___','<span class="cloze-blank">___</span>');
+opts.innerHTML=d.opts.map((o,i)=>`<button class="btn-option" onclick="select('${o}')">${o}</button>`).join('');
+helper.textContent='Selecciona la palabra que completa la frase';
+ensureFits();
+}
+
+function select(chosen){
+const d=data[idx];
+const correct=chosen===d.blank;
+answers.push({sentence:d.sentence,blank:d.blank,user:chosen,correct,exp:d.exp});
+const btns=opts.querySelectorAll('.btn-option');
+btns.forEach(b=>{
+b.disabled=true;
+if(b.textContent===d.blank)b.classList.add('correct');
+else if(b.textContent===chosen&&!correct)b.classList.add('incorrect');
+});
+sentenceEl.innerHTML=d.sentence.replace('___',`<span class="cloze-filled ${correct?'ok':'err'}">${d.blank}</span>`);
+helper.textContent=correct?'¡Correcto!':'La respuesta era: '+d.blank;
+setTimeout(()=>{idx++;render();},900);
+}
+
+function showResults(){
+setTimeout(()=>{
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+document.documentElement.classList.replace('gameplay','results');
+scene.classList.replace('gameplay','results');
+const score=answers.filter(a=>a.correct).length;
+scene.innerHTML=`<div class="results-scroll">
+<div class="results-header">
+<div class="results-title">¡Prueba superada!</div>
+<div class="results-score">${score}/${data.length}</div>
+<div class="results-subtitle">Términos correctos</div>
+</div>
+<div class="results-list">
+${answers.map(a=>`<div class="result-item ${a.correct?'correct':'incorrect'}">
+<div class="result-question">${a.sentence.replace('___','<strong>'+a.blank+'</strong>')}</div>
+<div class="result-answer">${a.correct?'✓ Acertaste':'✗ Pusiste: '+a.user}</div>
+<div class="result-explanation">${a.exp}</div>
+</div>`).join('')}
+</div>
+<div class="results-tip">
+<strong>Consejo:</strong> Dominar el vocabulario técnico te permite comunicarte con precisión en obra y evitar malentendidos costosos.
+</div>
+<div class="footer"><button class="cta" onclick="completeTask()">Ver mi recompensa</button></div>
+</div>`;
+},500);
+}
+
+function completeTask(){
+if(window.ReactNativeWebView){
+window.ReactNativeWebView.postMessage(JSON.stringify({action:'TASK_COMPLETED'}));
+}else if(window.parent!==window){
+window.parent.postMessage(JSON.stringify({action:'TASK_COMPLETED'}),'*');
+}else{
+alert('No se pudo registrar la tarea. Ciérrala y vuelve a abrirla desde la app.');
+}
+}
+
+function overflows(){
+const m=document.querySelector('.main,.content,.board')||scene;
+return m.scrollHeight>m.clientHeight+1||scene.scrollHeight>scene.clientHeight+1;
+}
+
+function ensureFits(){
+scene.classList.remove('compact','compact-xs');
+document.documentElement.classList.remove('force-scroll');
+document.documentElement.style.setProperty('--ui-scale',1);
+if(overflows())scene.classList.add('compact');
+if(overflows())scene.classList.add('compact-xs');
+if(overflows()){
+const m=document.querySelector('.main,.content,.board')||scene;
+document.documentElement.style.setProperty('--ui-scale',Math.max(0.88,m.clientHeight/m.scrollHeight));
+}
+if(overflows())document.documentElement.classList.add('force-scroll');
+}
+
+window.addEventListener('load',ensureFits);
+window.addEventListener('resize',ensureFits);
+window.addEventListener('orientationchange',()=>setTimeout(ensureFits,100));
+render();
+</script>
+</body>
+</html>
